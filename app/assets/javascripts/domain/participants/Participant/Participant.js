@@ -112,6 +112,14 @@ function ParticipantFactory($q,
       if (this.annotations) {
         cmd.annotations = this.annotations
           .map(annotation => {
+            if (! (annotation instanceof Annotation)) {
+              return $q.reject(new Error('invalid type for annotation'));
+            }
+
+            if (annotation.isValueValid === undefined) {
+              return $q.reject(new Error('isValueValid is undefined'));
+            }
+
             // make sure required annotations have values
             if (!annotation.isValueValid()) {
               invalidAnnotationErrMsg =

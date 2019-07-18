@@ -21,21 +21,6 @@ This version of Biobank uses the following open source tools / software packages
 
     A SQL relational database management system used to store the query model.
 
-* [node.js](http://nodejs.org/)
-
-    Node.js is a software platform for scalable server-side and networking applications. Node.js applications
-    are written in JavaScript.
-
-* [AngularJS](https://angularjs.org/)
-
-    AngularJS lets you extend HTML vocabulary for your application. The resulting environment is
-    extraordinarily expressive, readable, and quick to develop.
-
-* [Twitter Bootstrap](http://getbootstrap.com/2.3.2/)
-
-    Bootstrap is a sleek, intuitive, and powerful front-end framework for faster and easier web
-    user interface development
-
 * [ScalaPB](http://trueaccord.github.io/ScalaPB/generated-code.html)
 
     Used to generate the scala files from [protobuf](https://github.com/google/protobuf/) `proto` files.

@@ -22,18 +22,6 @@ matrix:
       after_success:
         - sbt ++$TRAVIS_SCALA_VERSION coverageReport coveralls
 
-    - language: node_js
-      node_js:
-        - 6
-      cache:
-        directories:
-          - node_modules
-      script:
-        - npm install
-        - npm run test-coverage
-      after_success:
-        - cat coverage/lcov.info | node_modules/coveralls/bin/coveralls.js
-
 branches:
   only:
   - master

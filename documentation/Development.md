@@ -109,11 +109,13 @@ sbt clean coverage test
 sbt coverageReport
 ```
 
-Or, within the SBT cli:
+Or, within the SBT CLI:
 
 ```sh
 ; clean; coverage; test; coverageReport
 ```
+
+The report can be found in: `<proj_dir>/target/scala-<version>/scoverage-report`
 
 ### Debug
 

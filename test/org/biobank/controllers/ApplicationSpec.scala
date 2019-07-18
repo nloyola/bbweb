@@ -15,12 +15,6 @@ class ApplicationSpec extends ControllerFixture {
       status(result) mustEqual NOT_FOUND
     }
 
-    it("return results for index") {
-      val result = route(app, FakeRequest(GET, "/")).get
-      status(result) mustBe (OK)
-      contentType(result) mustBe (Some("text/html"))
-    }
-
     it("return initial aggregate counts") {
       val reply = makeAuthRequest(GET, "/api/dtos/counts").value
       reply must beOkResponseWithJsonReply

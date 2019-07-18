@@ -215,7 +215,7 @@ class SpecimensProcessor @Inject() (
               originLocationId      = LocationId(info.getLocationId),
               locationId            = LocationId(info.getLocationId),
               containerId           = None,
-              positionId            = None,
+              position              = None,
               timeAdded             = OffsetDateTime.parse(event.getTime),
               timeCreated           = OffsetDateTime.parse(info.getTimeCreated),
               amount                = BigDecimal(info.getAmount))

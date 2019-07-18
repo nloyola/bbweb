@@ -2,16 +2,18 @@ package org.biobank.domain
 
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
-import org.biobank.fixtures.NameGenerator
-import org.biobank.domain.annotations._
-import org.biobank.domain.users._
+import org.biobank.domain.AnatomicalSourceType._
+import org.biobank.domain.PreservationType._
+import org.biobank.domain.SpecimenType._
 import org.biobank.domain.access._
-import org.biobank.domain.studies._
-import org.biobank.domain.participants._
+import org.biobank.domain.annotations.AnnotationValueType._
+import org.biobank.domain.annotations._
 import org.biobank.domain.centres._
 import org.biobank.domain.containers._
-import org.biobank.domain.annotations.AnnotationValueType._
-//import org.slf4j.LoggerFactory
+import org.biobank.domain.participants._
+import org.biobank.domain.studies._
+import org.biobank.domain.users._
+import org.biobank.fixtures.NameGenerator
 import scala.reflect._
 import scalaz.Scalaz._
 
@@ -378,7 +380,7 @@ class Factory {
         originLocationId      = location.id,
         locationId            = location.id,
         containerId           = None,
-        positionId            = None,
+        position              = None,
         timeCreated           = OffsetDateTime.now,
         amount                = BigDecimal(1.0)
       )
@@ -402,7 +404,7 @@ class Factory {
         originLocationId      = location.id,
         locationId            = location.id,
         containerId           = None,
-        positionId            = None,
+        position            = None,
         timeCreated           = OffsetDateTime.now,
         amount                = BigDecimal(1.0)
       )
@@ -454,21 +456,6 @@ class Factory {
                             countryIsoCode = nameGenerator.next[Location])
     domainObjects = domainObjects + (classOf[Location] -> location)
     location
-  }
-
-  def createContainerSchema(): ContainerSchema = {
-    val name = faker.Lorem.sentence(3)
-    val containerSchema = ContainerSchema(
-        version      = 0L,
-        timeAdded    = OffsetDateTime.now,
-        timeModified = None,
-        id           = ContainerSchemaId(nextIdentityAsString[ContainerSchema]),
-        slug         = Slug(name),
-        name         = name,
-        description  = Some(nameGenerator.next[ContainerSchema]),
-        shared       = true)
-    domainObjects = domainObjects + (classOf[ContainerSchema] -> containerSchema)
-    containerSchema
   }
 
   def createShipment(fromCentre:   Centre,
@@ -581,39 +568,113 @@ class Factory {
     // shipmentContainer
   }
 
-  // def createEnabledContainerType(centre: Centre): EnabledContainerType = {
-  //   val containerType = EnabledContainerType(
-  //     id           = ContainerTypeId(nextIdentityAsString[ContainerType]),
-  //     centreId     = Some(centre.id),
-  //     schemaId     = defaultContainerSchema.id,
-  //     version      = 0L,
-  //     timeAdded    = OffsetDateTime.now,
-  //     timeModified = None,
-  //     name         = nameGenerator.next[ContainerType],
-  //     description  = Some(nameGenerator.next[ContainerType]),
-  //     shared       = true)
-  //   domainObjects = domainObjects + (classOf[EnabledContainerType] -> containerType)
-  //   containerType
-  // }
+  def createStorageContainerType(): StorageContainerType = {
+    val name = nameGenerator.next[ContainerType]
+    val containerType = StorageContainerType(
+        id           = ContainerTypeId(nextIdentityAsString[ContainerType]),
+        version      = 0L,
+        timeAdded    = OffsetDateTime.now,
+        timeModified = None,
+        slug         = Slug(name),
+        name         = name,
+        description  = Some(nameGenerator.next[ContainerType]),
+        centreId     = Some(defaultEnabledCentre.id),
+        schemaId     = defaultContainerSchema.id,
+        shared       = true,
+        enabled      = false)
+    domainObjects = domainObjects + (classOf[StorageContainerType] -> containerType)
+    containerType
+  }
 
-  // def createEnabledContainerType(): EnabledContainerType = {
-  //   createEnabledContainerType(defaultEnabledCentre)
-  // }
+  def createSpecimenContainerType(): SpecimenContainerType = {
+    val name = nameGenerator.next[ContainerType]
+    val containerType = SpecimenContainerType(
+        id           = ContainerTypeId(nextIdentityAsString[ContainerType]),
+        version      = 0L,
+        timeAdded    = OffsetDateTime.now,
+        timeModified = None,
+        slug         = Slug(name),
+        name         = name,
+        description  = Some(nameGenerator.next[ContainerType]),
+        centreId     = Some(defaultEnabledCentre.id),
+        schemaId     = defaultContainerSchema.id,
+        shared       = true,
+        enabled      = false)
+    domainObjects = domainObjects + (classOf[SpecimenContainerType] -> containerType)
+    containerType
+  }
 
-  // def createDisabledContainerType(): DisabledContainerType = {
-  //   val containerType = DisabledContainerType(
-  //     version      = 0L,
-  //     centreId     = Some(defaultEnabledCentre.id),
-  //     schemaId     = defaultContainerSchema.id,
-  //     timeAdded    = OffsetDateTime.now,
-  //     timeModified = None,
-  //     id           = ContainerTypeId(nextIdentityAsString[ContainerType]),
-  //     name         = nameGenerator.next[ContainerType],
-  //     description  = Some(nameGenerator.next[ContainerType]),
-  //     shared       = true)
-  //   domainObjects = domainObjects + (classOf[DisabledContainerType] -> containerType)
-  //   containerType
-  // }
+  def createContainerSchema(): ContainerSchema = {
+    val name = faker.Lorem.sentence(3)
+    val containerSchema = ContainerSchema(
+        version      = 0L,
+        timeAdded    = OffsetDateTime.now,
+        timeModified = None,
+        id           = ContainerSchemaId(nextIdentityAsString[ContainerSchema]),
+        slug         = Slug(name),
+        name         = name,
+        description  = Some(nameGenerator.next[ContainerSchema]),
+        shared       = true,
+        centreId     = defaultDisabledCentre.id)
+    domainObjects = domainObjects + (classOf[ContainerSchema] -> containerSchema)
+    containerSchema
+  }
+
+  def createContainerSchemaPosition(): ContainerSchemaPosition = {
+    ContainerSchemaPosition(
+      id       = ContainerSchemaPositionId(nextIdentityAsString[ContainerSchemaPosition]),
+      schemaId = defaultContainerSchema.id,
+      label    = nextIdentityAsString[ContainerSchemaPosition])
+  }
+
+  def createContainerConstraints(): ContainerConstraints = {
+    val name = nameGenerator.next[ContainerConstraints]
+    val containerConstraints = ContainerConstraints(
+        id                    = ContainerConstraintsId(nextIdentityAsString[ContainerConstraints]),
+        slug                  = Slug(name),
+        name                  = name,
+        description           = Some(nameGenerator.next[ContainerConstraints]),
+        centreId              = defaultDisabledCentre.id,
+        anatomicalSourceTypes = Set.empty[AnatomicalSourceType],
+        preservationTypes     = Set.empty[PreservationType],
+        specimenTypes         = Set.empty[SpecimenType])
+    domainObjects = domainObjects + (classOf[ContainerConstraints] -> containerConstraints)
+    containerConstraints
+  }
+
+  def createStorageContainer(): StorageContainer = {
+    val inventoryId = nameGenerator.next[Container]
+    val container = StorageContainer(
+        id              = ContainerId(nextIdentityAsString[Container]),
+        version         = 0L,
+        timeAdded       = OffsetDateTime.now,
+        timeModified    = None,
+        slug            = Slug(inventoryId),
+        inventoryId     = inventoryId,
+        enabled         = false,
+        containerTypeId = defaultStorageContainerType.id,
+        parentId        = none,
+        position        = none,
+        constraints     = Some(createContainerConstraints))
+    domainObjects = domainObjects + (classOf[StorageContainer] -> container)
+    container
+  }
+
+  def createSpecimenContainer(): SpecimenContainer = {
+    val inventoryId = nameGenerator.next[ContainerType]
+    val container = SpecimenContainer(
+        id              = ContainerId(nextIdentityAsString[Container]),
+        version         = 0L,
+        timeAdded       = OffsetDateTime.now,
+        timeModified    = None,
+        slug            = Slug(inventoryId),
+        inventoryId     = inventoryId,
+        containerTypeId = defaultSpecimenContainerType.id,
+        parentId        = None,
+        position        = None)
+    domainObjects = domainObjects + (classOf[SpecimenContainer] -> container)
+    container
+  }
 
   // def defaultRegisteredUser: RegisteredUser = {
   //   defaultObject(classOf[RegisteredUser], createRegisteredUser)
@@ -703,13 +764,13 @@ class Factory {
     defaultObject(classOf[ShipmentContainer], createShipmentContainer)
   }
 
-  // def defaultDisabledContainerType: DisabledContainerType = {
-  //   defaultObject(classOf[DisabledContainerType], createDisabledContainerType)
-  // }
+  def defaultStorageContainerType: StorageContainerType = {
+    defaultObject(classOf[StorageContainerType], createStorageContainerType)
+  }
 
-  // def defaultEnabledContainerType: EnabledContainerType = {
-  //   defaultObject(classOf[EnabledContainerType], createEnabledContainerType)
-  // }
+  def defaultSpecimenContainerType: SpecimenContainerType = {
+    defaultObject(classOf[SpecimenContainerType], createSpecimenContainerType)
+  }
 
   /** Retrieves the class from the map, or calls 'create' if value does not exist
    */

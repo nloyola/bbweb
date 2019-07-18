@@ -4,13 +4,11 @@ import java.time.OffsetDateTime
 import org.biobank.domain._
 import play.api.libs.json._
 import scalaz.Scalaz._
+import org.biobank.domain.centres.CentreId
 
 trait ContainerSchemaValidations {
 
-  val NameMinLength: Long = 2L
-
 }
-
 
 /**
  * A plan for how the children in a {@link Container} are positioned and labelled.
@@ -19,10 +17,11 @@ final case class ContainerSchema(id:           ContainerSchemaId,
                                  version:      Long,
                                  timeAdded:    OffsetDateTime,
                                  timeModified: Option[OffsetDateTime],
-                                 slug: Slug,
+                                 slug:         Slug,
                                  name:         String,
                                  description:  Option[String],
-                                 shared:       Boolean)
+                                 shared:       Boolean,
+                                 centreId:     CentreId)
     extends ConcurrencySafeEntity[ContainerSchemaId]
     with HasUniqueName
     with HasOptionalDescription
@@ -32,20 +31,28 @@ final case class ContainerSchema(id:           ContainerSchemaId,
 
   /** Used to change the name. */
   def withName(name: String): DomainValidation[ContainerSchema] = {
-    validateString(name, NameMinLength, InvalidName) map (_ =>
-      copy(version = version + 1, name = name)
-    )
+    validateNonEmptyString(name, InvalidName) map { _ =>
+      copy(name = name,
+           version = version + 1,
+           timeModified = Some(OffsetDateTime.now))
+    }
   }
 
   /** Used to change the description. */
   def withDescription(description: Option[String]): DomainValidation[ContainerSchema] = {
     validateNonEmptyStringOption(description, InvalidDescription) map { _ =>
-      copy(version = version + 1, description  = description)
+      copy(description  = description,
+           version = version + 1,
+           timeModified = Some(OffsetDateTime.now))
     }
   }
 
   def withShared(shared: Boolean): DomainValidation[ContainerSchema] = {
-    copy(version = version + 1, shared  = shared).successNel[String]
+    copy(
+      shared  = shared,
+      version = version + 1,
+      timeModified = Some(OffsetDateTime.now)
+    ).successNel[String]
   }
 
 }
@@ -66,12 +73,14 @@ object ContainerSchema extends ContainerSchemaValidations {
              version:     Long,
              name:        String,
              description: Option[String],
-             shared:      Boolean)
+             shared:      Boolean,
+             centreId:    CentreId)
       : DomainValidation[ContainerSchema] = {
     (validateId(id) |@|
        validateVersion(version) |@|
-       validateString(name, NameMinLength, InvalidName) |@|
-       validateNonEmptyStringOption(description, InvalidDescription)) { case _ =>
+       validateNonEmptyString(name, InvalidName) |@|
+       validateNonEmptyStringOption(description, InvalidDescription) |@|
+       validateId(centreId, InvalidCentreId)) { case _ =>
         ContainerSchema(id           = id,
                         version      = version,
                         timeAdded    = OffsetDateTime.now,
@@ -79,7 +88,8 @@ object ContainerSchema extends ContainerSchemaValidations {
                         slug         = Slug(name),
                         name         = name,
                         description  = description,
-                        shared       = shared)
+                        shared       = shared,
+                        centreId     = centreId)
     }
   }
 

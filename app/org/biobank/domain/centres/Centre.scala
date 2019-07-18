@@ -123,9 +123,9 @@ object Centre {
 
 trait CentreValidations {
 
-  val NameMinLength: Long = 2L
-
   case object InvalidName extends ValidationKey
+
+  case object InvalidCentreId extends ValidationKey
 
   case object InvalidStudyId extends ValidationKey
 }
@@ -155,7 +155,7 @@ final case class DisabledCentre(id:           CentreId,
 
   /** Used to change the name. */
   def withName(name: String): DomainValidation[DisabledCentre] = {
-    validateString(name, NameMinLength, InvalidName) map { _ =>
+    validateNonEmptyString(name, InvalidName) map { _ =>
       copy(name         = name,
            version      = version + 1,
            timeModified = Some(OffsetDateTime.now))
@@ -279,7 +279,7 @@ object DisabledCentre extends CentreValidations {
 
     (validateId(id) |@|
        validateVersion(version) |@|
-       validateString(name, NameMinLength, InvalidName) |@|
+       validateNonEmptyString(name, InvalidName) |@|
        validateNonEmptyStringOption(description, InvalidDescription) |@|
        studyIds.toList.traverseU(validateStudyId) |@|
        locations.toList.traverseU(Location.validate)) { case _ =>

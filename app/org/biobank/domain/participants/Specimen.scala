@@ -5,7 +5,7 @@ import java.time.format.DateTimeFormatter
 import org.biobank.ValidationKey
 import org.biobank.dto.SpecimenDto
 import org.biobank.domain._
-import org.biobank.domain.containers.{ContainerId, ContainerSchemaPositionId}
+import org.biobank.domain.containers.{ContainerId, ContainerSchemaPosition}
 import org.biobank.domain.studies.{CollectionSpecimenDefinition, SpecimenDefinitionId, StudyValidations}
 import org.biobank.domain.{ConcurrencySafeEntity, DomainValidation}
 import org.biobank.services.centres.CentreLocationInfo
@@ -48,7 +48,7 @@ sealed trait Specimen
    * The [[domain.containers.ContainerSchemaPosition ContainerSchemaPosition]] (i.e. position or label) this
    * specimen has in its container.
    */
-  val positionId: Option[ContainerSchemaPositionId]
+  val position: Option[ContainerSchemaPosition]
 
   /**
    * The date and time when the specimen was physically created.
@@ -65,7 +65,7 @@ sealed trait Specimen
 
   def createDto(collectionEvent:    CollectionEvent,
                 eventTypeName:      String,
-                specimenDefinition:       CollectionSpecimenDefinition,
+                specimenDefinition: CollectionSpecimenDefinition,
                 originLocationInfo: CentreLocationInfo,
                 locationInfo:       CentreLocationInfo): SpecimenDto =
     SpecimenDto(id                      = this.id.id,
@@ -82,7 +82,7 @@ sealed trait Specimen
                 originLocationInfo      = originLocationInfo,
                 locationInfo            = locationInfo,
                 containerId             = this.containerId.map(_.id),
-                positionId              = this.positionId.map(_.id),
+                position                = this.position.map(_.label),
                 timeCreated             = this.timeCreated.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
                 amount                  = this.amount,
                 units                   = specimenDefinition.units,
@@ -101,7 +101,7 @@ sealed trait Specimen
         |  originLocationId:     $originLocationId
         |  locationId:           $locationId
         |  containerId:          $containerId
-        |  positionId:           $positionId
+        |  position:             $position
         |  timeCreated:          $timeCreated
         |  amount:               $amount
         |}""".stripMargin
@@ -123,7 +123,7 @@ object Specimen {
           "originLocationId"      -> specimen.originLocationId.id,
           "locationId"            -> specimen.locationId.id,
           "containerId"           -> specimen.containerId,
-          "positionId"            -> specimen.positionId,
+          "position"              -> specimen.position,
           "version"               -> specimen.version,
           "timeCreated"           -> specimen.timeCreated,
           "amount"                -> specimen.amount
@@ -179,7 +179,7 @@ final case class UsableSpecimen(id:                   SpecimenId,
                                 originLocationId:     LocationId,
                                 locationId:           LocationId,
                                 containerId:          Option[ContainerId],
-                                positionId:           Option[ContainerSchemaPositionId],
+                                position:             Option[ContainerSchemaPosition],
                                 timeCreated:          OffsetDateTime,
                                 amount:               BigDecimal)
     extends { val state: EntityState = Specimen.usableState }
@@ -231,9 +231,9 @@ final case class UsableSpecimen(id:                   SpecimenId,
     }
   }
 
-  def withPosition(positionId: ContainerSchemaPositionId): DomainValidation[Specimen] = {
-    validateId(positionId, PositionInvalid).map { s =>
-      copy(positionId   = Some(positionId),
+  def withPosition(position: ContainerSchemaPosition): DomainValidation[Specimen] = {
+    ContainerSchemaPosition.validate(position.id, position.schemaId, position.label).map { s =>
+      copy(position     = Some(position),
            version      = version + 1,
            timeModified = Some(OffsetDateTime.now))
     }
@@ -250,7 +250,7 @@ final case class UsableSpecimen(id:                   SpecimenId,
                      originLocationId      = this.originLocationId,
                      locationId            = this.locationId,
                      containerId           = this.containerId,
-                     positionId            = this.positionId,
+                     position              = this.position,
                      timeCreated           = this.timeCreated,
                      amount                = this.amount).successNel[String]
   }
@@ -271,7 +271,7 @@ object UsableSpecimen
              originLocationId:      LocationId,
              locationId:            LocationId,
              containerId:           Option[ContainerId],
-             positionId:            Option[ContainerSchemaPositionId],
+             position:              Option[ContainerSchemaPosition],
              timeAdded:             OffsetDateTime,
              timeCreated:           OffsetDateTime,
              amount:                BigDecimal)
@@ -283,7 +283,7 @@ object UsableSpecimen
              originLocationId,
              locationId,
              containerId,
-             positionId,
+             position,
              amount)
       .map(_ => UsableSpecimen(id                    = id,
                                version               = version,
@@ -295,7 +295,7 @@ object UsableSpecimen
                                originLocationId      = originLocationId,
                                locationId            = locationId,
                                containerId           = containerId,
-                               positionId            = positionId,
+                               position              = position,
                                timeCreated           = timeCreated,
                                amount                = amount))
   }
@@ -307,7 +307,7 @@ object UsableSpecimen
                originLocationId:      LocationId,
                locationId:            LocationId,
                containerId:           Option[ContainerId],
-               positionId:            Option[ContainerSchemaPositionId],
+               position:              Option[ContainerSchemaPosition],
                amount:                BigDecimal)
       : DomainValidation[Boolean] = {
     (validateId(id) |@|
@@ -317,7 +317,7 @@ object UsableSpecimen
        validateNonEmptyString(originLocationId.id, OriginLocationIdInvalid) |@|
        validateNonEmptyString(locationId.id, LocationIdInvalid) |@|
        validateIdOption(containerId, ContainerIdInvalid) |@|
-       validateIdOption(positionId, PositionInvalid) |@|
+       ContainerSchemaPosition.validate(position) |@|
        validatePositiveNumber(amount, AmountInvalid)) {
       case _ => true
     }
@@ -340,7 +340,7 @@ final case class UnusableSpecimen(id:                    SpecimenId,
                                   originLocationId:      LocationId,
                                   locationId:            LocationId,
                                   containerId:           Option[ContainerId],
-                                  positionId:            Option[ContainerSchemaPositionId],
+                                  position:              Option[ContainerSchemaPosition],
                                   timeCreated:           OffsetDateTime,
                                   amount:                BigDecimal)
     extends { val state: EntityState = Specimen.unusableState }
@@ -358,7 +358,7 @@ final case class UnusableSpecimen(id:                    SpecimenId,
                    originLocationId      = this.originLocationId,
                    locationId            = this.locationId,
                    containerId           = this.containerId,
-                   positionId            = this.positionId,
+                   position              = this.position,
                    timeCreated           = this.timeCreated,
                    amount                = this.amount).successNel[String]
   }

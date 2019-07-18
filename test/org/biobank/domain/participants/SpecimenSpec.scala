@@ -26,7 +26,7 @@ class SpecimenSpec extends DomainSpec {
                           originLocationId      = specimen.originLocationId,
                           locationId            = specimen.locationId,
                           containerId           = specimen.containerId,
-                          positionId            = specimen.positionId,
+                          position              = specimen.position,
                           amount                = specimen.amount)
 
   describe("A usable specimen") {
@@ -44,7 +44,7 @@ class SpecimenSpec extends DomainSpec {
             'originLocationId      (specimen.originLocationId),
             'locationId            (specimen.locationId),
             'containerId           (specimen.containerId),
-            'positionId            (specimen.positionId),
+            'position              (specimen.position),
             'amount                (specimen.amount)
           )
 
@@ -105,10 +105,10 @@ class SpecimenSpec extends DomainSpec {
 
       it("with a new position") {
         val specimen = factory.createUsableSpecimen
-        val newPosition = ContainerSchemaPositionId(nameGenerator.next[Specimen])
+        val newPosition = factory.createContainerSchemaPosition
 
         specimen.withPosition(newPosition) mustSucceed { s =>
-          s.positionId mustBe Some(newPosition)
+          s.position mustBe Some(newPosition)
           s.version must be (specimen.version + 1)
           s must beEntityWithTimeStamps(specimen.timeAdded, Some(OffsetDateTime.now), 5L)
         }
@@ -167,12 +167,14 @@ class SpecimenSpec extends DomainSpec {
       }
 
       it("with an empty position id") {
-        val specimen = factory.createUsableSpecimen.copy(positionId = Some(ContainerSchemaPositionId("")))
+        val specimen = factory.createUsableSpecimen.copy(
+            position = Some(factory.createContainerSchemaPosition.copy(
+                              id = ContainerSchemaPositionId(""))))
         createFrom(specimen) mustFail "PositionInvalid"
       }
 
       it("with a negative amount") {
-        val specimen = factory.createUsableSpecimen.copy(amount           = BigDecimal(-1))
+        val specimen = factory.createUsableSpecimen.copy(amount = BigDecimal(-1))
         createFrom(specimen) mustFail "AmountInvalid"
       }
 
@@ -206,7 +208,7 @@ class SpecimenSpec extends DomainSpec {
 
     it("with an invalid position") {
       val specimen = factory.createUsableSpecimen
-      val newPosition = ContainerSchemaPositionId("")
+      val newPosition = factory.createContainerSchemaPosition.copy(id = ContainerSchemaPositionId(""))
 
       specimen.withPosition(newPosition) mustFail "PositionInvalid"
     }

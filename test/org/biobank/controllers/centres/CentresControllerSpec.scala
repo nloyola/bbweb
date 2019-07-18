@@ -318,8 +318,8 @@ class CentresControllerSpec
         reply must beOkResponseWithJsonReply
       }
 
-      it("not add a centre with a name that is too short") {
-        val reply = makeAuthRequest(POST, uri(""), Json.obj("name" -> "A")).value
+      it("not add a centre with an empty name") {
+        val reply = makeAuthRequest(POST, uri(""), Json.obj("name" -> "")).value
         reply must beBadRequestWithMessage("InvalidName")
       }
 

@@ -6,6 +6,7 @@ import org.biobank.domain.{ConcurrencySafeEntity, Location}
 import org.biobank.domain.access._
 import org.biobank.domain.annotations._
 import org.biobank.domain.centres._
+import org.biobank.domain.containers._
 import org.biobank.domain.participants._
 import org.biobank.domain.studies._
 import org.biobank.domain.users._
@@ -389,6 +390,155 @@ trait EntityMatchers {
       }
     }
 
+  /**
+   * This matcher allows for time differences in `timeAdded` and `timeModified` of 5 seconds.
+   *
+   * The `equals` matcher, from scalatest, cannot be used since ConcurrencySafeEntity overrides `equals`
+   * and `hashCode`.
+   */
+  def matchContainerType(containerType: ContainerType) =
+    new Matcher[ContainerType] {
+      def apply(left: ContainerType) = {
+        val matchers = Map(
+            ("id"          -> (left.id          equals containerType.id)),
+            ("slug"        -> (left.slug        equals containerType.slug)),
+            ("name"        -> (left.name        equals containerType.name)),
+            ("description" -> (left.description equals containerType.description)),
+            ("centreId"    -> (left.centreId    equals containerType.centreId)),
+            ("schemaId"    -> (left.schemaId    equals containerType.schemaId)),
+            ("shared"      -> (left.shared      equals containerType.shared)),
+            ("enabled"     -> (left.enabled     equals containerType.enabled))) ++
+          entityAttrsMatch(containerType, left)
+        val nonMatching = matchers filter { case (k, v) => !v } keys
+
+        MatchResult(
+          nonMatching.size <= 0,
+          "containerTypes do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
+          "containerTypes match: actual: {1},\nexpected: {2}",
+          IndexedSeq(nonMatching.mkString(", "), left, containerType))
+      }
+    }
+
+  /**
+   * This matcher allows for time differences in `timeAdded` and `timeModified` of 5 seconds.
+   *
+   * The `equals` matcher, from scalatest, cannot be used since ConcurrencySafeEntity overrides `equals`
+   * and `hashCode`.
+   */
+  def matchContainerSchema(containerSchema: ContainerSchema) =
+    new Matcher[ContainerSchema] {
+      def apply(left: ContainerSchema) = {
+        val matchers = Map(
+            ("id"          -> (left.id          equals containerSchema.id)),
+            ("slug"        -> (left.slug        equals containerSchema.slug)),
+            ("name"        -> (left.name        equals containerSchema.name)),
+            ("description" -> (left.description equals containerSchema.description)),
+            ("shared"      -> (left.shared      equals containerSchema.shared)),
+            ("centreId"    -> (left.centreId    equals containerSchema.centreId))) ++
+          entityAttrsMatch(containerSchema, left)
+        val nonMatching = matchers filter { case (k, v) => !v } keys
+
+        MatchResult(
+          nonMatching.size <= 0,
+          "containerSchemas do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
+          "containerSchemas match: actual: {1},\nexpected: {2}",
+          IndexedSeq(nonMatching.mkString(", "), left, containerSchema))
+      }
+    }
+
+  /**
+   * This matcher allows for time differences in `timeAdded` and `timeModified` of 5 seconds.
+   *
+   * The `equals` matcher, from scalatest, cannot be used since ConcurrencySafeEntity overrides `equals`
+   * and `hashCode`.
+   */
+  def matchContainerSchemaPosition(containerSchemaPosition: ContainerSchemaPosition) =
+    new Matcher[ContainerSchemaPosition] {
+      def apply(left: ContainerSchemaPosition) = {
+        val matchers = Map(
+            ("id"          -> (left.id       equals containerSchemaPosition.id)),
+            ("schemaId"    -> (left.schemaId equals containerSchemaPosition.schemaId)),
+            ("label"        -> (left.label   equals containerSchemaPosition.label)))
+        val nonMatching = matchers filter { case (k, v) => !v } keys
+
+        MatchResult(
+          nonMatching.size <= 0,
+          "containerSchemaPositions do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
+          "containerSchemaPositions match: actual: {1},\nexpected: {2}",
+          IndexedSeq(nonMatching.mkString(", "), left, containerSchemaPosition))
+      }
+    }
+
+  /**
+   * This matcher allows for time differences in `timeAdded` and `timeModified` of 5 seconds.
+   *
+   * The `equals` matcher, from scalatest, cannot be used since ConcurrencySafeEntity overrides `equals`
+   * and `hashCode`.
+   */
+  def matchContainer(container: Container) =
+    new Matcher[Container] {
+      def apply(left: Container) = {
+        val matchers = containersMatch(left, container)
+        val nonMatching = matchers filter { case (k, v) => !v } keys
+
+        MatchResult(nonMatching.size <= 0,
+                    "containers do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
+                    "containers match: actual: {1},\nexpected: {2}",
+                    IndexedSeq(nonMatching.mkString(", "), left, container))
+      }
+    }
+
+  /**
+   * This matcher allows for time differences in `timeAdded` and `timeModified` of 5 seconds.
+   *
+   * The `equals` matcher, from scalatest, cannot be used since ConcurrencySafeEntity overrides `equals`
+   * and `hashCode`.
+   */
+  def matchContainer(container: StorageContainer) =
+    new Matcher[StorageContainer] {
+      def apply(left: StorageContainer) = {
+        val matchers = Map(
+            ("enabled"     -> (left.enabled equals container.enabled)),
+            ("constraints" -> (left.constraints equals container.constraints))) ++
+        containersMatch(left, container)
+
+        val nonMatching = matchers filter { case (k, v) => !v } keys
+
+        MatchResult(nonMatching.size <= 0,
+                    "containers do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
+                    "containers match: actual: {1},\nexpected: {2}",
+                    IndexedSeq(nonMatching.mkString(", "), left, container))
+      }
+    }
+
+  /**
+   * This matcher allows for time differences in `timeAdded` and `timeModified` of 5 seconds.
+   *
+   * The `equals` matcher, from scalatest, cannot be used since ConcurrencySafeEntity overrides `equals`
+   * and `hashCode`.
+   */
+  def matchContainerConstraints(containerConstraints: ContainerConstraints) =
+    new Matcher[ContainerConstraints] {
+      def apply(left: ContainerConstraints) = {
+        val matchers = Map(
+            ("id"                    -> (left.id equals containerConstraints.id)),
+            ("slug"                  -> (left.slug equals containerConstraints.slug)),
+            ("name"                  -> (left.name equals containerConstraints.name)),
+            ("description"           -> (left.description equals containerConstraints.description)),
+            ("centreId"              -> (left.centreId equals containerConstraints.centreId)),
+            ("anatomicalSourceTypes" -> (left.anatomicalSourceTypes equals containerConstraints.anatomicalSourceTypes)),
+            ("preservationTypes"     -> (left.preservationTypes equals containerConstraints.preservationTypes)),
+            ("specimenTypes"         -> (left.specimenTypes equals containerConstraints.specimenTypes)))
+
+        val nonMatching = matchers filter { case (k, v) => !v } keys
+
+        MatchResult(nonMatching.size <= 0,
+                    "containerConstraints do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
+                    "containerConstraints match: actual: {1},\nexpected: {2}",
+                    IndexedSeq(nonMatching.mkString(", "), left, containerConstraints))
+      }
+    }
+
   private def annotationTypesMatch(a: Set[AnnotationType], b: Set[AnnotationType]): Boolean = {
     val maybeMatch = a.map { atToFind =>
         b.exists { atOther =>
@@ -526,6 +676,17 @@ trait EntityMatchers {
       ("output.specimenDefinition.specimenType"            ->
          (aOsd.specimenType            equals bOsd.specimenType))
     )
+  }
+
+  private def containersMatch(a: Container, b: Container) = {
+    Map(
+      ("id"                    -> (a.id equals b.id)),
+      ("slug"                  -> (a.slug equals b.slug)),
+      ("inventoryId"           -> (a.inventoryId equals b.inventoryId)),
+      ("containerTypeId"       -> (a.containerTypeId equals b.containerTypeId)),
+      ("parentId"              -> (a.parentId equals b.parentId)),
+      ("osition"               -> (a.position equals b.position))) ++
+    entityAttrsMatch(b, a)
   }
 
 }

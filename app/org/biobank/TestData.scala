@@ -784,7 +784,7 @@ class TestData @Inject() (config:         Configuration,
                          originLocationId      = locationId,
                          locationId            = locationId,
                          containerId           = None,
-                         positionId            = None,
+                         position              = None,
                          timeCreated           = OffsetDateTime.now.minusDays(1),
                          amount                = BigDecimal(0.1))
         }

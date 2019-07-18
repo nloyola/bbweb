@@ -1,250 +1,243 @@
-package org.biobank.domain.containerType
+package org.biobank.domain.containers
 
-//import org.biobank.domain.containers._
-//import org.biobank.domain.centres.CentreId
+import java.time.OffsetDateTime
 import org.biobank.domain.DomainSpec
 import org.biobank.fixtures.NameGenerator
-
 import org.slf4j.LoggerFactory
-//import org.scalatest.Tag
-//import scalaz.Scalaz._
+import org.biobank.domain._
+import org.biobank.domain.centres.CentreId
+import org.scalatest.FunSpec
 
-class ContainerTypeSpec extends DomainSpec {
+trait ContainerTypeSharedSpec { this: FunSpec =>
+  import org.biobank.TestUtils._
+  import org.biobank.matchers.EntityMatchers._
+
+  val factory: Factory
+
+  protected val nameGenerator: NameGenerator
+
+  protected def createEntity(): ContainerType
+
+  protected def createFrom(containerType: ContainerType): DomainValidation[ContainerType]
+
+  protected def createWithId(id: ContainerTypeId): ContainerType
+
+  protected def createWithVersion(version: Long): ContainerType
+
+  protected def createWithName(name: String): ContainerType
+
+  protected def createWithDescription(description: Option[String]): ContainerType
+
+  protected def createWithCentreId(id: Option[CentreId]): ContainerType
+
+  protected def createWithSchemaId(id: ContainerSchemaId): ContainerType
+
+  protected def createWithShared(shared: Boolean): ContainerType
+
+  protected def createWithEnabled(enabled: Boolean): ContainerType
+
+  describe("(container type shared behaviour)") {
+
+    it("can be created") {
+      val containerType = createEntity
+      createFrom(containerType) mustSucceed {
+        _ must matchContainerType(containerType)
+      }
+    }
+
+    it("have it's name updated") {
+      val containerType = createEntity
+      val name = nameGenerator.next[StorageContainer]
+
+      containerType.withName(name) mustSucceed { updatedCt =>
+        updatedCt must have (
+          'id          (containerType.id),
+          'version     (containerType.version + 1),
+          'name        (name),
+          'description (containerType.description),
+          'centreId    (containerType.centreId),
+          'schemaId    (containerType.schemaId),
+          'shared      (containerType.shared),
+          'enabled     (containerType.enabled)
+        )
+
+        updatedCt must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
+      }
+
+    }
+
+    it("have it's description updated") {
+      val containerType = createEntity
+      val description = Some(nameGenerator.next[StorageContainer])
+
+      containerType.withDescription(description) mustSucceed { updatedCt =>
+        updatedCt must have (
+          'id          (containerType.id),
+          'version     (containerType.version + 1),
+          'name        (containerType.name),
+          'description (description),
+          'centreId    (containerType.centreId),
+          'schemaId    (containerType.schemaId),
+          'shared      (containerType.shared),
+          'enabled     (containerType.enabled)
+        )
+
+        updatedCt must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
+      }
+
+    }
+
+    it("can enable or disabled a container type") {
+      Set(true, false).foreach { value =>
+        val containerType = createEntity
+        containerType.withEnabled(value) mustSucceed { updatedCt =>
+          updatedCt.enabled must be (value)
+          updatedCt must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
+        }
+      }
+    }
+
+    it("not be created with an empty id") {
+      createFrom(createWithId(id = ContainerTypeId(""))) mustFail "IdRequired"
+    }
+
+    it("not be created with an invalid version") {
+      createFrom(createWithVersion(-2)) mustFail "InvalidVersion"
+    }
+
+    it("not be created with an null or empty name") {
+      createFrom(createWithName(null)) mustFail "InvalidName"
+      createFrom(createWithName("")) mustFail "InvalidName"
+    }
+
+    it("not be created with an empty description option") {
+      createFrom(createWithDescription(Some(null))) mustFail "InvalidDescription"
+      createFrom(createWithDescription(Some(""))) mustFail "InvalidDescription"
+    }
+
+    it("not be created with an invalid centre id") {
+      createFrom(createWithCentreId(Some(CentreId("")))) mustFail "CentreIdRequired"
+    }
+
+    it("not be created with an invalid schema id") {
+      createFrom(createWithSchemaId(ContainerSchemaId(""))) mustFail "ContainerSchemaIdInvalid"
+    }
+
+  }
+
+}
+
+class StorageContainerTypeSpec extends DomainSpec with ContainerTypeSharedSpec {
+  import org.biobank.TestUtils._
+  import org.biobank.matchers.EntityMatchers._
 
   val log = LoggerFactory.getLogger(this.getClass)
 
   val nameGenerator = new NameGenerator(this.getClass)
 
-  // describe("A containerType") {
+  def createFrom(containerType: ContainerType): DomainValidation[ContainerType] =
+    StorageContainerType.create(id          = containerType.id,
+                                version     = containerType.version,
+                                name        = containerType.name,
+                                description = containerType.description,
+                                centreId    = containerType.centreId,
+                                schemaId    = containerType.schemaId,
+                                shared      = containerType.shared,
+                                enabled     = containerType.enabled)
 
-  //   it("be created") {
-  //     val containerType = factory.createEnabledContainerType
-  //     val v = EnabledContainerType.create(id          = containerType.id,
-  //                                         centreId    = containerType.centreId,
-  //                                         schemaId    = containerType.schemaId,
-  //                                         version     = -1,
-  //                                         name        = containerType.name,
-  //                                         description = containerType.description,
-  //                                         shared      = containerType.shared)
+  protected def createEntity(): ContainerType = factory.createStorageContainerType
 
-  //     v mustSucceed { s =>
-  //       s mustBe a[EnabledContainerType]
+  protected def createWithId(id: ContainerTypeId): ContainerType =
+      factory.createStorageContainerType.copy(id = id)
 
-  //       s must have (
-  //         'id          (containerType.id),
-  //         'centreId    (containerType.centreId),
-  //         'schemaId    (containerType.schemaId),
-  //         'version     (0L),
-  //         'name        (containerType.name),
-  //         'description (containerType.description)
-  //       )
+  protected def createWithVersion(version: Long): ContainerType =
+      factory.createStorageContainerType.copy(version = version)
 
-  //       checkTimeStamps(s, DateTime.now, None)
-  //     }
-  //   }
+  protected def createWithName(name: String): ContainerType =
+      factory.createStorageContainerType.copy(name = name)
 
-  //   it("have it's centreId updated") {
-  //     val containerType = factory.createEnabledContainerType
-  //     val centreId = Some(CentreId(nameGenerator.next[ContainerType]))
+  protected def createWithDescription(description: Option[String]): ContainerType =
+      factory.createStorageContainerType.copy(description = description)
 
-  //     containerType.withCentreId(centreId) mustSucceed { updatedContainerType =>
-  //       updatedContainerType must have (
-  //         'id          (containerType.id),
-  //         'centreId    (centreId),
-  //         'schemaId    (containerType.schemaId),
-  //         'version     (containerType.version + 1),
-  //         'name        (containerType.name),
-  //         'description (containerType.description)
-  //       )
+  protected def createWithCentreId(id: Option[CentreId]): ContainerType =
+      factory.createStorageContainerType.copy(centreId = id)
 
-  //       checkTimeStamps(updatedContainerType, DateTime.now, None)
-  //     }
-  //   }
+  protected def createWithSchemaId(id: ContainerSchemaId): ContainerType =
+      factory.createStorageContainerType.copy(schemaId = id)
 
-  //   it("have it's schemaId updated") {
-  //     val containerType = factory.createEnabledContainerType
-  //     val schemaId = ContainerSchemaId(nameGenerator.next[ContainerType])
+  protected def createWithShared(shared: Boolean): ContainerType =
+      factory.createStorageContainerType.copy(shared = shared)
 
-  //     containerType.withSchemaId(schemaId) mustSucceed { updatedContainerType =>
-  //       updatedContainerType must have (
-  //         'id          (containerType.id),
-  //         'centreId    (containerType.centreId),
-  //         'schemaId    (schemaId),
-  //         'version     (containerType.version + 1),
-  //         'name        (containerType.name),
-  //         'description (containerType.description)
-  //       )
+  protected def createWithEnabled(enabled: Boolean): ContainerType =
+      factory.createStorageContainerType.copy(enabled = enabled)
 
-  //       checkTimeStamps(updatedContainerType, DateTime.now, None)
-  //     }
-  //   }
+  describe("A Storage Container Type") {
 
-  //   it("have it's name updated") {
-  //     val containerType = factory.createEnabledContainerType
-  //     val name = nameGenerator.next[ContainerType]
+    it("can be created wth correct type") {
+      val containerType = factory.createStorageContainerType
+      createFrom(containerType) mustSucceed { ct =>
+        ct mustBe a[StorageContainerType]
+        ct must matchContainerType(containerType)
+      }
+    }
+  }
 
-  //     containerType.withName(name) mustSucceed { updatedContainerType =>
-  //       updatedContainerType must have (
-  //         'id          (containerType.id),
-  //         'centreId    (containerType.centreId),
-  //         'schemaId    (containerType.schemaId),
-  //         'version     (containerType.version + 1),
-  //         'name        (name),
-  //         'description (containerType.description)
-  //       )
+}
 
-  //       checkTimeStamps(updatedContainerType, DateTime.now, None)
-  //     }
-  //   }
 
-  //   it("have it's description updated") {
-  //     val containerType = factory.createEnabledContainerType
-  //     val description = Some(nameGenerator.next[ContainerType])
+class SpecimenContainerTypeSpec extends DomainSpec with ContainerTypeSharedSpec {
+  import org.biobank.TestUtils._
+  import org.biobank.matchers.EntityMatchers._
 
-  //     containerType.withDescription(description) mustSucceed { updatedContainerType =>
-  //       updatedContainerType must have (
-  //         'id          (containerType.id),
-  //         'version     (containerType.version + 1),
-  //         'name        (containerType.name),
-  //         'description (description)
-  //       )
+  val log = LoggerFactory.getLogger(this.getClass)
 
-  //       checkTimeStamps(updatedContainerType, DateTime.now, None)
-  //     }
-  //   }
+  val nameGenerator = new NameGenerator(this.getClass)
 
-  //   it("enabled a disabled container type") {
-  //     val containerType = factory.createDisabledContainerType
-  //     containerType.enable mustSucceed { enabledContainerType =>
-  //       enabledContainerType mustBe a[EnabledContainerType]
-  //       enabledContainerType.timeAdded mustBe (containerType.timeAdded)
-  //     }
-  //   }
+  def createFrom(containerType: ContainerType): DomainValidation[ContainerType] =
+    SpecimenContainerType.create(id          = containerType.id,
+                                 version     = containerType.version,
+                                 name        = containerType.name,
+                                 description = containerType.description,
+                                 centreId    = containerType.centreId,
+                                 schemaId    = containerType.schemaId,
+                                 shared      = containerType.shared,
+                                 enabled     = containerType.enabled)
 
-  //   it("disable an enabled container type") {
-  //     val containerType = factory.createEnabledContainerType
-  //     containerType.disable mustSucceed { disabledContainerType =>
-  //       disabledContainerType mustBe a[EnabledContainerType]
-  //       disabledContainerType.timeAdded mustBe (containerType.timeAdded)
-  //     }
-  //   }
+  protected def createEntity(): ContainerType = factory.createSpecimenContainerType
 
-  // }
+  protected def createWithId(id: ContainerTypeId): ContainerType =
+      factory.createSpecimenContainerType.copy(id = id)
 
-  // describe("A containerType") {
+  protected def createWithVersion(version: Long): ContainerType =
+      factory.createSpecimenContainerType.copy(version = version)
 
-  //   it("not be created with an empty id") {
-  //     val v = EnabledContainerType.create(
-  //       id          = ContainerTypeId(""),
-  //       centreId    = Some(CentreId(nameGenerator.next[ContainerType])),
-  //       schemaId    = ContainerSchemaId(nameGenerator.next[ContainerType]),
-  //       version     = -1,
-  //       name        = nameGenerator.next[ContainerType],
-  //       description = Some(nameGenerator.next[ContainerType]),
-  //       shared      = true)
+  protected def createWithName(name: String): ContainerType =
+      factory.createSpecimenContainerType.copy(name = name)
 
-  //     v mustFail "IdRequired"
-  //   }
+  protected def createWithDescription(description: Option[String]): ContainerType =
+      factory.createSpecimenContainerType.copy(description = description)
 
-  //   it("not be created with an invalid centre id") {
-  //     val v = EnabledContainerType.create(
-  //       id          = ContainerTypeId(nameGenerator.next[ContainerType]),
-  //       centreId    = Some(CentreId("")),
-  //       schemaId    = ContainerSchemaId(nameGenerator.next[ContainerType]),
-  //       version     = -1,
-  //       name        = nameGenerator.next[ContainerType],
-  //       description = Some(nameGenerator.next[ContainerType]),
-  //       shared      = true)
+  protected def createWithCentreId(id: Option[CentreId]): ContainerType =
+      factory.createSpecimenContainerType.copy(centreId = id)
 
-  //     v mustFail "CentreIdRequired"
-  //   }
+  protected def createWithSchemaId(id: ContainerSchemaId): ContainerType =
+      factory.createSpecimenContainerType.copy(schemaId = id)
 
-  //   it("not be created with an invalid schema id") {
-  //     val v = EnabledContainerType.create(
-  //       id          = ContainerTypeId(nameGenerator.next[ContainerType]),
-  //       centreId    = Some(CentreId(nameGenerator.next[ContainerType])),
-  //       schemaId    = ContainerSchemaId(""),
-  //       version     = -1,
-  //       name        = nameGenerator.next[ContainerType],
-  //       description = Some(nameGenerator.next[ContainerType]),
-  //       shared      = true)
+  protected def createWithShared(shared: Boolean): ContainerType =
+      factory.createSpecimenContainerType.copy(shared = shared)
 
-  //     v mustFail "ContainerSchemaIdInvalid"
-  //   }
+  protected def createWithEnabled(enabled: Boolean): ContainerType =
+      factory.createSpecimenContainerType.copy(enabled = enabled)
 
-  //   it("not be created with an invalid version") {
-  //     val v = EnabledContainerType.create(
-  //       id          = ContainerTypeId(nameGenerator.next[ContainerType]),
-  //       centreId    = Some(CentreId(nameGenerator.next[ContainerType])),
-  //       schemaId    = ContainerSchemaId(nameGenerator.next[ContainerType]),
-  //       version     = -2,
-  //       name        = nameGenerator.next[ContainerType],
-  //       description = Some(nameGenerator.next[ContainerType]),
-  //       shared      = true)
+  describe("A Specimen Container Type") {
 
-  //     v mustFail "InvalidVersion"
-  //   }
-
-  //   it("not be created with an null or empty name") {
-  //     var v = EnabledContainerType.create(
-  //       id          = ContainerTypeId(nameGenerator.next[ContainerType]),
-  //       centreId    = Some(CentreId(nameGenerator.next[ContainerType])),
-  //       schemaId    = ContainerSchemaId(nameGenerator.next[ContainerType]),
-  //       version     = -1,
-  //       name        = null,
-  //       description = Some(nameGenerator.next[ContainerType]),
-  //       shared      = true)
-
-  //     v mustFail "InvalidName"
-
-  //     v = EnabledContainerType.create(
-  //       id          = ContainerTypeId(nameGenerator.next[ContainerType]),
-  //       centreId    = Some(CentreId(nameGenerator.next[ContainerType])),
-  //       schemaId    = ContainerSchemaId(nameGenerator.next[ContainerType]),
-  //       version     = -1,
-  //       name        = "",
-  //       description = Some(nameGenerator.next[ContainerType]),
-  //       shared      = true)
-
-  //     v mustFail "InvalidName"
-  //   }
-
-  //   it("not be created with an empty description option") {
-  //     var v = EnabledContainerType.create(
-  //       id          = ContainerTypeId(nameGenerator.next[ContainerType]),
-  //       centreId    = Some(CentreId(nameGenerator.next[ContainerType])),
-  //       schemaId    = ContainerSchemaId(nameGenerator.next[ContainerType]),
-  //       version     = -1,
-  //       name        = nameGenerator.next[ContainerType],
-  //       description = Some(null),
-  //       shared      = true)
-
-  //     v mustFail "InvalidDescription"
-
-  //     v = EnabledContainerType.create(
-  //       id          = ContainerTypeId(nameGenerator.next[ContainerType]),
-  //       centreId    = Some(CentreId(nameGenerator.next[ContainerType])),
-  //       schemaId    = ContainerSchemaId(nameGenerator.next[ContainerType]),
-  //       version     = -1,
-  //       name        = nameGenerator.next[ContainerType],
-  //       description = Some(""),
-  //       shared      = true)
-
-  //     v mustFail "InvalidDescription"
-  //   }
-
-  //   it("have more than one validation fail") {
-  //     var v = EnabledContainerType.create(
-  //       id          = ContainerTypeId(nameGenerator.next[ContainerType]),
-  //       centreId    = Some(CentreId(nameGenerator.next[ContainerType])),
-  //       schemaId    = ContainerSchemaId(nameGenerator.next[ContainerType]),
-  //       version     = -2,
-  //       name        = null,
-  //       description = Some(nameGenerator.next[ContainerType]),
-  //       shared      = true)
-  //     v mustFail ("InvalidVersion",  "InvalidName")
-  //   }
-
-  // }
+    it("can be created wth correct type") {
+      val containerType = factory.createSpecimenContainerType
+      createFrom(containerType) mustSucceed { ct =>
+        ct mustBe a[SpecimenContainerType]
+        ct must matchContainerType(containerType)
+      }
+    }
+  }
 
 }

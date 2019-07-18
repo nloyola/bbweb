@@ -130,7 +130,7 @@ trait DtoMatchers {
             ("originLocationInfo"      -> (left.originLocationInfo.locationId equals specimen.originLocationId.id)),
             ("locationInfo"            -> (left.locationInfo.locationId       equals specimen.locationId.id)),
             ("containerId"             -> (left.containerId                   equals specimen.containerId)),
-            ("positionId"              -> (left.positionId                    equals specimen.positionId)),
+            ("position"                -> (left.position                      equals specimen.position)),
             ("timeCreated"             -> timeCreatedMatcher.matches))
 
         val nonMatching = matchers filter { case (k, v) => !v } keys

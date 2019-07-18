@@ -164,7 +164,8 @@ libraryDependencies ++= Seq(
     "com.mohiva"                  %% "play-silhouette-password-bcrypt"     % silhouetteVersion,
     "com.mohiva"                  %% "play-silhouette-crypto-jca"          % silhouetteVersion,
     "com.typesafe.scala-logging"  %% "scala-logging"                       % "3.9.2",
-    "com.github.ghik"             %% "silencer-lib"                        % "1.4.1"  % "compile",
+    "com.github.ghik"             %% "silencer-lib"                        % "1.4.1"   % "compile",
+    "com.chuusai"                 %% "shapeless"                           % "2.3.3"   % "compile",
     // Testing
     ( "com.github.dnvriend"       %% "akka-persistence-inmemory"           % "2.5.15.2"  % "test" )
       .excludeAll(ExclusionRule(organization="com.typesafe.akka")),
@@ -175,7 +176,6 @@ libraryDependencies ++= Seq(
     "org.codehaus.janino"         %  "janino"                              % "3.0.14"  % "test",
     "org.mockito"                 %  "mockito-core"                        % "3.0.0"   % "test",
     "it.bitbl"                    %% "scala-faker"                         % "0.4"     % "test",
-    "com.chuusai"                 %% "shapeless"                           % "2.3.3"   % "test",
     "org.gnieh"                   %% "diffson-play-json"                   % "3.1.1"   % "test"
   )
 

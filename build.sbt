@@ -5,8 +5,8 @@ val conf = ConfigFactory.parseFile(new File("conf/application.conf")).resolve()
 
 version := conf.getString("app.version")
 
-val akkaVer = "2.5.17"
-val silhouetteVersion = "5.0.6"
+val akkaVer = "2.5.23"
+val silhouetteVersion = "6.1.0"
 
 name := "bbweb"
 
@@ -128,7 +128,7 @@ testOptions in Test := Nil
 
 (testOptions in Test) += Tests.Argument(TestFrameworks.ScalaTest, "-oDS")
 
-addCompilerPlugin("com.github.ghik" %% "silencer-plugin" % "1.3.1")
+addCompilerPlugin("com.github.ghik" %% "silencer-plugin" % "1.4.1")
 
 resolvers ++= Seq(
     Classpaths.sbtPluginReleases,
@@ -140,42 +140,43 @@ resolvers ++= Seq(
 
 libraryDependencies ++= Seq(
     guice,
+    ws,
     ehcache,
     filters,
-    "org.scala-stm"               %% "scala-stm"                           % "0.9",
-    "com.iheart"                  %% "ficus"                               % "1.4.4",
-    "com.typesafe.play"           %% "play-json"                           % "2.6.9",
+    "org.scala-stm"               %% "scala-stm"                           % "0.9.1",
+    "com.iheart"                  %% "ficus"                               % "1.4.7",
+    "com.typesafe.play"           %% "play-json"                           % "2.7.4",
     ( "com.typesafe.akka"         %% "akka-persistence"                    % akkaVer   % "compile"  )
       .excludeAll(ExclusionRule(organization="com.google.protobuf")),
     "com.typesafe.akka"           %% "akka-persistence-query"              % akkaVer   % "compile",
     "com.typesafe.akka"           %% "akka-remote"                         % akkaVer   % "compile",
-    ( "com.github.dnvriend"       %% "akka-persistence-jdbc"               % "3.4.0" % "compile"  )
+    ( "com.github.dnvriend"       %% "akka-persistence-jdbc"               % "3.5.2"   % "compile"  )
       .excludeAll(ExclusionRule(organization="com.typesafe.akka")),
-    "mysql"                       % "mysql-connector-java"                 % "8.0.13",
-    "org.scalaz"                  %% "scalaz-core"                         % "7.2.27"  % "compile",
+    "mysql"                       % "mysql-connector-java"                 % "8.0.16",
+    "org.scalaz"                  %% "scalaz-core"                         % "7.2.28"  % "compile",
     "com.github.mauricio"         %% "mysql-async"                         % "0.2.21",
-    "com.github.t3hnar"           %% "scala-bcrypt"                        % "3.1",
+    "com.github.t3hnar"           %% "scala-bcrypt"                        % "4.1",
     "com.github.ancane"           %% "hashids-scala"                       % "1.3",
-    "com.typesafe.play"           %% "play-mailer"                         % "6.0.1",
-    "com.typesafe.play"           %% "play-mailer-guice"                   % "6.0.1",
-    "net.codingwell"              %% "scala-guice"                         % "4.2.1",
+    "com.typesafe.play"           %% "play-mailer"                         % "7.0.1",
+    "com.typesafe.play"           %% "play-mailer-guice"                   % "7.0.1",
+    "net.codingwell"              %% "scala-guice"                         % "4.2.6",
     "com.mohiva"                  %% "play-silhouette"                     % silhouetteVersion,
     "com.mohiva"                  %% "play-silhouette-password-bcrypt"     % silhouetteVersion,
     "com.mohiva"                  %% "play-silhouette-crypto-jca"          % silhouetteVersion,
     "com.typesafe.scala-logging"  %% "scala-logging"                       % "3.9.2",
-    "com.github.ghik"             %% "silencer-lib"                        % "1.0"  % "compile",
+    "com.github.ghik"             %% "silencer-lib"                        % "1.4.1"  % "compile",
     // Testing
-    ( "com.github.dnvriend"       %% "akka-persistence-inmemory"           % "2.5.1.1"  % "test" )
+    ( "com.github.dnvriend"       %% "akka-persistence-inmemory"           % "2.5.15.2"  % "test" )
       .excludeAll(ExclusionRule(organization="com.typesafe.akka")),
     "com.typesafe.akka"           %% "akka-testkit"                        % akkaVer   % "test",
-    "org.scalatestplus.play"      %% "scalatestplus-play"                  % "3.1.2"   % "test",
+    "org.scalatestplus.play"      %% "scalatestplus-play"                  % "4.0.3"   % "test",
     "com.mohiva"                  %% "play-silhouette-testkit"             % silhouetteVersion % "test",
     "org.pegdown"                 %  "pegdown"                             % "1.6.0"   % "test",
-    "org.codehaus.janino"         %  "janino"                              % "3.0.11"  % "test",
-    "org.mockito"                 %  "mockito-core"                        % "2.23.4"  % "test",
+    "org.codehaus.janino"         %  "janino"                              % "3.0.14"  % "test",
+    "org.mockito"                 %  "mockito-core"                        % "3.0.0"   % "test",
     "it.bitbl"                    %% "scala-faker"                         % "0.4"     % "test",
     "com.chuusai"                 %% "shapeless"                           % "2.3.3"   % "test",
-    "org.gnieh"                   %% "diffson-play-json"                   % "3.1.0"   % "test"
+    "org.gnieh"                   %% "diffson-play-json"                   % "3.1.1"   % "test"
   )
 
 routesGenerator := InjectedRoutesGenerator

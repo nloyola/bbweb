@@ -87,7 +87,7 @@ class EmailService @Inject() (env:           Environment,
       }
 
     async.onComplete {
-      case Failure(err) => Logger.error("mailer failed due to: " + err.getMessage)
+      case Failure(err) => log.error("mailer failed due to: " + err.getMessage)
       case Success(_) =>
     }
   }

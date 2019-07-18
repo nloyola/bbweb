@@ -50,11 +50,6 @@ logback-test.xml
 *.svg
 *.ttf
 *.eot
-/public/css
-/public/js/*bundle.js
-/public/*hot-update.js
-/public/*hot-update.json
-/public/stats.html
-/public/report.html
+/public
 .metals/
 .bloop/

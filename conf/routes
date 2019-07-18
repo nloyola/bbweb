@@ -18,4 +18,4 @@
 
 # Home page
 GET     /                                       controllers.Assets.at(path="/public", file="index.html")
-GET     /assets/*file                           controllers.Assets.at(path="/public", file)
+GET     /*file                                  controllers.Assets.at(path="/public", file)

@@ -16,7 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scalaz.Scalaz._
 
 /**
- *  Uses [[http://labs.omniti.com/labs/jsend JSend]] format for JSon replies.
+ *  Uses [[https://github.com/omniti-labs/jsend JSend]] format for JSon replies.
  */
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
 @Singleton

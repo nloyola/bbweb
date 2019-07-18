@@ -20,7 +20,7 @@ object CommandController {
 }
 
 /**
- *  Uses [[http://labs.omniti.com/labs/jsend JSend]] format for JSon replies.
+ *  Uses [[https://github.com/omniti-labs/jsend JSend]] format for JSon replies.
  */
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 abstract class CommandController(controllerComponents: ControllerComponents)

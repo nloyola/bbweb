@@ -8,7 +8,7 @@ import org.biobank.services.SnapshotWriter
 import org.scalatest._
 import org.scalatest.time._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.cache.{AsyncCacheApi, DefaultSyncCacheApi, SyncCacheApi}
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder

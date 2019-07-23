@@ -20,6 +20,14 @@ class ProcessingTypeSpec
 
   val nameGenerator = new NameGenerator(this.getClass)
 
+  val ptVersionLens = lens[ProcessingType].version
+
+  val ptTimeModifiedLens = lens[ProcessingType].timeModified
+
+  val ptInputLens = lens[ProcessingType].input
+
+  val ptOutputLens = lens[ProcessingType].output
+
   def createFrom(processingType: ProcessingType): DomainValidation[ProcessingType] =
     ProcessingType.create(studyId         = processingType.studyId,
                           id              = processingType.id,
@@ -100,13 +108,11 @@ class ProcessingTypeSpec
         .copy(expectedChange = f.processingType.input.expectedChange + 1)
 
       f.processingType.withInputSpecimenProcessing(input) mustSucceed { pt =>
-        val updateLens = lens[ProcessingType].version ~
-          lens[ProcessingType].timeModified ~
-          lens[ProcessingType].input
+        val updateLens = ptVersionLens ~ ptTimeModifiedLens ~ ptInputLens
 
-        val updatedPt = updateLens.set(f.processingType)(Tuple3(f.processingType.version + 1,
-                                                                Some(OffsetDateTime.now),
-                                                                input))
+        val updatedPt =  updateLens.set(f.processingType)(Tuple3(f.processingType.version + 1,
+                                                                 Some(OffsetDateTime.now),
+                                                                 input))
         pt must matchProcessingType(updatedPt)
       }
     }
@@ -117,9 +123,7 @@ class ProcessingTypeSpec
         .copy(expectedChange = f.processingType.output.expectedChange + 1)
 
       f.processingType.withOutputSpecimenProcessing(output) mustSucceed { pt =>
-        val updateLens = lens[ProcessingType].version ~
-          lens[ProcessingType].timeModified ~
-          lens[ProcessingType].output
+        val updateLens = ptVersionLens ~ ptTimeModifiedLens ~ ptOutputLens
 
         val updatedPt = updateLens.set(f.processingType)(Tuple3(f.processingType.version + 1,
                                                                 Some(OffsetDateTime.now),
@@ -134,9 +138,7 @@ class ProcessingTypeSpec
         .copy(count = f.processingType.input.count + 1)
 
       f.processingType.withInputSpecimenProcessing(input) mustSucceed { pt =>
-        val updateLens = lens[ProcessingType].version ~
-        lens[ProcessingType].timeModified ~
-        lens[ProcessingType].input
+        val updateLens = ptVersionLens ~ ptTimeModifiedLens ~ ptInputLens
 
         val updatedPt = updateLens.set(f.processingType)(Tuple3(f.processingType.version + 1,
                                                                 Some(OffsetDateTime.now),
@@ -151,9 +153,7 @@ class ProcessingTypeSpec
         .copy(count = f.processingType.output.count + 1)
 
       f.processingType.withOutputSpecimenProcessing(output) mustSucceed { pt =>
-        val updateLens = lens[ProcessingType].version ~
-          lens[ProcessingType].timeModified ~
-          lens[ProcessingType].output
+        val updateLens = ptVersionLens ~ ptTimeModifiedLens ~ ptOutputLens
 
         val updatedPt = updateLens.set(f.processingType)(Tuple3(f.processingType.version + 1,
                                                                 Some(OffsetDateTime.now),

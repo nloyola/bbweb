@@ -67,7 +67,7 @@ sealed trait SpecimenProcessingInfo extends ProcessingTypeValidations {
  *
  * @param definitionType Where the input specimen originates from: one of [[InputSpecimenDefinitionType]].
  *
- * @parma entityId The entity that contains the [[domain.studies.SpecimenDefinition SpecimenDefinition]] the
+ * @param entityId The entity that contains the [[domain.studies.SpecimenDefinition SpecimenDefinition]] the
  * input [[domain.participants.Specimen Specimens]] comes from. Can be either a
  * [[domain.studies.CollectionEventType CollectionEventType]] or a [[domain.studies.ProcessingType
  * ProcessingType]].
@@ -150,7 +150,7 @@ final case class OutputSpecimenProcessing(expectedChange:     BigDecimal,
  *
  * @param output The definition of the specimen that is output by this processing type.
  *
- * @param annotationTypes The [[domain.studies.AnnotationType AnnotationType]]s for recorded for this
+ * @param annotationTypes The [[domain.annotations.AnnotationType AnnotationTypes]] recorded for this
  * processing type.
  *
  * @param inUse When TRUE, the output of this processing type is being used as an input by another processing

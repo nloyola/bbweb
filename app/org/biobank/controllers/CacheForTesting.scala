@@ -12,7 +12,7 @@ import scala.reflect.ClassTag
   * Custom in-memory cache working around the shortcomings of the play bundled one.
   *
   * See more:
-  * https://groups.google.com/d/msg/play-framework/PBIfeiwl5rU/-IWifSWhBlAJ
+  * {@link https://groups.google.com/d/msg/play-framework/PBIfeiwl5rU/-IWifSWhBlAJ}
   *
  */
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))

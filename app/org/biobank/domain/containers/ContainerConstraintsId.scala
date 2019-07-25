@@ -3,10 +3,12 @@ package org.biobank.domain.containers
 import play.api.libs.json._
 import org.biobank.domain._
 
-/** Identifies a unique [[domain.studies.ContainerConstraints ContainerConstraints]] in the system.
-  *
-  * Used as a value object to maintain associations to with other entities in the system.
-  */
+/**
+ * Identifies a unique [[domain.containers.ContainerConstraints ContainerConstraints]] in the
+ * system.
+ *
+ * Used as a value object to maintain associations to with other entities in the system.
+ */
 final case class ContainerConstraintsId(id: String) extends IdentifiedValueObject[String]
 
 object ContainerConstraintsId {

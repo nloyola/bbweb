@@ -1,8 +1,5 @@
 package org.biobank
 
-import play.api.libs.json._
-import play.api.libs.json.Reads._
-
 import scalaz._
 import scalaz.Scalaz._
 
@@ -22,30 +19,6 @@ package infrastructure {
       }
 
     }
-  }
-
-  /** Used to define annotation types associate annotation types to objects that use them.
-    *
-    */
-  sealed trait AnnotationTypeData {
-
-    /** @param annotationTypeId The ID of the corresponding  annotation type. */
-    val annotationTypeId: String
-
-    /** When true, then a value for this annotation type is required when the collection event is entered.
-      */
-    val required: Boolean
-  }
-
-  /** Used to define annotation types to be used by a [[org.biobank.domain.studies.SpecimenLinkType]]. */
-  final case class SpecimenLinkTypeAnnotationTypeData(annotationTypeId: String, required: Boolean)
-      extends AnnotationTypeData
-
-  object SpecimenLinkTypeAnnotationTypeData {
-
-    implicit val annotationTypeDataFormat: Format[SpecimenLinkTypeAnnotationTypeData] =
-      Json.format[SpecimenLinkTypeAnnotationTypeData]
-
   }
 
   object Util {

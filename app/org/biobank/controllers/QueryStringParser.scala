@@ -5,7 +5,7 @@ import scala.util.parsing.combinator.RegexParsers
 /**
  * Definition of grammar used by [[QueryStringParser]].
  *
- * See: https://github.com/jirutka/rsql-parser/blob/master/README.adoc
+ * See: {@link https://github.com/jirutka/rsql-parser/blob/master/README.adoc}
  *
  */
 object QueryStringParserGrammar {
@@ -26,9 +26,9 @@ object QueryStringParserGrammar {
 /**
  * This parser for Query Strings is able to parse expressions using RSQL syntax.
  *
- * However, the comparsion operators are given in [[org.biobank.services.Comparator]]
+ * However, the comparsion operators are given in [[services.Comparator Comparator]]
  *
- * See: https://github.com/jirutka/rsql-parser/blob/master/README.adoc
+ * See: {@link https://github.com/jirutka/rsql-parser/blob/master/README.adoc}
  *
  */
 object QueryStringParser extends RegexParsers {

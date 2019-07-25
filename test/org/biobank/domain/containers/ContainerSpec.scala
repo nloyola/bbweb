@@ -221,10 +221,10 @@ class SpecimenContainerSpec extends DomainSpec with ContainerSharedSpec {
 
   protected def createFrom(container: Container): DomainValidation[Container] =
     SpecimenContainer.create(id              = container.id,
-                             version         = container.version,
-                             inventoryId     = container.inventoryId,
-                             containerTypeId = container.containerTypeId,
-                             parentId        = container.parentId,
+                            version         = container.version,
+                            inventoryId     = container.inventoryId,
+                            containerTypeId = container.containerTypeId,
+                            parentId        = container.parentId,
                              position        = container.position)
 
   protected def createEntity(): Container = factory.createSpecimenContainer()

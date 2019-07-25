@@ -145,7 +145,7 @@ To generate the documentation from the server source code, run the following com
 sbt doc
 ```
 
-The documentation can now be opened in a web broser by opening this link:
+The documentation can now be opened in a web browser by opening this link:
 
 ```
 file:///<_path_to_project_>/target/scala-2.12/api/index.html

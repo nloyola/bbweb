@@ -201,15 +201,15 @@ object StorageContainer extends ContainerValidations {
     (Container.validate(id, version, inventoryId, containerTypeId, parentId, position) |@|
        Container.validatePosition(position) |@|
        Container.constraintsValidate(constraints)) { case _ =>
-        StorageContainer(id              = id,
-                         version         = version,
-                         timeAdded       = OffsetDateTime.now,
-                         timeModified    = None,
-                         slug            = Slug(inventoryId),
-                         inventoryId     = inventoryId,
-                         enabled         = enabled,
-                         containerTypeId = containerTypeId,
-                         parentId        = parentId,
+      StorageContainer(id              = id,
+                       version         = version,
+                       timeAdded       = OffsetDateTime.now,
+                       timeModified    = None,
+                       slug            = Slug(inventoryId),
+                       inventoryId     = inventoryId,
+                       enabled         = enabled,
+                       containerTypeId = containerTypeId,
+                       parentId        = parentId,
                          position        = position,
                          constraints     = constraints)
     }
@@ -275,14 +275,14 @@ object SpecimenContainer extends ContainerValidations {
   ): DomainValidation[SpecimenContainer] = {
     (Container.validate(id, version, inventoryId, containerTypeId, parentId, position) |@|
        Container.validatePosition(position)) { case _ =>
-        SpecimenContainer(id              = id,
-                          version         = version,
-                          timeAdded       = OffsetDateTime.now,
-                          timeModified    = None,
-                          slug            = Slug(inventoryId),
-                          inventoryId     = inventoryId,
-                          containerTypeId = containerTypeId,
-                          parentId        = parentId,
+      SpecimenContainer(id              = id,
+                        version         = version,
+                        timeAdded       = OffsetDateTime.now,
+                        timeModified    = None,
+                        slug            = Slug(inventoryId),
+                        inventoryId     = inventoryId,
+                        containerTypeId = containerTypeId,
+                        parentId        = parentId,
                           position        = position)
     }
   }

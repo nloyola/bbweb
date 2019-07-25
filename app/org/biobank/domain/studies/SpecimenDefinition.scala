@@ -32,14 +32,11 @@ object SpecimenDefinitionId {
 }
 
 /**
- * Used to configure a [[SpecimenType]] used by a [[Study]].
+ * Used to define the [[domain.participants.Specimen Specimens]] collected or processed by a [[Study]].
  *
- * It records ownership, summary, storage, and classification information that applies to an
- * entire group or collection of [[Specimen]]s. A specimen description is defined either for
+ * It records ownership, summary, storage, and classification information that applies to an entire group or
+ * collection of [[domain.participants.Specimen Specimens]]. A specimen description is defined either for
  * specimen types collected from participants, or for specimen types that are processed.
- *
- * This class has a private constructor and instances of this class can only be created using
- * the [[SpecimenDefinition.create]] method on the factory object.
  */
 trait SpecimenDefinition
     extends IdentifiedValueObject[SpecimenDefinitionId]

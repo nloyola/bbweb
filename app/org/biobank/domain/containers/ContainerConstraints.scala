@@ -7,6 +7,13 @@ import org.biobank.domain.PreservationType._
 import org.biobank.domain.SpecimenType._
 import scalaz.Scalaz._
 
+/**
+ * Optional information for a [[Container]] that restricts the types of
+ * [[domain.AnatomicalSourceType AnatomicalSourceTypes]], [[domain.SpecimenType
+ * SpecimenTypes]], and [[domain.PreservationType PreservationTypes]]. An empty set means that any
+ * of that type is allowed in the associated [[Container]] and its children, but a non-empty set means only the
+ * specified types are allowed.
+ */
 final case class ContainerConstraints(id:                    ContainerConstraintsId,
                                       slug:                  Slug,
                                       name:                  String,

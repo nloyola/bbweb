@@ -10,9 +10,6 @@ final case class ContainerSchemaId(val id: String) extends IdentifiedValueObject
 object ContainerSchemaId {
 
   implicit val containerSchemaIdReader: Reads[ContainerSchemaId] =
-    (__ \ "id").read[String].map( new ContainerSchemaId(_) )
-
-  implicit val containerSchemaIdWrite: Writes[ContainerSchemaId] =
-    Writes{ (id: ContainerSchemaId) => JsString(id.id) }
+    (__ \ "id").read[String].map(ContainerSchemaId(_))
 
 }

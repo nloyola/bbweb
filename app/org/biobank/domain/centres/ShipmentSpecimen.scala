@@ -6,21 +6,16 @@ import org.biobank.domain._
 import org.biobank.domain.centres.ShipmentItemState._
 import org.biobank.domain.participants.SpecimenId
 import play.api.libs.json._
+import play.api.libs.json.Reads._
 import scalaz.Scalaz._
 
 final case class ShipmentSpecimenId(id: String) extends IdentifiedValueObject[String]
 
 object ShipmentSpecimenId {
 
-  // Do not want JSON to create a sub object, we just want it to be converted
-  // to a single string
-  implicit val shipmentSpecimenIdReader: Format[ShipmentSpecimenId] = new Format[ShipmentSpecimenId] {
+  implicit val shipmentSpecimenIdReader: Reads[ShipmentSpecimenId] =
+    (__).read[String].map(ShipmentSpecimenId(_))
 
-      override def writes(id: ShipmentSpecimenId): JsValue = JsString(id.id)
-
-      override def reads(json: JsValue): JsResult[ShipmentSpecimenId] =
-        Reads.StringReads.reads(json).map(ShipmentSpecimenId.apply _)
-    }
 }
 
 trait ShipmentSpecimenPredicates {

@@ -13,12 +13,7 @@ final case class ContainerSchemaPositionId(id: String) extends IdentifiedValueOb
 
 object ContainerSchemaPositionId {
 
-  // Do not want JSON to create a sub object, we just want it to be converted
-  // to a single string
   implicit val containerSchemaPositionIdReader: Reads[ContainerSchemaPositionId] =
-    (__).read[String].map( new ContainerSchemaPositionId(_) )
-
-  implicit val containerSchemaPositionIdWriter: Writes[ContainerSchemaPositionId] =
-    Writes{ (id: ContainerSchemaPositionId) => JsString(id.id) }
+    (__).read[String].map(ContainerSchemaPositionId(_))
 
 }

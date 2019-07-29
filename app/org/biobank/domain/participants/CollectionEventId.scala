@@ -13,12 +13,7 @@ final case class CollectionEventId(val id: String) extends IdentifiedValueObject
 
 object CollectionEventId {
 
-  // Do not want JSON to create a sub object, we just want it to be converted
-  // to a single string
   implicit val collectionEventIdReader: Reads[CollectionEventId] =
     (__).read[String].map( new CollectionEventId(_) )
-
-  implicit val collectionEventIdWriter: Writes[CollectionEventId] =
-    Writes{ (id: CollectionEventId) => JsString(id.id) }
 
 }

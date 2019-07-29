@@ -11,14 +11,6 @@ final case class StudyId(id: String) extends IdentifiedValueObject[String]
 
 object StudyId {
 
-  // Do not want JSON to create a sub object, we just want it to be converted
-  // to a single string
-  implicit val studyIdFormat: Format[StudyId] = new Format[StudyId] {
-
-      override def writes(id: StudyId): JsValue = JsString(id.id)
-
-      override def reads(json: JsValue): JsResult[StudyId] =
-        Reads.StringReads.reads(json).map(StudyId.apply _)
-    }
+  implicit val studyIdRead: Reads[StudyId] = (__).read[String].map(StudyId(_))
 
 }

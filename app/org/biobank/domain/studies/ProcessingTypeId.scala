@@ -13,12 +13,7 @@ final case class ProcessingTypeId(val id: String) extends IdentifiedValueObject[
 
 object ProcessingTypeId {
 
-  // Do not want JSON to create a sub object, we just want it to be converted
-  // to a single string
   implicit val processingTypeIdRead: Reads[ProcessingTypeId] =
     (__).read[String].map( new ProcessingTypeId(_) )
-
-  implicit val processingTypeIdWrite: Writes[ProcessingTypeId] =
-    Writes{ (id: ProcessingTypeId) => JsString(id.id) }
 
 }

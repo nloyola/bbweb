@@ -12,13 +12,8 @@ final case class ShipmentContainerId(id: String) extends IdentifiedValueObject[S
 
 object ShipmentContainerId {
 
-  // Do not want JSON to create a sub object, we just want it to be converted
-  // to a single string
   implicit val shipmentContainerIdReader: Reads[ShipmentContainerId] =
-    (__ \ "id").read[String].map( new ShipmentContainerId(_) )
-
-  implicit val shipmentContainerIdWriter: Writes[ShipmentContainerId] =
-    Writes{ (shipmentContainerId: ShipmentContainerId) => JsString(shipmentContainerId.id) }
+    (__ \ "id").read[String].map(ShipmentContainerId(_))
 
 }
 

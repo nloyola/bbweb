@@ -27,13 +27,7 @@ final case class MembershipId(id: String) extends IdentifiedValueObject[String]
 
 object MembershipId {
 
-  // Do not want JSON to create a sub object, we just want it to be converted
-  // to a single string
-  implicit val membershipIdReader: Reads[MembershipId] =
-    (__).read[String].map( new MembershipId(_) )
-
-  implicit val membershipIdWriter: Writes[MembershipId] =
-    Writes{ (id: MembershipId) => JsString(id.id) }
+  implicit val membershipIdReader: Reads[MembershipId] = (__).read[String].map(MembershipId(_))
 }
 
 /**

@@ -505,14 +505,14 @@ class CentresProcessor @Inject() (val centreRepository: CentreRepository,
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  private def nameAvailable(name: String): ServiceValidation[Boolean] = {
+  private def nameAvailable(name: String): ServiceValidation[Unit] = {
     nameAvailableMatcher(name, centreRepository, ErrMsgNameExists){ item =>
       item.name == name
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  private def nameAvailable(name: String, excludeId: CentreId): ServiceValidation[Boolean] = {
+  private def nameAvailable(name: String, excludeId: CentreId): ServiceValidation[Unit] = {
     nameAvailableMatcher(name, centreRepository, ErrMsgNameExists){ item =>
       (item.name == name) && (item.id != excludeId)
     }

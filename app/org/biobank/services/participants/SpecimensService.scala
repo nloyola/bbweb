@@ -68,7 +68,7 @@ class SpecimensServiceImpl @Inject() (
     for {
       ceventSpecimen <- ceventSpecimenRepository.withSpecimenId(id)
       permitted      <- whenSpecimenPermitted(requestUserId,
-                                              ceventSpecimen.ceventId)(_ => true.successNel[String])
+                                              ceventSpecimen.ceventId)(_ => ().successNel[String])
       specimen       <- specimenRepository.getByKey(id)
       dto            <- specimenToDto(specimen)
     } yield dto
@@ -79,7 +79,7 @@ class SpecimensServiceImpl @Inject() (
       specimen       <- specimenRepository.getBySlug(slug)
       ceventSpecimen <- ceventSpecimenRepository.withSpecimenId(specimen.id)
       permitted      <- whenSpecimenPermitted(requestUserId,
-                                              ceventSpecimen.ceventId)(_ => true.successNel[String])
+                                              ceventSpecimen.ceventId)(_ => ().successNel[String])
       dto            <- specimenToDto(specimen)
     } yield dto
   }
@@ -89,7 +89,7 @@ class SpecimensServiceImpl @Inject() (
       specimen       <- specimenRepository.getByInventoryId(inventoryId)
       ceventSpecimen <- ceventSpecimenRepository.withSpecimenId(specimen.id)
       permitted      <- {
-        whenSpecimenPermitted(requestUserId, ceventSpecimen.ceventId)(_ => true.successNel[String])
+        whenSpecimenPermitted(requestUserId, ceventSpecimen.ceventId)(_ => ().successNel[String])
       }
     } yield specimen
   }
@@ -114,7 +114,7 @@ class SpecimensServiceImpl @Inject() (
   private def filterSpecimens(requestUserId: UserId, eventId: CollectionEventId, query: PagedQuery)
       : ServiceValidation[PagedResults[SpecimenDto]] = {
     for {
-      permitted <- whenSpecimenPermitted(requestUserId, eventId)(_ => true.successNel[String])
+      permitted <- whenSpecimenPermitted(requestUserId, eventId)(_ => ().successNel[String])
       specimens <- sortSpecimens(eventId, query.sort)
       validPage <- query.validPage(specimens.size)
       dtos      <- specimens.map(specimenToDto).toList.sequenceU

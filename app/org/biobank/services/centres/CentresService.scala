@@ -44,7 +44,7 @@ trait CentresService extends BbwebService {
 
   def getCentreNames(requestUserId: UserId,
                      filter:        FilterString,
-                     sort:          SortString): Future[ServiceValidation[Seq[NameAndStateDto]]]
+                     sort:          SortString): Future[ServiceValidation[Seq[EntityInfoAndStateDto]]]
 
   def getCentre(requestUserId: UserId, id: CentreId): ServiceValidation[Centre]
 
@@ -112,11 +112,11 @@ class CentresServiceImpl @Inject() (@Named("centresProcessor") val processor: Ac
 
    def getCentreNames(requestUserId: UserId,
                       filter:        FilterString,
-                      sort:          SortString): Future[ServiceValidation[Seq[NameAndStateDto]]] =  {
+                      sort:          SortString): Future[ServiceValidation[Seq[EntityInfoAndStateDto]]] =  {
      Future {
        withPermittedCentres(requestUserId) { centres =>
          filterCentresInternal(centres, filter, sort).map { centres =>
-           centres.map(c => NameAndStateDto(c.id.id, c.slug, c.name, c.state.id))
+           centres.map(c => EntityInfoAndStateDto(c.id.id, c.slug, c.name, c.state.id))
          }
        }
      }
@@ -204,7 +204,7 @@ class CentresServiceImpl @Inject() (@Named("centresProcessor") val processor: Ac
     }
   }
 
-  def filterCentresInternal(unfilteredCentres: Set[Centre],
+  private def filterCentresInternal(unfilteredCentres: Set[Centre],
                             filter:            FilterString,
                             sort:              SortString): ServiceValidation[Seq[Centre]] =  {
     val sortStr = if (sort.expression.isEmpty) new SortString("name")
@@ -230,7 +230,7 @@ class CentresServiceImpl @Inject() (@Named("centresProcessor") val processor: Ac
     val v = centre.studyIds
       .map { id =>
         studiesService.getStudy(requestUserId, id).map { study =>
-          NameAndStateDto(study.id.id, study.slug, study.name, study.state.id)
+          EntityInfoAndStateDto(study.id.id, study.slug, study.name, study.state.id)
         }
       }
       .toList.sequenceU

@@ -394,7 +394,7 @@ object CreatedShipment extends ShipmentValidations {
                fromCentreId:   CentreId,
                fromLocationId: LocationId,
                toCentreId:     CentreId,
-               toLocationId:   LocationId): DomainValidation[Boolean] = {
+               toLocationId:   LocationId): DomainValidation[Unit] = {
     (validateId(id) |@|
        validateVersion(version) |@|
        validateNonEmptyString(courierName, CourierNameInvalid) |@|
@@ -403,7 +403,7 @@ object CreatedShipment extends ShipmentValidations {
        validateNonEmptyString(fromLocationId.id, FromLocationIdInvalid) |@|
        validateId(toCentreId, ToCentreIdInvalid) |@|
        validateNonEmptyString(toLocationId.id, ToLocationIdInvalid)) {
-      case _ => true
+      case _ => ()
     }
 
   }

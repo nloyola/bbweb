@@ -161,7 +161,8 @@ class ProcessingTypeServiceImpl @Inject() (
                                             PermissionId.StudyUpdate,
                                             Some(study.id),
                                             None) { () =>
-        ask(processor, cmd).mapTo[ServiceValidation[ProcessingTypeEvent]]
+        ask(processor, cmd)
+          .mapTo[ServiceValidation[ProcessingTypeEvent]]
           .map { validation => validation.map(_ => true) }
       }
     )

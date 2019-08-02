@@ -26,6 +26,7 @@ trait PagedResultsMatchers extends ApiResultMatchers { this: org.biobank.fixture
   private final class EmptyResultsMatcher extends Matcher[Url] {
 
     def apply(left: Url): MatchResult = {
+      log.debug(s"url: $left")
       makePagedRequest(left).fold (
         err => MatchResult(false, err.toList.mkString(","), ""),
         json => {
@@ -54,11 +55,11 @@ trait PagedResultsMatchers extends ApiResultMatchers { this: org.biobank.fixture
       val jsonTotal = (left \ "data" \ "total").as[Long]
       val jsonItems = (left \ "data" \ "items").as[List[JsObject]]
 
-          if (jsonTotal < 1) {
-            MatchResult(false, s"total is zero", "")
-          } else if (jsonItems.length != 1) {
-            MatchResult(false, "items length is not 1", "")
-          } else {
+      if (jsonTotal < 1) {
+        MatchResult(false, s"total is zero", "")
+      } else if (jsonItems.length != 1) {
+        MatchResult(false, "items length is not 1", "")
+      } else {
         super.apply(left)
       }
     }
@@ -74,19 +75,19 @@ trait PagedResultsMatchers extends ApiResultMatchers { this: org.biobank.fixture
       val jsonTotal = (left \ "data" \ "total").as[Long]
       val jsonItems = (left \ "data" \ "items").as[List[JsObject]]
 
-          if (jsonTotal != total) {
-            MatchResult(false, s"total is not $total", "")
-          } else if (jsonItems.length < 1) {
-            MatchResult(false, "items length is not greater than zero", "")
-          } else {
+      if (jsonTotal != total) {
+        MatchResult(false, s"total is not $total", "")
+      } else if (jsonItems.length < 1) {
+        MatchResult(false, "items length is not greater than zero", "")
+      } else {
         super.apply(left)
-          }
-        }
+      }
+    }
   }
 
   class PagedResultsMatcher(offset:    Long,
-                                    maybeNext: Option[Int],
-                                    maybePrev: Option[Int]) extends Matcher[JsValue] {
+                            maybeNext: Option[Int],
+                            maybePrev: Option[Int]) extends Matcher[JsValue] {
 
     override def apply(left: JsValue): MatchResult = {
       val jsonStatus = (left \ "status").as[String]
@@ -110,7 +111,7 @@ trait PagedResultsMatchers extends ApiResultMatchers { this: org.biobank.fixture
 
   private def makePagedRequest(url: Url): SystemValidation[JsValue] = {
     for {
-      reply <- makeAuthRequest(GET, url.path).toSuccessNel("Request is invalid")
+      reply <- makeAuthRequest(GET, url).toSuccessNel("Request is invalid")
       okResponse <- {
         val replyCheck = beOkResponseWithJsonReply.apply(reply)
         if (!replyCheck.matches) {

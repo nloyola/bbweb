@@ -34,6 +34,21 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class Url(val path: String) extends AnyVal {
   override def toString: String = path
+
+  def append(paths: String*): Url = {
+    val allPaths = path +: paths
+    Url(allPaths.mkString("/"))
+  }
+
+  def addQueryString(params: String*): Url = {
+    Url(path + "?" + params.mkString("&"))
+  }
+}
+
+object Url {
+
+  def apply(path: String) = new Url(path)
+
 }
 
 /**
@@ -59,6 +74,10 @@ abstract class ControllerFixture
   protected val factory = new Factory
 
   private val loginInfo = LoginInfo(CredentialsProvider.ID, DefaultUserId.id)
+
+  private val apiPath = "/api"
+
+  protected val basePath: String
 
   private val identity =
     org.biobank.utils.auth.User(
@@ -135,20 +154,25 @@ abstract class ControllerFixture
     }
   }
 
-  protected def makeAuthRequest(method: String,
-                                path: String,
-                                json: JsValue = JsNull): Option[Future[Result]] = {
-    val fakeRequest = FakeRequest(method, path)
+  protected def makeAuthRequest(method: String, url: Url, json: JsValue = JsNull)
+      : Option[Future[Result]] = {
+    val fakeRequest = FakeRequest(method, url.path)
       .withJsonBody(json)
       .withAuthenticator(loginInfo)
 
     if (json != JsNull) {
-      log.debug(s"request: ${method}, ${path},\n${Json.prettyPrint(json)}")
+      log.debug(s"request: ${method}, ${url.path},\n${Json.prettyPrint(json)}")
     } else {
-      log.debug(s"request: ${method}, ${path}")
+      log.debug(s"request: ${method}, ${url.path}")
     }
 
     route(app, fakeRequest)
+  }
+
+  protected def uri(paths: String*): Url = {
+    val prefix = if (basePath.isEmpty()) Array(apiPath) else Array(apiPath, basePath)
+    val allPaths = prefix ++ paths
+    Url(allPaths.mkString("/"))
   }
 
 }

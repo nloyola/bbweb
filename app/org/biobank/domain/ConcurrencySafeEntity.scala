@@ -28,9 +28,9 @@ trait ConcurrencySafeEntity[T] extends IdentifiedDomainObject[T] {
   protected def invalidVersion(expected: Long) =
     InvalidVersion(s"${this.getClass.getSimpleName}: expected version doesn't match current version: id: $id, version: $version, expectedVersion: $expected")
 
-  def requireVersion(expectedVersion: Long): DomainValidation[Boolean] = {
-    if (this.version != expectedVersion) invalidVersion(expectedVersion).failureNel[Boolean]
-    else true.successNel[String]
+  def requireVersion(expectedVersion: Long): DomainValidation[Unit] = {
+    if (this.version != expectedVersion) invalidVersion(expectedVersion).failureNel[Unit]
+    else ().successNel[String]
   }
 
 }

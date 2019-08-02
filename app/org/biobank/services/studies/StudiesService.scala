@@ -35,7 +35,7 @@ trait StudiesService extends BbwebService {
    * @param sort the string representation of the sort expression to use when sorting the studies.
    */
   def collectionStudies(requestUserId: UserId, query: FilterAndSortQuery)
-      : Future[ServiceValidation[Seq[NameAndStateDto]]]
+      : Future[ServiceValidation[Seq[EntityInfoAndStateDto]]]
 
   def getStudyCount(requestUserId: UserId): ServiceValidation[Long]
 
@@ -58,7 +58,7 @@ trait StudiesService extends BbwebService {
   def getStudyBySlug(requestUserId: UserId, slug: Slug): ServiceValidation[Study]
 
   def getStudyNames(requestUserId: UserId, query: FilterAndSortQuery)
-      : Future[ServiceValidation[Seq[NameAndStateDto]]]
+      : Future[ServiceValidation[Seq[EntityInfoAndStateDto]]]
 
   def getCentresForStudy(requestUserId: UserId, studyId: StudyId): ServiceValidation[Set[CentreLocation]]
 
@@ -100,7 +100,7 @@ class StudiesServiceImpl @Inject()(
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
   def collectionStudies(requestUserId: UserId, query: FilterAndSortQuery)
-      : Future[ServiceValidation[Seq[NameAndStateDto]]] = {
+      : Future[ServiceValidation[Seq[EntityInfoAndStateDto]]] = {
     Future {
       val v: ServiceValidation[Seq[Study]] =
         for {
@@ -129,7 +129,7 @@ class StudiesServiceImpl @Inject()(
         studies <- v
         filtered <- filterStudiesInternal(studies.toSet, query.filter, query.sort)
       } yield {
-        filtered.map { s => NameAndStateDto(s.id.id, s.slug, s.name, s.state.id) }
+        filtered.map { s => EntityInfoAndStateDto(s.id.id, s.slug, s.name, s.state.id) }
       }
     }
   }
@@ -166,11 +166,11 @@ class StudiesServiceImpl @Inject()(
   }
 
   def getStudyNames(requestUserId: UserId, query: FilterAndSortQuery)
-      : Future[ServiceValidation[Seq[NameAndStateDto]]] = {
+      : Future[ServiceValidation[Seq[EntityInfoAndStateDto]]] = {
     Future {
       withPermittedStudies(requestUserId) { studies =>
         filterStudiesInternal(studies, query.filter, query.sort).map {
-          _.map { s => NameAndStateDto(s.id.id, s.slug, s.name, s.state.id) }
+          _.map { s => EntityInfoAndStateDto(s.id.id, s.slug, s.name, s.state.id) }
         }
       }
     }

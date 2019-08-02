@@ -1,5 +1,6 @@
 package org.biobank.domain.containers
 
+import play.api.libs.json._
 import org.biobank.domain._
 import org.biobank.domain.centres.CentreId
 import org.biobank.domain.AnatomicalSourceType._
@@ -91,26 +92,28 @@ object ContainerConstraints {
   def validate(id:          ContainerConstraintsId,
                name:        String,
                description: Option[String],
-               centreId:    CentreId): DomainValidation[Boolean] = {
+               centreId:    CentreId): DomainValidation[Unit] = {
     (validateId(id) |@|
        validateNonEmptyString(name, InvalidName) |@|
        validateNonEmptyStringOption(description, InvalidDescription) |@|
-       validateId(centreId, CentreIdRequired)) { case _ =>
-        true
+       validateId(centreId, CentreIdRequired)) {
+      case _ => ()
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validate(constraints: ContainerConstraints): DomainValidation[Boolean] = {
+  def validate(constraints: ContainerConstraints): DomainValidation[Unit] = {
     validate(constraints.id, constraints.name, constraints.description, constraints.centreId)
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validate(constraints: Option[ContainerConstraints]): DomainValidation[Boolean] = {
+  def validate(constraints: Option[ContainerConstraints]): DomainValidation[Unit] = {
     constraints match {
       case Some(c) => validate(c.id, c.name, c.description, c.centreId)
-      case None => true.success
+      case None => ().success
     }
   }
+
+  implicit val specimenContainerFormat: Format[ContainerConstraints] = Json.format[ContainerConstraints]
 
 }

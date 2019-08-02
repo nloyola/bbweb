@@ -248,7 +248,7 @@ class CollectionEventServiceSpec
 
           collectionEventRepository.put(f.cevent) // restore it to it's previous state
           ceventsService.processRemoveCommand(cmd).futureValue mustSucceed { reply =>
-            reply must be (true)
+            ()
           }
         }
       }

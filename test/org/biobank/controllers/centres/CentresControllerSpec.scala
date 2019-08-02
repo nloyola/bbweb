@@ -5,7 +5,7 @@ import org.biobank.controllers.PagedResultsSharedSpec
 import org.biobank.domain.{Location, Slug}
 import org.biobank.domain.centres._
 import org.biobank.domain.studies.{Study, StudyId}
-import org.biobank.dto.{CentreDto, NameAndStateDto}
+import org.biobank.dto.{CentreDto, EntityInfoAndStateDto}
 import org.biobank.fixtures.{ControllerFixture, Url}
 import org.biobank.matchers.PagedResultsMatchers
 import org.biobank.services.centres.{CentreCountsByStatus, CentreLocationInfo}
@@ -26,15 +26,11 @@ class CentresControllerSpec
   import org.biobank.matchers.DtoMatchers._
   import org.biobank.matchers.EntityMatchers._
 
-  private def uri(paths: String*): String = {
-    val basePath = "/api/centres"
-    if (paths.isEmpty) basePath
-    else s"$basePath/" + paths.mkString("/")
-  }
+  protected val basePath = "centres"
 
-  private def uri(centre: Centre): String = uri(centre.id.id)
+  private def uri(centre: Centre): Url = uri(centre.id.id)
 
-  private def uri(centre: Centre, path: String): String = uri(path, centre.id.id)
+  private def uri(centre: Centre, path: String): Url = uri(path, centre.id.id)
 
   private def centreLocationToJson(centre: Centre, location: Location): JsObject = {
     Json.obj(
@@ -78,8 +74,7 @@ class CentresControllerSpec
     describe("GET /api/centres/search") {
 
       it("list none") {
-        val url = new Url(uri("search"))
-        url must beEmptyResults
+        uri("search") must beEmptyResults
       }
 
       describe("list a centre") {
@@ -88,7 +83,7 @@ class CentresControllerSpec
           val centre = factory.createDisabledCentre
           centreRepository.put(centre)
 
-          (new Url(uri("search")), centre)
+          (uri("search"), centre)
         }
       }
 
@@ -98,7 +93,7 @@ class CentresControllerSpec
           val centres = List(factory.createDisabledCentre, factory.createDisabledCentre)
           centres.foreach(centreRepository.put)
 
-          (new Url(uri("search")), centres.sortWith(_.name < _.name))
+          (uri("search"), centres.sortWith(_.name < _.name))
         }
 
       }
@@ -110,7 +105,7 @@ class CentresControllerSpec
           val centre = centres(0)
           centres.foreach(centreRepository.put)
 
-          (new Url(uri("search") + s"?filter=name::${centre.name}"), centre)
+          (uri(s"search?filter=name::${centre.name}"), centre)
         }
 
       }
@@ -122,7 +117,7 @@ class CentresControllerSpec
                              factory.createEnabledCentre,
                              factory.createEnabledCentre)
           centres.foreach(centreRepository.put)
-          (new Url(uri("search") + s"?filter=state::disabled"), centres(0))
+          (uri(s"search?filter=state::disabled"), centres(0))
         }
       }
 
@@ -141,7 +136,7 @@ class CentresControllerSpec
 
           listMultipleCentres() { () =>
             val centres = commonSetup
-            (new Url(uri("search") + s"?filter=state::disabled"),
+            (uri(s"search?filter=state::disabled"),
              centres.filter { c => c.state == Centre.disabledState  }.sortWith(_.name < _.name))
           }
 
@@ -151,7 +146,7 @@ class CentresControllerSpec
 
           listMultipleCentres() { () =>
             val centres = commonSetup
-            (new Url(uri("search") + s"?filter=state::enabled"),
+            (uri(s"search?filter=state::enabled"),
              centres.filter { c => c.state == Centre.enabledState  }.sortWith(_.name < _.name))
           }
 
@@ -159,7 +154,7 @@ class CentresControllerSpec
 
         it("fail ith an invalid state name") {
           val invalidStateName = "state::" + nameGenerator.next[Study]
-          val reply = makeAuthRequest(GET, uri("search") + s"?filter=$invalidStateName").value
+          val reply = makeAuthRequest(GET, uri("search").addQueryString(s"filter=$invalidStateName")).value
           reply must beNotFoundWithMessage ("InvalidState: entity state does not exist")
         }
 
@@ -180,7 +175,7 @@ class CentresControllerSpec
 
           listMultipleCentres() { () =>
             val centres = commonSetup
-            (new Url(uri("search") + s"?sort=name"), centres.sortWith(_.name < _.name))
+            (uri(s"search?sort=name"), centres.sortWith(_.name < _.name))
           }
 
         }
@@ -189,7 +184,7 @@ class CentresControllerSpec
 
           listMultipleCentres() { () =>
             val centres = commonSetup
-            (new Url(uri("search") + s"?sort=-name"), centres.sortWith(_.name > _.name))
+            (uri(s"search?sort=-name"), centres.sortWith(_.name > _.name))
           }
         }
 
@@ -207,7 +202,7 @@ class CentresControllerSpec
 
           listMultipleCentres() { () =>
             val centres = commonSetup
-            (new Url(uri("search") + s"?sort=state"), centres.sortWith(_.state.id < _.state.id))
+            (uri(s"search?sort=state"), centres.sortWith(_.state.id < _.state.id))
           }
 
         }
@@ -216,13 +211,13 @@ class CentresControllerSpec
 
           listMultipleCentres() { () =>
             val centres = commonSetup
-            (new Url(uri("search") + s"?sort=-state"), centres.sortWith(_.state.id > _.state.id))
+            (uri(s"search?sort=-state"), centres.sortWith(_.state.id > _.state.id))
           }
         }
 
         it("fail on attempt to list centres filtered by an invalid state name") {
           val invalidStateName = "state::" + nameGenerator.next[Study]
-          val reply = makeAuthRequest(GET, uri("search") + s"?filter=$invalidStateName")
+          val reply = makeAuthRequest(GET, uri("search").addQueryString(s"filter=$invalidStateName"))
           reply.value must beNotFoundWithMessage("InvalidState: entity state does not exist")
         }
 
@@ -243,7 +238,7 @@ class CentresControllerSpec
 
           listSingleCentre(maybeNext = Some(2)) { () =>
             val centres = commonSetup
-            (new Url(uri("search") + s"?sort=name&limit=1"), centres(3))
+            (uri(s"search?sort=name&limit=1"), centres(3))
           }
 
         }
@@ -252,7 +247,7 @@ class CentresControllerSpec
 
           listSingleCentre(offset = 3, maybePrev = Some(3)) { () =>
             val centres = commonSetup
-            (new Url(uri("search") + s"?sort=name&page=4&limit=1"), centres(0))
+            (uri(s"search?sort=name&page=4&limit=1"), centres(0))
           }
 
         }
@@ -261,7 +256,7 @@ class CentresControllerSpec
 
       describe("fail when using an invalid query parameters") {
 
-        pagedQueryShouldFailSharedBehaviour(() => new Url(uri("search")))
+        pagedQueryShouldFailSharedBehaviour(() => uri("search"))
 
       }
 
@@ -574,7 +569,7 @@ class CentresControllerSpec
         val newName = nameGenerator.next[String]
         val locationWithNewName = location.copy(name = newName)
         val reply = makeAuthRequest(POST,
-                                    uri(centre, "locations") + s"/${location.id}",
+                                    uri("locations", centre.id.id, location.id.id),
                                     centreLocationToUpdateJson(centre, locationWithNewName)).value
 
         reply must beOkResponseWithJsonReply
@@ -598,7 +593,7 @@ class CentresControllerSpec
         val location = factory.createLocation
         val centre = factory.createEnabledCentre.copy(locations = Set(location))
         val reply = makeAuthRequest(POST,
-                                    uri(centre, "locations") + s"/${location.id}",
+                                    uri("locations", centre.id.id, location.id.id),
                                     centreLocationToUpdateJson(centre, location)).value
         reply must beNotFoundWithMessage("IdNotFound.*centre")
       }
@@ -621,7 +616,7 @@ class CentresControllerSpec
 
         locations.zipWithIndex.foreach { case (location, index) =>
           val expectedVersion = centre.version + index
-          val url = uri(centre, "locations") + s"/$expectedVersion/${location.id}"
+          val url = uri("locations", centre.id.id, expectedVersion.toString, location.id.id)
           val reply = makeAuthRequest(DELETE, url).value
           reply must beOkResponseWithJsonReply
 
@@ -647,7 +642,7 @@ class CentresControllerSpec
         centreRepository.put(centre)
 
         val centre2 = factory.createDisabledCentre
-        val url = uri(centre2, "locations") + s"/${centre.version}/${location.id}"
+        val url = uri("locations", centre2.id.id, centre.version.toString, location.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beNotFoundWithMessage("IdNotFound.*centre")
       }
@@ -657,7 +652,7 @@ class CentresControllerSpec
         val centre = factory.createDisabledCentre.copy(locations = Set.empty)
         centreRepository.put(centre)
 
-        val url = uri(centre, "locations") + s"/${centre.version}/${location.id}"
+        val url = uri("locations", centre.id.id, centre.version.toString, location.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beNotFoundWithMessage("location.*does not exist")
       }
@@ -720,7 +715,7 @@ class CentresControllerSpec
         val centre = factory.createDisabledCentre.copy(studyIds = Set(study.id))
         centreRepository.put(centre)
 
-        val url = uri(centre, "studies") + s"/${centre.version}/${study.id.id}"
+        val url = uri("studies", centre.id.id, centre.version.toString, study.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beOkResponseWithJsonReply
 
@@ -742,7 +737,7 @@ class CentresControllerSpec
         val centre = factory.createDisabledCentre.copy(studyIds = Set.empty)
         centreRepository.put(centre)
 
-        val url = uri(centre, "studies") + s"/${centre.version}/$invalidStudyId"
+        val url = uri("studies", centre.id.id, centre.version.toString, invalidStudyId)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beNotFoundWithMessage("IdNotFound.*study")
       }
@@ -754,7 +749,7 @@ class CentresControllerSpec
         val centre = factory.createEnabledCentre.copy(studyIds = Set(study.id))
         centreRepository.put(centre)
 
-        val url = uri(centre, "studies") + s"/${centre.version}/${study.id.id}"
+        val url = uri("studies", centre.id.id, centre.version.toString, study.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("centre is not disabled")
       }
@@ -774,10 +769,10 @@ class CentresControllerSpec
             ("-name", nameDtos.sortWith { (a, b) => (a.name compareToIgnoreCase b.name) > 0 }))
 
         forAll(sortTable) { (order, sortedDtos) =>
-          val reply = makeAuthRequest(GET, uri("names") + s"?sort=$order").value
+          val reply = makeAuthRequest(GET, uri("names").addQueryString(s"sort=$order")).value
           reply must beOkResponseWithJsonReply
 
-          val replyDtos = (contentAsJson(reply) \ "data").validate[List[NameAndStateDto]]
+          val replyDtos = (contentAsJson(reply) \ "data").validate[List[EntityInfoAndStateDto]]
           replyDtos must be (jsSuccess)
 
           replyDtos.get.size must be (nameDtos.size)
@@ -792,15 +787,18 @@ class CentresControllerSpec
         centres.foreach(centreRepository.put)
         val centre = centres.head
 
-        val reply = makeAuthRequest(GET, uri("names") + s"?filter=name::${centre.name}").value
+        val reply = makeAuthRequest(
+            GET,
+            uri("names").addQueryString(s"filter=name::${centre.name}")
+          ).value
         reply must beOkResponseWithJsonReply
 
-        val replyDtos = (contentAsJson(reply) \ "data").validate[List[NameAndStateDto]]
+        val replyDtos = (contentAsJson(reply) \ "data").validate[List[EntityInfoAndStateDto]]
         replyDtos must be (jsSuccess)
 
         replyDtos.get.size must be (1)
         replyDtos.get.foreach { replyDto =>
-          replyDto must equal (NameAndStateDto(centre))
+          replyDto must equal (EntityInfoAndStateDto(centre))
         }
       }
 
@@ -861,7 +859,7 @@ class CentresControllerSpec
       val invalidCentreId = nameGenerator.next[Centre]
       val requestJson = json ++ Json.obj("id"              -> nameGenerator.next[Centre],
                                          "expectedVersion" -> 0L)
-      val reply = makeAuthRequest(POST, uri(path) + s"/$invalidCentreId", requestJson)
+      val reply = makeAuthRequest(POST, uri(path, invalidCentreId), requestJson)
       reply.value must beNotFoundWithMessage("IdNotFound.*centre")
     }
   }
@@ -882,7 +880,7 @@ class CentresControllerSpec
     }
   }
 
-  private def updateEnabledCentreSharedBehaviour(func: Centre => (String, JsObject)) = {
+  private def updateEnabledCentreSharedBehaviour(func: Centre => (Url, JsObject)) = {
 
     it("should return bad request") {
       val centre = factory.createEnabledCentre
@@ -902,7 +900,7 @@ class CentresControllerSpec
 
     it("list single centre") {
       val (url, expectedCentre) = setupFunc()
-      val reply = makeAuthRequest(GET, url.path).value
+      val reply = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)
@@ -922,7 +920,7 @@ class CentresControllerSpec
     it("list multiple centres") {
       val (url, expectedCentres) = setupFunc()
 
-      val reply = makeAuthRequest(GET, url.path).value
+      val reply = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)

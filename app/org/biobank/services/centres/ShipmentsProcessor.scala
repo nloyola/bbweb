@@ -440,8 +440,8 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
       shipment     <- shipmentRepository.getByKey(shipmentId)
       isCreated    <- shipment.isCreated
       hasSpecimens <- {
-        if (shipmentSpecimenRepository.allForShipment(shipmentId).isEmpty) true.successNel[String]
-        else ServiceError(s"shipment has specimens, remove specimens first").failureNel[Boolean]
+        if (shipmentSpecimenRepository.allForShipment(shipmentId).isEmpty) ().successNel[String]
+        else ServiceError(s"shipment has specimens, remove specimens first").failureNel[Unit]
       }
     } yield ShipmentEvent(shipment.id.id).update(
       _.sessionUserId   := cmd.sessionUserId,
@@ -523,7 +523,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
     for {
       shipment          <- shipmentRepository.getCreated(ShipmentId(cmd.shipmentId))
       shipmentSpecimens <- shipmentSpecimensPresent(shipment.id, cmd.specimenInventoryIds:_*)
-      container         <- s"shipping specimens with containers has not been implemented yet".failureNel[Boolean]
+      container         <- s"shipping specimens with containers has not been implemented yet".failureNel[Unit]
     } yield {
       val shipmentSpecimenData = shipmentSpecimens.map(EventUtils.shipmentSpecimenInfoToEvent).toSeq
       ShipmentSpecimenEvent(cmd.shipmentId).update(
@@ -639,7 +639,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
           updated <- created.withCourier(event.getCourierNameUpdated.getCourierName)
         } yield updated.copy(timeModified = Some(time))
       v.foreach(shipmentRepository.put)
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -652,7 +652,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
           updated <- created.withTrackingNumber(event.getTrackingNumberUpdated.getTrackingNumber)
         } yield updated.copy(timeModified = Some(time))
       v.foreach(shipmentRepository.put)
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -667,7 +667,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
           updated <- created.withFromLocation(centreId, locationId)
         } yield updated.copy(timeModified = Some(time))
       v.foreach(shipmentRepository.put)
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -682,7 +682,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
           updated <- created.withToLocation(centreId, locationId)
         } yield updated.copy(timeModified = Some(time))
       v.foreach(shipmentRepository.put)
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -694,7 +694,6 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
       shipment.isPacked.map { p =>
         val created = p.created.copy(timeModified = Some(time))
         shipmentRepository.put(created)
-        true
       }
     }
   }
@@ -716,10 +715,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
             InvalidState(s"cannot change to packed state: ${shipment.id}").failureNel[Shipment]
         }
 
-      updated.map { s =>
-        shipmentRepository.put(s)
-        true
-      }
+      updated.map(shipmentRepository.put)
     }
   }
 
@@ -742,10 +738,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
             InvalidState(s"cannot change to sent state: ${shipment.id}").failureNel[Shipment]
         }
 
-      updated.map { s =>
-        shipmentRepository.put(s)
-        true
-      }
+      updated.map(shipmentRepository.put)
     }
   }
 
@@ -765,10 +758,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
             InvalidState(s"cannot change to received state: ${shipment.id}").failureNel[Shipment]
         }
 
-      updated.map { s =>
-        shipmentRepository.put(s)
-        true
-      }
+      updated.map(shipmentRepository.put)
     }
   }
 
@@ -789,10 +779,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
             InvalidState(s"cannot change to received state: ${shipment.id}").failureNel[Shipment]
         }
 
-      unpacked.map { s =>
-        shipmentRepository.put(s)
-        true
-      }
+      unpacked.map(shipmentRepository.put)
     }
   }
 
@@ -804,10 +791,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
       for {
         unpacked  <- shipment.isUnpacked
         completed <- unpacked.copy(timeModified = Some(time)).complete(stateChangeTime)
-      } yield {
-        shipmentRepository.put(completed)
-        true
-      }
+      } yield shipmentRepository.put(completed)
     }
   }
 
@@ -817,9 +801,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
                            event.getLost.getVersion) { (shipment, _, time) =>
 
       shipment.isSent.map { sent =>
-        val lost = sent.lost
-        shipmentRepository.put(lost)
-        true
+        shipmentRepository.put(sent.lost)
       }
     }
   }
@@ -835,7 +817,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
           updated <- created.skipToSent(timePacked, timeSent)
         } yield updated.copy(timeModified = Some(time))
       v.foreach(shipmentRepository.put)
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -851,7 +833,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
           updated  <- sent.skipToUnpacked(timeReceived, timeUnpacked)
         } yield updated.copy(timeModified = Some(time))
       v.foreach(shipmentRepository.put)
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -860,7 +842,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
                            event.eventType.isRemoved,
                            event.getRemoved.getVersion) { (shipment, _, time) =>
       shipmentRepository.remove(shipment)
-      true.successNel[String]
+      ().successNel[String]
     }
   }
 
@@ -891,10 +873,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
     onValidSpecimenEvent(event, event.eventType.isRemoved) { (shipment, _, time) =>
       val removedEvent = event.getRemoved
       validShipmentSpecimen(removedEvent.getShipmentSpecimenId, removedEvent.getVersion).
-        map { shipmentSpecimen =>
-          shipmentSpecimenRepository.remove(shipmentSpecimen)
-          true
-        }
+        map(shipmentSpecimenRepository.remove)
     }
   }
 
@@ -914,16 +893,16 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
         sequenceU
 
       v.foreach(_.foreach(shipmentSpecimenRepository.put))
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
   private def specimenStateUpdate
     (shipmentSpecimenData: Seq[ShipmentSpecimenEvent.ShipmentSpecimenInfo], eventTime: OffsetDateTime)
     (stateUpdateFn: ShipmentSpecimen => ServiceValidation[ShipmentSpecimen])
-      : ServiceValidation[Boolean] = {
+      : ServiceValidation[Unit] = {
     if (shipmentSpecimenData.isEmpty) {
-      ServiceError(s"shipmentSpecimenData is empty").failureNel[Boolean]
+      ServiceError(s"shipmentSpecimenData is empty").failureNel[Unit]
     } else {
       val v = shipmentSpecimenData.
         map { info =>
@@ -936,7 +915,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
       sequenceU
 
       v.foreach(_.foreach(shipmentSpecimenRepository.put))
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -977,7 +956,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
                                           shipmentContainerId = None)
         add.foreach { s => shipmentSpecimenRepository.put(s.copy(timeAdded = eventTime)) }
       }
-      true.successNel[String]
+      ().successNel[String]
     }
   }
 
@@ -1023,7 +1002,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
                                      eventVersion: Long)
                                     (applyEvent:  (Shipment,
                                                    ShipmentEvent,
-                                                   OffsetDateTime) => ServiceValidation[Boolean])
+                                                   OffsetDateTime) => ServiceValidation[Unit])
       : Unit = {
     if (!eventType) {
       log.error(s"invalid event type: $event")
@@ -1049,7 +1028,7 @@ class ShipmentsProcessor @Inject() (val shipmentRepository:         ShipmentRepo
                                    eventType: Boolean)
                                   (applyEvent:  (Shipment,
                                                  ShipmentSpecimenEvent,
-                                                 OffsetDateTime) => ServiceValidation[Boolean])
+                                                 OffsetDateTime) => ServiceValidation[Unit])
       : Unit = {
     if (!eventType) {
       log.error(s"invalid event type: $event")

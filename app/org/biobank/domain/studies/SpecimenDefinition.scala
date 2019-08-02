@@ -102,16 +102,16 @@ trait SpecimenDefinitionValidations {
   def validate(name:        String,
                description: Option[String],
                units:       String)
-      : DomainValidation[Boolean] =  {
+      : DomainValidation[Unit] =  {
     (validateNonEmptyString(name, NameRequired) |@|
        validateNonEmptyStringOption(description, InvalidDescription) |@|
        validateString(units, UnitsRequired)) {
-      case _ => true
+      case _ => ()
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validate(specimenDefinition: SpecimenDefinition): DomainValidation[Boolean] =  {
+  def validate(specimenDefinition: SpecimenDefinition): DomainValidation[Unit] =  {
     validate(specimenDefinition.name, specimenDefinition.description, specimenDefinition.units)
   }
 
@@ -193,11 +193,11 @@ object CollectionSpecimenDefinition extends SpecimenDefinitionValidations {
                        specimenType:                SpecimenType,
                        maxCount:                    Int,
                        amount:                      BigDecimal)
-      : DomainValidation[Boolean] = {
+      : DomainValidation[Unit] = {
     (validate(name, description, units) |@|
        validatePositiveNumber(maxCount, MaxCountInvalid) |@|
        validatePositiveNumber(amount, AmountInvalid)) {
-      case _ => true
+      case _ => ()
     }
   }
 
@@ -255,12 +255,12 @@ object ProcessedSpecimenDefinition extends SpecimenDefinitionValidations {
                        preservationType:        PreservationType,
                        preservationTemperature: PreservationTemperature,
                        specimenType:            SpecimenType)
-      : DomainValidation[Boolean] = {
-    validate(name, description, units).map { _ => true }
+      : DomainValidation[Unit] = {
+    validate(name, description, units).map { _ => () }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validate(specimenDefinition: ProcessedSpecimenDefinition): DomainValidation[Boolean] = {
+  def validate(specimenDefinition: ProcessedSpecimenDefinition): DomainValidation[Unit] = {
     validate(specimenDefinition.name,
              specimenDefinition.description,
              specimenDefinition.units,

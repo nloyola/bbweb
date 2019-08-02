@@ -140,14 +140,16 @@ class StorageContainerSpec extends DomainSpec with ContainerSharedSpec {
   protected def createFrom(container: Container): DomainValidation[StorageContainer] = {
     container match {
       case c: StorageContainer =>
-        StorageContainer.create(id              = c.id,
-                                version         = c.version,
-                                inventoryId     = c.inventoryId,
-                                enabled         = c.enabled,
-                                containerTypeId = c.containerTypeId,
-                                parentId        = c.parentId,
-                                position        = c.position,
-                                constraints     = c.constraints)
+        StorageContainer.create(id               = c.id,
+                                version          = c.version,
+                                inventoryId      = c.inventoryId,
+                                label            = c.label,
+                                enabled          = c.enabled,
+                                containerTypeId  = c.containerTypeId,
+                                sharedProperties = c.sharedProperties,
+                                parentId         = c.parentId,
+                                position         = c.position,
+                                constraints      = c.constraints)
       case _ => DomainError("invalid container").failureNel[StorageContainer]
     }
   }
@@ -220,12 +222,14 @@ class SpecimenContainerSpec extends DomainSpec with ContainerSharedSpec {
   val nameGenerator = new NameGenerator(this.getClass)
 
   protected def createFrom(container: Container): DomainValidation[Container] =
-    SpecimenContainer.create(id              = container.id,
-                            version         = container.version,
-                            inventoryId     = container.inventoryId,
-                            containerTypeId = container.containerTypeId,
-                            parentId        = container.parentId,
-                             position        = container.position)
+    SpecimenContainer.create(id               = container.id,
+                             version          = container.version,
+                             inventoryId      = container.inventoryId,
+                             label            = container.label,
+                             containerTypeId  = container.containerTypeId,
+                             sharedProperties = container.sharedProperties,
+                             parentId         = container.parentId,
+                             position         = container.position)
 
   protected def createEntity(): Container = factory.createSpecimenContainer()
 

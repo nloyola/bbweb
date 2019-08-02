@@ -58,7 +58,7 @@ class UsersControllerSpec
       describe("lists the default user") {
         listSingleUser() { () =>
           val defaultUser = userRepository.getByKey(Global.DefaultUserId).toOption.value
-          (new Url(uri("search")), defaultUser)
+          (uri("search"), defaultUser)
         }
       }
 
@@ -67,7 +67,7 @@ class UsersControllerSpec
           val defaultUser = userRepository.getByKey(Global.DefaultUserId).toOption.value
           val users = (0 until 2).map(_ => factory.createRegisteredUser).toList
           users.foreach(userRepository.put)
-          (new Url(uri("search")), defaultUser :: users)
+          (uri("search"), defaultUser :: users)
         }
       }
 
@@ -76,7 +76,7 @@ class UsersControllerSpec
           val users = List(factory.createRegisteredUser.copy(name = "user1"),
                            factory.createRegisteredUser.copy(name = "user2"))
           users.foreach(userRepository.put)
-          (new Url(uri("search") + s"?filter=name::${users(0).name}"), users(0))
+          (uri("search").addQueryString(s"filter=name::${users(0).name}"), users(0))
         }
       }
 
@@ -85,7 +85,7 @@ class UsersControllerSpec
           val users = List(factory.createRegisteredUser.copy(email = "user1@test.com"),
                            factory.createRegisteredUser.copy(email = "user2@test.com"))
           users.foreach(userRepository.put)
-          (new Url(uri("search") + s"?filter=email::${users(0).email}"), users(0))
+          (uri("search").addQueryString(s"filter=email::${users(0).email}"), users(0))
         }
       }
 
@@ -102,20 +102,20 @@ class UsersControllerSpec
 
         describe("list registered users") {
           listMultipleUsers() { () =>
-            (new Url(uri("search") + "?filter=state::registered"), List(commonSetup(0)))
+            (uri("search").addQueryString("filter=state::registered"), List(commonSetup(0)))
           }
         }
 
         describe("list active users") {
           listMultipleUsers() { () =>
             val defaultUser = userRepository.getByKey(Global.DefaultUserId).toOption.value
-            (new Url(uri("search") + "?filter=state::active"), List(defaultUser, commonSetup(1)))
+            (uri("search").addQueryString("filter=state::active"), List(defaultUser, commonSetup(1)))
           }
         }
 
         describe("list locked users") {
           listMultipleUsers() { () =>
-            (new Url(uri("search") + "?filter=state::locked"), List(commonSetup(2)))
+            (uri("search").addQueryString("filter=state::locked"), List(commonSetup(2)))
           }
         }
       }
@@ -134,14 +134,14 @@ class UsersControllerSpec
         describe("in acending order") {
           listMultipleUsers() { () =>
             val users = commonSetup.sortWith(_.name < _.name)
-            (new Url(uri("search") + "?sort=name"), users)
+            (uri("search").addQueryString("sort=name"), users)
           }
         }
 
         describe("in descending order") {
           listMultipleUsers() { () =>
             val users = commonSetup.sortWith(_.name > _.name)
-            (new Url(uri("search") + "?sort=-name"), users)
+            (uri("search").addQueryString("sort=-name"), users)
           }
         }
 
@@ -160,13 +160,13 @@ class UsersControllerSpec
 
         describe("in acending order") {
           listMultipleUsers() { () =>
-            (new Url(uri("search") + "?sort=email"), commonSetup.sortWith(_.email < _.email))
+            (uri("search").addQueryString("sort=email"), commonSetup.sortWith(_.email < _.email))
           }
         }
 
         describe("in descending order") {
           listMultipleUsers() { () =>
-            (new Url(uri("search") + "?sort=-email"), commonSetup.sortWith(_.email > _.email))
+            (uri("search").addQueryString("sort=-email"), commonSetup.sortWith(_.email > _.email))
           }
         }
 
@@ -184,13 +184,13 @@ class UsersControllerSpec
 
         describe("in acending order") {
           listMultipleUsers() { () =>
-            (new Url(uri("search") + "?sort=state"), commonSetup.sortWith(_.state.id < _.state.id))
+            (uri("search").addQueryString("sort=state"), commonSetup.sortWith(_.state.id < _.state.id))
           }
         }
 
         describe("in descending order") {
           listMultipleUsers() { () =>
-            (new Url(uri("search") + "?sort=-state"), commonSetup.sortWith(_.state.id > _.state.id))
+            (uri("search").addQueryString("sort=-state"), commonSetup.sortWith(_.state.id > _.state.id))
           }
         }
       }
@@ -201,13 +201,13 @@ class UsersControllerSpec
                            factory.createLockedUser.copy(email = "user2@test.com"),
                            factory.createActiveUser.copy(email = "user1@test.com"))
           users.foreach(userRepository.put)
-          (new Url(uri("search") + "?filter=email:like:test&sort=email&limit=1"), users(2))
+          (uri("search").addQueryString("filter=email:like:test", "sort=email", "limit=1"), users(2))
         }
       }
 
 
       describe("fail when using an invalid query parameters") {
-        pagedQueryShouldFailSharedBehaviour(() => new Url(uri("search")))
+        pagedQueryShouldFailSharedBehaviour(() => uri("search"))
       }
     }
 
@@ -216,7 +216,7 @@ class UsersControllerSpec
       class Fixture {
         val defaultUser = userRepository.getByKey(Global.DefaultUserId).toOption.value
         val users = (1 to 2).map {_ => factory.createActiveUser }.toSeq :+ defaultUser
-        val nameDtos = users.map(NameAndStateDto.apply(_)).toSeq
+        val nameDtos = users.map(EntityInfoAndStateDto.apply(_)).toSeq
         users.foreach(userRepository.put)
       }
 
@@ -224,20 +224,20 @@ class UsersControllerSpec
         val f = new Fixture
         val nameDtos = f.nameDtos.sortWith { (a, b) => (a.name compareToIgnoreCase b.name) < 0 }
 
-        val reply = makeAuthRequest(GET, uri("names") + "?sort=name").value
+        val reply = makeAuthRequest(GET, uri("names").addQueryString("sort=name")).value
         reply must beOkResponseWithJsonReply
 
-        (contentAsJson(reply) \ "data").get must matchNameAndStateDtos (nameDtos)
+        (contentAsJson(reply) \ "data").get must matchEntityInfoAndStateDtos (nameDtos)
       }
 
       it("in reverse order") {
         val f = new Fixture
         val nameDtos = f.nameDtos.sortWith { (a, b) => (a.name compareToIgnoreCase b.name) > 0 }
 
-        val reply = makeAuthRequest(GET, uri("names") + "?sort=-name").value
+        val reply = makeAuthRequest(GET, uri("names").addQueryString("sort=-name")).value
         reply must beOkResponseWithJsonReply
 
-        (contentAsJson(reply) \ "data").get must matchNameAndStateDtos (nameDtos)
+        (contentAsJson(reply) \ "data").get must matchEntityInfoAndStateDtos (nameDtos)
       }
 
       it("must return user names filtered by name") {
@@ -245,10 +245,10 @@ class UsersControllerSpec
         users.foreach(userRepository.put)
         val user = users(0)
 
-        val reply = makeAuthRequest(GET, uri("names") + s"?filter=name::${user.name}").value
+        val reply = makeAuthRequest(GET, uri("names").addQueryString(s"filter=name::${user.name}")).value
         reply must beOkResponseWithJsonReply
 
-        (contentAsJson(reply) \ "data").get must matchNameAndStateDtos (Seq(NameAndStateDto(user)))
+        (contentAsJson(reply) \ "data").get must matchEntityInfoAndStateDtos (Seq(EntityInfoAndStateDto(user)))
       }
 
     }
@@ -297,7 +297,7 @@ class UsersControllerSpec
 
       it("return not found for an invalid user") {
         val user = factory.createActiveUser
-        val reply = makeAuthRequest(GET, uri(user), JsNull)
+        val reply = makeAuthRequest(GET, uri(user.id.id), JsNull)
         reply.value must beNotFoundWithMessage ("EntityCriteriaNotFound: user slug")
       }
     }
@@ -421,7 +421,7 @@ class UsersControllerSpec
                               "property"        -> "name",
                               "newValue"        -> user.name)
 
-          val reply = makeAuthRequest(POST, updateUri(user, "update"), json)
+          val reply = makeAuthRequest(POST, uri("update", user.id.id), json)
           reply.value must beBadRequestWithMessage("InvalidVersion")
         }
 
@@ -438,7 +438,7 @@ class UsersControllerSpec
             val json = Json.obj("expectedVersion" -> user.version,
                                 "property"        -> "name",
                                 "newValue"        -> value)
-            val reply = makeAuthRequest(POST, updateUri(user, "update"), json)
+            val reply = makeAuthRequest(POST, uri("update", user.id.id), json)
             reply.value must beBadRequestWithMessage(errMsg)
           }
         }
@@ -470,7 +470,7 @@ class UsersControllerSpec
           val json = Json.obj("expectedVersion" -> user.version,
                               "property"        -> "email",
                               "newValue"        -> faker.Lorem.sentence(3))
-          val reply = makeAuthRequest(POST, updateUri(user, "update"), json)
+          val reply = makeAuthRequest(POST, uri("update", user.id.id), json)
           reply.value must beBadRequestWithMessage("InvalidEmail")
         }
 
@@ -480,7 +480,7 @@ class UsersControllerSpec
           val json = Json.obj("expectedVersion" -> (user.version + 10L),
                               "property"        -> "email",
                               "newValue"        -> user.email)
-          val reply = makeAuthRequest(POST, updateUri(user, "update"), json)
+          val reply = makeAuthRequest(POST, uri("update", user.id.id), json)
           reply.value must beBadRequestWithMessage("InvalidVersion")
         }
 
@@ -529,7 +529,7 @@ class UsersControllerSpec
             val json = Json.obj("expectedVersion" -> user.version,
                                 "property"        -> "password",
                                 "newValue"        -> newValue)
-            val reply = makeAuthRequest(POST, updateUri(user, "update"), json)
+            val reply = makeAuthRequest(POST, uri("update", user.id.id), json)
             reply.value must beBadRequestWithMessage("InvalidPassword")
           }
         }
@@ -542,7 +542,7 @@ class UsersControllerSpec
           val json = Json.obj("expectedVersion" -> user.version,
                               "property"        -> "password",
                               "newValue"        -> newValue)
-          val reply = makeAuthRequest(POST, updateUri(user, "update"), json)
+          val reply = makeAuthRequest(POST, uri("update", user.id.id), json)
           reply.value must beBadRequestWithMessage ("InvalidNewPassword")
         }
 
@@ -554,7 +554,7 @@ class UsersControllerSpec
           val json = Json.obj("expectedVersion" -> (user.version + 10L),
                               "property"        -> "password",
                               "newValue"        -> newValue)
-          val reply = makeAuthRequest(POST, updateUri(user, "update"), json)
+          val reply = makeAuthRequest(POST, uri("update", user.id.id), json)
           reply.value must beBadRequestWithMessage("InvalidVersion")
         }
       }
@@ -608,7 +608,7 @@ class UsersControllerSpec
           val json = Json.obj("expectedVersion" -> user.version,
                               "property"        -> "avatarUrl",
                               "newValue"        -> "bad url")
-          val reply = makeAuthRequest(POST, updateUri(user, "update"), json)
+          val reply = makeAuthRequest(POST, uri("update", user.id.id), json)
           reply.value must beBadRequestWithMessage(
             "InvalidUrl")
         }
@@ -619,7 +619,7 @@ class UsersControllerSpec
           val json = Json.obj("expectedVersion" -> (user.version + 10L),
                               "property"        -> "avatarUrl",
                               "newValue"        -> nameGenerator.nextUrl[User])
-          val reply = makeAuthRequest(POST, updateUri(user, "update"), json)
+          val reply = makeAuthRequest(POST, uri("update", user.id.id), json)
           reply.value must beBadRequestWithMessage(
             "InvalidVersion")
         }
@@ -906,7 +906,7 @@ class UsersControllerSpec
 
       it("not allow a request with an invalid JWT token") {
         // this request is valid since user is logged in
-        val fakeRequest = FakeRequest(GET, uri(""))
+        val fakeRequest = FakeRequest(GET, uri().path)
           .withAuthenticator(LoginInfo(CredentialsProvider.ID, "xxx"))
         val reply = route(app, fakeRequest).value
         val content = contentAsString(reply)
@@ -1008,9 +1008,9 @@ class UsersControllerSpec
       it("returns no studies for default user") {
         val reply = makeAuthRequest(GET, uri("studies")).value
         reply must beOkResponseWithJsonReply
-        val dtos = (contentAsJson(reply) \ "data").validate[Seq[NameAndStateDto]]
+        val dtos = (contentAsJson(reply) \ "data").validate[Seq[EntityInfoAndStateDto]]
         dtos must be (jsSuccess)
-        dtos.get must equal (Seq.empty[NameAndStateDto])
+        dtos.get must equal (Seq.empty[EntityInfoAndStateDto])
 
       }
 
@@ -1019,9 +1019,9 @@ class UsersControllerSpec
         studyRepository.put(study)
         val reply = makeAuthRequest(GET, uri("studies")).value
         reply must beOkResponseWithJsonReply
-        val dtos = (contentAsJson(reply) \ "data").validate[Seq[NameAndStateDto]]
+        val dtos = (contentAsJson(reply) \ "data").validate[Seq[EntityInfoAndStateDto]]
         dtos must be (jsSuccess)
-        dtos.get must equal (Seq(NameAndStateDto(study)))
+        dtos.get must equal (Seq(EntityInfoAndStateDto(study)))
       }
 
     }
@@ -1195,7 +1195,7 @@ class UsersControllerSpec
       val json = Json.obj("expectedVersion" -> (user.version + 10L),
                           "property"        -> "state",
                           "newValue"        -> stateAction)
-      val reply = makeAuthRequest(POST, updateUri(user, "update"), json).value
+      val reply = makeAuthRequest(POST, uri("update", user.id.id), json).value
       reply must beBadRequestWithMessage("InvalidVersion")
     }
 
@@ -1208,7 +1208,7 @@ class UsersControllerSpec
         val json = Json.obj("expectedVersion" -> user.version,
                             "property"        -> "state",
                             "newValue"        -> stateAction)
-        val reply = makeAuthRequest(POST, updateUri(user, "update"), json)
+        val reply = makeAuthRequest(POST, uri("update", user.id.id), json)
         reply.value must beBadRequestWithMessage("InvalidStatus")
       }
 
@@ -1216,15 +1216,7 @@ class UsersControllerSpec
 
   }
 
-  private def uri(paths: String*): String = {
-    val basePath = "/api/users"
-    if (paths.isEmpty) basePath
-    else s"$basePath/" + paths.mkString("/")
-  }
-
-  private def uri(user: User): String = uri(user.id.id)
-
-  private def updateUri(user: User, path: String): String = uri(path, user.id.id)
+  protected val basePath = "users"
 
   private def addMembershipForUser(user: User) = {
     val membership = factory.createMembership.copy(userIds = Set(user.id))
@@ -1259,7 +1251,7 @@ class UsersControllerSpec
     if (newValue !== JsNull) {
       json = json ++ Json.obj("newValue" -> newValue)
     }
-    makeAuthRequest(POST, updateUri(user, "update"), json)
+    makeAuthRequest(POST, uri("update", user.id.id), json)
   }
 
   private def listSingleUser(offset:    Long = 0,
@@ -1269,7 +1261,7 @@ class UsersControllerSpec
 
     it("list single user") {
       val (url, expectedUser) = setupFunc()
-      val reply = makeAuthRequest(GET, url.path).value
+      val reply = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)
@@ -1289,7 +1281,7 @@ class UsersControllerSpec
     it("list multiple users") {
       val (url, expectedUsers) = setupFunc()
 
-      val reply = makeAuthRequest(GET, url.path).value
+      val reply = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)

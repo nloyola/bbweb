@@ -67,7 +67,7 @@ trait UsersService extends BbwebService {
       : Future[ServiceValidation[PagedResults[UserDto]]]
 
   def getUserNames(requestUserId: UserId, query: FilterAndSortQuery)
-      : Future[ServiceValidation[Seq[NameAndStateDto]]]
+      : Future[ServiceValidation[Seq[EntityInfoAndStateDto]]]
 
   /**
    * Returns the counts of all users and also counts of users categorized by state.
@@ -87,7 +87,7 @@ trait UsersService extends BbwebService {
    * @param sort the string representation of the sort expression to use when sorting the studies.
    */
   def getUserStudies(userId: UserId, query: FilterAndSortQuery)
-      : Future[ServiceValidation[Seq[NameAndStateDto]]]
+      : Future[ServiceValidation[Seq[EntityInfoAndStateDto]]]
 
   /**
    * Permissions not checked since anyone can attempt a login.
@@ -163,11 +163,11 @@ class UsersServiceImpl @javax.inject.Inject()(@Named("usersProcessor") val proce
   }
 
   def getUserNames(requestUserId: UserId, query: FilterAndSortQuery)
-      : Future[ServiceValidation[Seq[NameAndStateDto]]] = {
+      : Future[ServiceValidation[Seq[EntityInfoAndStateDto]]] = {
     Future {
       whenPermitted(requestUserId, PermissionId.UserRead) { () =>
         filterUsers(query.filter, query.sort).map {
-          _.map { u => NameAndStateDto(u.id, u.slug, u.name, u.state) }
+          _.map { u => EntityInfoAndStateDto(u.id, u.slug, u.name, u.state) }
         }
       }
     }
@@ -219,7 +219,7 @@ class UsersServiceImpl @javax.inject.Inject()(@Named("usersProcessor") val proce
   }
 
   def getUserStudies(userId: UserId, query: FilterAndSortQuery)
-      : Future[ServiceValidation[Seq[NameAndStateDto]]] = {
+      : Future[ServiceValidation[Seq[EntityInfoAndStateDto]]] = {
     Future {
       for {
         membership <- accessService.getUserMembership(userId)
@@ -229,7 +229,7 @@ class UsersServiceImpl @javax.inject.Inject()(@Named("usersProcessor") val proce
         }
         dtos <- {
           studyIds.map(studyRepository.getByKey).toList.sequenceU
-            .map { _.toSeq.map { s => NameAndStateDto(s.id.id, s.slug, s.name, s.state.id) } }
+            .map { _.toSeq.map { s => EntityInfoAndStateDto(s.id.id, s.slug, s.name, s.state.id) } }
         }
       } yield dtos
     }
@@ -239,8 +239,8 @@ class UsersServiceImpl @javax.inject.Inject()(@Named("usersProcessor") val proce
     for {
       user <- userRepository.getByEmail(email)
       active <- user match {
-        case u: ActiveUser => true.successNel[String]
-        case _ =>             ServiceError("user not active").failureNel[Boolean]
+        case u: ActiveUser => ().successNel[String]
+        case _ =>             ServiceError("user not active").failureNel[Unit]
       }
       validPwd <- {
         if (passwordHasher.valid(user.password, user.salt, enteredPwd)) user.successNel[String]

@@ -44,19 +44,19 @@ package dto {
 
   }
 
-  final case class NameAndStateDto(id: String, slug: Slug, name: String, state: String)
+  final case class EntityInfoAndStateDto(id: String, slug: Slug, name: String, state: String)
 
-  object NameAndStateDto {
+  object EntityInfoAndStateDto {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def apply[T <: ConcurrencySafeEntity[_] with HasSlug with HasName with HasState](entity: T)
-        : NameAndStateDto = {
-      NameAndStateDto(entity.id.toString, entity.slug, entity.name, entity.state.id)
+        : EntityInfoAndStateDto = {
+      EntityInfoAndStateDto(entity.id.toString, entity.slug, entity.name, entity.state.id)
     }
 
-    def compareByName(a: NameAndStateDto, b: NameAndStateDto): Boolean = (a.name compareToIgnoreCase b.name) < 0
+    def compareByName(a: EntityInfoAndStateDto, b: EntityInfoAndStateDto): Boolean = (a.name compareToIgnoreCase b.name) < 0
 
-    implicit val nameAndStateDtoFormat: Format[NameAndStateDto] = Json.format[NameAndStateDto]
+    implicit val entityInfoAndStateDtoFormat: Format[EntityInfoAndStateDto] = Json.format[EntityInfoAndStateDto]
   }
 
   final case class CentreDto(id:           String,
@@ -67,12 +67,49 @@ package dto {
                              slug:         Slug,
                              name:         String,
                              description:  Option[String],
-                             studyNames:   Set[NameAndStateDto],
+                             studyNames:   Set[EntityInfoAndStateDto],
                              locations:    Set[Location])
 
   object CentreDto {
 
     implicit val centreDtoFormat: Format[CentreDto] = Json.format[CentreDto]
+
+  }
+
+  final case class ContainerTypeDto(id:           String,
+                                    version:      Long,
+                                    timeAdded:    String,
+                                    timeModified: Option[String],
+                                    slug:         Slug,
+                                    name:         String,
+                                    description:  Option[String],
+                                    centre:       Option[EntityInfoAndStateDto],
+                                    schema:       EntityInfoAndStateDto,
+                                    shared:       Boolean,
+                                    enabled:      Boolean)
+
+  object ContainerTypeDto {
+
+    implicit val containerTypeDtoFormat: Format[ContainerTypeDto] = Json.format[ContainerTypeDto]
+
+  }
+
+  final case class ContainerDto(id:            String,
+                                version:       Long,
+                                timeAdded:     String,
+                                timeModified:  Option[String],
+                                slug:          Slug,
+                                inventoryId:   String,
+                                enabled:       Boolean,
+                                containerType: EntityInfoDto,
+                                parent:        Option[EntityInfoDto],
+                                position:      Option[String],
+                                treeId:        String,
+                                constraints:   Option[EntityInfoDto])
+
+  object ContainerDto {
+
+    implicit val containerDtoFormat: Format[ContainerDto] = Json.format[ContainerDto]
 
   }
 

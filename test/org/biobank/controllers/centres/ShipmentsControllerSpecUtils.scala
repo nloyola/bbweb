@@ -5,12 +5,7 @@ import org.biobank.fixtures.Url
 
 private[centres] trait ShipmentsControllerSpecUtils {
 
-  protected def uri(paths: String*): Url = {
-    val baseUri = "/api/shipments"
-    val path = if (paths.isEmpty) baseUri
-               else baseUri + "/" + paths.mkString("/")
-    return new Url(path)
-  }
+  protected def uri(paths: String*): Url
 
   protected def uri(shipment: Shipment): Url = uri(shipment.id.id)
 

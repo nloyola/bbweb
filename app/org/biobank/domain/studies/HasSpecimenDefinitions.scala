@@ -13,8 +13,8 @@ trait HasSpecimenDefinitions[T <: SpecimenDefinition] {
     specimenDefinitions.find(_.id == id).toSuccessNel(s"IdNotFound: specimen definition not found: $id")
   }
 
-  protected def checkAddSpecimenDefinition(specimenDefinition: T): DomainValidation[Boolean] = {
-    nameNotUsed(specimenDefinition).map { _ => true }
+  protected def checkAddSpecimenDefinition(specimenDefinition: T): DomainValidation[Unit] = {
+    nameNotUsed(specimenDefinition).map { _ => () }
   }
 
   protected def checkRemoveSpecimenDefinition(specimenDefinitionId: SpecimenDefinitionId)
@@ -24,15 +24,15 @@ trait HasSpecimenDefinitions[T <: SpecimenDefinition] {
       .toSuccessNel(s"specimen definition does not exist: $specimenDefinitionId")
   }
 
-  protected def nameNotUsed(specimenDefinition: SpecimenDefinition): DomainValidation[Boolean] = {
+  protected def nameNotUsed(specimenDefinition: SpecimenDefinition): DomainValidation[Unit] = {
     val nameLowerCase = specimenDefinition.name.toLowerCase
     specimenDefinitions
       .find { x => (x.name.toLowerCase == nameLowerCase) && (x.id != specimenDefinition.id)  }
       match {
         case Some(_) =>
-          EntityCriteriaError(s"specimen definition name already used: ${specimenDefinition.name}").failureNel[Boolean]
+          EntityCriteriaError(s"specimen definition name already used: ${specimenDefinition.name}").failureNel[Unit]
         case None =>
-          true.successNel[DomainError]
+          ().successNel[DomainError]
       }
   }
 

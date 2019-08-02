@@ -6,6 +6,7 @@ import org.biobank.domain._
 import org.biobank.domain.annotations._
 import org.biobank.domain.participants._
 import org.biobank.domain.studies._
+import org.biobank.fixtures.Url
 import org.biobank.dto._
 import org.scalatest.matchers.{MatchResult, Matcher}
 import play.api.libs.json._
@@ -30,17 +31,13 @@ class ParticipantsControllerSpec extends StudyAnnotationsControllerSharedSpec[Pa
     Set(study, participant).foreach(addToRepository)
   }
 
-  private def uri(paths: String*): String = {
-    val basePath = "/api/participants"
-    if (paths.isEmpty) basePath
-    else s"$basePath/" + paths.mkString("/")
-  }
+  protected val basePath = "participants"
 
-  private def uri(study: Study): String = uri(study.id.id)
+  private def uri(study: Study): Url = uri(study.id.id)
 
-  private def uri(study: Study, participant: Participant): String = uri(study.id.id, participant.id.id)
+  private def uri(study: Study, participant: Participant): Url = uri(study.id.id, participant.id.id)
 
-  private def updateUri(participant: Participant, path: String): String = uri(path, participant.id.id)
+  private def updateUri(participant: Participant, path: String): Url = uri(path, participant.id.id)
 
   private def participantToAddJson(participant: Participant, annotations: List[Annotation] = List.empty) = {
     val annots = if (annotations.isEmpty) participant.annotations
@@ -387,7 +384,7 @@ class ParticipantsControllerSpec extends StudyAnnotationsControllerSharedSpec[Pa
 
   protected def entityName(): String = "participant"
 
-  protected def updateUri(participant: Participant): String = updateUri(participant, "annot")
+  protected def updateUri(participant: Participant): Url = updateUri(participant, "annot")
 
   protected def getStudy(participant: Participant): DomainValidation[EnabledStudy] = {
     studyRepository.getEnabled(participant.studyId)

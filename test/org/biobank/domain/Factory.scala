@@ -645,17 +645,19 @@ class Factory {
   def createStorageContainer(): StorageContainer = {
     val inventoryId = nameGenerator.next[Container]
     val container = StorageContainer(
-        id              = ContainerId(nextIdentityAsString[Container]),
-        version         = 0L,
-        timeAdded       = OffsetDateTime.now,
-        timeModified    = None,
-        slug            = Slug(inventoryId),
-        inventoryId     = inventoryId,
-        enabled         = false,
-        containerTypeId = defaultStorageContainerType.id,
-        parentId        = none,
-        position        = none,
-        constraints     = Some(createContainerConstraints))
+        id               = ContainerId(nextIdentityAsString[Container]),
+        version          = 0L,
+        timeAdded        = OffsetDateTime.now,
+        timeModified     = None,
+        slug             = Slug(inventoryId),
+        inventoryId      = inventoryId,
+        label            = nameGenerator.next[Container],
+        enabled          = false,
+        containerTypeId  = defaultStorageContainerType.id,
+        sharedProperties = none,
+        parentId         = none,
+        position         = none,
+        constraints      = Some(createContainerConstraints))
     domainObjects = domainObjects + (classOf[StorageContainer] -> container)
     container
   }
@@ -663,15 +665,17 @@ class Factory {
   def createSpecimenContainer(): SpecimenContainer = {
     val inventoryId = nameGenerator.next[ContainerType]
     val container = SpecimenContainer(
-        id              = ContainerId(nextIdentityAsString[Container]),
-        version         = 0L,
-        timeAdded       = OffsetDateTime.now,
-        timeModified    = None,
-        slug            = Slug(inventoryId),
-        inventoryId     = inventoryId,
-        containerTypeId = defaultSpecimenContainerType.id,
-        parentId        = None,
-        position        = None)
+        id               = ContainerId(nextIdentityAsString[Container]),
+        version          = 0L,
+        timeAdded        = OffsetDateTime.now,
+        timeModified     = None,
+        slug             = Slug(inventoryId),
+        inventoryId      = inventoryId,
+        label            = nameGenerator.next[Container],
+        containerTypeId  = defaultSpecimenContainerType.id,
+        sharedProperties = none,
+        parentId         = None,
+        position         = None)
     domainObjects = domainObjects + (classOf[SpecimenContainer] -> container)
     container
   }

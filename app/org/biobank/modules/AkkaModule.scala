@@ -16,6 +16,7 @@ class AkkaModule extends AbstractModule with AkkaGuiceSupport {
     bindActor[MembershipProcessor]("membershipProcessor")
     bindActor[UsersProcessor]("usersProcessor")
     bindActor[CentresProcessor]("centresProcessor")
+    bindActor[ContainersProcessor]("containersProcessor")
     bindActor[ShipmentsProcessor]("shipmentsProcessor")
 
     bindActor[ParticipantsProcessor]("participantsProcessor")

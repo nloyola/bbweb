@@ -24,19 +24,16 @@ class SpecimensControllerSpec
   import org.biobank.matchers.EntityMatchers._
   import org.biobank.matchers.JsonMatchers._
 
-  private def uri(): String = "/api/participants/cevents/spcs"
+  protected val basePath = "participants/cevents/spcs"
 
-  private def uri(collectionEvent: CollectionEvent): String =
-    uri + s"/${collectionEvent.id.id}"
+  private def uri(collectionEvent: CollectionEvent): Url = uri(collectionEvent.id.id)
 
-  private def uriSlug(collectionEvent: CollectionEvent): String =
-    uri + s"/${collectionEvent.slug}"
+  private def uriSlug(collectionEvent: CollectionEvent): Url = uri(collectionEvent.slug.id)
 
-  private def uri(specimen: Specimen): String =
-    uri + s"/get/${specimen.slug}"
+  private def uri(specimen: Specimen): Url = uri("get", specimen.slug.id)
 
-  private def uri(cevent: CollectionEvent, specimen: Specimen, version: Long): String =
-    uri(cevent) + s"/${specimen.id.id}/$version"
+  private def uri(cevent: CollectionEvent, specimen: Specimen, version: Long): Url =
+    uri(cevent.id.id, specimen.id.id, s"$version")
 
   override def createEntities() = {
     val f = super.createEntities
@@ -102,13 +99,13 @@ class SpecimensControllerSpec
 
       it("list none") {
         val f = createEntities
-        new Url(uriSlug(f.cevent)) must beEmptyResults
+        uriSlug(f.cevent) must beEmptyResults
       }
 
       describe("lists all specimens for a collection event") {
         listMultipleSpecimens() { () =>
           val e = createEntitiesAndSpecimens
-          (new Url(uriSlug(e.cevent)), e.specimens.sortBy(_.inventoryId))
+          (uriSlug(e.cevent), e.specimens.sortBy(_.inventoryId))
         }
       }
 
@@ -217,7 +214,7 @@ class SpecimensControllerSpec
       describe("fail when using an invalid query parameters") {
         pagedQueryShouldFailSharedBehaviour { () =>
           val e = createEntities
-          new Url(uriSlug(e.cevent))
+          uriSlug(e.cevent)
         }
       }
 
@@ -308,7 +305,7 @@ class SpecimensControllerSpec
 
     it("list single specimen") {
       val (url, expectedSpecimen) = setupFunc()
-      val reply = makeAuthRequest(GET, url.path).value
+      val reply = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)
@@ -328,7 +325,7 @@ class SpecimensControllerSpec
     it("list multiple specimens") {
       val (url, expectedSpecimens) = setupFunc()
 
-      val reply = makeAuthRequest(GET, url.path).value
+      val reply = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)

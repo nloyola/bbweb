@@ -410,16 +410,16 @@ trait DtoMatchers {
       }
     }
 
-  def matchNameAndStateDtos(dtos: Seq[NameAndStateDto]) =
+  def matchEntityInfoAndStateDtos(dtos: Seq[EntityInfoAndStateDto]) =
     new Matcher[JsValue] {
       def apply(left: JsValue) = {
-        val replyDtos = (left).validate[Seq[NameAndStateDto]]
+        val replyDtos = (left).validate[Seq[EntityInfoAndStateDto]]
         val validJs = jsSuccess(replyDtos)
 
         if (!validJs.matches) {
           validJs
         } else {
-          val m: Matcher[Seq[NameAndStateDto]] = equal(dtos)
+          val m: Matcher[Seq[EntityInfoAndStateDto]] = equal(dtos)
           m(replyDtos.get)
         }
       }

@@ -245,8 +245,8 @@ class CollectionEventsProcessor @Inject() (
           .toSuccessNel(s"annotation type with ID does not exist: ${cmd.annotationTypeId}")
       }
       notRequired <- {
-        if (annotType.required) EntityRequired(s"annotation is required").failureNel[Boolean]
-        else true.successNel[String]
+        if (annotType.required) EntityRequired(s"annotation is required").failureNel[Unit]
+        else ().successNel[String]
       }
       updatedCevent <- cevent.withoutAnnotation(AnnotationTypeId(cmd.annotationTypeId))
     } yield CollectionEventEvent(updatedCevent.id.id).update(
@@ -291,9 +291,9 @@ class CollectionEventsProcessor @Inject() (
   }
 
   private def studyIdsMatch(participant: Participant, collectionEventType: CollectionEventType)
-      : ServiceValidation[Boolean] =  {
-    if (participant.studyId == collectionEventType.studyId) true.successNel[String]
-    else EntityCriteriaError(s"participant and collection event type not in the same study").failureNel[Boolean]
+      : ServiceValidation[Unit] =  {
+    if (participant.studyId == collectionEventType.studyId) ().successNel[String]
+    else EntityCriteriaError(s"participant and collection event type not in the same study").failureNel[Unit]
   }
 
   private def applyAddedEvent(event: CollectionEventEvent): Unit = {
@@ -323,7 +323,7 @@ class CollectionEventsProcessor @Inject() (
   private def onValidEventAndVersion(event:        CollectionEventEvent,
                                      eventType:    Boolean,
                                      eventVersion: Long)
-                                    (applyEvent: (CollectionEvent, OffsetDateTime) => ServiceValidation[Boolean])
+                                    (applyEvent: (CollectionEvent, OffsetDateTime) => ServiceValidation[Unit])
       : Unit = {
     if (!eventType) {
       log.error(s"invalid event type: $event")
@@ -355,7 +355,7 @@ class CollectionEventsProcessor @Inject() (
         collectionEventRepository.put(c.copy(timeModified = Some(eventTime)))
       }
 
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -372,7 +372,7 @@ class CollectionEventsProcessor @Inject() (
         collectionEventRepository.put(c.copy(timeModified = Some(eventTime)))
       }
 
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -386,7 +386,7 @@ class CollectionEventsProcessor @Inject() (
         collectionEventRepository.put(c.copy(timeModified = Some(eventTime)))
       }
 
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -400,7 +400,7 @@ class CollectionEventsProcessor @Inject() (
         collectionEventRepository.put(c.copy(timeModified = Some(eventTime)))
       }
 
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -409,7 +409,7 @@ class CollectionEventsProcessor @Inject() (
                            event.eventType.isRemoved,
                            event.getRemoved.getVersion) { (cevent, eventTime) =>
       collectionEventRepository.remove(cevent)
-      true.successNel[String]
+      ().successNel[String]
     }
   }
 
@@ -419,20 +419,20 @@ class CollectionEventsProcessor @Inject() (
    *  Searches the repository for a matching item.
    */
   protected def visitNumberAvailableMatcher(visitNumber: Int)(matcher: CollectionEvent => Boolean)
-      : ServiceValidation[Boolean] = {
+      : ServiceValidation[Unit] = {
     val exists = collectionEventRepository.getValues.exists { item =>
         matcher(item)
       }
     if (exists) {
-      EntityCriteriaError(s"$errMsgVisitNumberExists: $visitNumber").failureNel[Boolean]
+      EntityCriteriaError(s"$errMsgVisitNumberExists: $visitNumber").failureNel[Unit]
     } else {
-      true.successNel[String]
+      ().successNel[String]
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   private def visitNumberAvailable(participantId: ParticipantId, visitNumber: Int)
-      : ServiceValidation[Boolean] = {
+      : ServiceValidation[Unit] = {
     visitNumberAvailableMatcher(visitNumber){ item =>
       (item.participantId == participantId) && (item.visitNumber == visitNumber)
     }
@@ -442,7 +442,7 @@ class CollectionEventsProcessor @Inject() (
   private def visitNumberAvailable(participantId: ParticipantId,
                                    visitNumber: Int,
                                    excludeCollectionEventId: CollectionEventId)
-      : ServiceValidation[Boolean] = {
+      : ServiceValidation[Unit] = {
     visitNumberAvailableMatcher(visitNumber){ item =>
       (item.participantId == participantId) && (item.visitNumber == visitNumber) && (item.id != excludeCollectionEventId)
     }

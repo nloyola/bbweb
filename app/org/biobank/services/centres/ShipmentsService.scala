@@ -261,9 +261,9 @@ class ShipmentsServiceImpl @Inject() (@Named("shipmentsProcessor") val   process
       fromCentre <- centreRepository.getByLocationId(shipment.fromLocationId)
       toCentre   <- centreRepository.getByLocationId(shipment.toLocationId)
       isMember   <- accessService.isMember(requestUserId, None, Some(fromCentre.id)).fold(
-        err      => err.failure[Boolean],
-        isMember => if (isMember) true.successNel[String]
-                    else Unauthorized.failureNel[Boolean]
+        err      => err.failure[Unit],
+        isMember => if (isMember) ().successNel[String]
+                    else Unauthorized.failureNel[Unit]
       )
       result     <- whenPermittedAndIsMember(requestUserId,
                                              PermissionId.ShipmentRead,
@@ -287,14 +287,14 @@ class ShipmentsServiceImpl @Inject() (@Named("shipmentsProcessor") val   process
     for {
       centreIds  <- validCentreIds
       fromMember <- accessService.isMember(userId, None, Some(centreIds.fromId)).fold(
-        err      => err.failure[Boolean],
-        isMember => if (isMember) true.successNel[String]
-                    else Unauthorized.failureNel[Boolean]
+        err      => err.failure[Unit],
+        isMember => if (isMember) ().successNel[String]
+                    else Unauthorized.failureNel[Unit]
       )
       toMember   <- accessService.isMember(userId, None, Some(centreIds.toId)).fold(
-        err      => err.failure[Boolean],
-        isMember => if (isMember) true.successNel[String]
-                    else Unauthorized.failureNel[Boolean]
+        err      => err.failure[Unit],
+        isMember => if (isMember) ().successNel[String]
+                    else Unauthorized.failureNel[Unit]
       )
     } yield toMember
   }

@@ -23,7 +23,7 @@ trait AnnotationsControllerSharedSpec[T <: ConcurrencySafeEntity[_] with HasAnno
 
   protected def entityFromRepository(id: String): DomainValidation[T]
 
-  protected def updateUri(entity: T): String
+  protected def updateUri(entity: T): Url
 
   /**
    * create pairs of annotation types and annotation of each value type plus a second of type select that
@@ -121,7 +121,7 @@ trait AnnotationsControllerSharedSpec[T <: ConcurrencySafeEntity[_] with HasAnno
       val entity = createEntity(Set(annotationType), Set(annotation))
       val reply = makeAuthRequest(
           DELETE,
-          updateUri(entity) + s"/${annotation.annotationTypeId}/${entity.version}").value
+          updateUri(entity).append(annotation.annotationTypeId.id, entity.version.toString)).value
       reply must beOkResponseWithJsonReply
       val replyAnnotations = (contentAsJson(reply) \ "data" \ "annotations").validate[List[Annotation]]
       replyAnnotations must be (jsSuccess)
@@ -134,7 +134,7 @@ trait AnnotationsControllerSharedSpec[T <: ConcurrencySafeEntity[_] with HasAnno
       val entity = createEntity(Set(annotationType), Set(annotation))
       val reply = makeAuthRequest(
           DELETE,
-          updateUri(entity) + s"/${annotation.annotationTypeId}/${entity.version}").value
+          updateUri(entity).append(annotation.annotationTypeId.id, entity.version.toString)).value
       reply must beBadRequestWithMessage("annotation is required")
     }
   }

@@ -498,7 +498,7 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
                               timeModified = Some(eventTime))
         processingTypeRepository.put(updated)
       }
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -510,7 +510,7 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
       v.foreach { pt =>
         processingTypeRepository.put(pt.copy(timeModified = Some(eventTime)))
       }
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -522,7 +522,7 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
                     else processingType.disable()
 
       processingTypeRepository.put(updated.copy(timeModified = Some(eventTime)))
-      true.successNel[String]
+      ().successNel[String]
     }
   }
 
@@ -561,7 +561,7 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
       v.foreach { pt =>
         processingTypeRepository.put(pt.copy(timeModified = Some(eventTime)))
       }
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -583,7 +583,7 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
       v.foreach { pt =>
         processingTypeRepository.put(pt.copy(timeModified = Some(eventTime)))
       }
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -628,7 +628,7 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
     eventType:    Boolean,
     eventVersion: Long
   ) (
-    applyEvent: (ProcessingType, OffsetDateTime) => ServiceValidation[Boolean]
+    applyEvent: (ProcessingType, OffsetDateTime) => ServiceValidation[Unit]
   ): Unit = {
     if (!eventType) {
       log.error(s"invalid event type: $event")
@@ -686,13 +686,13 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
         }
       }
 
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
   val ErrMsgNameExists: String = "processing type with name already exists"
 
-  private def nameAvailable(name: String, studyId: StudyId): ServiceValidation[Boolean] = {
+  private def nameAvailable(name: String, studyId: StudyId): ServiceValidation[Unit] = {
     nameAvailableMatcher(name, processingTypeRepository, ErrMsgNameExists) { item =>
       (item.name == name) && (item.studyId == studyId)
     }
@@ -728,30 +728,30 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
   }
 
   private def validateInputSpecimenProcessing(input: studies.InputSpecimenProcessing)
-      : ServiceValidation[Boolean] = {
+      : ServiceValidation[Unit] = {
     val entityIdString = input.entityId.toString
     if (input.definitionType == collectedDefinition) {
       collectionEventTypeRepository.getByKey(CollectionEventTypeId(entityIdString)).flatMap { eventType =>
-        eventType.specimenDefinition(input.specimenDefinitionId).map { _ => true }
+        eventType.specimenDefinition(input.specimenDefinitionId).map { _ => () }
       }
     } else {
       processingTypeRepository.getByKey(ProcessingTypeId(entityIdString)).flatMap { processingType =>
         if (processingType.output.specimenDefinition.id == input.specimenDefinitionId) {
-          true.successNel[String]
+          ().successNel[String]
         } else {
           ServiceError(s"IdNotFound: specimen definition id: ${input.specimenDefinitionId}")
-            .failureNel[Boolean]
+            .failureNel[Unit]
         }
       }
     }
   }
 
   private def storeIfValid(validation: ServiceValidation[ProcessingType],
-                           eventTime: OffsetDateTime): ServiceValidation[Boolean] = {
+                           eventTime: OffsetDateTime): ServiceValidation[Unit] = {
     validation.foreach { c =>
       processingTypeRepository.put(c.copy(timeModified = Some(eventTime)))
     }
-    validation.map(_ => true)
+    validation.map(_ => ())
   }
 
   private def init(): Unit = {

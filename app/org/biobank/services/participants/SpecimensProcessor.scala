@@ -288,38 +288,38 @@ class SpecimensProcessor @Inject() (
   }
 
   private def validateSpecimenInfo(specimenData: List[SpecimenInfo], ceventType: CollectionEventType)
-      : ServiceValidation[Boolean] = {
+      : ServiceValidation[Unit] = {
 
     val cmdSpcDefIds = specimenData.map(s => SpecimenDefinitionId(s.specimenDefinitionId)).toSet
     val ceventDefId  = ceventType.specimenDefinitions.map(s => s.id).toSet
     val notBelonging  = cmdSpcDefIds.diff(ceventDefId)
 
-    if (notBelonging.isEmpty) true.successNel[String]
+    if (notBelonging.isEmpty) ().successNel[String]
     else EntityCriteriaError("specimen descriptions do not belong to collection event type: "
-                               + notBelonging.mkString(", ")).failureNel[Boolean]
+                               + notBelonging.mkString(", ")).failureNel[Unit]
   }
 
   /**
    * Returns success if none of the inventory IDs are found in the repository.
    *
    */
-  private def validateInventoryId(specimenData: List[SpecimenInfo]): ServiceValidation[Boolean] = {
+  private def validateInventoryId(specimenData: List[SpecimenInfo]): ServiceValidation[Unit] = {
     specimenData.map { info =>
       specimenRepository.getByInventoryId(info.inventoryId) fold (
-        err => true.successNel[String],
-        spc => s"specimen ID already in use: ${info.inventoryId}".failureNel[Boolean]
+        err => ().successNel[String],
+        spc => s"specimen ID already in use: ${info.inventoryId}".failureNel[Unit]
       )
-    }.sequenceU.map { x => true }
+    }.sequenceU.map { x => () }
   }
 
-  private def validEventType(eventType: Boolean): ServiceValidation[Boolean] =
-    if (eventType) true.successNel[String]
-    else s"invalid event type".failureNel[Boolean]
+  private def validEventType(eventType: Boolean): ServiceValidation[Unit] =
+    if (eventType) ().successNel[String]
+    else s"invalid event type".failureNel[Unit]
 
-  private def specimenHasNoChildren(specimen: Specimen): ServiceValidation[Boolean] = {
+  private def specimenHasNoChildren(specimen: Specimen): ServiceValidation[Unit] = {
     val children = processingEventInputSpecimenRepository.withSpecimenId(specimen.id)
-    if (children.isEmpty) true.successNel[String]
-    else ServiceError(s"specimen has child specimens: ${specimen.id}").failureNel[Boolean]
+    if (children.isEmpty) ().successNel[String]
+    else ServiceError(s"specimen has child specimens: ${specimen.id}").failureNel[Unit]
   }
 
   private def init(): Unit = {

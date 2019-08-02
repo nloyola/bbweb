@@ -221,13 +221,13 @@ object Membership extends MembershipValidations {
              studyIds:     Set[StudyId],
              centreIds:    Set[CentreId]): DomainValidation[Membership] = {
 
-    def checkAllStudies(): DomainValidation[Boolean] =
-      if (allStudies && ! studyIds.isEmpty) DomainError("invalid studies for membership").failureNel[Boolean]
-      else true.successNel[String]
+    def checkAllStudies(): DomainValidation[Unit] =
+      if (allStudies && ! studyIds.isEmpty) DomainError("invalid studies for membership").failureNel[Unit]
+      else ().successNel[String]
 
-    def checkAllCentres(): DomainValidation[Boolean] =
-      if (allCentres && ! centreIds.isEmpty) DomainError("invalid centres for membership").failureNel[Boolean]
-      else true.successNel[String]
+    def checkAllCentres(): DomainValidation[Unit] =
+      if (allCentres && ! centreIds.isEmpty) DomainError("invalid centres for membership").failureNel[Unit]
+      else ().successNel[String]
 
     (validateId(id, InvalidMembershipId) |@|
        validateString(name, NameMinLength, InvalidName) |@|

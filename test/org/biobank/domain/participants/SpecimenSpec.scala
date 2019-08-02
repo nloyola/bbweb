@@ -105,10 +105,10 @@ class SpecimenSpec extends DomainSpec {
 
       it("with a new position") {
         val specimen = factory.createUsableSpecimen
-        val newPosition = factory.createContainerSchemaPosition
+        val newPosition = Some(factory.createContainerSchemaPosition)
 
         specimen.withPosition(newPosition) mustSucceed { s =>
-          s.position mustBe Some(newPosition)
+          s.position mustBe newPosition
           s.version must be (specimen.version + 1)
           s must beEntityWithTimeStamps(specimen.timeAdded, Some(OffsetDateTime.now), 5L)
         }
@@ -167,9 +167,8 @@ class SpecimenSpec extends DomainSpec {
       }
 
       it("with an empty position id") {
-        val specimen = factory.createUsableSpecimen.copy(
-            position = Some(factory.createContainerSchemaPosition.copy(
-                              id = ContainerSchemaPositionId(""))))
+        val position = Some(factory.createContainerSchemaPosition.copy(id = ContainerSchemaPositionId("")))
+        val specimen = factory.createUsableSpecimen.copy(position = position)
         createFrom(specimen) mustFail "PositionInvalid"
       }
 
@@ -210,7 +209,7 @@ class SpecimenSpec extends DomainSpec {
       val specimen = factory.createUsableSpecimen
       val newPosition = factory.createContainerSchemaPosition.copy(id = ContainerSchemaPositionId(""))
 
-      specimen.withPosition(newPosition) mustFail "PositionInvalid"
+      specimen.withPosition(Some(newPosition)) mustFail "PositionInvalid"
     }
   }
 

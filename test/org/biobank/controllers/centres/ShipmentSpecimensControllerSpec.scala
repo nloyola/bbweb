@@ -19,7 +19,6 @@ import play.api.test.Helpers._
  */
 class ShipmentSpecimensControllerSpec
     extends ShipmentsControllerSpecFixtures
-    with ShipmentsControllerSpecUtils
     with PagedResultsSharedSpec
     with PagedResultsMatchers {
 
@@ -28,17 +27,11 @@ class ShipmentSpecimensControllerSpec
   import org.biobank.matchers.EntityMatchers._
   import org.biobank.matchers.JsonMatchers._
 
-  override def uri(shipment: Shipment): Url =
-    uri("specimens", shipment.id.id)
+  protected val basePath = "shipments/specimens"
 
-   override def uri(shipment: Shipment, path: String): Url =
-    uri("specimens", path, shipment.id.id)
+  private def uri(shipment: Shipment): Url = uri(shipment.id.id)
 
-  def uri(shipment: Shipment, shipmentSpecimen: ShipmentSpecimen, path: String): Url =
-    uri("specimens", path, shipment.id.id, shipmentSpecimen.id.id)
-
-  def uri(shipment: Shipment, shipmentSpecimen: ShipmentSpecimen): Url =
-    uri("specimens", shipment.id.id, shipmentSpecimen.id.id)
+  private def uri(shipment: Shipment, path: String): Url = uri(path, shipment.id.id)
 
   describe("Shipment specimens REST API") {
 
@@ -91,7 +84,10 @@ class ShipmentSpecimensControllerSpec
             }
 
         shipmentSpecimensData.foreach { case (itemState, shipmentSpecimen) =>
-          val reply = makeAuthRequest(GET, uri(f.shipment).path + s"?filter=state::$itemState").value
+          val reply = makeAuthRequest(
+              GET,
+              uri(f.shipment).addQueryString(s"filter=state::$itemState")
+              ).value
           reply must beOkResponseWithJsonReply
 
           val json = contentAsJson(reply)
@@ -109,7 +105,9 @@ class ShipmentSpecimensControllerSpec
         val f = createdShipmentFixture
         val invalidStateName = "state::" + nameGenerator.next[ShipmentSpecimen]
         shipmentRepository.put(f.shipment)
-        val reply = makeAuthRequest(GET, uri(f.shipment) + s"?filter=$invalidStateName").value
+        val reply = makeAuthRequest(
+            GET, uri(f.shipment).addQueryString(s"filter=$invalidStateName")
+          ).value
         reply must beNotFoundWithMessage("InvalidState: shipment specimen state does not exist")
       }
 
@@ -119,8 +117,7 @@ class ShipmentSpecimensControllerSpec
           listSingleShipmentSpecimens(maybeNext = Some(2)) { () =>
             val f = shipmentSpecimensFixture(2)
 
-            (new Url(uri(f.shipment).path + "?limit=1"),
-             f.shipmentSpecimenMap.values.head.shipmentSpecimen)
+            (uri(s"${f.shipment.id.id}?limit=1"), f.shipmentSpecimenMap.values.head.shipmentSpecimen)
           }
         }
 
@@ -128,7 +125,7 @@ class ShipmentSpecimensControllerSpec
           listSingleShipmentSpecimens(offset = 1, maybePrev = Some(1)) { () =>
             val f = shipmentSpecimensFixture(2)
 
-            (new Url(uri(f.shipment).path + "?page=2&limit=1"),
+            (uri(s"${f.shipment.id.id}?page=2&limit=1"),
              f.shipmentSpecimenMap.values.toList(1).shipmentSpecimen)
           }
         }
@@ -149,12 +146,15 @@ class ShipmentSpecimensControllerSpec
             .toList
             .sortWith(_.state.toString > _.state.toString)
 
-          (new Url(uri(f.shipment).path + "?sort=-state"), shipmentSpecimens)
+          (uri(s"${f.shipment.id.id}?sort=-state"), shipmentSpecimens)
         }
       }
 
       describe("fail when using an invalid query parameters") {
-        pagedQueryShouldFailSharedBehaviour(() => uri("list"))
+        pagedQueryShouldFailSharedBehaviour { () =>
+          val f = shipmentSpecimensFixture(0)
+          uri(f.shipment)
+        }
       }
     }
 
@@ -164,7 +164,7 @@ class ShipmentSpecimensControllerSpec
         val f = shipmentSpecimensFixture(1)
         val shipmentSpecimen = f.shipmentSpecimenMap.values.head.shipmentSpecimen
 
-        val reply = makeAuthRequest(GET, uri(f.shipment) + s"/${shipmentSpecimen.id}").value
+        val reply = makeAuthRequest(GET, uri(f.shipment.id.id, shipmentSpecimen.id.id)).value
         reply must beOkResponseWithJsonReply
 
         val dto = (contentAsJson(reply) \ "data").validate[ShipmentSpecimenDto]
@@ -178,7 +178,7 @@ class ShipmentSpecimensControllerSpec
 
         val badShipment = factory.createShipment
 
-        val reply = makeAuthRequest(GET, uri(badShipment) + s"/${shipmentSpecimen.id}").value
+        val reply = makeAuthRequest(GET, uri(badShipment.id.id, shipmentSpecimen.id.id)).value
         reply must beNotFoundWithMessage("IdNotFound.*shipment id")
       }
 
@@ -192,8 +192,8 @@ class ShipmentSpecimensControllerSpec
         val specimen = f.specimens.head
         specimenRepository.put(specimen)
 
-        val url = new Url(uri(f.shipment, "canadd").path + s"/${specimen.inventoryId}")
-        val reply = makeAuthRequest(GET, url.path).value
+        val url = uri("canadd", f.shipment.id.id, specimen.inventoryId)
+        val reply = makeAuthRequest(GET, url).value
         reply must beOkResponseWithJsonReply
 
         val result = (contentAsJson(reply) \ "data").validate[Boolean]
@@ -205,7 +205,7 @@ class ShipmentSpecimensControllerSpec
         val f = shipmentSpecimensFixture(1)
         val specimen = f.shipmentSpecimenMap.values.head.specimen
 
-        val url = uri(f.shipment, "canadd") + s"/${specimen.inventoryId}"
+        val url = uri("canadd", f.shipment.id.id, specimen.inventoryId)
         val reply = makeAuthRequest(GET, url).value
         reply must beBadRequestWithMessage("specimens are already in an active shipment")
       }
@@ -215,7 +215,7 @@ class ShipmentSpecimensControllerSpec
         shipmentRepository.put(f.shipment)
 
         val invalidInventoryId = nameGenerator.next[Specimen]
-        val url = uri(f.shipment, "canadd") + s"/$invalidInventoryId"
+        val url = uri("canadd", f.shipment.id.id, invalidInventoryId)
         val reply = makeAuthRequest(GET, url).value
         reply must beNotFoundWithMessage("EntityCriteriaError: specimen with inventory ID not found")
       }
@@ -225,7 +225,7 @@ class ShipmentSpecimensControllerSpec
         val specimen = f.specimens.head.copy(locationId = f.toCentre.locations.head.id)
         specimenRepository.put(specimen)
 
-        val url = uri(f.shipment, "canadd") + s"/${specimen.inventoryId}"
+        val url = uri("canadd", f.shipment.id.id, specimen.inventoryId)
         val reply = makeAuthRequest(GET, url).value
         reply must beBadRequestWithMessage("specimen not at shipment's from location")
       }
@@ -236,7 +236,7 @@ class ShipmentSpecimensControllerSpec
         val newShipment = factory.createShipment(f.fromCentre, f.toCentre)
         shipmentRepository.put(newShipment)
 
-        val url = uri(newShipment, "canadd") + s"/${specimen.inventoryId}"
+        val url = uri("canadd", newShipment.id.id, specimen.inventoryId)
         val reply = makeAuthRequest(GET, url).value
         reply must beBadRequestWithMessage(
           "EntityCriteriaError: specimens are already in an active shipment")
@@ -249,7 +249,7 @@ class ShipmentSpecimensControllerSpec
         val f = specimensFixture(1)
         val specimen = f.specimens.head
         val addJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
-        val reply = makeAuthRequest(POST, uri(f.shipment).path, addJson).value
+        val reply = makeAuthRequest(POST, uri(f.shipment), addJson).value
         reply must beOkResponseWithJsonReply
 
         val dto = (contentAsJson(reply) \ "data").validate[ShipmentDto]
@@ -273,7 +273,7 @@ class ShipmentSpecimensControllerSpec
         val shipment = factory.createShipment
         val specimen = f.specimens.head
         val addJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
-        val reply = makeAuthRequest(POST, uri(shipment).path, addJson).value
+        val reply = makeAuthRequest(POST, uri(shipment), addJson).value
         reply must beNotFoundWithMessage("IdNotFound.*shipment id")
       }
 
@@ -293,7 +293,7 @@ class ShipmentSpecimensControllerSpec
           val addJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
           shipmentRepository.put(shipment)
 
-          val reply = makeAuthRequest(POST, uri(shipment).path, addJson).value
+          val reply = makeAuthRequest(POST, uri(shipment), addJson).value
           reply must beBadRequestWithMessage("InvalidState: shipment not created")
         }
       }
@@ -305,7 +305,7 @@ class ShipmentSpecimensControllerSpec
         specimenRepository.put(specimen)
 
         val addJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
-        val reply = makeAuthRequest(POST, uri(f.shipment).path, addJson).value
+        val reply = makeAuthRequest(POST, uri(f.shipment), addJson).value
         reply must beBadRequestWithMessage (
           "EntityCriteriaError: invalid centre for specimen inventory IDs")
       }
@@ -333,7 +333,7 @@ class ShipmentSpecimensControllerSpec
           shipmentSpecimenRepository.put(shipmentSpecimen)
           val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
 
-          val reply = makeAuthRequest(POST, uri(f.shipment, urlPath).path, reqJson).value
+          val reply = makeAuthRequest(POST, uri(f.shipment, urlPath), reqJson).value
           reply must beOkResponseWithJsonReply
 
           val dto = (contentAsJson(reply) \ "data").validate[ShipmentDto]
@@ -366,7 +366,7 @@ class ShipmentSpecimensControllerSpec
 
             val url = uri(shipment, urlPath)
             val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
-            val reply = makeAuthRequest(POST, url.path, reqJson).value
+            val reply = makeAuthRequest(POST, url, reqJson).value
             reply must beBadRequestWithMessage("InvalidState: shipment not unpacked")
           }
         }
@@ -381,7 +381,7 @@ class ShipmentSpecimensControllerSpec
         forAll(stateData) { case (state, urlPath) =>
           val url = uri(shipment, urlPath)
           val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
-          val reply = makeAuthRequest(POST, url.path, reqJson).value
+          val reply = makeAuthRequest(POST, url, reqJson).value
           reply must beBadRequestWithMessage("EntityCriteriaError: specimens not in this shipment:")
         }
       }
@@ -396,7 +396,7 @@ class ShipmentSpecimensControllerSpec
         forAll(stateData) { case (state, urlPath) =>
           val url = uri(shipment, urlPath)
           val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
-          val reply = makeAuthRequest(POST, url.path, reqJson).value
+          val reply = makeAuthRequest(POST, url, reqJson).value
           reply must beBadRequestWithMessage("EntityCriteriaError: invalid inventory Ids:")
         }
       }
@@ -413,7 +413,7 @@ class ShipmentSpecimensControllerSpec
           shipmentSpecimenRepository.put(shipmentSpecimen.copy(state = state))
           val url = uri(shipment, urlPath)
           val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
-          val reply = makeAuthRequest(POST, url.path, reqJson).value
+          val reply = makeAuthRequest(POST, url, reqJson).value
           reply must beBadRequestWithMessage("EntityCriteriaError: shipment specimens not present:")
         }
       }
@@ -432,7 +432,7 @@ class ShipmentSpecimensControllerSpec
           val url = uri(shipment, "present")
           val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
 
-          val reply = makeAuthRequest(POST, url.path, reqJson).value
+          val reply = makeAuthRequest(POST, url, reqJson).value
           reply must beOkResponseWithJsonReply
 
           val dto = (contentAsJson(reply) \ "data").validate[ShipmentDto]
@@ -459,7 +459,7 @@ class ShipmentSpecimensControllerSpec
 
         val url = uri(shipment, "present")
         val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
-        val reply = makeAuthRequest(POST, url.path, reqJson).value
+        val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beBadRequestWithMessage("EntityCriteriaError: shipment specimens are present:")
       }
 
@@ -471,7 +471,7 @@ class ShipmentSpecimensControllerSpec
 
         val url = uri(shipment, "extra")
         val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
-        val reply = makeAuthRequest(POST, url.path, reqJson).value
+        val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beOkResponseWithJsonReply
 
         val dto = (contentAsJson(reply) \ "data").validate[ShipmentDto]
@@ -498,7 +498,7 @@ class ShipmentSpecimensControllerSpec
         shipmentSpecimenRepository.put(shipmentSpecimen)
         val url = uri(shipment, "extra")
         val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
-        val reply = makeAuthRequest(POST, url.path, reqJson).value
+        val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beBadRequestWithMessage(
           "EntityCriteriaError: specimens are already in an active shipment")
       }
@@ -515,7 +515,7 @@ class ShipmentSpecimensControllerSpec
           shipmentSpecimenRepository.put(shipmentSpecimen.copy(state = state))
           val url = uri(shipment, "extra")
           val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
-          val reply = makeAuthRequest(POST, url.path, reqJson).value
+          val reply = makeAuthRequest(POST, url, reqJson).value
           reply must beBadRequestWithMessage(
             "EntityCriteriaError: specimen inventory IDs already in this shipment: ")
         }
@@ -530,7 +530,7 @@ class ShipmentSpecimensControllerSpec
 
         val url = uri(shipment, "extra")
         val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
-        val reply = makeAuthRequest(POST, url.path, reqJson).value
+        val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beBadRequestWithMessage (
           "EntityCriteriaError: invalid centre for specimen inventory IDs")
       }
@@ -546,7 +546,7 @@ class ShipmentSpecimensControllerSpec
         val shipmentSpecimen = factory.createShipmentSpecimen.copy(shipmentId = f.shipment.id,
                                                                    specimenId = specimen.id)
         shipmentSpecimenRepository.put(shipmentSpecimen)
-        val url = uri(f.shipment, shipmentSpecimen) + s"/${shipmentSpecimen.version}"
+        val url = uri(f.shipment.id.id, shipmentSpecimen.id.id, shipmentSpecimen.version.toString)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beOkResponseWithJsonReply
         shipmentSpecimenRepository.getByKey(shipmentSpecimen.id) mustFail "IdNotFound.*shipment specimen.*"
@@ -561,7 +561,7 @@ class ShipmentSpecimensControllerSpec
                                                                    state      = ShipmentItemState.Extra)
         shipmentRepository.put(shipment)
         shipmentSpecimenRepository.put(shipmentSpecimen)
-        val url = uri(f.shipment, shipmentSpecimen) + s"/${shipmentSpecimen.version}"
+        val url = uri(f.shipment.id.id, shipmentSpecimen.id.id, shipmentSpecimen.version.toString)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beOkResponseWithJsonReply
         shipmentSpecimenRepository.getByKey(shipmentSpecimen.id) mustFail "IdNotFound.*shipment specimen.*"
@@ -589,7 +589,7 @@ class ShipmentSpecimensControllerSpec
                                                                        state      = shipSpecimenState)
 
             shipmentSpecimenRepository.put(shipmentSpecimen)
-            val url = uri(shipment, shipmentSpecimen) + s"/${shipmentSpecimen.version}"
+            val url = uri(shipment.id.id, shipmentSpecimen.id.id, shipmentSpecimen.version.toString)
             val reply = makeAuthRequest(DELETE, url).value
             reply must beBadRequestWithMessage(
               "EntityCriteriaError: cannot remove, shipment specimen state is invalid")
@@ -612,7 +612,7 @@ class ShipmentSpecimensControllerSpec
 
     it("list single shipment") {
       val (url, expectedShipmentSpecimen) = setupFunc()
-      val reply = makeAuthRequest(GET, url.path).value
+      val reply = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)
@@ -634,7 +634,7 @@ class ShipmentSpecimensControllerSpec
     it("list multiple shipments") {
       val (url, expectedShipmentSpecimens) = setupFunc()
 
-      val reply = makeAuthRequest(GET, url.path).value
+      val reply = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)

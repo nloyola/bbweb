@@ -6,7 +6,7 @@ import org.biobank.domain._
 import org.biobank.domain.annotations._
 import org.biobank.domain.Slug
 import org.biobank.domain.studies._
-import org.biobank.dto.NameAndStateDto
+import org.biobank.dto.EntityInfoAndStateDto
 import org.biobank.fixtures._
 import org.biobank.matchers.PagedResultsMatchers
 import org.biobank.services.centres.CentreLocation
@@ -43,23 +43,19 @@ class StudiesControllerSpec
     Set(centre, study, ceventType, participant, cevent).foreach(addToRepository)
   }
 
-  private def uri(paths: String*): String = {
-    val basePath = "/api/studies"
-    if (paths.isEmpty) basePath
-    else basePath + "/" + paths.mkString("/")
-  }
+  protected val basePath = "studies"
 
-  private def urlName(study: Study)        = uri("name", study.id.id)
-  private def urlDescription(study: Study) = uri("description", study.id.id)
-  private def urlDisable(study: Study)     = uri("disable", study.id.id)
-  private def urlEnable(study: Study)      = uri("enable", study.id.id)
-  private def urlRetire(study: Study)      = uri("retire", study.id.id)
-  private def urlUnretire(study: Study)    = uri("unretire", study.id.id)
+  private def urlName(study: Study): Url = uri("name", study.id.id)
+  private def urlDescription(study: Study): Url = uri("description", study.id.id)
+  private def urlDisable(study: Study): Url = uri("disable", study.id.id)
+  private def urlEnable(study: Study): Url = uri("enable", study.id.id)
+  private def urlRetire(study: Study): Url = uri("retire", study.id.id)
+  private def urlUnretire(study: Study): Url = uri("unretire", study.id.id)
 
   private def urlAddAnnotationType(study: Study) = uri("pannottype", study.id.id)
 
   private def urlUpdateAnnotationType(annotType: AnnotationType) =
-    (study: Study) => urlAddAnnotationType(study) + s"/${annotType.id}"
+    (study: Study) => urlAddAnnotationType(study).append(annotType.id.id)
 
   describe("Study REST API") {
 
@@ -71,10 +67,10 @@ class StudiesControllerSpec
         reply must beOkResponseWithJsonReply
 
         val json = contentAsJson(reply)
-        val dtos = (json \ "data").validate[List[NameAndStateDto]]
+        val dtos = (json \ "data").validate[List[EntityInfoAndStateDto]]
         dtos must be (jsSuccess)
         dtos.get must have size 1
-        dtos.get(0) must equal (NameAndStateDto(f.study.id.id,
+        dtos.get(0) must equal (EntityInfoAndStateDto(f.study.id.id,
                                                 f.study.slug,
                                                 f.study.name,
                                                 f.study.state.id))
@@ -88,7 +84,7 @@ class StudiesControllerSpec
         reply must beOkResponseWithJsonReply
 
         val json = contentAsJson(reply)
-        val dtos = (json \ "data").validate[List[NameAndStateDto]]
+        val dtos = (json \ "data").validate[List[EntityInfoAndStateDto]]
         dtos must be (jsSuccess)
         dtos.get must have size 0
       }
@@ -101,7 +97,7 @@ class StudiesControllerSpec
         reply must beOkResponseWithJsonReply
 
         val json = contentAsJson(reply)
-        val dtos = (json \ "data").validate[List[NameAndStateDto]]
+        val dtos = (json \ "data").validate[List[EntityInfoAndStateDto]]
         dtos must be (jsSuccess)
         dtos.get must have size 0
       }
@@ -142,8 +138,7 @@ class StudiesControllerSpec
     describe("GET /api/studies/search") {
 
       it("list none") {
-        val url = new Url(uri("search"))
-        url must beEmptyResults
+        uri("search") must beEmptyResults
       }
 
       describe("list a study") {
@@ -152,7 +147,7 @@ class StudiesControllerSpec
           val study = factory.createDisabledStudy
           studyRepository.put(study)
 
-          (new Url(uri("search")), study)
+          (uri("search"), study)
         }
 
       }
@@ -163,7 +158,7 @@ class StudiesControllerSpec
           val studies = List(factory.createDisabledStudy,
                              factory.createDisabledStudy)
           studies.foreach(studyRepository.put)
-          (new Url(uri("search")), studies.sortWith(_.name < _.name))
+          (uri("search"), studies.sortWith(_.name < _.name))
         }
 
       }
@@ -221,7 +216,7 @@ class StudiesControllerSpec
 
         it("fail with an invalid state name") {
           val invalidStateName = "state::" + nameGenerator.next[Study]
-          val reply = makeAuthRequest(GET, uri("search") + s"?filter=$invalidStateName").value
+          val reply = makeAuthRequest(GET, uri("search").addQueryString(s"filter=$invalidStateName")).value
           reply must beNotFoundWithMessage ("InvalidState: entity state does not exist")
         }
 
@@ -280,7 +275,7 @@ class StudiesControllerSpec
 
         it("fail with an invalid state name") {
           val invalidStateName = nameGenerator.next[Study]
-          val reply = makeAuthRequest(GET, uri("search") + s"?sort=$invalidStateName").value
+          val reply = makeAuthRequest(GET, uri("search").addQueryString(s"sort=$invalidStateName")).value
           reply must beBadRequestWithMessage ("could not parse sort expression")
         }
 
@@ -316,7 +311,7 @@ class StudiesControllerSpec
       }
 
       describe("fail when using an invalid query parameters") {
-        pagedQueryShouldFailSharedBehaviour(() => new Url(uri("search")))
+        pagedQueryShouldFailSharedBehaviour(() => uri("search"))
       }
 
     }
@@ -966,33 +961,33 @@ class StudiesControllerSpec
 
       it("list multiple study names in ascending order") {
         val f = fixture
-        val reply = makeAuthRequest(GET, uri("names") + "?order=asc").value
+        val reply = makeAuthRequest(GET, uri("names").addQueryString("order=asc")).value
         reply must beOkResponseWithJsonReply
-        val dtos = (contentAsJson(reply) \ "data" ).validate[Seq[NameAndStateDto]]
+        val dtos = (contentAsJson(reply) \ "data" ).validate[Seq[EntityInfoAndStateDto]]
         dtos must be (jsSuccess)
-        dtos.get must equal (Seq(NameAndStateDto(f.studies(0)), NameAndStateDto(f.studies(1))))
+        dtos.get must equal (Seq(EntityInfoAndStateDto(f.studies(0)), EntityInfoAndStateDto(f.studies(1))))
       }
 
       it("list single study when using a filter") {
         val f = fixture
-        val reply = makeAuthRequest(GET, uri("names") + "?filter=name::ABC").value
+        val reply = makeAuthRequest(GET, uri("names").addQueryString("filter=name::ABC")).value
         reply must beOkResponseWithJsonReply
-        val dtos = (contentAsJson(reply) \ "data" ).validate[Seq[NameAndStateDto]]
+        val dtos = (contentAsJson(reply) \ "data" ).validate[Seq[EntityInfoAndStateDto]]
         dtos must be (jsSuccess)
-        dtos.get must equal (Seq(NameAndStateDto(f.studies(0))))
+        dtos.get must equal (Seq(EntityInfoAndStateDto(f.studies(0))))
       }
 
       it("list nothing when using a name filter for name not in system") {
         fixture // create studies to populate repository
-        val reply = makeAuthRequest(GET, uri("names") + "?filter=name::xxx").value
+        val reply = makeAuthRequest(GET, uri("names").addQueryString("filter=name::xxx")).value
         reply must beOkResponseWithJsonReply
-        val dtos = (contentAsJson(reply) \ "data" ).validate[Seq[NameAndStateDto]]
+        val dtos = (contentAsJson(reply) \ "data" ).validate[Seq[EntityInfoAndStateDto]]
         dtos must be (jsSuccess)
-        dtos.get must equal (Seq.empty[NameAndStateDto])
+        dtos.get must equal (Seq.empty[EntityInfoAndStateDto])
       }
 
       it("fail for invalid sort field") {
-        val reply = makeAuthRequest(GET, uri("names") + "?sort=xxxx").value
+        val reply = makeAuthRequest(GET, uri("names").addQueryString("sort=xxxx")).value
         reply must beBadRequestWithMessage("invalid sort field")
       }
 
@@ -1008,7 +1003,7 @@ class StudiesControllerSpec
 
         Set(study, centre).foreach(addToRepository)
 
-        val reply = makeAuthRequest(GET, uri("centres") + s"/${study.id}").value
+        val reply = makeAuthRequest(GET, uri("centres", study.id.id)).value
         reply must beOkResponseWithJsonReply
 
         val dtos = (contentAsJson(reply) \ "data" ).validate[Seq[CentreLocation]]
@@ -1020,7 +1015,7 @@ class StudiesControllerSpec
 
   }
 
-  private def updateWithInvalidVersionSharedBehaviour(urlFunc: Study => String, json: JsValue = JsNull) {
+  private def updateWithInvalidVersionSharedBehaviour(urlFunc: Study => Url, json: JsValue = JsNull) {
 
     it("should return bad request") {
       val study = factory.createDisabledStudy
@@ -1036,7 +1031,7 @@ class StudiesControllerSpec
   }
 
   private def updateNonDisabledStudySharedBehaviour(jsonField: JsObject,
-                                                    urlFunc:   Study => String): Unit = {
+                                                    urlFunc:   Study => Url): Unit = {
     it("should return bad request") {
 
       val studiesTable = Table(("study", "state"),
@@ -1054,7 +1049,7 @@ class StudiesControllerSpec
 
   }
 
-  private def checkInvalidStudyIdSharedBehaviour(json: JsValue, urlFunc: Study => String): Unit = {
+  private def checkInvalidStudyIdSharedBehaviour(json: JsValue, urlFunc: Study => Url): Unit = {
 
     it("should return not found") {
       val invalidStudy = factory.createDisabledStudy
@@ -1074,7 +1069,7 @@ class StudiesControllerSpec
 
     it("list single study") {
       val (url, expectedStudy) = setupFunc()
-      val reply = makeAuthRequest(GET, url.path).value
+      val reply = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)
@@ -1094,7 +1089,7 @@ class StudiesControllerSpec
     it("list multiple studies") {
       val (url, expectedStudies) = setupFunc()
 
-      val reply = makeAuthRequest(GET, url.path).value
+      val reply = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)

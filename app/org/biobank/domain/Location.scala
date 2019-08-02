@@ -98,10 +98,10 @@ object Location {
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validate(name: String): DomainValidation[Boolean] =
-    validateString(name, NameRequired).map { _ => true }
+  def validate(name: String): DomainValidation[Unit] =
+    validateString(name, NameRequired).map { _ => () }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validate(location: Location): DomainValidation[Boolean] =
+  def validate(location: Location): DomainValidation[Unit] =
     validate(location.name)
 }

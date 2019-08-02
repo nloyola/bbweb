@@ -140,7 +140,8 @@ class CollectionEventsServiceImpl @Inject() (
     )
   }
 
-  def processRemoveCommand(cmd: RemoveCollectionEventCmd): Future[ServiceValidation[Boolean]] = {
+  def processRemoveCommand(cmd: RemoveCollectionEventCmd): Future[ServiceValidation[Boolean
+                                                                  ]] = {
     whenParticipantPermittedAsync(cmd) { () =>
       ask(processor, cmd)
         .mapTo[ServiceValidation[CollectionEventEvent]]
@@ -158,9 +159,9 @@ class CollectionEventsServiceImpl @Inject() (
       participant <- participantRepository.getByKey(participantId)
       study       <- studyRepository.getByKey(participant.studyId)
       result      <- whenPermittedAndIsMember(requestUserId,
-                                              PermissionId.CollectionEventRead,
-                                              Some(study.id),
-                                              None)(() => block(participant))
+                                             PermissionId.CollectionEventRead,
+                                             Some(study.id),
+                                             None)(() => block(participant))
     } yield result
   }
 
@@ -188,9 +189,9 @@ class CollectionEventsServiceImpl @Inject() (
     validStudy.fold(
       err => Future.successful(err.failure[T]),
       study => whenPermittedAndIsMemberAsync(UserId(cmd.sessionUserId),
-                                             permission,
-                                             Some(study.id),
-                                             None)(block)
+                                            permission,
+                                            Some(study.id),
+                                            None)(block)
     )
   }
 
@@ -200,9 +201,9 @@ class CollectionEventsServiceImpl @Inject() (
     for {
       ceventType  <- collectionEventTypeRepository.getByKey(event.collectionEventTypeId)
       permitted   <- whenPermittedAndIsMember(requestUserId,
-                                              PermissionId.CollectionEventRead,
-                                              Some(ceventType.studyId),
-                                              None) { () => true.successNel[String] }
+                                             PermissionId.CollectionEventRead,
+                                             Some(ceventType.studyId),
+                                             None) { () => ().successNel[String] }
     } yield
         CollectionEventDto(
           id                      = event.id.id,

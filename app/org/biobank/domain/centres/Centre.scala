@@ -2,7 +2,7 @@ package org.biobank.domain.centres
 
 import java.time.OffsetDateTime
 import org.biobank.ValidationKey
-import org.biobank.dto.NameAndStateDto
+import org.biobank.dto.EntityInfoAndStateDto
 import org.biobank.domain._
 import org.biobank.domain.studies.StudyId
 import play.api.libs.json._
@@ -54,7 +54,7 @@ sealed trait Centre
     locationWithId(locationId).map(loc => s"${this.name}: ${loc.name}")
   }
 
-  def nameDto(): NameAndStateDto = NameAndStateDto(id.id, slug, name, state.id)
+  def nameDto(): EntityInfoAndStateDto = EntityInfoAndStateDto(id.id, slug, name, state.id)
 
   override def toString: String =
     s"""|${this.getClass.getSimpleName}: {
@@ -230,9 +230,9 @@ final case class DisabledCentre(id:           CentreId,
     }
   }
 
-  protected def checkAddLocation(location: Location): DomainValidation[Boolean] = {
+  protected def checkAddLocation(location: Location): DomainValidation[Unit] = {
     (Location.validate(location) |@| nameNotUsed(location)) {
-      case _ => true
+      case _ => ()
     }
   }
 
@@ -243,15 +243,15 @@ final case class DisabledCentre(id:           CentreId,
       .toSuccessNel(s"location does not exist: $locationId")
   }
 
-  protected def nameNotUsed(location: Location): DomainValidation[Boolean] = {
+  protected def nameNotUsed(location: Location): DomainValidation[Unit] = {
     val nameLowerCase = location.name.toLowerCase
     locations
       .find { x => (x.name.toLowerCase == nameLowerCase) && (x.id != location.id)  }
       match {
         case Some(_) =>
-          EntityCriteriaError(s"location name already used: ${location.name}").failureNel[Boolean]
+          EntityCriteriaError(s"location name already used: ${location.name}").failureNel[Unit]
         case None =>
-          true.successNel[DomainError]
+          ().successNel[DomainError]
       }
   }
 }

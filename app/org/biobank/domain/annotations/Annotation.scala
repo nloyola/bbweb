@@ -74,7 +74,7 @@ object Annotation {
                stringValue:      Option[String],
                numberValue:      Option[String],
                selectedValues:   Set[String])
-      : DomainValidation[Boolean] = {
+      : DomainValidation[Unit] = {
 
     def validateAnnotationOption(opt: String) = {
       validateNonEmptyString(opt, NonEmptyString)
@@ -84,12 +84,12 @@ object Annotation {
     def validateValues(stringValue:    Option[String],
                        numberValue:    Option[String],
                        selectedValues: Set[String])
-        : DomainValidation[Boolean] = {
+        : DomainValidation[Unit] = {
       if ((selectedValues.isEmpty && stringValue.isDefined && numberValue.isDefined)
             || (!selectedValues.isEmpty && (stringValue.isDefined || numberValue.isDefined))) {
-        DomainError("cannot have multiple values assigned").failureNel[Boolean]
+        DomainError("cannot have multiple values assigned").failureNel[Unit]
       } else {
-        true.successNel[String]
+        ().successNel[String]
       }
     }
 
@@ -98,12 +98,12 @@ object Annotation {
        validateNumberStringOption(numberValue, InvalidNumberString("numberValue")) |@|
        selectedValues.toList.traverseU(validateAnnotationOption) |@|
        validateValues(stringValue, numberValue, selectedValues)) { case _ =>
-        true
+        ()
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validate(annotation: Annotation): DomainValidation[Boolean] = {
+  def validate(annotation: Annotation): DomainValidation[Unit] = {
     validate(annotation.annotationTypeId,
              annotation.stringValue,
              annotation.numberValue,
@@ -122,7 +122,7 @@ object Annotation {
   @SuppressWarnings(Array("org.wartremover.warts.Monad"))
   def validateAnnotations(annotationTypes: Set[AnnotationType],
                           annotations:     List[Annotation])
-      : DomainValidation[Boolean]= {
+      : DomainValidation[Unit]= {
 
     val requiredAnnotTypeIds = annotationTypes
       .filter(annotationType => annotationType.required)
@@ -130,30 +130,30 @@ object Annotation {
       .toSet
 
     if (!requiredAnnotTypeIds.isEmpty && annotations.isEmpty) {
-      DomainError("missing required annotation type(s)").failureNel[Boolean]
+      DomainError("missing required annotation type(s)").failureNel[Unit]
     } else if (annotations.isEmpty && annotationTypes.isEmpty) {
-      true.successNel[String]
+      ().successNel[String]
     } else {
       val annotTypeIdsFromAnnotationsAsSet = annotations.map(v => v.annotationTypeId).toSet
 
       for {
         hasAnnotationTypes <- {
-          if (annotationTypes.isEmpty) DomainError("no annotation types").failureNel[Boolean]
-          else true.successNel[String]
+          if (annotationTypes.isEmpty) DomainError("no annotation types").failureNel[Unit]
+          else ().successNel[String]
         }
         noDuplicates <- {
           if (annotTypeIdsFromAnnotationsAsSet.size != annotations.size) {
-            DomainError("duplicate annotations").failureNel[Boolean]
+            DomainError("duplicate annotations").failureNel[Unit]
           } else {
-            true.successNel[String]
+            ().successNel[String]
           }
         }
         haveRequired <- {
           if (requiredAnnotTypeIds.intersect(annotTypeIdsFromAnnotationsAsSet).size
                 != requiredAnnotTypeIds.size) {
-            DomainError("missing required annotation type(s)").failureNel[Boolean]
+            DomainError("missing required annotation type(s)").failureNel[Unit]
           } else {
-            true.successNel[String]
+            ().successNel[String]
           }
         }
         allBelong <- {
@@ -161,10 +161,10 @@ object Annotation {
           val notBelonging = annotTypeIdsFromAnnotationsAsSet.diff(annotTypeIds)
 
           if (notBelonging.isEmpty) {
-            true.successNel[String]
+            ().successNel[String]
           } else {
             DomainError("annotation(s) do not belong to annotation types: "
-                          + notBelonging.mkString(", ")).failureNel[Boolean]
+                          + notBelonging.mkString(", ")).failureNel[Unit]
           }
         }
       } yield allBelong

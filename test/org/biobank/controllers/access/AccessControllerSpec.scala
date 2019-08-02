@@ -56,7 +56,7 @@ class AccessControllerSpec
 
       it("list the first page of roles") {
         val limit = 5
-        val reply = makeAuthRequest(GET, uri("roles") + s"?limit=$limit").value
+        val reply = makeAuthRequest(GET, uri("roles").addQueryString(s"limit=$limit")).value
         reply must beOkResponseWithJsonReply
 
         val json = contentAsJson(reply)
@@ -74,7 +74,7 @@ class AccessControllerSpec
           val role = accessItemRepository.getRole(AccessItemId(RoleId.ShippingUser.toString))
             .toOption.value
 
-          (new Url(uri("roles") + s"?filter='name::${role.name}'"), role)
+          (uri(s"roles?filter='name::${role.name}'"), role)
         }
       }
 
@@ -83,7 +83,7 @@ class AccessControllerSpec
         val role = factory.createRole.copy(name = name)
         accessItemRepository.put(role)
 
-        val reply = makeAuthRequest(GET, uri("roles") + s"?sort=name").value
+        val reply = makeAuthRequest(GET, uri("roles").addQueryString("sort=name")).value
         reply must beOkResponseWithJsonReply
 
         val json = contentAsJson(reply)
@@ -98,7 +98,7 @@ class AccessControllerSpec
       }
 
       describe("fail when using an invalid query parameters") {
-        pagedQueryShouldFailSharedBehaviour(() => new Url(uri("roles")))
+        pagedQueryShouldFailSharedBehaviour(() => uri("roles"))
       }
     }
 
@@ -284,7 +284,7 @@ class AccessControllerSpec
         val json = updateDescriptionJson(f.role, Some(nameGenerator.next[Role])) ++
         Json.obj("expectedVersion" -> Some(f.role.version + 10L))
         accessItemRepository.put(f.role)
-        val reply = makeAuthRequest(POST, uri("roles") + s"/description/${f.role.id}", json).value
+        val reply = makeAuthRequest(POST, uri("roles/description", f.role.id.id), json).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
       }
 
@@ -683,7 +683,7 @@ class AccessControllerSpec
 
     it("list single role") {
       val (url, expectedRole) = setupFunc()
-      val reply = makeAuthRequest(GET, url.path).value
+      val reply = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)

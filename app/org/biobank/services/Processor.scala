@@ -46,19 +46,19 @@ trait Processor extends PersistentActor with ActorLogging {
   protected def nameAvailableMatcher[T <: IdentifiedDomainObject[_]]
     (name: String, repository: ReadRepository[_, T], errMsgPrefix: String)
     (matcher: T => Boolean)
-      : ServiceValidation[Boolean] = {
+      : ServiceValidation[Unit] = {
     val exists = repository.getValues.exists(matcher)
-    if (exists) EntityCriteriaError(s"$errMsgPrefix: $name").failureNel[Boolean]
-    else true.successNel[String]
+    if (exists) EntityCriteriaError(s"$errMsgPrefix: $name").failureNel[Unit]
+    else ().successNel[String]
   }
 
   /** Checks that the domain objects version matches the expected one.
     */
   protected def validateVersion[T <: ConcurrencySafeEntity[_]]
     (item: T,expectedVersion: Option[Long])
-      : ServiceValidation[Boolean] = {
-    if (item.versionOption == expectedVersion) true.successNel[String]
-    else ServiceError(s"version mismatch").failureNel[Boolean]
+      : ServiceValidation[Unit] = {
+    if (item.versionOption == expectedVersion) ().successNel[String]
+    else ServiceError(s"version mismatch").failureNel[Unit]
   }
 
 }

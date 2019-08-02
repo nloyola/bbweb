@@ -7,9 +7,9 @@ import org.biobank.domain.access._
 import org.biobank.domain.centres._
 import org.biobank.domain.studies._
 import org.biobank.domain.users._
+import org.biobank.fixtures.Url
 import org.biobank.dto._
 import org.biobank.dto.access._
-import org.biobank.fixtures.Url
 import org.biobank.matchers.PagedResultsMatchers
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.prop.TableDrivenPropertyChecks._
@@ -84,7 +84,7 @@ class AccessControllerMembershipSpec
       describe("lists the default membership") {
         listSingleMembership() { () =>
           val defaultMembership = membershipRepository.getByKey(DefaultMembershipId).toOption.value
-            (new Url(uri("memberships")), defaultMembership)
+            (uri("memberships"), defaultMembership)
         }
       }
 
@@ -93,7 +93,7 @@ class AccessControllerMembershipSpec
           val defaultMembership = membershipRepository.getByKey(DefaultMembershipId).toOption.value
           val memberships = (0 until 2).map(_ => factory.createMembership).toList
           memberships.foreach(membershipRepository.put)
-          (new Url(uri("memberships")), (defaultMembership :: memberships.sortBy(_.name)).sortBy(_.name))
+          (uri("memberships"), (defaultMembership :: memberships.sortBy(_.name)).sortBy(_.name))
         }
       }
 
@@ -103,7 +103,7 @@ class AccessControllerMembershipSpec
                                  factory.createMembership.copy(name = "membership2"))
           val membership = memberships(0)
           memberships.foreach(membershipRepository.put)
-          (new Url(uri("memberships") + s"?filter=name::${membership.name}"), membership)
+          (uri(s"memberships?filter=name::${membership.name}"), membership)
         }
       }
 
@@ -121,14 +121,14 @@ class AccessControllerMembershipSpec
         describe("in ascending order") {
           listMultipleMemberships() { () =>
             val memberships = commonSetup
-            (new Url(uri("memberships") + "?sort=name"), memberships.sortBy(_.name))
+            (uri(s"memberships?sort=name"), memberships.sortBy(_.name))
           }
         }
 
         describe("in descending order") {
           listMultipleMemberships() { () =>
             val memberships = commonSetup
-            (new Url(uri("memberships") + "?sort=-name"), memberships.sortBy(_.name).reverse)
+            (uri(s"memberships?sort=-name"), memberships.sortBy(_.name).reverse)
           }
         }
       }
@@ -139,14 +139,12 @@ class AccessControllerMembershipSpec
                                  factory.createMembership.copy(name = "membership2"),
                                  factory.createMembership.copy(name = "membership1"))
           memberships.foreach(membershipRepository.put)
-          (new Url(uri("memberships") + s"?filter=name:like:membership&sort=name&limit=1"), memberships(2))
+          (uri(s"memberships?filter=name:like:membership&sort=name&limit=1"), memberships(2))
         }
       }
 
       describe("fail when using an invalid query parameters") {
-        pagedQueryShouldFailSharedBehaviour { () =>
-          new Url(uri("memberships"))
-        }
+        pagedQueryShouldFailSharedBehaviour { () => uri("memberships") }
       }
 
     }
@@ -261,7 +259,7 @@ class AccessControllerMembershipSpec
         val f = new MembershipFixture
         val newName = nameGenerator.next[String]
         val json = updateNameJson(f.membership, newName)
-        val reply = makeAuthRequest(POST, uri("memberships", "name", f.membership.id.id), json).value
+        val reply = makeAuthRequest(POST, uri("memberships/name", f.membership.id.id), json).value
         reply must beOkResponseWithJsonReply
 
         val updatedMembership = f.membership.copy(version      = f.membership.version + 1,
@@ -276,14 +274,14 @@ class AccessControllerMembershipSpec
         val membership = factory.createMembership
         membershipRepository.put(membership)
         val reqJson = updateNameJson(f.membership, membership.name)
-        val reply = makeAuthRequest(POST, uri("memberships") + s"/name/${f.membership.id}", reqJson).value
+        val reply = makeAuthRequest(POST, uri("memberships/name", f.membership.id.id), reqJson).value
         reply must beBadRequestWithMessage("EntityCriteriaError: name already used:")
       }
 
       it("fail when updating to something with less than 2 characters") {
         val f = new MembershipFixture
         val reqJson = updateNameJson(f.membership, "a")
-        val reply = makeAuthRequest(POST, uri("memberships") + s"/name/${f.membership.id}", reqJson).value
+        val reply = makeAuthRequest(POST, uri("memberships/name", f.membership.id.id), reqJson).value
         reply must beBadRequestWithMessage("InvalidName")
       }
 
@@ -291,7 +289,7 @@ class AccessControllerMembershipSpec
         val f = new MembershipFixture
         membershipRepository.remove(f.membership)
         val reply = makeAuthRequest(POST,
-                                    uri("memberships") + s"/name/${f.membership.id}",
+                                    uri("memberships/name", f.membership.id.id),
                                     updateNameJson(f.membership, nameGenerator.next[Membership]))
         reply.value must beNotFoundWithMessage("IdNotFound.*membership")
       }
@@ -301,7 +299,7 @@ class AccessControllerMembershipSpec
         val reqJson = updateNameJson(f.membership, nameGenerator.next[Membership]) ++
         Json.obj("expectedVersion" -> (f.membership.version + 10L))
 
-        val reply = makeAuthRequest(POST, uri("memberships") + s"/name/${f.membership.id}", reqJson).value
+        val reply = makeAuthRequest(POST, uri("memberships/name", f.membership.id.id), reqJson).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
       }
 
@@ -321,7 +319,7 @@ class AccessControllerMembershipSpec
         forAll(descriptionValues) { newDescription =>
           val f = new MembershipFixture
           val reqJson = updateDescriptionJson(f.membership, newDescription)
-          val url = uri("memberships") + s"/description/${f.membership.id}"
+          val url = uri("memberships/description", f.membership.id.id)
           val reply = makeAuthRequest(POST, url, reqJson).value
           reply must beOkResponseWithJsonReply
 
@@ -336,7 +334,7 @@ class AccessControllerMembershipSpec
         val f = new MembershipFixture
         membershipRepository.remove(f.membership)
         val reply = makeAuthRequest(POST,
-                                    uri("memberships") + s"/description/${f.membership.id}",
+                                    uri("memberships/description", f.membership.id.id),
                                     updateDescriptionJson(f.membership,
                                                           Some(nameGenerator.next[Membership])))
         reply.value must beNotFoundWithMessage("IdNotFound.*membership")
@@ -346,7 +344,7 @@ class AccessControllerMembershipSpec
         val f = new MembershipFixture
         val reqJson = updateDescriptionJson(f.membership, Some(nameGenerator.next[Membership])) ++
         Json.obj("expectedVersion" -> Some(f.membership.version + 10L))
-        val url = uri("memberships") + s"/description/${f.membership.id}"
+        val url = uri("memberships/description", f.membership.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
       }
@@ -365,7 +363,7 @@ class AccessControllerMembershipSpec
         val reqJson = addUserJson(f.membership, user)
 
         userRepository.put(user)
-        val url = uri("memberships") + s"/user/${f.membership.id}"
+        val url = uri("memberships/user", f.membership.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beOkResponseWithJsonReply
 
@@ -378,7 +376,7 @@ class AccessControllerMembershipSpec
       it("cannot add the same user more than once") {
         val f = new MembershipFixture
         val reqJson = addUserJson(f.membership, f.user)
-        val url = uri("memberships") + s"/user/${f.membership.id}"
+        val url = uri("memberships/user", f.membership.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beBadRequestWithMessage("user ID is already in membership")
       }
@@ -387,7 +385,7 @@ class AccessControllerMembershipSpec
         val f = new MembershipFixture
         val user = factory.createRegisteredUser
         val reqJson = addUserJson(f.membership, user)
-        val url = uri("memberships") + s"/user/${f.membership.id}"
+        val url = uri("memberships/user", f.membership.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beNotFoundWithMessage("IdNotFound: user id")
       }
@@ -400,7 +398,7 @@ class AccessControllerMembershipSpec
         membershipRepository.remove(f.membership)
 
         val reply = makeAuthRequest(POST,
-                                    uri("memberships") + s"/user/${f.membership.id}",
+                                    uri("memberships/user", f.membership.id.id),
                                     reqJson)
         reply.value must beNotFoundWithMessage("IdNotFound.*membership")
       }
@@ -412,7 +410,7 @@ class AccessControllerMembershipSpec
         Json.obj("expectedVersion" -> Some(f.membership.version + 10L))
         userRepository.put(user)
 
-        val reply = makeAuthRequest(POST, uri("memberships") + s"/user/${f.membership.id}", reqJson).value
+        val reply = makeAuthRequest(POST, uri("memberships/user", f.membership.id.id), reqJson).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
       }
 
@@ -514,7 +512,7 @@ class AccessControllerMembershipSpec
         f.membership.studyData.ids must not have size (0L)
 
         val reqJson = Json.obj("expectedVersion" -> f.membership.version)
-        val url = uri("memberships") + s"/allStudies/${f.membership.id}"
+        val url = uri("memberships/allStudies", f.membership.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beOkResponseWithJsonReply
 
@@ -539,7 +537,7 @@ class AccessControllerMembershipSpec
 
         studyRepository.put(study)
         val reply = makeAuthRequest(POST,
-                                    uri("memberships") + s"/study/${f.membership.id}",
+                                    uri("memberships/study", f.membership.id.id),
                                     reqJson).value
         reply must beOkResponseWithJsonReply
 
@@ -556,7 +554,7 @@ class AccessControllerMembershipSpec
         val reqJson = addStudyJson(f.membership, study)
 
         studyRepository.put(study)
-        val reply = makeAuthRequest(POST, uri("memberships") + s"/study/${f.membership.id}", reqJson).value
+        val reply = makeAuthRequest(POST, uri("memberships/study", f.membership.id.id), reqJson).value
         reply must beOkResponseWithJsonReply
 
         val newStudyData = f.membership.studyData.copy(allEntities = false, ids = Set(study.id))
@@ -569,7 +567,7 @@ class AccessControllerMembershipSpec
       it("cannot add the same study more than once") {
         val f = new MembershipFixture
         val reqJson = addStudyJson(f.membership, f.study)
-        val reply = makeAuthRequest(POST, uri("memberships") + s"/study/${f.membership.id}", reqJson).value
+        val reply = makeAuthRequest(POST, uri("memberships/study", f.membership.id.id), reqJson).value
         reply must beBadRequestWithMessage("study ID is already in membership")
       }
 
@@ -577,7 +575,7 @@ class AccessControllerMembershipSpec
         val f = new MembershipFixture
         val study = factory.createEnabledStudy
         val reqJson = addStudyJson(f.membership, study)
-        val reply = makeAuthRequest(POST, uri("memberships") + s"/study/${f.membership.id}", reqJson).value
+        val reply = makeAuthRequest(POST, uri("memberships/study", f.membership.id.id), reqJson).value
         reply must beNotFoundWithMessage("IdNotFound: study id")
       }
 
@@ -588,7 +586,7 @@ class AccessControllerMembershipSpec
         studyRepository.put(study)
         membershipRepository.remove(f.membership)
         val reply = makeAuthRequest(POST,
-                                    uri("memberships") + s"/study/${f.membership.id}",
+                                    uri("memberships/study", f.membership.id.id),
                                     reqJson)
         reply.value must beNotFoundWithMessage("IdNotFound.*membership")
       }
@@ -599,7 +597,7 @@ class AccessControllerMembershipSpec
         val reqJson = addStudyJson(f.membership, study) ++
         Json.obj("expectedVersion" -> Some(f.membership.version + 10L))
         studyRepository.put(study)
-        val reply = makeAuthRequest(POST, uri("memberships") + s"/study/${f.membership.id}", reqJson).value
+        val reply = makeAuthRequest(POST, uri("memberships/study", f.membership.id.id), reqJson).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
       }
 
@@ -702,7 +700,7 @@ class AccessControllerMembershipSpec
 
         val reqJson = Json.obj("expectedVersion" -> f.membership.version)
         val reply = makeAuthRequest(POST,
-                                    uri("memberships") + s"/allCentres/${f.membership.id}",
+                                    uri("memberships/allCentres", f.membership.id.id),
                                     reqJson).value
         reply must beOkResponseWithJsonReply
 
@@ -727,7 +725,7 @@ class AccessControllerMembershipSpec
 
         centreRepository.put(centre)
         val reply = makeAuthRequest(POST,
-                                    uri("memberships") + s"/centre/${f.membership.id}",
+                                    uri("memberships/centre", f.membership.id.id),
                                     reqJson).value
         reply must beOkResponseWithJsonReply
 
@@ -745,7 +743,7 @@ class AccessControllerMembershipSpec
 
         centreRepository.put(centre)
         val reply = makeAuthRequest(POST,
-                                    uri("memberships") + s"/centre/${f.membership.id}",
+                                    uri("memberships/centre", f.membership.id.id),
                                     reqJson).value
         reply must beOkResponseWithJsonReply
 
@@ -760,7 +758,7 @@ class AccessControllerMembershipSpec
         val f = new MembershipFixture
         val reqJson = addCentreJson(f.membership, f.centre)
         val reply = makeAuthRequest(POST,
-                                    uri("memberships") + s"/centre/${f.membership.id}",
+                                    uri("memberships/centre", f.membership.id.id),
                                     reqJson).value
         reply must beBadRequestWithMessage("centre ID is already in membership")
       }
@@ -770,7 +768,7 @@ class AccessControllerMembershipSpec
         val centre = factory.createEnabledCentre
         val reqJson = addCentreJson(f.membership, centre)
         val reply = makeAuthRequest(POST,
-                                    uri("memberships") + s"/centre/${f.membership.id}",
+                                    uri("memberships/centre", f.membership.id.id),
                                     reqJson).value
         reply must beNotFoundWithMessage("IdNotFound: centre id")
       }
@@ -783,7 +781,7 @@ class AccessControllerMembershipSpec
         membershipRepository.remove(f.membership)
 
         val reply = makeAuthRequest(POST,
-                                    uri("memberships") + s"/centre/${f.membership.id}",
+                                    uri("memberships/centre", f.membership.id.id),
                                     reqJson)
         reply.value must beNotFoundWithMessage("IdNotFound.*membership")
       }
@@ -795,7 +793,7 @@ class AccessControllerMembershipSpec
         Json.obj("expectedVersion" -> Some(f.membership.version + 10L))
         centreRepository.put(centre)
         val reply = makeAuthRequest(POST,
-                                    uri("memberships") + s"/centre/${f.membership.id}",
+                                    uri("memberships/centre", f.membership.id.id),
                                     reqJson).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
       }
@@ -806,7 +804,7 @@ class AccessControllerMembershipSpec
 
       it("can remove a user") {
         val f = new MembershipFixture
-        val url = uri("memberships") + s"/user/${f.membership.id}/${f.membership.version}/${f.user.id.id}"
+        val url = uri("memberships/user", f.membership.id.id, f.membership.version.toString, f.user.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beOkResponseWithJsonReply
 
@@ -820,7 +818,7 @@ class AccessControllerMembershipSpec
         val f = new MembershipFixture
         val user = factory.createRegisteredUser
         userRepository.put(user)
-        val url = uri("memberships") + s"/user/${f.membership.id}/${f.membership.version}/${user.id.id}"
+        val url = uri("memberships/user", f.membership.id.id, f.membership.version.toString, user.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("user ID is not in membership")
       }
@@ -828,7 +826,7 @@ class AccessControllerMembershipSpec
       it("cannot remove a user that does not exist") {
         val f = new MembershipFixture
         val user = factory.createRegisteredUser
-        val url = uri("memberships") + s"/user/${f.membership.id}/${f.membership.version}/${user.id.id}"
+        val url = uri("memberships/user", f.membership.id.id, f.membership.version.toString, user.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beNotFoundWithMessage("IdNotFound: user id")
       }
@@ -836,7 +834,7 @@ class AccessControllerMembershipSpec
       it("fail when removing and membership ID does not exist") {
         val f = new MembershipFixture
         val user = factory.createRegisteredUser
-        val url = uri("memberships") + s"/user/${f.membership.id}/${f.membership.version}/${user.id.id}"
+        val url = uri("memberships/user", f.membership.id.id, f.membership.version.toString, user.id.id)
         userRepository.put(user)
         membershipRepository.remove(f.membership)
 
@@ -847,7 +845,10 @@ class AccessControllerMembershipSpec
       it("fail when removing with invalid version") {
         val f = new MembershipFixture
         val user = factory.createRegisteredUser
-        val url = uri("memberships") + s"/user/${f.membership.id}/${f.membership.version + 10L}/${user.id.id}"
+        val url = uri("memberships/user",
+                      f.membership.id.id,
+                      (f.membership.version + 10L).toString,
+                      user.id.id)
         userRepository.put(user)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
@@ -859,7 +860,7 @@ class AccessControllerMembershipSpec
 
       it("can remove a study") {
         val f = new MembershipFixture
-        val url = uri("memberships") + s"/study/${f.membership.id}/${f.membership.version}/${f.study.id.id}"
+        val url = uri("memberships/study", f.membership.id.id, f.membership.version.toString, f.study.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beOkResponseWithJsonReply
 
@@ -874,7 +875,7 @@ class AccessControllerMembershipSpec
         val f = new MembershipFixture
         val study = factory.createEnabledStudy
         studyRepository.put(study)
-        val url = uri("memberships") + s"/study/${f.membership.id}/${f.membership.version}/${study.id.id}"
+        val url = uri("memberships/study", f.membership.id.id, f.membership.version.toString, study.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("study ID is not in membership")
       }
@@ -883,7 +884,7 @@ class AccessControllerMembershipSpec
         val f = new MembershipFixtureAllStudies
         val study = factory.createEnabledStudy
         studyRepository.put(study)
-        val url = uri("memberships") + s"/study/${f.membership.id}/${f.membership.version}/${study.id.id}"
+        val url = uri("memberships/study", f.membership.id.id, f.membership.version.toString, study.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("membership is for all studies, cannot remove:")
       }
@@ -891,7 +892,7 @@ class AccessControllerMembershipSpec
       it("cannot add a study that does not exist") {
         val f = new MembershipFixture
         val study = factory.createEnabledStudy
-        val url = uri("memberships") + s"/study/${f.membership.id}/${f.membership.version}/${study.id.id}"
+        val url = uri("memberships/study", f.membership.id.id, f.membership.version.toString, study.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beNotFoundWithMessage("IdNotFound: study id")
       }
@@ -899,7 +900,7 @@ class AccessControllerMembershipSpec
       it("fail when removing and membership ID does not exist") {
         val f = new MembershipFixture
         val study = factory.createEnabledStudy
-        val url = uri("memberships") + s"/study/${f.membership.id}/${f.membership.version}/${study.id.id}"
+        val url = uri("memberships/study", f.membership.id.id, f.membership.version.toString, study.id.id)
         studyRepository.put(study)
         membershipRepository.remove(f.membership)
         val reply = makeAuthRequest(DELETE, url)
@@ -909,7 +910,11 @@ class AccessControllerMembershipSpec
       it("fail when removing with invalid version") {
         val f = new MembershipFixture
         val study = factory.createEnabledStudy
-        val url = uri("memberships") + s"/study/${f.membership.id}/${f.membership.version + 10L}/${study.id.id}"
+        val url = uri("memberships/study",
+                      f.membership.id.id,
+                      (f.membership.version + 10L).toString,
+                      study.id.id)
+
         studyRepository.put(study)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
@@ -922,7 +927,7 @@ class AccessControllerMembershipSpec
 
       it("can remove a centre") {
         val f = new MembershipFixture
-        val url = uri("memberships") + s"/centre/${f.membership.id}/${f.membership.version}/${f.centre.id.id}"
+        val url = uri("memberships/centre", f.membership.id.id, f.membership.version.toString, f.centre.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beOkResponseWithJsonReply
 
@@ -937,7 +942,7 @@ class AccessControllerMembershipSpec
         val f = new MembershipFixture
         val centre = factory.createEnabledCentre
         centreRepository.put(centre)
-        val url = uri("memberships") + s"/centre/${f.membership.id}/${f.membership.version}/${centre.id.id}"
+        val url = uri("memberships/centre", f.membership.id.id, f.membership.version.toString, centre.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("centre ID is not in membership")
       }
@@ -946,7 +951,7 @@ class AccessControllerMembershipSpec
         val f = new MembershipFixtureAllCentres
         val centre = factory.createEnabledCentre
         centreRepository.put(centre)
-        val url = uri("memberships") + s"/centre/${f.membership.id}/${f.membership.version}/${centre.id.id}"
+        val url = uri("memberships/centre", f.membership.id.id, f.membership.version.toString, centre.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("membership is for all centres, cannot remove:")
       }
@@ -954,7 +959,7 @@ class AccessControllerMembershipSpec
       it("cannot add a centre that does not exist") {
         val f = new MembershipFixture
         val centre = factory.createEnabledCentre
-        val url = uri("memberships") + s"/centre/${f.membership.id}/${f.membership.version}/${centre.id.id}"
+        val url = uri("memberships/centre", f.membership.id.id, f.membership.version.toString, centre.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beNotFoundWithMessage("IdNotFound: centre id")
       }
@@ -962,7 +967,7 @@ class AccessControllerMembershipSpec
       it("fail when removing and membership ID does not exist") {
         val f = new MembershipFixture
         val centre = factory.createEnabledCentre
-        val url = uri("memberships") + s"/centre/${f.membership.id}/${f.membership.version}/${centre.id.id}"
+        val url = uri("memberships/centre", f.membership.id.id, f.membership.version.toString, centre.id.id)
         centreRepository.put(centre)
         membershipRepository.remove(f.membership)
         val reply = makeAuthRequest(DELETE, url)
@@ -972,7 +977,10 @@ class AccessControllerMembershipSpec
       it("fail when removing with invalid version") {
         val f = new MembershipFixture
         val centre = factory.createEnabledCentre
-        val url = uri("memberships") + s"/centre/${f.membership.id}/${f.membership.version + 10L}/${centre.id.id}"
+        val url = uri("memberships/centre",
+                      f.membership.id.id,
+                      (f.membership.version + 10L).toString,
+                      centre.id.id)
         centreRepository.put(centre)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
@@ -984,7 +992,7 @@ class AccessControllerMembershipSpec
 
       it("can remove a membership") {
         val f = new MembershipFixture
-        val url = uri("memberships") + s"/${f.membership.id}/${f.membership.version}"
+        val url = uri("memberships", f.membership.id.id, f.membership.version.toString)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beOkResponseWithJsonReply
 
@@ -995,7 +1003,7 @@ class AccessControllerMembershipSpec
 
       it("cannot remove a membership that does not exist") {
         val f = new MembershipFixture
-        val url = uri("memberships") + s"/${f.membership.id}/${f.membership.version}"
+        val url = uri("memberships", f.membership.id.id, f.membership.version.toString)
         membershipRepository.remove(f.membership)
         val reply = makeAuthRequest(DELETE, url)
         reply.value must beNotFoundWithMessage("IdNotFound.*membership")
@@ -1003,7 +1011,7 @@ class AccessControllerMembershipSpec
 
       it("fail when removing with invalid version") {
         val f = new MembershipFixture
-        val url = uri("memberships") + s"/${f.membership.id}/${f.membership.version + 10L}"
+        val url = uri("memberships", f.membership.id.id, (f.membership.version + 10L).toString)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
       }
@@ -1019,7 +1027,7 @@ class AccessControllerMembershipSpec
 
     it("list single membership") {
       val (url, expectedMembership) = setupFunc()
-      val reply = makeAuthRequest(GET, url.path).value
+      val reply = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val reqJson = contentAsJson(reply)
@@ -1039,7 +1047,7 @@ class AccessControllerMembershipSpec
     it("list multiple memberships") {
       val (url, expectedMemberships) = setupFunc()
 
-      val reply = makeAuthRequest(GET, url.path).value
+      val reply = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val reqJson = contentAsJson(reply)

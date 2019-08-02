@@ -38,31 +38,26 @@ class CollectionEventsControllerSpec
     Set(study, ceventType, participant)foreach(addToRepository)
   }
 
-  private def uri(): String = "/api/participants/cevents"
+  protected val basePath = "participants/cevents"
 
-  private def uri(collectionEvent: CollectionEvent): String =
-    uri + s"/${collectionEvent.id}"
+  private def uri(collectionEvent: CollectionEvent): Url = uri(collectionEvent.id.id)
 
-  private def uri(participantId: ParticipantId): String =
-    uri + s"/${participantId.id}"
+  private def uri(participantId: ParticipantId): Url = uri(participantId.id)
 
-  private def uri(participantId: ParticipantId, cevent: CollectionEvent, version: Long): String =
-    uri(participantId) + s"/${cevent.id.id}/$version"
+  private def uri(participantId: ParticipantId, cevent: CollectionEvent, version: Long): Url =
+    uri(participantId.id, cevent.id.id, version.toString)
 
-  private def uri(participant: Participant): String =
-    uri(participant.id)
+  private def uri(participant: Participant): Url = uri(participant.id)
 
-  private def uri(participant: Participant, cevent: CollectionEvent, version: Long): String =
+  private def uri(participant: Participant, cevent: CollectionEvent, version: Long): Url =
     uri(participant.id, cevent, version)
 
-  private def uriWithVisitNumber(participant: Participant, cevent: CollectionEvent): String =
-    uri + s"/visitNumber/${participant.id.id}/${cevent.visitNumber}"
+  private def uriWithVisitNumber(participant: Participant, cevent: CollectionEvent): Url =
+    uri("visitNumber", participant.id.id, s"${cevent.visitNumber}")
 
-  private def listUri(participantId: ParticipantId): String =
-    uri + s"/list/${participantId.id}"
+  private def listUri(participantId: ParticipantId): Url = uri("list", participantId.id)
 
-  private def updateUri(cevent: CollectionEvent, path: String): String =
-    uri + s"/$path/${cevent.id.id}"
+  private def updateUri(cevent: CollectionEvent, path: String): Url = uri(path, cevent.id.id)
 
   describe("Collection Event REST API") {
 
@@ -98,7 +93,7 @@ class CollectionEventsControllerSpec
 
       it("list none") {
         val f = new Fixture
-        new Url(listUri(f.participant.id)) must beEmptyResults
+        listUri(f.participant.id) must beEmptyResults
       }
 
       describe("list a single collection event") {
@@ -106,7 +101,7 @@ class CollectionEventsControllerSpec
           val f = new Fixture
           val cevent = factory.createCollectionEvent
           collectionEventRepository.put(cevent)
-          (new Url(listUri(f.participant.id)), cevent)
+          (listUri(f.participant.id), cevent)
         }
       }
 
@@ -119,7 +114,7 @@ class CollectionEventsControllerSpec
               cevent
             }.toList
 
-          (new Url(listUri(f.participant.id)), cevents)
+          (listUri(f.participant.id), cevents)
         }
       }
 
@@ -137,7 +132,7 @@ class CollectionEventsControllerSpec
         describe("in ascending order") {
           listMultipleCollectionEvents() { () =>
             val (participant, cevents) = commonSetup
-            (new Url(listUri(participant.id) + "?sort=visitNumber"),
+            (listUri(participant.id).addQueryString("sort=visitNumber"),
              cevents.sortWith(_.visitNumber < _.visitNumber))
           }
         }
@@ -145,7 +140,7 @@ class CollectionEventsControllerSpec
         describe("in descending order") {
           listMultipleCollectionEvents() { () =>
             val (participant, cevents) = commonSetup
-            (new Url(listUri(participant.id) + "?sort=-visitNumber"),
+            (listUri(participant.id).addQueryString("sort=-visitNumber"),
              cevents.sortWith(_.visitNumber > _.visitNumber))
           }
         }
@@ -165,14 +160,15 @@ class CollectionEventsControllerSpec
         describe("in ascending order") {
           listMultipleCollectionEvents() { () =>
             val (participant, cevents) = commonSetup
-            (new Url(listUri(participant.id) + "?sort=timeCompleted"), cevents.sortBy(_.timeCompleted))
+            (listUri(participant.id).addQueryString("sort=timeCompleted"),
+             cevents.sortBy(_.timeCompleted))
           }
         }
 
         describe("in descending order") {
           listMultipleCollectionEvents() { () =>
             val (participant, cevents) = commonSetup
-            (new Url(listUri(participant.id) + "?sort=-timeCompleted"),
+            (listUri(participant.id).addQueryString("sort=-timeCompleted"),
              cevents.sortBy(_.timeCompleted).reverse)
           }
         }
@@ -188,7 +184,7 @@ class CollectionEventsControllerSpec
               collectionEventRepository.put(cevent)
               cevent
             }.toList
-          (new Url(listUri(f.participant.id) + "?sort=timeCompleted&limit=1"), cevents(0))
+          (listUri(f.participant.id).addQueryString("sort=timeCompleted", "limit=1"), cevents(0))
         }
       }
 
@@ -201,14 +197,14 @@ class CollectionEventsControllerSpec
               collectionEventRepository.put(cevent)
               cevent
             }.toList
-          (new Url(listUri(f.participant.id) + "?sort=timeCompleted&page=4&limit=1"), cevents(3))
+          (listUri(f.participant.id).addQueryString("sort=timeCompleted", "page=4", "limit=1"), cevents(3))
         }
       }
 
       describe("fail when using an invalid query parameters") {
         pagedQueryShouldFailSharedBehaviour { () =>
           val f = new Fixture
-          new Url(listUri(f.participant.id))
+          listUri(f.participant.id)
         }
       }
 
@@ -700,7 +696,7 @@ class CollectionEventsControllerSpec
 
     it("list single collectionEvent") {
       val (url, expectedCollectionEvent) = setupFunc()
-      val reply = makeAuthRequest(GET, url.path).value
+      val reply = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)
@@ -720,7 +716,7 @@ class CollectionEventsControllerSpec
     it("list multiple collectionEvents") {
       val (url, expectedCollectionEvents) = setupFunc()
 
-      val reply = makeAuthRequest(GET, url.path).value
+      val reply = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)
@@ -807,7 +803,7 @@ class CollectionEventsControllerSpec
 
   protected def entityName(): String = "collection event"
 
-  protected def updateUri(cevent: CollectionEvent): String = updateUri(cevent, "annot")
+  protected def updateUri(cevent: CollectionEvent): Url = updateUri(cevent, "annot")
 
   protected def getStudy(cevent: CollectionEvent): DomainValidation[EnabledStudy] = {
     for {

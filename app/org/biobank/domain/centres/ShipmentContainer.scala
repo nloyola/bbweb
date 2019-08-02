@@ -56,12 +56,12 @@ object ShipmentContainer {
   def validate(id:          ShipmentContainerId,
                version:     Long,
                shipmentId:  ShipmentId,
-               containerId: ContainerId): DomainValidation[Boolean] = {
+               containerId: ContainerId): DomainValidation[Unit] = {
     (validateId(id) |@|
        validateVersion(version) |@|
        validateId(shipmentId, ShipmentIdRequired) |@|
        validateId(containerId, ContainerIdInvalid)) {
-      case (_, _, _, _) => true
+      case _ => ()
     }
   }
 }

@@ -6,10 +6,6 @@ import play.api.libs.json._
 import scalaz.Scalaz._
 import org.biobank.domain.centres.CentreId
 
-trait ContainerSchemaValidations {
-
-}
-
 /**
  * A plan for how the children in a {@link Container} are positioned and labelled.
  */
@@ -24,8 +20,7 @@ final case class ContainerSchema(id:           ContainerSchemaId,
                                  centreId:     CentreId)
     extends ConcurrencySafeEntity[ContainerSchemaId]
     with HasUniqueName
-    with HasOptionalDescription
-    with ContainerSchemaValidations {
+    with HasOptionalDescription {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
@@ -60,7 +55,7 @@ final case class ContainerSchema(id:           ContainerSchemaId,
 /**
   * Factory object used to create a container schema.
   */
-object ContainerSchema extends ContainerSchemaValidations {
+object ContainerSchema {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 

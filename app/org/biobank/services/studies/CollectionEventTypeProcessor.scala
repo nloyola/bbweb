@@ -373,7 +373,7 @@ class CollectionEventTypeProcessor @javax.inject.Inject() (
     eventType:    Boolean,
     eventVersion: Long
   ) (
-    applyEvent: (CollectionEventType, OffsetDateTime) => ServiceValidation[Boolean]
+    applyEvent: (CollectionEventType, OffsetDateTime) => ServiceValidation[Unit]
   )
       : Unit = {
     if (!eventType) {
@@ -431,16 +431,16 @@ class CollectionEventTypeProcessor @javax.inject.Inject() (
                            event.getRemoved.getVersion) { (cet, _) =>
       val v = collectionEventTypeRepository.getByKey(cet.id)
       v.foreach(collectionEventTypeRepository.remove)
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
   private def storeIfValid(validation: ServiceValidation[CollectionEventType],
-                           eventTime: OffsetDateTime): ServiceValidation[Boolean] = {
+                           eventTime: OffsetDateTime): ServiceValidation[Unit] = {
     validation.foreach { c =>
       collectionEventTypeRepository.put(c.copy(timeModified = Some(eventTime)))
     }
-    validation.map(_ => true)
+    validation.map(_ => ())
   }
 
   private def applyNameUpdatedEvent(event: CollectionEventTypeEvent): Unit = {
@@ -538,7 +538,7 @@ class CollectionEventTypeProcessor @javax.inject.Inject() (
   val ErrMsgNameExists: String = "collection event type with name already exists"
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  private def nameAvailable(name: String, studyId: StudyId): ServiceValidation[Boolean] = {
+  private def nameAvailable(name: String, studyId: StudyId): ServiceValidation[Unit] = {
     nameAvailableMatcher(name, collectionEventTypeRepository, ErrMsgNameExists) { item =>
       (item.name == name) && (item.studyId == studyId)
     }
@@ -548,7 +548,7 @@ class CollectionEventTypeProcessor @javax.inject.Inject() (
   private def nameAvailable(name: String,
                             studyId: StudyId,
                             excludeId: CollectionEventTypeId)
-      : ServiceValidation[Boolean] = {
+      : ServiceValidation[Unit] = {
     nameAvailableMatcher(name, collectionEventTypeRepository, ErrMsgNameExists){ item =>
       (item.name == name) && (item.studyId == studyId) && (item.id != excludeId)
     }

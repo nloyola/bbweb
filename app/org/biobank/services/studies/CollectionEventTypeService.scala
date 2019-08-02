@@ -128,42 +128,42 @@ class CollectionEventTypeServiceImpl @Inject()(
     }
   }
 
-   def listByStudySlug(requestUserId: UserId, studySlug: Slug, query: PagedQuery)
-       : Future[ServiceValidation[PagedResults[CollectionEventType]]] = {
-     Future {
-       for {
-         study     <- studiesService.getStudyBySlug(requestUserId, studySlug)
-         types     <- queryInternal(requestUserId, study.id, query.filter, query.sort)
-         validPage <- query.validPage(types.size)
-         results   <- PagedResults.create(types, query.page, query.limit)
-       } yield results
-     }
-   }
+  def listByStudySlug(requestUserId: UserId, studySlug: Slug, query: PagedQuery)
+      : Future[ServiceValidation[PagedResults[CollectionEventType]]] = {
+    Future {
+      for {
+        study     <- studiesService.getStudyBySlug(requestUserId, studySlug)
+        types     <- queryInternal(requestUserId, study.id, query.filter, query.sort)
+        validPage <- query.validPage(types.size)
+        results   <- PagedResults.create(types, query.page, query.limit)
+      } yield results
+    }
+  }
 
   def specimenDefinitionsForStudy(requestUserId: UserId, studySlug: Slug)
       : Future[ServiceValidation[Set[CollectionSpecimenDefinitionNames]]] = {
-     Future {
-       for {
-         study      <- studiesService.getStudyBySlug(requestUserId, studySlug)
-         eventTypes <- queryInternal(requestUserId, study.id, new FilterString(""), new SortString(""))
-       } yield {
-         eventTypes
-           .filter { !_.specimenDefinitions.isEmpty }
-           .map { eventType =>
-             val definitionNames = eventType.specimenDefinitions.map { definition =>
-                 EntityInfoDto(definition.id.id, definition.slug, definition.name)
-               }
-             CollectionSpecimenDefinitionNames(eventType.id.id,
-                                               eventType.slug,
-                                               eventType.name,
-                                               definitionNames)
-           }
-           .toSet
-       }
-     }
-   }
+    Future {
+      for {
+        study      <- studiesService.getStudyBySlug(requestUserId, studySlug)
+        eventTypes <- queryInternal(requestUserId, study.id, new FilterString(""), new SortString(""))
+      } yield {
+        eventTypes
+          .filter { !_.specimenDefinitions.isEmpty }
+          .map { eventType =>
+            val definitionNames = eventType.specimenDefinitions.map { definition =>
+                EntityInfoDto(definition.id.id, definition.slug, definition.name)
+              }
+            CollectionSpecimenDefinitionNames(eventType.id.id,
+                                              eventType.slug,
+                                              eventType.name,
+                                              definitionNames)
+          }
+          .toSet
+      }
+    }
+  }
 
- def listNamesByStudyId(requestUserId: UserId,
+  def listNamesByStudyId(requestUserId: UserId,
                          studyId:       StudyId,
                          query:         FilterAndSortQuery)
       : Future[ServiceValidation[Seq[EntityInfoDto]]] = {
@@ -181,14 +181,14 @@ class CollectionEventTypeServiceImpl @Inject()(
                            studySlug:     Slug,
                            query:         FilterAndSortQuery)
       : Future[ServiceValidation[Seq[EntityInfoDto]]] = {
-     Future {
-       for {
-         study <- studiesService.getStudyBySlug(requestUserId, studySlug)
-         types <- queryInternal(requestUserId, study.id, query.filter, query.sort)
-       } yield {
-         types.map { t => EntityInfoDto(t.id.id, t.slug, t.name) }
-       }
-     }
+    Future {
+      for {
+        study <- studiesService.getStudyBySlug(requestUserId, studySlug)
+        types <- queryInternal(requestUserId, study.id, query.filter, query.sort)
+      } yield {
+        types.map { t => EntityInfoDto(t.id.id, t.slug, t.name) }
+      }
+    }
   }
 
   def processCommand(cmd: CollectionEventTypeCommand): Future[ServiceValidation[CollectionEventType]] = {
@@ -204,9 +204,9 @@ class CollectionEventTypeServiceImpl @Inject()(
     v.fold(
       err => Future.successful(err.failure[CollectionEventType]),
       study => whenPermittedAndIsMemberAsync(UserId(cmd.sessionUserId),
-                                             PermissionId.StudyUpdate,
-                                             Some(study.id),
-                                             None) { () =>
+                                            PermissionId.StudyUpdate,
+                                            Some(study.id),
+                                            None) { () =>
         ask(processor, cmd).mapTo[ServiceValidation[CollectionEventTypeEvent]].map { validation =>
           for {
             event  <- validation
@@ -221,9 +221,9 @@ class CollectionEventTypeServiceImpl @Inject()(
     studiesService.getDisabledStudy(UserId(cmd.sessionUserId), StudyId(cmd.studyId)).fold(
       err => Future.successful(err.failure[Boolean]),
       study => whenPermittedAndIsMemberAsync(UserId(cmd.sessionUserId),
-                                             PermissionId.StudyUpdate,
-                                             Some(study.id),
-                                             None) { () =>
+                                            PermissionId.StudyUpdate,
+                                            Some(study.id),
+                                            None) { () =>
         ask(processor, cmd)
           .mapTo[ServiceValidation[CollectionEventTypeEvent]]
           .map { validation =>

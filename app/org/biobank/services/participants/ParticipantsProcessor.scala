@@ -197,8 +197,8 @@ class ParticipantsProcessor @Inject() (val participantRepository: ParticipantRep
           .toSuccessNel(s"annotation type with ID does not exist: ${cmd.annotationTypeId}")
       }
       notRequired <- {
-        if (annotType.required) ServiceError(s"annotation is required").failureNel[Boolean]
-        else true.successNel[String]
+        if (annotType.required) ServiceError(s"annotation is required").failureNel[Unit]
+        else ().successNel[String]
       }
       updatedParticipant <- participant.withoutAnnotation(AnnotationTypeId(cmd.annotationTypeId))
     } yield ParticipantEvent(updatedParticipant.id.id).update(
@@ -248,7 +248,7 @@ class ParticipantsProcessor @Inject() (val participantRepository: ParticipantRep
   private def onValidEventAndVersion(event:        ParticipantEvent,
                                      eventType:    Boolean,
                                      eventVersion: Long)
-                                    (applyEvent: (Participant, OffsetDateTime) => ServiceValidation[Boolean])
+                                    (applyEvent: (Participant, OffsetDateTime) => ServiceValidation[Unit])
       : Unit = {
     if (!eventType) {
       log.error(s"invalid event type: $event")
@@ -279,7 +279,7 @@ class ParticipantsProcessor @Inject() (val participantRepository: ParticipantRep
           p.copy(slug = participantRepository.uniqueSlugFromStr(p.uniqueId))
         }
       v.foreach(p => participantRepository.put(p.copy(timeModified = Some(eventTime))))
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -289,7 +289,7 @@ class ParticipantsProcessor @Inject() (val participantRepository: ParticipantRep
                            event.getAnnotationUpdated.getVersion) { (participant, eventTime) =>
       val v = participant.withAnnotation(annotationFromEvent(event.getAnnotationUpdated.getAnnotation))
       v.foreach( p => participantRepository.put(p.copy(timeModified = Some(eventTime))))
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -299,23 +299,23 @@ class ParticipantsProcessor @Inject() (val participantRepository: ParticipantRep
                            event.getAnnotationRemoved.getVersion) { (participant, eventTime) =>
       val v = participant.withoutAnnotation(AnnotationTypeId(event.getAnnotationRemoved.getAnnotationTypeId))
       v.foreach( p => participantRepository.put(p.copy(timeModified = Some(eventTime))))
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
   /** Searches the repository for a matching item.
    */
   protected def uniqueIdAvailableMatcher(uniqueId: String)(matcher: Participant => Boolean)
-      : ServiceValidation[Boolean] = {
+      : ServiceValidation[Unit] = {
     val exists = participantRepository.getValues.exists { item =>
       matcher(item)
     }
-    if (exists) ServiceError(s"$ErrMsgUniqueIdExists: $uniqueId").failureNel[Boolean]
-    else true.successNel[String]
+    if (exists) ServiceError(s"$ErrMsgUniqueIdExists: $uniqueId").failureNel[Unit]
+    else ().successNel[String]
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  private def uniqueIdAvailable(uniqueId: String): ServiceValidation[Boolean] = {
+  private def uniqueIdAvailable(uniqueId: String): ServiceValidation[Unit] = {
     uniqueIdAvailableMatcher(uniqueId){ item =>
       item.uniqueId == uniqueId
     }
@@ -323,7 +323,7 @@ class ParticipantsProcessor @Inject() (val participantRepository: ParticipantRep
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   private def uniqueIdAvailable(uniqueId: String, excludeParticipantId: ParticipantId)
-      : ServiceValidation[Boolean] = {
+      : ServiceValidation[Unit] = {
     uniqueIdAvailableMatcher(uniqueId){ item =>
       (item.uniqueId == uniqueId) && (item.id != excludeParticipantId)
     }

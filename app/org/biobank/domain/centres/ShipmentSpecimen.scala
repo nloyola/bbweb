@@ -102,19 +102,19 @@ final case class ShipmentSpecimen(id:                  ShipmentSpecimenId,
     }
   }
 
-  def isStatePresent(): DomainValidation[Boolean] = {
-    if (state == ShipmentItemState.Present) true.successNel[String]
-    else DomainError(s"shipment specimen is not in present state").failureNel[Boolean]
+  def isStatePresent(): DomainValidation[Unit] = {
+    if (state == ShipmentItemState.Present) ().successNel[String]
+    else DomainError(s"shipment specimen is not in present state").failureNel[Unit]
   }
 
-  def isStateNotPresent(): DomainValidation[Boolean] = {
-    if (state != ShipmentItemState.Present) true.successNel[String]
-    else DomainError(s"shipment specimen in present state").failureNel[Boolean]
+  def isStateNotPresent(): DomainValidation[Unit] = {
+    if (state != ShipmentItemState.Present) ().successNel[String]
+    else DomainError(s"shipment specimen in present state").failureNel[Unit]
   }
 
-  def isStateExtra(): DomainValidation[Boolean] = {
-    if (state == ShipmentItemState.Extra) true.successNel[String]
-    else DomainError(s"shipment specimen is not in extra state").failureNel[Boolean]
+  def isStateExtra(): DomainValidation[Unit] = {
+    if (state == ShipmentItemState.Extra) ().successNel[String]
+    else DomainError(s"shipment specimen is not in extra state").failureNel[Unit]
   }
 
   override def toString: String =
@@ -167,13 +167,13 @@ object ShipmentSpecimen extends ShipmentSpecimenValidations {
                version:             Long,
                shipmentId:          ShipmentId,
                specimenId:          SpecimenId,
-               shipmentContainerId: Option[ShipmentContainerId]): DomainValidation[Boolean] = {
+               shipmentContainerId: Option[ShipmentContainerId]): DomainValidation[Unit] = {
     (validateId(id) |@|
        validateVersion(version) |@|
        validateId(shipmentId, ShipmentIdRequired) |@|
        validateId(specimenId, SpecimenIdRequired) |@|
        validateIdOption(shipmentContainerId, ShipmentContainerIdInvalid)) {
-      case _ => true
+      case _ => ()
     }
   }
 }

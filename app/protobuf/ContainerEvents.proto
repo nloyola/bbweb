@@ -1,0 +1,34 @@
+syntax = "proto2";
+
+package org.biobank.infrastructure.events;
+
+import "CommonEvents.proto";
+
+message ContainerEvent {
+
+  message RootAdded {
+    optional string inventoryId     = 1;
+    optional string label           = 2;
+    optional string centreId        = 3;
+    optional string locationId      = 4;
+    optional string temperature     = 5;
+    optional string containerTypeId = 6;
+  }
+
+  message ChildAdded {
+    optional string inventoryId     = 1;
+    optional string label           = 2;
+    optional string containerTypeId = 3;
+    optional string parentId        = 4;
+  }
+
+  required string id            = 1;
+  optional string sessionUserId = 2;
+  optional string time          = 3;
+
+  oneof event_type {
+    RootAdded rootAdded = 4;
+    ChildAdded storageAdded = 5;
+    ChildAdded specimenAdded = 6;
+  }
+}

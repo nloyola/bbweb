@@ -358,7 +358,7 @@ class StudiesProcessor @Inject() (val studyRepository:               StudyReposi
   private def onValidEventStudyAndVersion(event: StudyEvent,
                                           eventType: Boolean,
                                           eventVersion: Long)
-                                         (applyEvent: (Study, OffsetDateTime) => ServiceValidation[Boolean])
+                                         (applyEvent: (Study, OffsetDateTime) => ServiceValidation[Unit])
       : Unit = {
     if (!eventType) {
       log.error(s"invalid event type: $event")
@@ -384,12 +384,12 @@ class StudiesProcessor @Inject() (val studyRepository:               StudyReposi
   private def onValidEventDisabledStudyAndVersion(event: StudyEvent,
                                                   eventType: Boolean,
                                                   eventVersion: Long)
-                                                 (applyEvent: (DisabledStudy, OffsetDateTime) => ServiceValidation[Boolean])
+                                                 (applyEvent: (DisabledStudy, OffsetDateTime) => ServiceValidation[Unit])
       : Unit = {
     onValidEventStudyAndVersion(event, eventType, eventVersion) { (study, eventTime) =>
       study match {
         case study: DisabledStudy => applyEvent(study, eventTime)
-        case study => ServiceError(s"study not disabled: $event").failureNel[Boolean]
+        case study => ServiceError(s"study not disabled: $event").failureNel[Unit]
       }
     }
   }
@@ -397,12 +397,12 @@ class StudiesProcessor @Inject() (val studyRepository:               StudyReposi
   private def onValidEventEnabledStudyAndVersion(event: StudyEvent,
                                                  eventType: Boolean,
                                                  eventVersion: Long)
-                                                 (applyEvent: (EnabledStudy, OffsetDateTime) => ServiceValidation[Boolean])
+                                                 (applyEvent: (EnabledStudy, OffsetDateTime) => ServiceValidation[Unit])
       : Unit = {
     onValidEventStudyAndVersion(event, eventType, eventVersion) { (study, eventTime) =>
       study match {
         case study: EnabledStudy => applyEvent(study, eventTime)
-        case study => ServiceError(s"study not enabled: $event").failureNel[Boolean]
+        case study => ServiceError(s"study not enabled: $event").failureNel[Unit]
       }
     }
   }
@@ -410,12 +410,12 @@ class StudiesProcessor @Inject() (val studyRepository:               StudyReposi
   private def onValidEventRetiredStudyAndVersion(event: StudyEvent,
                                                  eventType: Boolean,
                                                  eventVersion: Long)
-                                                 (applyEvent: (RetiredStudy, OffsetDateTime) => ServiceValidation[Boolean])
+                                                 (applyEvent: (RetiredStudy, OffsetDateTime) => ServiceValidation[Unit])
       : Unit = {
     onValidEventStudyAndVersion(event, eventType, eventVersion) { (study, eventTime) =>
       study match {
         case study: RetiredStudy => applyEvent(study, eventTime)
-        case study => ServiceError(s"study not retired: $event").failureNel[Boolean]
+        case study => ServiceError(s"study not retired: $event").failureNel[Unit]
       }
     }
   }
@@ -444,21 +444,21 @@ class StudiesProcessor @Inject() (val studyRepository:               StudyReposi
   }
 
   private def putDisabledOnSuccess(validation: ServiceValidation[DisabledStudy],
-                                   eventTime: OffsetDateTime): ServiceValidation[Boolean] = {
+                                   eventTime: OffsetDateTime): ServiceValidation[Unit] = {
     validation.foreach { s => studyRepository.put(s.copy(timeModified = Some(eventTime))) }
-    validation.map { _ => true }
+    validation.map { _ => () }
   }
 
   private def putEnabledOnSuccess(validation: ServiceValidation[EnabledStudy],
-                                   eventTime: OffsetDateTime): ServiceValidation[Boolean] = {
+                                   eventTime: OffsetDateTime): ServiceValidation[Unit] = {
     validation.foreach { s => studyRepository.put(s.copy(timeModified = Some(eventTime))) }
-    validation.map { _ => true }
+    validation.map { _ => () }
   }
 
   private def putRetiredOnSuccess(validation: ServiceValidation[RetiredStudy],
-                                   eventTime: OffsetDateTime): ServiceValidation[Boolean] = {
+                                   eventTime: OffsetDateTime): ServiceValidation[Unit] = {
     validation.foreach { s => studyRepository.put(s.copy(timeModified = Some(eventTime))) }
-    validation.map { _ => true }
+    validation.map { _ => () }
   }
 
   private def applyNameUpdatedEvent(event: StudyEvent) : Unit = {
@@ -560,14 +560,14 @@ class StudiesProcessor @Inject() (val studyRepository:               StudyReposi
   val ErrMsgNameExists: String = "name already used"
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  private def nameAvailable(name: String): ServiceValidation[Boolean] = {
+  private def nameAvailable(name: String): ServiceValidation[Unit] = {
     nameAvailableMatcher(name, studyRepository, ErrMsgNameExists) { item =>
       item.name == name
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  private def nameAvailable(name: String, excludeStudyId: StudyId): ServiceValidation[Boolean] = {
+  private def nameAvailable(name: String, excludeStudyId: StudyId): ServiceValidation[Unit] = {
     nameAvailableMatcher(name, studyRepository, ErrMsgNameExists){ item =>
       (item.name == name) && (item.id != excludeStudyId)
     }

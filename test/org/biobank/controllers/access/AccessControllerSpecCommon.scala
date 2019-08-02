@@ -1,7 +1,7 @@
 package org.biobank.controllers.access
 
 import org.biobank.domain._
-import org.biobank.fixtures.ControllerFixture
+import org.biobank.fixtures.{ControllerFixture, Url}
 import play.api.libs.json._
 import play.api.test.Helpers._
 
@@ -10,15 +10,11 @@ trait AccessControllerSpecCommon
 
   import org.biobank.matchers.JsonMatchers._
 
-  protected def uri(paths: String*): String = {
-    val basePath = "/api/access"
-    if (paths.isEmpty) basePath
-    else s"$basePath/" + paths.mkString("/")
-  }
+  protected val basePath = "access"
 
   def accessEntityNameSharedBehaviour[D, T <: ConcurrencySafeEntity[_] with HasName with HasSlug](
     createEntity: String => T,
-    baseUrl: String
+    baseUrl: Url
   ) (
     matchItems: (List[D], List[T]) => Unit
   ) (
@@ -30,7 +26,7 @@ trait AccessControllerSpecCommon
                          createEntity("ITEM1")).sortBy(_.name)
         items.foreach(addToRepository)
 
-        val reply = makeAuthRequest(GET, baseUrl + "?filter=name:like:ITEM&order=asc").value
+        val reply = makeAuthRequest(GET, baseUrl.append("?filter=name:like:ITEM&order=asc")).value
         reply must beOkResponseWithJsonReply
 
         val replyEntities = (contentAsJson(reply) \ "data").validate[List[D]]
@@ -43,7 +39,7 @@ trait AccessControllerSpecCommon
                          createEntity("ITEM1")).sortBy(_.name)
         items.foreach(addToRepository)
 
-        val reply = makeAuthRequest(GET, baseUrl + "?filter=name::ITEM1").value
+        val reply = makeAuthRequest(GET, baseUrl.append("?filter=name::ITEM1")).value
         reply must beOkResponseWithJsonReply
 
         val replyEntities = (contentAsJson(reply) \ "data").validate[List[D]]
@@ -52,7 +48,7 @@ trait AccessControllerSpecCommon
       }
 
       it("list nothing when using a name filter for name not in system") {
-        val reply = makeAuthRequest(GET, baseUrl + "?filter=name::abc123").value
+        val reply = makeAuthRequest(GET, baseUrl.append("?filter=name::abc123")).value
         reply must beOkResponseWithJsonReply
         val replyEntities = (contentAsJson(reply) \ "data").validate[List[D]]
         replyEntities must be (jsSuccess)
@@ -60,7 +56,7 @@ trait AccessControllerSpecCommon
       }
 
       it("fail for invalid sort field") {
-        val reply = makeAuthRequest(GET, baseUrl + "?sort=xxxx").value
+        val reply = makeAuthRequest(GET, baseUrl.append("?sort=xxxx")).value
         reply must beBadRequestWithMessage("invalid sort field")
       }
 

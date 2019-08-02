@@ -46,10 +46,10 @@ sealed trait SpecimenProcessingInfo extends ProcessingTypeValidations {
   val count:                Int
   val containerTypeId:      Option[ContainerTypeId]
 
-  def validate(): DomainValidation[Boolean] = {
+  def validate(): DomainValidation[Unit] = {
     (validatePositiveNumber(expectedChange, InvalidPositiveNumber) |@|
        validatePositiveNumber(count, InvalidPositiveNumber) |@|
-       validateIdOption(containerTypeId, ContainerTypeIdRequired)) { case _ => true }
+       validateIdOption(containerTypeId, ContainerTypeIdRequired)) { case _ => () }
 
   }
 }
@@ -86,7 +86,7 @@ final case class InputSpecimenProcessing(expectedChange:       BigDecimal,
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
-  override def validate(): DomainValidation[Boolean] = {
+  override def validate(): DomainValidation[Unit] = {
     val idValidationKey: ValidationKey =
       if (definitionType == ProcessingType.collectedDefinition) CollectionEventTypeIdRequired
       else ProcessingTypeIdRequired
@@ -94,7 +94,7 @@ final case class InputSpecimenProcessing(expectedChange:       BigDecimal,
     (super.validate |@|
        validateDefinitionType(definitionType) |@|
        validateNonEmptyString(entityId.toString, idValidationKey) |@|
-       validateId(specimenDefinitionId, SpecimenDefinitionIdRequired)) { case _ => true }
+       validateId(specimenDefinitionId, SpecimenDefinitionIdRequired)) { case _ => () }
   }
 
   private def validateDefinitionType(definitionType: InputSpecimenDefinitionType)
@@ -131,8 +131,8 @@ final case class OutputSpecimenProcessing(expectedChange:     BigDecimal,
                                           specimenDefinition: ProcessedSpecimenDefinition)
     extends SpecimenProcessingInfo {
 
-  override def validate(): DomainValidation[Boolean] = {
-    (super.validate |@| ProcessedSpecimenDefinition.validate(specimenDefinition)) { case _ => true }
+  override def validate(): DomainValidation[Unit] = {
+    (super.validate |@| ProcessedSpecimenDefinition.validate(specimenDefinition)) { case _ => () }
   }
 }
 

@@ -9,10 +9,9 @@ trait HasAnnotationTypes extends AnnotationTypeValidations {
 
   val annotationTypes: Set[AnnotationType]
 
-  protected def checkAddAnnotationType(annotationType: AnnotationType)
-      : DomainValidation[Boolean] = {
+  protected def checkAddAnnotationType(annotationType: AnnotationType): DomainValidation[Unit] = {
     (validate(annotationType) |@| nameNotUsed(annotationType)) {
-      case _ => true
+      case _ => ()
     }
   }
 
@@ -23,15 +22,15 @@ trait HasAnnotationTypes extends AnnotationTypeValidations {
       .toSuccessNel(s"annotation type does not exist: $annotationTypeId")
   }
 
-  protected def nameNotUsed(annotationType: AnnotationType): DomainValidation[Boolean] = {
+  protected def nameNotUsed(annotationType: AnnotationType): DomainValidation[Unit] = {
     val nameLowerCase = annotationType.name.toLowerCase
     annotationTypes
       .find { x => (x.name.toLowerCase == nameLowerCase) && (x.id != annotationType.id)  }
       match {
         case Some(_) =>
-          EntityCriteriaError(s"annotation type name already used: ${annotationType.name}").failureNel[Boolean]
+          EntityCriteriaError(s"annotation type name already used: ${annotationType.name}").failureNel[Unit]
         case None =>
-          true.successNel[DomainError]
+          ().successNel[DomainError]
       }
   }
 

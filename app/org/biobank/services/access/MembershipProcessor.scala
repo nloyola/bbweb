@@ -410,7 +410,6 @@ class MembershipProcessor @Inject() (val membershipRepository: MembershipReposit
         membershipRepository.put(
           updated.copy(slug         = membershipRepository.uniqueSlugFromStr(updated.name),
                        timeModified = Some(time)))
-        true
       }
     }
   }
@@ -422,7 +421,6 @@ class MembershipProcessor @Inject() (val membershipRepository: MembershipReposit
       (membership, _, time) =>
       membership.withDescription(event.getDescriptionUpdated.description).map { updated =>
         membershipRepository.put(updated.copy(timeModified = Some(time)))
-        true
       }
     }
   }
@@ -443,7 +441,7 @@ class MembershipProcessor @Inject() (val membershipRepository: MembershipReposit
 
       val updated = membership.addUser(userIdToAdd).copy(timeModified = Some(time))
       membershipRepository.put(updated)
-      true.successNel[String]
+      ().successNel[String]
     }
   }
 
@@ -459,7 +457,7 @@ class MembershipProcessor @Inject() (val membershipRepository: MembershipReposit
                                     studyData    = studyData,
                                     timeModified = Some(time))
       membershipRepository.put(updated)
-      true.successNel[String]
+      ().successNel[String]
     }
   }
 
@@ -470,7 +468,7 @@ class MembershipProcessor @Inject() (val membershipRepository: MembershipReposit
       (membership, _, time) =>
       val updated = membership.hasAllStudies.copy(timeModified = Some(time))
       membershipRepository.put(updated)
-      true.successNel[String]
+      ().successNel[String]
     }
   }
 
@@ -483,7 +481,7 @@ class MembershipProcessor @Inject() (val membershipRepository: MembershipReposit
         .addStudy(StudyId(event.getStudyAdded.getId))
         .copy(timeModified = Some(time))
       membershipRepository.put(updated)
-      true.successNel[String]
+      ().successNel[String]
     }
   }
 
@@ -499,7 +497,7 @@ class MembershipProcessor @Inject() (val membershipRepository: MembershipReposit
                                     centreData  = centreData,
                                     timeModified = Some(time))
       membershipRepository.put(updated)
-      true.successNel[String]
+      ().successNel[String]
     }
   }
 
@@ -510,7 +508,7 @@ class MembershipProcessor @Inject() (val membershipRepository: MembershipReposit
       (membership, _, time) =>
       val updated = membership.hasAllCentres.copy(timeModified = Some(time))
       membershipRepository.put(updated)
-      true.successNel[String]
+      ().successNel[String]
     }
   }
 
@@ -523,7 +521,7 @@ class MembershipProcessor @Inject() (val membershipRepository: MembershipReposit
         .addCentre(CentreId(event.getCentreAdded.getId))
         .copy(timeModified = Some(time))
       membershipRepository.put(updated)
-      true.successNel[String]
+      ().successNel[String]
     }
   }
 
@@ -536,7 +534,7 @@ class MembershipProcessor @Inject() (val membershipRepository: MembershipReposit
         .removeUser(UserId(event.getUserRemoved.getId))
         .copy(timeModified = Some(time))
       membershipRepository.put(updated)
-      true.successNel[String]
+      ().successNel[String]
     }
   }
 
@@ -549,7 +547,7 @@ class MembershipProcessor @Inject() (val membershipRepository: MembershipReposit
         .removeStudy(StudyId(event.getStudyRemoved.getId))
         .copy(timeModified = Some(time))
       membershipRepository.put(updated)
-      true.successNel[String]
+      ().successNel[String]
     }
   }
 
@@ -562,7 +560,7 @@ class MembershipProcessor @Inject() (val membershipRepository: MembershipReposit
         .removeCentre(CentreId(event.getCentreRemoved.getId))
         .copy(timeModified = Some(time))
       membershipRepository.put(updated)
-      true.successNel[String]
+      ().successNel[String]
     }
   }
 
@@ -572,7 +570,7 @@ class MembershipProcessor @Inject() (val membershipRepository: MembershipReposit
                                      event.getRemoved.getVersion) {
       (membership, _, time) =>
       membershipRepository.remove(membership)
-      true.successNel[String]
+      ().successNel[String]
     }
   }
 
@@ -593,7 +591,7 @@ class MembershipProcessor @Inject() (val membershipRepository: MembershipReposit
                                                eventVersion: Long)
                                               (applyEvent:  (Membership,
                                                              MembershipEvent,
-                                                             OffsetDateTime) => ServiceValidation[Boolean])
+                                                             OffsetDateTime) => ServiceValidation[Unit])
       : Unit = {
     if (!eventType) {
       log.error(s"invalid event type: $event")
@@ -618,14 +616,14 @@ class MembershipProcessor @Inject() (val membershipRepository: MembershipReposit
   val ErrMsgNameExists: String = "name already used"
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  private def nameAvailable(name: String): ServiceValidation[Boolean] = {
+  private def nameAvailable(name: String): ServiceValidation[Unit] = {
     nameAvailableMatcher(name, membershipRepository, ErrMsgNameExists) { item =>
       item.name == name
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  private def nameAvailable(name: String, excludeId: MembershipId): ServiceValidation[Boolean] = {
+  private def nameAvailable(name: String, excludeId: MembershipId): ServiceValidation[Unit] = {
     nameAvailableMatcher(name, membershipRepository, ErrMsgNameExists){ item =>
       (item.name == name) && (item.id != excludeId)
     }

@@ -260,7 +260,7 @@ class SpecimensServiceSpec
           specimenRepository.put(f.specimen) // restore it to it's previous state
           ceventSpecimenRepository.put(CeventSpecimen(f.cevent.id, f.specimen.id))
           specimensService.processRemoveCommand(cmd).futureValue mustSucceed { reply =>
-            reply must be (true)
+            ()
           }
         }
       }

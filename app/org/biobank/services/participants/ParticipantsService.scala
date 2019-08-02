@@ -44,8 +44,10 @@ class ParticipantsServiceImpl @Inject() (
   @Named("participantsProcessor") val processor: ActorRef,
   val accessService:                             AccessService,
   val studiesService:                            StudiesService,
-  val participantRepository:                     ParticipantRepository)
-                                     (implicit executionContext: BbwebExecutionContext)
+  val participantRepository:                     ParticipantRepository
+) (
+  implicit executionContext: BbwebExecutionContext
+)
     extends ParticipantsService
     with AccessChecksSerivce
     with ServicePermissionChecks {

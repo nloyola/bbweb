@@ -95,8 +95,7 @@ class ProcessingTypesControllerSpec
       it("list none") {
         val study = factory.createDisabledStudy
         studyRepository.put(study)
-        val url = new Url(uri(study.slug.id))
-        url must beEmptyResults
+        uri(study.slug.id) must beEmptyResults
       }
 
       describe("list a single processing type") {
@@ -107,7 +106,7 @@ class ProcessingTypesControllerSpec
           val procType = factory.createProcessingType
           processingTypeRepository.put(procType)
 
-          (new Url(uri(study.slug.id)), procType)
+          (uri(study.slug.id), procType)
         }
       }
 
@@ -118,7 +117,7 @@ class ProcessingTypesControllerSpec
 
           val procTypes = List(factory.createProcessingType, factory.createProcessingType).sortBy(_.name)
           procTypes.foreach(processingTypeRepository.put)
-          (new Url(uri(study.slug.id)), procTypes)
+          (uri(study.slug.id), procTypes)
         }
       }
 
@@ -148,7 +147,7 @@ class ProcessingTypesControllerSpec
           val study = factory.createDisabledStudy
           studyRepository.put(study)
           factory.createProcessingType
-          new Url(uri(study.slug.id))
+          uri(study.slug.id)
         }
       }
 
@@ -260,7 +259,7 @@ class ProcessingTypesControllerSpec
           val f = collectionSpecimenDefinitionFixtures
           val enabledStudy = f.study.enable.toOption.value
           studyRepository.put(enabledStudy)
-          (new Url(uri(enabledStudy.id.id)), f.processingType)
+          (uri(enabledStudy.id.id), f.processingType)
         }
       }
 
@@ -269,7 +268,7 @@ class ProcessingTypesControllerSpec
           val f = collectionSpecimenDefinitionFixtures
           val enabledStudy = f.study.retire.toOption.value
           studyRepository.put(enabledStudy)
-          (new Url(uri(enabledStudy.id.id)), f.processingType)
+          (uri(enabledStudy.id.id), f.processingType)
         }
       }
 
@@ -374,7 +373,7 @@ class ProcessingTypesControllerSpec
           updateWithInvalidVersionSharedBehaviour { processingType =>
             processingTypeRepository.put(processingType)
 
-            (new Url(uri("update", processingType.studyId.id, processingType.id.id)),
+            (uri("update", processingType.studyId.id, processingType.id.id),
              Json.obj("property" -> "name",
                       "newValue" -> JsString(nameGenerator.next[String])))
           }
@@ -422,7 +421,7 @@ class ProcessingTypesControllerSpec
           updateWithInvalidVersionSharedBehaviour { processingType =>
             processingTypeRepository.put(processingType)
 
-            (new Url(uri("update", processingType.studyId.id, processingType.id.id)),
+            (uri("update", processingType.studyId.id, processingType.id.id),
              Json.obj("property" -> "description",
                       "newValue" -> JsString(nameGenerator.next[String])))
           }
@@ -467,7 +466,7 @@ class ProcessingTypesControllerSpec
           updateWithInvalidVersionSharedBehaviour { processingType =>
             processingTypeRepository.put(processingType)
 
-            (new Url(uri("update", processingType.studyId.id, processingType.id.id)),
+            (uri("update", processingType.studyId.id, processingType.id.id),
              Json.obj("property" -> "enabled",
                       "newValue" -> JsBoolean(true)))
           }
@@ -624,7 +623,7 @@ class ProcessingTypesControllerSpec
             processingTypeRepository.put(processingType)
             val newValue = processingType.input
 
-            (new Url(uri("update", processingType.studyId.id, processingType.id.id)),
+            (uri("update", processingType.studyId.id, processingType.id.id),
              Json.obj("property" -> "inputSpecimenProcessing",
                       "newValue" -> Json.toJson(newValue)))
           }
@@ -636,7 +635,7 @@ class ProcessingTypesControllerSpec
 
             val json = Json.toJson(processingType.input)
 
-            (new Url(uri("update", processingType.studyId.id, processingType.id.id)),
+            (uri("update", processingType.studyId.id, processingType.id.id),
              Json.obj("property" -> "inputSpecimenProcessing", "newValue" -> json))
           }
         }
@@ -717,7 +716,7 @@ class ProcessingTypesControllerSpec
       describe("fail when updating output specimen info and an invalid version is used") {
         updateWithInvalidVersionSharedBehaviour { processingType =>
           processingTypeRepository.put(processingType)
-          (new Url(uri("update", processingType.studyId.id, processingType.id.id)),
+          (uri("update", processingType.studyId.id, processingType.id.id),
            Json.obj("property" -> "outputSpecimenProcessing",
                     "newValue" -> Json.toJson(processingType.output)))
         }
@@ -783,14 +782,14 @@ class ProcessingTypesControllerSpec
         updateWithInvalidVersionSharedBehaviour { processingType =>
           processingTypeRepository.put(processingType)
 
-          (new Url(uri("annottype", processingType.id.id)),
+          (uri("annottype", processingType.id.id),
            annotationTypeToJsonNoId(factory.createAnnotationType))
         }
       }
 
       describe("not add an annotation type on a non disabled study") {
         updateWithNonDisabledStudySharedBehaviour { processingType =>
-          (new Url(uri("annottype", processingType.id.id)),
+          (uri("annottype", processingType.id.id),
            annotationTypeToJsonNoId(factory.createAnnotationType))
         }
       }
@@ -837,7 +836,7 @@ class ProcessingTypesControllerSpec
           val annotationType = factory.createAnnotationType
           processingTypeRepository.put(processingType)
 
-          (new Url(uri("annottype", processingType.id.id, annotationType.id.id)),
+          (uri("annottype", processingType.id.id, annotationType.id.id),
            annotationTypeToJsonNoId(annotationType))
         }
       }
@@ -845,7 +844,7 @@ class ProcessingTypesControllerSpec
       describe("not update an annotation type when study is not disabled") {
         updateWithNonDisabledStudySharedBehaviour { processingType =>
           val annotationType = factory.createAnnotationType
-          (new Url(uri("annottype", processingType.id.id, annotationType.id.id)),
+          (uri("annottype", processingType.id.id, annotationType.id.id),
            annotationTypeToJsonNoId(annotationType))
         }
       }
@@ -1023,10 +1022,7 @@ class ProcessingTypesControllerSpec
     }
   }
 
-  private def uri(paths: String*): String = {
-    if (paths.isEmpty) "/api/studies/proctypes"
-    else "/api/studies/proctypes/" + paths.mkString("/")
-  }
+  protected val basePath = "studies/proctypes"
 
   private def listSingleProcessingType(offset:    Long = 0,
                                        maybeNext: Option[Int] = None,
@@ -1035,7 +1031,7 @@ class ProcessingTypesControllerSpec
 
     it("list single processing types") {
       val (url, expectedProcessingType) = setupFunc()
-      val reply = makeAuthRequest(GET, url.path).value
+      val reply = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)
@@ -1055,7 +1051,7 @@ class ProcessingTypesControllerSpec
     it("list multiple processing types") {
       val (url, expectedProcessingTypes) = setupFunc()
 
-      val reply = makeAuthRequest(GET, url.path).value
+      val reply = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)
@@ -1165,7 +1161,7 @@ class ProcessingTypesControllerSpec
 
     it("must be bad request") {
       val (url, processingType) = setupFunc()
-      val reply = makeAuthRequest(POST, url.path, procTypeToAddJson(processingType)).value
+      val reply = makeAuthRequest(POST, url, procTypeToAddJson(processingType)).value
       reply must beBadRequestWithMessage("InvalidStatus: study not disabled")
     }
   }
@@ -1219,7 +1215,7 @@ class ProcessingTypesControllerSpec
       updateWithNonDisabledStudySharedBehaviour { processingType =>
         val (property, value) = setupFunc()
 
-        (new Url(uri("update", processingType.studyId.id, processingType.id.id)),
+        (uri("update", processingType.studyId.id, processingType.id.id),
          Json.obj("property" -> property,
                   "newValue" -> value))
       }
@@ -1441,7 +1437,7 @@ class ProcessingTypesControllerSpec
         reqJson = reqJson ++ json.as[JsObject]
       }
 
-      val reply = makeAuthRequest(POST, url.path, reqJson).value
+      val reply = makeAuthRequest(POST, url, reqJson).value
       reply must beBadRequestWithMessage (".*expected version doesn't match current version.*")
     }
   }
@@ -1465,7 +1461,7 @@ class ProcessingTypesControllerSpec
 
       forAll (studiesTable) { study =>
         addToRepository(study)
-        val reply = makeAuthRequest(POST, url.path, reqJson).value
+        val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beBadRequestWithMessage("InvalidStatus: study not disabled")
       }
     }

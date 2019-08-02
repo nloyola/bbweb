@@ -295,7 +295,7 @@ class CollectionEventTypeServiceSpec
 
           collectionEventTypeRepository.put(f.ceventType) // restore it to it's previous state
           ceventTypeService.processRemoveCommand(cmd).futureValue mustSucceed { reply =>
-            reply must be (true)
+            ()
           }
         }
       }

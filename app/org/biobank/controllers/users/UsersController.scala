@@ -149,7 +149,7 @@ class UsersController @Inject() (controllerComponents: ControllerComponents,
     action.async(parse.empty) { implicit request =>
       FilterAndSortQueryHelper(request.rawQueryString).fold(
         err => {
-          validationReply(Future.successful(err.failure[PagedResults[NameAndStateDto]]))
+          validationReply(Future.successful(err.failure[PagedResults[EntityInfoAndStateDto]]))
         },
         query => {
           validationReply(usersService.getUserNames(request.identity.user.id, query))

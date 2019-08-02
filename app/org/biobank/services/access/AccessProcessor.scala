@@ -36,7 +36,7 @@ class AccessProcessor @Inject() (val accessItemRepository: AccessItemRepository,
   import AccessProcessor._
   import org.biobank.CommonValidations._
 
-  type ApplyRoleEvent = (Role, OffsetDateTime) => ServiceValidation[Boolean]
+  type ApplyRoleEvent = (Role, OffsetDateTime) => ServiceValidation[Unit]
 
   override def persistenceId: String = "access-processor-id"
 
@@ -335,9 +335,8 @@ class AccessProcessor @Inject() (val accessItemRepository: AccessItemRepository,
   }
 
 
-  private def updateRole(role: Role, time: OffsetDateTime): Boolean = {
+  private def updateRole(role: Role, time: OffsetDateTime): Unit = {
     accessItemRepository.put(role.copy(timeModified = Some(time)))
-    true
   }
 
   private def applyNameUpdatedEvent(event: AccessEvent): Unit = {
@@ -348,7 +347,7 @@ class AccessProcessor @Inject() (val accessItemRepository: AccessItemRepository,
       role.withName(event.getRole.getNameUpdated.getName).map { r =>
         accessItemRepository.put(r.copy(slug         = accessItemRepository.uniqueSlugFromStr(r.name),
                                         timeModified = Some(time)))
-        true
+        ()
       }
     }
   }
@@ -418,21 +417,21 @@ class AccessProcessor @Inject() (val accessItemRepository: AccessItemRepository,
                                event.getRole.getRemoved.getVersion) {
       (role, time) =>
       accessItemRepository.remove(role)
-      true.successNel[String]
+      ().successNel[String]
     }
   }
 
   val ErrMsgNameExists: String = "name already used"
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  private def nameAvailable(name: String): ServiceValidation[Boolean] = {
+  private def nameAvailable(name: String): ServiceValidation[Unit] = {
     nameAvailableMatcher(name, accessItemRepository, ErrMsgNameExists) { item =>
       item.name == name
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  private def nameAvailable(name: String, excludeId: AccessItemId): ServiceValidation[Boolean] = {
+  private def nameAvailable(name: String, excludeId: AccessItemId): ServiceValidation[Unit] = {
     nameAvailableMatcher(name, accessItemRepository, ErrMsgNameExists){ item =>
       (item.name == name) && (item.id != excludeId)
     }

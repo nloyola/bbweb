@@ -90,18 +90,18 @@ trait AnnotationTypeValidations {
                valueType:     AnnotationValueType,
                maxValueCount: Option[Int],
                options:       Seq[String])
-      : DomainValidation[Boolean] = {
+      : DomainValidation[Unit] = {
     (validateString(name, NameRequired) |@|
        validateNonEmptyStringOption(description, InvalidDescription) |@|
        validateMaxValueCount(maxValueCount) |@|
        validateOptions(options) |@|
        validateSelectParams(valueType, maxValueCount, options)) {
-      case _ => true
+      case _ => ()
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validate(annotationType: AnnotationType): DomainValidation[Boolean] = {
+  def validate(annotationType: AnnotationType): DomainValidation[Unit] = {
     validate(annotationType.name,
              annotationType.description,
              annotationType.valueType,
@@ -148,42 +148,40 @@ trait AnnotationTypeValidations {
   def validateSelectParams(valueType:     AnnotationValueType,
                            maxValueCount: Option[Int],
                            options:       Seq[String])
-      : DomainValidation[Boolean] = {
+      : DomainValidation[Unit] = {
     if (valueType == AnnotationValueType.Select) {
       maxValueCount.fold {
-        DomainError(s"max value count is invalid for select").failureNel[Boolean]
+        DomainError(s"max value count is invalid for select").failureNel[Unit]
       } { count =>
         val countValidation = if ((count < 1) || (count > 2)) {
-            DomainError(s"select annotation type with invalid maxValueCount: $count").failureNel[Boolean]
+            DomainError(s"select annotation type with invalid maxValueCount: $count").failureNel[Unit]
           } else {
-            true.successNel[String]
+            ().successNel[String]
           }
 
         val optionsValidation = if (options.isEmpty) {
-            DomainError("select annotation type with no options to select").failureNel[Boolean]
+            DomainError("select annotation type with no options to select").failureNel[Unit]
           } else {
-            true.successNel[String]
+            ().successNel[String]
           }
 
-        (countValidation |@| optionsValidation) {
-          case(_, _) => true
-        }
+        (countValidation |@| optionsValidation) { case _ => () }
       }
     } else {
       val countValidation = maxValueCount.fold {
-          true.successNel[String]
+          ().successNel[String]
         } { count =>
-          DomainError(s"max value count is invalid for non-select").failureNel[Boolean]
+          DomainError(s"max value count is invalid for non-select").failureNel[Unit]
         }
 
       val optionsValidation = if (options.isEmpty) {
-          true.successNel[String]
+          ().successNel[String]
         } else {
-          DomainError("non select annotation type with options to select").failureNel[Boolean]
+          DomainError("non select annotation type with options to select").failureNel[Unit]
         }
 
         (countValidation |@| optionsValidation) {
-          case(_, _) => true
+          case _ => ()
         }
     }
   }

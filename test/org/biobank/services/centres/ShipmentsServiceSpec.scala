@@ -622,7 +622,7 @@ class ShipmentsServiceSpec
           val cmd = getRemoveShipmentCmd(user.id, f.shipment)
           shipmentRepository.put(f.shipment) // restore it to it's previous state
           shipmentsService.removeShipment(cmd).futureValue mustSucceed { reply =>
-            reply must be (true)
+            ()
           }
         }
       }

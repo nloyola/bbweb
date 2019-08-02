@@ -5,7 +5,7 @@ import java.time.format.DateTimeFormatter
 import org.biobank.ValidationKey
 import org.biobank.dto.SpecimenDto
 import org.biobank.domain._
-import org.biobank.domain.containers.{ContainerId, ContainerSchemaPosition}
+import org.biobank.domain.containers._
 import org.biobank.domain.studies.{CollectionSpecimenDefinition, SpecimenDefinitionId, StudyValidations}
 import org.biobank.domain.{ConcurrencySafeEntity, DomainValidation}
 import org.biobank.services.centres.CentreLocationInfo
@@ -24,7 +24,8 @@ import scalaz.Scalaz._
  */
 sealed trait Specimen
     extends ConcurrencySafeEntity[SpecimenId]
-    with HasSlug {
+    with HasSlug
+    with HasContainerSchemaPosition {
 
   val state: EntityState
 
@@ -194,18 +195,13 @@ final case class UsableSpecimen(id:                   SpecimenId,
 
   def withInventoryId(inventoryId: String): DomainValidation[Specimen] = {
     validateNonEmptyString(inventoryId, InventoryIdInvalid).map { s =>
-      copy(slug         = Slug(inventoryId),
-           inventoryId  = inventoryId,
-           version      = version + 1,
-           timeModified = Some(OffsetDateTime.now))
+      update.copy(slug = Slug(inventoryId), inventoryId  = inventoryId)
     }
   }
 
   def withAmount(amount: BigDecimal): DomainValidation[Specimen] = {
     validatePositiveNumber(amount, AmountInvalid).map { s =>
-      copy(amount       = amount,
-           version      = version + 1,
-           timeModified = Some(OffsetDateTime.now))
+      update.copy(amount = amount)
     }
   }
 
@@ -214,9 +210,7 @@ final case class UsableSpecimen(id:                   SpecimenId,
    */
   def withOriginLocation(id: LocationId): DomainValidation[Specimen] = {
     validateId(id, LocationIdInvalid).map { s =>
-      copy(originLocationId = id,
-           version          = version + 1,
-           timeModified     = Some(OffsetDateTime.now))
+      update.copy(originLocationId = id)
     }
   }
 
@@ -225,17 +219,13 @@ final case class UsableSpecimen(id:                   SpecimenId,
    */
   def withLocation(id: LocationId): DomainValidation[Specimen] = {
     validateId(id, LocationIdInvalid).map { s =>
-      copy(locationId   = id,
-           version      = version + 1,
-           timeModified = Some(OffsetDateTime.now))
+      update.copy(locationId = id)
     }
   }
 
-  def withPosition(position: ContainerSchemaPosition): DomainValidation[Specimen] = {
-    ContainerSchemaPosition.validate(position.id, position.schemaId, position.label).map { s =>
-      copy(position     = Some(position),
-           version      = version + 1,
-           timeModified = Some(OffsetDateTime.now))
+  def withPosition(position: Option[ContainerSchemaPosition]): DomainValidation[Specimen] = {
+    ContainerSchemaPositionValidations.validate(position).map { s =>
+      update.copy(position = position)
     }
   }
 
@@ -253,6 +243,10 @@ final case class UsableSpecimen(id:                   SpecimenId,
                      position              = this.position,
                      timeCreated           = this.timeCreated,
                      amount                = this.amount).successNel[String]
+  }
+
+  private def update() = {
+    copy(version = version + 1L, timeModified = Some(OffsetDateTime.now))
   }
 }
 
@@ -309,7 +303,7 @@ object UsableSpecimen
                containerId:           Option[ContainerId],
                position:              Option[ContainerSchemaPosition],
                amount:                BigDecimal)
-      : DomainValidation[Boolean] = {
+      : DomainValidation[Unit] = {
     (validateId(id) |@|
        validateNonEmptyString(inventoryId, InventoryIdInvalid) |@|
        validateId(specimenDefinitionId, SpecimenDefinitionIdInvalid) |@|
@@ -317,9 +311,9 @@ object UsableSpecimen
        validateNonEmptyString(originLocationId.id, OriginLocationIdInvalid) |@|
        validateNonEmptyString(locationId.id, LocationIdInvalid) |@|
        validateIdOption(containerId, ContainerIdInvalid) |@|
-       ContainerSchemaPosition.validate(position) |@|
+       ContainerSchemaPositionValidations.validate(position) |@|
        validatePositiveNumber(amount, AmountInvalid)) {
-      case _ => true
+      case _ => ()
     }
   }
 

@@ -1,12 +1,13 @@
 package org.biobank.controllers
 
 import org.biobank.fixtures.ControllerFixture
-
 import play.api.libs.json._
 import play.api.test._
 import play.api.test.Helpers._
 
 class ApplicationSpec extends ControllerFixture {
+
+  protected val basePath = ""
 
   describe("Application") {
 
@@ -16,7 +17,7 @@ class ApplicationSpec extends ControllerFixture {
     }
 
     it("return initial aggregate counts") {
-      val reply = makeAuthRequest(GET, "/api/dtos/counts").value
+      val reply = makeAuthRequest(GET, uri("dtos/counts")).value
       reply must beOkResponseWithJsonReply
 
       val jsonObj = (contentAsJson(reply) \ "data").as[JsObject]
@@ -33,7 +34,7 @@ class ApplicationSpec extends ControllerFixture {
       centreRepository.put(factory.createDisabledCentre)
       userRepository.put(factory.createRegisteredUser)
 
-      val reply = makeAuthRequest(GET, "/api/dtos/counts").value
+      val reply = makeAuthRequest(GET, uri("dtos/counts")).value
       reply must beOkResponseWithJsonReply
 
       val jsonObj = (contentAsJson(reply) \ "data").as[JsObject]

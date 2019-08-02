@@ -2,17 +2,29 @@ package org.biobank.domain.containers
 
 import org.biobank.ValidationKey
 import org.biobank.domain._
-
 import play.api.libs.json._
 import scalaz.Scalaz._
+import scalaz.NonEmptyList._
 
-trait ContainerSchemaPositionValidations {
-
-  val LabelMinLength: Long = 2L
+object ContainerSchemaPositionValidations {
 
   case object InvalidContainerSchemaId extends ValidationKey
 
   case object InvalidLabel extends ValidationKey
+
+  case object ContainerSchemaPositionInvalid extends ValidationKey
+
+  def validate(position: Option[ContainerSchemaPosition]): DomainValidation[Unit] = {
+    ContainerSchemaPosition.validate(position).leftMap { err =>
+      nel(ContainerSchemaPositionValidations.ContainerSchemaPositionInvalid.toString, err.list)
+    }
+  }
+
+}
+
+trait HasContainerSchemaPosition {
+
+  val position: Option[ContainerSchemaPosition]
 }
 
 /**
@@ -37,9 +49,10 @@ final case class ContainerSchemaPosition(id:       ContainerSchemaPositionId,
 
 }
 
-object ContainerSchemaPosition extends ContainerSchemaPositionValidations {
+object ContainerSchemaPosition {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
+  import ContainerSchemaPositionValidations._
 
   def create(id: ContainerSchemaPositionId, schemaId: ContainerSchemaId, label: String)
       : DomainValidation[ContainerSchemaPosition] = {
@@ -49,19 +62,19 @@ object ContainerSchemaPosition extends ContainerSchemaPositionValidations {
   }
 
   def validate(id: ContainerSchemaPositionId, schemaId: ContainerSchemaId, label: String)
-      : DomainValidation[Boolean] = {
+      : DomainValidation[Unit] = {
     (validateId(id) |@|
        validateId(schemaId, InvalidContainerSchemaId) |@|
-       validateString(label, LabelMinLength, InvalidLabel)) { case _ =>
-        true
+       validateNonEmptyString(label, InvalidLabel)) { case _ =>
+        ()
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validate(position: Option[ContainerSchemaPosition]): DomainValidation[Boolean] = {
+  def validate(position: Option[ContainerSchemaPosition]): DomainValidation[Unit] = {
     position match {
       case Some(p) => ContainerSchemaPosition.validate(p.id, p.schemaId, p.label)
-      case None => true.successNel[String]
+      case None => ().successNel[String]
     }
   }
 

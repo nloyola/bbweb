@@ -378,7 +378,7 @@ class UsersProcessor @Inject() (val config:         Configuration,
   private def onValidEventUserAndVersion(event: UserEvent,
                                          eventType: Boolean,
                                          eventVersion: Long)
-                                        (applyEvent: (User, OffsetDateTime) => ServiceValidation[Boolean])
+                                        (applyEvent: (User, OffsetDateTime) => ServiceValidation[Unit])
       : Unit = {
     if (!eventType) {
       log.error(s"invalid event type: $event")
@@ -405,25 +405,25 @@ class UsersProcessor @Inject() (val config:         Configuration,
                                                    eventType: Boolean,
                                                    eventVersion: Long)
                                                   (applyEvent: (RegisteredUser,
-                                                                OffsetDateTime) => ServiceValidation[Boolean])
+                                                                OffsetDateTime) => ServiceValidation[Unit])
       : Unit = {
     onValidEventUserAndVersion(event, eventType, eventVersion) { (user, eventTime) =>
       user match {
         case user: RegisteredUser => applyEvent(user, eventTime)
-        case user => ServiceError(s"user not registered: $event").failureNel[Boolean]
+        case user => ServiceError(s"user not registered: $event").failureNel[Unit]
       }
     }
   }
 
   private def onValidUserActiveEvent(event: UserEvent)
-                                    (applyEvent: (ActiveUser, OffsetDateTime) => ServiceValidation[Boolean])
+                                    (applyEvent: (ActiveUser, OffsetDateTime) => ServiceValidation[Unit])
       : Unit = {
     onValidEventUserAndVersion(event,
                                event.eventType.isWhenActive,
                                event.getWhenActive.getVersion) { (user, eventTime) =>
       user match {
         case user: ActiveUser => applyEvent(user, eventTime)
-        case user => ServiceError(s"user not active: $event").failureNel[Boolean]
+        case user => ServiceError(s"user not active: $event").failureNel[Unit]
       }
     }
   }
@@ -432,12 +432,12 @@ class UsersProcessor @Inject() (val config:         Configuration,
                                                eventType: Boolean,
                                                eventVersion: Long)
                                               (applyEvent: (LockedUser,
-                                                            OffsetDateTime) => ServiceValidation[Boolean])
+                                                            OffsetDateTime) => ServiceValidation[Unit])
       : Unit = {
     onValidEventUserAndVersion(event, eventType, eventVersion) { (user, eventTime) =>
       user match {
         case user: LockedUser => applyEvent(user, eventTime)
-        case user => ServiceError(s"user not locked: $event").failureNel[Boolean]
+        case user => ServiceError(s"user not locked: $event").failureNel[Unit]
       }
     }
   }
@@ -448,7 +448,7 @@ class UsersProcessor @Inject() (val config:         Configuration,
                                          event.getActivated.getVersion) { (user, eventTime) =>
       val v = user.activate
       v.foreach { u => userRepository.put(u.copy(timeModified = Some(eventTime))) }
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -459,7 +459,7 @@ class UsersProcessor @Inject() (val config:         Configuration,
                  timeModified = Some(eventTime))
         }
       v.foreach(userRepository.put)
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -467,7 +467,7 @@ class UsersProcessor @Inject() (val config:         Configuration,
     onValidUserActiveEvent(event) { (user, eventTime) =>
       val v = user.withEmail(event.getWhenActive.getEmailUpdated.getEmail)
       v.foreach(u => userRepository.put(u.copy(timeModified = Some(eventTime))))
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -476,7 +476,7 @@ class UsersProcessor @Inject() (val config:         Configuration,
       val v = user.withPassword(event.getWhenActive.getPasswordUpdated.getPassword,
                                 event.getWhenActive.getPasswordUpdated.getSalt)
       v.foreach(u => userRepository.put(u.copy(timeModified = Some(eventTime))))
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -484,7 +484,7 @@ class UsersProcessor @Inject() (val config:         Configuration,
     onValidUserActiveEvent(event) { (user, eventTime) =>
       val v = user.withAvatarUrl(event.getWhenActive.getAvatarUrlUpdated.avatarUrl)
       v.foreach(u => userRepository.put(u.copy(timeModified = Some(eventTime))))
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -493,7 +493,7 @@ class UsersProcessor @Inject() (val config:         Configuration,
       val v = user.withPassword(event.getWhenActive.getPasswordReset.getPassword,
                                 event.getWhenActive.getPasswordReset.getSalt)
       v.foreach(u => userRepository.put(u.copy(timeModified = Some(eventTime))))
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -508,7 +508,7 @@ class UsersProcessor @Inject() (val config:         Configuration,
           case _ => InvalidStatus(s"user not registered or active: $event").failureNel[LockedUser]
         }
       v.foreach(u => userRepository.put(u.copy(timeModified = Some(eventTime))))
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -518,7 +518,7 @@ class UsersProcessor @Inject() (val config:         Configuration,
                                      event.getUnlocked.getVersion) { (user, eventTime) =>
       val v = user.unlock
       v.foreach(u => userRepository.put(u.copy(timeModified = Some(eventTime))))
-      v.map(_ => true)
+      v.map(_ => ())
     }
   }
 
@@ -526,24 +526,24 @@ class UsersProcessor @Inject() (val config:         Configuration,
    *  Searches the repository for a matching item.
    */
   private def emailAvailableMatcher(email: String)(matcher: User => Boolean)
-      : ServiceValidation[Boolean] = {
+      : ServiceValidation[Unit] = {
     val exists = userRepository.getValues.exists { item =>
         matcher(item)
       }
 
-    if (exists) EmailNotAvailable(s"user with email already exists: $email").failureNel[Boolean]
-    else true.successNel[String]
+    if (exists) EmailNotAvailable(s"user with email already exists: $email").failureNel[Unit]
+    else ().successNel[String]
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  private def emailAvailable(email: String): ServiceValidation[Boolean] = {
+  private def emailAvailable(email: String): ServiceValidation[Unit] = {
     emailAvailableMatcher(email){ item =>
       item.email == email
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  private def emailAvailable(email: String, excludeUserId: UserId): ServiceValidation[Boolean] = {
+  private def emailAvailable(email: String, excludeUserId: UserId): ServiceValidation[Unit] = {
     emailAvailableMatcher(email){ item =>
       (item.email == email) && (item.id != excludeUserId)
     }

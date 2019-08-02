@@ -7,6 +7,7 @@ import org.biobank.domain.annotations._
 import org.biobank.domain.access._
 import org.biobank.domain.access.RoleId._
 import org.biobank.domain.centres._
+import org.biobank.domain.containers._
 import org.biobank.domain.participants._
 import org.biobank.domain.studies._
 import org.biobank.domain.users._
@@ -906,6 +907,14 @@ class TestData @Inject() (config:         Configuration,
                    centreData   = MembershipEntitySet(true, Set.empty[CentreId]))
       ).map(m => m.copy(slug = Slug(m.name)))
     }
+  }
+
+  def testContainerTypes(): List[ContainerType] = {
+    ???
+  }
+
+  def testContainers(): List[Container] = {
+    ???
   }
 
   log.debug(s"""|TEST DATA:

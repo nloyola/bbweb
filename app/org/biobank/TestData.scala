@@ -174,6 +174,7 @@ object TestData {
 
   val EventTypeHashids: Hashids      = Hashids("test-data-cevent-types")
   val ProcessingTypeHashids: Hashids = Hashids("test-data-processing-types")
+  val SpecimenDefHashids: Hashids       = Hashids("test-data-specimen-specs")
   val SpecimenHashids: Hashids       = Hashids("test-data-specimen-specs")
 }
 
@@ -195,7 +196,7 @@ object BbpspTestData {
   // from the name below.
   val CollectionSpecimenDefinitions: Set[CollectionSpecimenDefinition] =
     Set(CollectionSpecimenDefinition(
-          id                      = SpecimenDefinitionId(SpecimenHashids.encode(1)),
+          id                      = SpecimenDefinitionId(SpecimenDefHashids.encode(1)),
           slug                    = Slug(""),
           name                    = "10 mL Lavender top EDTA tube",
           description             = None,
@@ -207,7 +208,7 @@ object BbpspTestData {
           maxCount                = 2, // set to 2 for testing form, set back to 1 for demo
           amount                  = 10.0),
         CollectionSpecimenDefinition(
-          id                      = SpecimenDefinitionId(SpecimenHashids.encode(2)),
+          id                      = SpecimenDefinitionId(SpecimenDefHashids.encode(2)),
           slug                    = Slug(""),
           name                    = "10 mL Orange top PAXgene tube",
           description             = None,
@@ -219,7 +220,7 @@ object BbpspTestData {
           maxCount                = 1,
           amount                  = 10.0),
         CollectionSpecimenDefinition(
-          id                      = SpecimenDefinitionId(SpecimenHashids.encode(3)),
+          id                      = SpecimenDefinitionId(SpecimenDefHashids.encode(3)),
           slug                    = Slug(""),
           name                    = "3mL Lavender top EDTA tube",
           description             = None,
@@ -231,7 +232,7 @@ object BbpspTestData {
           maxCount                = 1,
           amount                  = 3),
         CollectionSpecimenDefinition(
-          id                      = SpecimenDefinitionId(SpecimenHashids.encode(4)),
+          id                      = SpecimenDefinitionId(SpecimenDefHashids.encode(4)),
           slug                    = Slug(""),
           name                    = "4ml lavender top EDTA tube",
           description             = None,
@@ -243,7 +244,7 @@ object BbpspTestData {
           maxCount                = 1,
           amount                  = 4),
         CollectionSpecimenDefinition(
-          id                      = SpecimenDefinitionId(SpecimenHashids.encode(5)),
+          id                      = SpecimenDefinitionId(SpecimenDefHashids.encode(5)),
           slug                    = Slug(""),
           name                    = "9ml CPDA yellow top tube",
           description             = None,
@@ -255,7 +256,7 @@ object BbpspTestData {
           maxCount                = 1,
           amount                  = 9),
         CollectionSpecimenDefinition(
-          id                      = SpecimenDefinitionId(SpecimenHashids.encode(6)),
+          id                      = SpecimenDefinitionId(SpecimenDefHashids.encode(6)),
           slug                    = Slug(""),
           name                    = "Urine cup",
           description             = None,
@@ -510,6 +511,12 @@ class TestData @Inject() (config:         Configuration,
           if (name == BbpspTestData.EventTypeNames(0)) BbpspTestData.EventTypeAnnotationTypes
           else Set.empty[AnnotationType]
 
+        val specimenDefinitions = BbpspTestData.CollectionSpecimenDefinitions
+          .map { spcdef =>
+            val spcdefId = id.id + "_" + spcdef.id.id
+            spcdef.copy(id = SpecimenDefinitionId(spcdefId))
+          }
+
         CollectionEventType(studyId              = BbpspTestData.BbpspStudyId,
                             id                   = id,
                             version              = 0L,
@@ -519,7 +526,7 @@ class TestData @Inject() (config:         Configuration,
                             name                 = name,
                             description          = None,
                             recurring            = true,
-                            specimenDefinitions = BbpspTestData.CollectionSpecimenDefinitions,
+                            specimenDefinitions = specimenDefinitions,
                             annotationTypes      = annotationTypes)
       }
     }
@@ -544,14 +551,14 @@ class TestData @Inject() (config:         Configuration,
                                     containerTypeId      = None,
                                     definitionType       = ProcessingType.collectedDefinition,
                                     entityId             = CollectionEventTypeId(EventTypeHashids.encode(0L)).id,
-                                    specimenDefinitionId = SpecimenDefinitionId(SpecimenHashids.encode(1L)))
+                                    specimenDefinitionId = SpecimenDefinitionId(SpecimenDefHashids.encode(1L)))
           else
             InputSpecimenProcessing(expectedChange       = BigDecimal(1.0),
                                     count                = 1,
                                     containerTypeId      = None,
                                     definitionType       = ProcessingType.processedDefinition,
                                     entityId             = ProcessingTypeId(ProcessingTypeHashids.encode(0L)).id,
-                                    specimenDefinitionId = SpecimenDefinitionId(SpecimenHashids.encode(1L)))
+                                    specimenDefinitionId = SpecimenDefinitionId(SpecimenDefHashids.encode(1L)))
         val specimenDefinition =
           ProcessedSpecimenDefinition(id                      = SpecimenDefinitionId(id.id),
                                       slug                    = Slug(name),
@@ -812,28 +819,30 @@ class TestData @Inject() (config:         Configuration,
         val centreId = CentreId(s"${centreName}_id")
         val locationId = LocationId(s"${centreId}:Primary")
 
-        BbpspTestData.CollectionSpecimenDefinitions.zipWithIndex.map { case (specimenDefinition, specimenIndex) =>
-          val reverseHash = BbpspTestData.EventHashids.decode(event.id.id)
-          val participantIndex = reverseHash(0)
-          val eventIndex = reverseHash(1)
-          val uniqueId = 1000L * centreIndex + 100 * participantIndex + 10 * eventIndex + specimenIndex
-          val inventoryId = f"A$uniqueId%05d"
-          val id = SpecimenId(SpecimenHashids.encode(uniqueId))
+        BbpspTestData.CollectionSpecimenDefinitions.zipWithIndex
+          .map { case (specimenDefinition, specimenIndex) =>
+            val spcdefId = event.collectionEventTypeId.id + "_" + specimenDefinition.id.id
+            val reverseHash = BbpspTestData.EventHashids.decode(event.id.id)
+            val participantIndex = reverseHash(0)
+            val eventIndex = reverseHash(1)
+            val uniqueId = 1000L * centreIndex + 100 * participantIndex + 10 * eventIndex + specimenIndex
+            val inventoryId = f"A$uniqueId%05d"
+            val id = SpecimenId(SpecimenHashids.encode(uniqueId))
 
-          UsableSpecimen(id                    = id,
-                         version               = 0L,
-                         timeAdded             = Global.StartOfTime,
-                         timeModified          = None,
-                         slug                  = Slug(inventoryId),
-                         inventoryId           = inventoryId,
-                         specimenDefinitionId = specimenDefinition.id,
-                         originLocationId      = locationId,
-                         locationId            = locationId,
-                         containerId           = None,
-                         position              = None,
-                         timeCreated           = OffsetDateTime.now.minusDays(1),
-                         amount                = BigDecimal(0.1))
-        }
+            UsableSpecimen(id                    = id,
+                           version               = 0L,
+                           timeAdded             = Global.StartOfTime,
+                           timeModified          = None,
+                           slug                  = Slug(inventoryId),
+                           inventoryId           = inventoryId,
+                           specimenDefinitionId  = SpecimenDefinitionId(spcdefId),
+                           originLocationId      = locationId,
+                           locationId            = locationId,
+                           containerId           = None,
+                           position              = None,
+                           timeCreated           = OffsetDateTime.now.minusDays(1),
+                           amount                = BigDecimal(0.1))
+          }
       }
     }
   }

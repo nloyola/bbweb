@@ -101,10 +101,12 @@ class SpecimensProcessorSpec
     }
 
     it("recovers a snapshot", PersistenceTest) {
+      val cevent = factory.createCollectionEvent
       val snapshotFilename = "testfilename"
       val specimens = (1 to 2).map { _ => factory.createUsableSpecimen }
-      val snapshotSpecimen = specimens(1)
-      val snapshotState = SpecimensProcessor.SnapshotState(Set(snapshotSpecimen))
+      val ceventSpecimens = specimens.map { specimen => CeventSpecimen(cevent.id, specimen.id)}
+      val snapshotSpecimen = specimens(0)
+      val snapshotState = SpecimensProcessor.SnapshotState(Set(snapshotSpecimen), Set(ceventSpecimens(0)))
 
       Mockito.when(snapshotWriterMock.save(anyString, anyString)).thenReturn(snapshotFilename);
       Mockito.when(snapshotWriterMock.load(snapshotFilename))

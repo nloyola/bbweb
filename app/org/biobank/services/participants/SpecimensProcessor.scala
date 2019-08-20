@@ -23,7 +23,7 @@ object SpecimensProcessor {
 
   def props: Props = Props[SpecimensProcessor]
 
-  final case class SnapshotState(specimens: Set[Specimen])
+  final case class SnapshotState(specimens: Set[Specimen], ceventSpecimens: Set[CeventSpecimen])
 
   implicit val snapshotStateFormat: Format[SnapshotState] = Json.format[SnapshotState]
 
@@ -32,7 +32,8 @@ object SpecimensProcessor {
 }
 
 /**
- * Responsible for handing collection event commands to add, update and remove.
+ * Responsible for handing [[infrastructure.commands.SpecimenCommands SpecimenCommands]] to add, update and
+ * remove [[domain.participant.Specimen Specimens]].
  */
 @Singleton
 class SpecimensProcessor @Inject() (
@@ -136,7 +137,8 @@ class SpecimensProcessor @Inject() (
   }
 
   private def mySaveSnapshot(): Unit = {
-    val snapshotState = SnapshotState(specimenRepository.getValues.toSet)
+    val snapshotState = SnapshotState(specimenRepository.getValues.toSet,
+                                      ceventSpecimenRepository.getValues.toSet)
     val filename = snapshotWriter.save(persistenceId, Json.toJson(snapshotState).toString)
     log.debug(s"saved snapshot to: $filename")
     saveSnapshot(filename)
@@ -150,6 +152,7 @@ class SpecimensProcessor @Inject() (
       snapshot =>  {
         log.debug(s"snapshot contains ${snapshot.specimens.size} collection events")
         snapshot.specimens.foreach(specimenRepository.put)
+        snapshot.ceventSpecimens.foreach(ceventSpecimenRepository.put)
       }
     )
   }

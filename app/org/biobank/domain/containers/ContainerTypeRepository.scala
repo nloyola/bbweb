@@ -32,7 +32,7 @@ class ContainerTypeRepositoryImpl @Inject() (val testData: TestData)
 
   def nextIdentity: ContainerTypeId = new ContainerTypeId(nextIdentityAsString)
 
-  protected def notFound(id: ContainerTypeId): IdNotFound = IdNotFound(s"containerType id: $id")
+  protected def notFound(id: ContainerTypeId): IdNotFound = IdNotFound(s"container type id: $id")
 
   protected def slugNotFound(slug: Slug): EntityCriteriaNotFound =
     EntityCriteriaNotFound(s"containerType slug: $slug")

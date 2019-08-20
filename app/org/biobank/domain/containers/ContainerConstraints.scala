@@ -19,7 +19,7 @@ final case class ContainerConstraints(id:                    ContainerConstraint
                                       slug:                  Slug,
                                       name:                  String,
                                       description:           Option[String],
-                                      centreId:              CentreId,
+                                      centreId:              Option[CentreId],
                                       anatomicalSourceTypes: Set[AnatomicalSourceType],
                                       preservationTypes:     Set[PreservationType],
                                       specimenTypes:         Set[SpecimenType])
@@ -45,9 +45,9 @@ final case class ContainerConstraints(id:                    ContainerConstraint
     }
   }
 
-  def withCentre(centreId: CentreId): DomainValidation[ContainerConstraints] = {
-    validateId(centreId, CentreIdRequired) map { _ =>
-      copy(centreId     = centreId)
+  def withCentre(centreId: Option[CentreId]): DomainValidation[ContainerConstraints] = {
+    validateIdOption(centreId, CentreIdRequired) map { _ =>
+      copy(centreId = centreId)
     }
   }
 
@@ -72,7 +72,7 @@ object ContainerConstraints {
   def create(id:                    ContainerConstraintsId,
              name:                  String,
              description:           Option[String],
-             centreId:              CentreId,
+             centreId:              Option[CentreId],
              anatomicalSourceTypes: Set[AnatomicalSourceType],
              preservationTypes:     Set[PreservationType],
              specimenTypes:         Set[SpecimenType]): DomainValidation[ContainerConstraints] = {
@@ -92,11 +92,11 @@ object ContainerConstraints {
   def validate(id:          ContainerConstraintsId,
                name:        String,
                description: Option[String],
-               centreId:    CentreId): DomainValidation[Unit] = {
+               centreId:    Option[CentreId]): DomainValidation[Unit] = {
     (validateId(id) |@|
        validateNonEmptyString(name, InvalidName) |@|
        validateNonEmptyStringOption(description, InvalidDescription) |@|
-       validateId(centreId, CentreIdRequired)) {
+       validateIdOption(centreId, CentreIdRequired)) {
       case _ => ()
     }
   }

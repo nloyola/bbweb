@@ -19,10 +19,11 @@ trait ContainerPredicates {
     labels => container => labels.contains(container.label)
 
   val labelIsLike: Set[String] => ContainerFilter =
-    labels => container => {
-      val lc = container.label.toLowerCase
-      labels.forall(n => lc.contains(n.toLowerCase))
-    }
+    labels =>
+      container => {
+        val lc = container.label.toLowerCase
+        labels.forall(n => lc.contains(n.toLowerCase))
+      }
 }
 
 trait ContainerValidations {
@@ -47,17 +48,18 @@ trait ContainerValidations {
  * A specifically built physical unit that can hold child containers, or can be contained in a parent
  * container.
  */
-sealed trait Container extends ConcurrencySafeEntity[ContainerId]
+sealed trait Container
+    extends ConcurrencySafeEntity[ContainerId]
     with HasSlug
     with HasContainerSchemaPosition
     with ContainerValidations {
   import org.biobank.CommonValidations._
 
- /**
-  * An inventory identifier, such as a barcode. Global uniqueness is required so that
-  * [[domain.containers.Container Containers]], like [[domain.participants.Specimen Specimen]]s, can be
-  * shipped between [[domain.centres.Centre Centres]].
-  */
+  /**
+   * An inventory identifier, such as a barcode. Global uniqueness is required so that
+   * [[domain.containers.Container Containers]], like [[domain.participants.Specimen Specimen]]s, can be
+   * shipped between [[domain.centres.Centre Centres]].
+   */
   val inventoryId: String
 
   /**
@@ -68,7 +70,7 @@ sealed trait Container extends ConcurrencySafeEntity[ContainerId]
   /** The ID of the container type that classifiies this [[Container]]. */
   val containerTypeId: ContainerTypeId
 
- /** The ID of the [[Container]] that this container is stored in. */
+  /** The ID of the [[Container]] that this container is stored in. */
   val parentId: Option[ContainerId]
 
   /**
@@ -90,9 +92,9 @@ sealed trait Container extends ConcurrencySafeEntity[ContainerId]
   def withPosition(position: Option[ContainerSchemaPosition]): DomainValidation[Container]
 
   def withParentPosition(
-    parentId: Option[ContainerId],
-    position: Option[ContainerSchemaPosition]
-  ): DomainValidation[Container]
+      parentId: Option[ContainerId],
+      position: Option[ContainerSchemaPosition]
+    ): DomainValidation[Container]
 
   override def toString: String =
     s"""|${this.getClass.getSimpleName}: {
@@ -112,34 +114,33 @@ object Container extends ContainerValidations {
   import org.biobank.domain.DomainValidations._
   import ContainerSchemaPositionValidations._
 
-  def validate(id:               ContainerId,
-               version:          Long,
-               inventoryId:      String,
-               label:            String,
-               containerTypeId:  ContainerTypeId,
-               sharedProperties: Option[ContainerSharedProperties],
-               parentId:         Option[ContainerId],
-               position:         Option[ContainerSchemaPosition])
-      : DomainValidation[Unit] = {
+  def validate(
+      id: ContainerId,
+      version: Long,
+      inventoryId: String,
+      label: String,
+      containerTypeId: ContainerTypeId,
+      sharedProperties: Option[ContainerSharedProperties],
+      parentId: Option[ContainerId],
+      position: Option[ContainerSchemaPosition]
+    ): DomainValidation[Unit] = {
     (validateId(id) |@|
-       validateVersion(version) |@|
-       validateNonEmptyString(inventoryId, ContainerInventoryIdInvalid) |@|
-       validateNonEmptyString(label, ContainerLabelInvalid) |@|
-       validateId(containerTypeId, ContainerTypeIdInvalid) |@|
-       validateIdOption(parentId, ContainerParentIdInvalid) |@|
-       ContainerSharedProperties.validate(sharedProperties)  |@|
-       ContainerSchemaPosition.validate(position)) { case _ => () }
+      validateVersion(version) |@|
+      validateNonEmptyString(inventoryId, ContainerInventoryIdInvalid) |@|
+      validateNonEmptyString(label, ContainerLabelInvalid) |@|
+      validateId(containerTypeId, ContainerTypeIdInvalid) |@|
+      validateIdOption(parentId, ContainerParentIdInvalid) |@|
+      ContainerSharedProperties.validate(sharedProperties) |@|
+      ContainerSchemaPosition.validate(position)) { case _ => () }
   }
 
-  def validatePosition(position: Option[ContainerSchemaPosition])
-      : DomainValidation[Unit] = {
+  def validatePosition(position: Option[ContainerSchemaPosition]): DomainValidation[Unit] = {
     ContainerSchemaPositionValidations.validate(position).leftMap { err =>
       nel(ContainerSchemaPositionInvalid.toString, err.list)
     }
   }
 
-  def constraintsValidate(constraints: Option[ContainerConstraints])
-      : DomainValidation[Unit] = {
+  def constraintsValidate(constraints: Option[ContainerConstraints]): DomainValidation[Unit] = {
     ContainerConstraints.validate(constraints).leftMap { err =>
       nel(ContainerConstraintsInvalid.toString, err.list)
     }
@@ -147,9 +148,8 @@ object Container extends ContainerValidations {
 
   type ContainersCompare = (Container, Container) => Boolean
 
-  val sort2Compare: Map[String, ContainersCompare] = Map[String, ContainersCompare](
-      "label"  -> Container.compareByLabel
-    )
+  val sort2Compare: Map[String, ContainersCompare] =
+    Map[String, ContainersCompare]("label" -> Container.compareByLabel)
 
   def compareByLabel(a: Container, b: Container): Boolean =
     (a.label compareToIgnoreCase b.label) < 0
@@ -161,56 +161,55 @@ object Container extends ContainerValidations {
   val containerStorage: StorageType = new StorageType("container")
   val specimenStorage: StorageType = new StorageType("specimen")
 
+  // implicit val containerWrites: Writes[Container] = new Writes[Container] {
 
-  implicit val containerWrites: Writes[Container] = new Writes[Container] {
-      def writes(container: Container): JsValue = Json.obj(
-          "id"               -> container.id,
-          "version"          -> container.version,
-          "timeAdded"        -> container.timeAdded,
-          "timeModified"     -> container.timeModified,
-          "slug"             -> container.slug,
-          "inventoryId"      -> container.inventoryId,
-          "containerTypeId"  -> container.containerTypeId,
-          "parentId"         -> container.parentId,
-          "position"         -> container.position,
-          "sharedProperties" -> container.sharedProperties
-        )
-    }
+  //   def writes(container: Container): JsValue = Json.obj("id" -> container.id,
+  //                                                        "version" -> container.version,
+  //                                                        "timeAdded" -> container.timeAdded,
+  //                                                        "timeModified" -> container.timeModified,
+  //                                                        "slug" -> container.slug,
+  //                                                        "inventoryId" -> container.inventoryId,
+  //                                                        "containerTypeId" -> container.containerTypeId,
+  //                                                        "parentId" -> container.parentId,
+  //                                                        "position" -> container.position,
+  //                                                        "sharedProperties" -> container.sharedProperties)
+  // }
 
   implicit val containerFormat: Format[Container] = new Format[Container] {
-      override def writes(container: Container): JsValue = {
-        container match {
-          case c: StorageContainer => Json.toJson(c)
-          case c: SpecimenContainer => Json.toJson(c)
-        }
+    override def writes(container: Container): JsValue = {
+      container match {
+        case c: StorageContainer  => Json.toJson(c)
+        case c: SpecimenContainer => Json.toJson(c)
       }
-
-      override def reads(json: JsValue): JsResult[Container] = (json \ "storageType") match {
-          case JsDefined(JsString(containerStorage.id)) => json.validate[StorageContainer]
-          case JsDefined(JsString(specimenStorage.id))  => json.validate[SpecimenContainer]
-          case _ => JsError("error")
-        }
     }
 
+    override def reads(json: JsValue): JsResult[Container] = (json \ "storageType") match {
+      case JsDefined(JsString(containerStorage.id)) => json.validate[StorageContainer]
+      case JsDefined(JsString(specimenStorage.id))  => json.validate[SpecimenContainer]
+      case _                                        => JsError("error")
+    }
+  }
+
   implicit val storageContainerReads: Reads[StorageContainer] = Json.reads[StorageContainer]
-  implicit val specimenContainerReads: Reads[SpecimenContainer]   = Json.reads[SpecimenContainer]
+  implicit val specimenContainerReads: Reads[SpecimenContainer] = Json.reads[SpecimenContainer]
 
 }
 
 // The shared properties is only present in the root container
-final case class StorageContainer(id:               ContainerId,
-                                  version:          Long,
-                                  timeAdded:        OffsetDateTime,
-                                  timeModified:     Option[OffsetDateTime],
-                                  slug:             Slug,
-                                  inventoryId:      String,
-                                  label:            String,
-                                  enabled:          Boolean,
-                                  containerTypeId:  ContainerTypeId,
-                                  sharedProperties: Option[ContainerSharedProperties],
-                                  parentId:         Option[ContainerId],
-                                  position:         Option[ContainerSchemaPosition],
-                                  constraints:      Option[ContainerConstraints])
+final case class StorageContainer(
+    id: ContainerId,
+    version: Long,
+    timeAdded: OffsetDateTime,
+    timeModified: Option[OffsetDateTime],
+    slug: Slug,
+    inventoryId: String,
+    label: String,
+    enabled: Boolean,
+    containerTypeId: ContainerTypeId,
+    sharedProperties: Option[ContainerSharedProperties],
+    parentId: Option[ContainerId],
+    position: Option[ContainerSchemaPosition],
+    constraints: Option[ContainerConstraints])
     extends Container
     with ContainerValidations {
 
@@ -239,10 +238,13 @@ final case class StorageContainer(id:               ContainerId,
     }
   }
 
-  def withParentPosition(parentId: Option[ContainerId], position: Option[ContainerSchemaPosition])
-      : DomainValidation[Container] = {
+  def withParentPosition(
+      parentId: Option[ContainerId],
+      position: Option[ContainerSchemaPosition]
+    ): DomainValidation[Container] = {
     (ContainerSchemaPosition.validate(position) |@|
-       validateIdOption(parentId, ContainerParentIdInvalid)) { case _ =>
+      validateIdOption(parentId, ContainerParentIdInvalid)) {
+      case _ =>
         update.copy(parentId = parentId, position = position)
     }
   }
@@ -257,29 +259,30 @@ final case class StorageContainer(id:               ContainerId,
     copy(version = version + 1L, timeModified = Some(OffsetDateTime.now))
   }
 
-  override def toString: String =  {
+  override def toString: String = {
     super.toString +
-    s"""|,
-        |  enabled          $enabled
-        |  constraints      $constraints
-        |}""".stripMargin
+      s"""|,
+          |  enabled          $enabled
+          |  constraints      $constraints
+          |}""".stripMargin
   }
 
 }
 
 object StorageContainer extends ContainerValidations {
 
-  def create(id:               ContainerId,
-             version:          Long,
-             inventoryId:      String,
-             label:            String,
-             enabled:          Boolean,
-             containerTypeId:  ContainerTypeId,
-             sharedProperties: Option[ContainerSharedProperties],
-             parentId:         Option[ContainerId],
-             position:         Option[ContainerSchemaPosition],
-             constraints:      Option[ContainerConstraints])
-      : DomainValidation[StorageContainer] = {
+  def create(
+      id: ContainerId,
+      version: Long,
+      inventoryId: String,
+      label: String,
+      enabled: Boolean,
+      containerTypeId: ContainerTypeId,
+      sharedProperties: Option[ContainerSharedProperties],
+      parentId: Option[ContainerId],
+      position: Option[ContainerSchemaPosition],
+      constraints: Option[ContainerConstraints]
+    ): DomainValidation[StorageContainer] = {
     (Container.validate(id,
                         version,
                         inventoryId,
@@ -288,37 +291,39 @@ object StorageContainer extends ContainerValidations {
                         sharedProperties,
                         parentId,
                         position) |@|
-       Container.validatePosition(position) |@|
-       Container.constraintsValidate(constraints)) { case _ =>
-      StorageContainer(id               = id,
-                       version          = version,
-                       timeAdded        = OffsetDateTime.now,
-                       timeModified     = None,
-                       slug             = Slug(inventoryId),
-                       inventoryId      = inventoryId,
-                       label            = label,
-                       enabled          = enabled,
-                       containerTypeId  = containerTypeId,
-                       sharedProperties = sharedProperties,
-                       parentId         = parentId,
-                       position         = position,
-                       constraints      = constraints)
+      Container.validatePosition(position) |@|
+      Container.constraintsValidate(constraints)) {
+      case _ =>
+        StorageContainer(id = id,
+                         version = version,
+                         timeAdded = OffsetDateTime.now,
+                         timeModified = None,
+                         slug = Slug(inventoryId),
+                         inventoryId = inventoryId,
+                         label = label,
+                         enabled = enabled,
+                         containerTypeId = containerTypeId,
+                         sharedProperties = sharedProperties,
+                         parentId = parentId,
+                         position = position,
+                         constraints = constraints)
     }
   }
 }
 
 // For operations on SpecimenContainers see the Container companion object
-final case class SpecimenContainer(id:               ContainerId,
-                                   version:          Long,
-                                   timeAdded:        OffsetDateTime,
-                                   timeModified:     Option[OffsetDateTime],
-                                   slug:             Slug,
-                                   inventoryId:      String,
-                                   label:            String,
-                                   containerTypeId:  ContainerTypeId,
-                                   sharedProperties: Option[ContainerSharedProperties],
-                                   parentId:         Option[ContainerId],
-                                   position:         Option[ContainerSchemaPosition])
+final case class SpecimenContainer(
+    id: ContainerId,
+    version: Long,
+    timeAdded: OffsetDateTime,
+    timeModified: Option[OffsetDateTime],
+    slug: Slug,
+    inventoryId: String,
+    label: String,
+    containerTypeId: ContainerTypeId,
+    sharedProperties: Option[ContainerSharedProperties],
+    parentId: Option[ContainerId],
+    position: Option[ContainerSchemaPosition])
     extends Container
     with ContainerValidations {
   import org.biobank.CommonValidations._
@@ -343,12 +348,13 @@ final case class SpecimenContainer(id:               ContainerId,
   }
 
   def withParentPosition(
-    parentId: Option[ContainerId],
-    position: Option[ContainerSchemaPosition]
-  ): DomainValidation[Container] = {
+      parentId: Option[ContainerId],
+      position: Option[ContainerSchemaPosition]
+    ): DomainValidation[Container] = {
     (ContainerSchemaPosition.validate(position) |@|
-       validateIdOption(parentId, ContainerParentIdInvalid)) { case _ =>
-        update.copy(parentId   = parentId, position = position)
+      validateIdOption(parentId, ContainerParentIdInvalid)) {
+      case _ =>
+        update.copy(parentId = parentId, position = position)
     }
   }
 
@@ -356,24 +362,25 @@ final case class SpecimenContainer(id:               ContainerId,
     copy(version = version + 1L, timeModified = Some(OffsetDateTime.now))
   }
 
-  override def toString: String =  {
+  override def toString: String = {
     super.toString +
-    s"""|
-        |}""".stripMargin
+      s"""|
+          |}""".stripMargin
   }
 }
 
 object SpecimenContainer extends ContainerValidations {
 
-  def create(id:               ContainerId,
-             version:          Long,
-             inventoryId:      String,
-             label:            String,
-             containerTypeId:  ContainerTypeId,
-             sharedProperties: Option[ContainerSharedProperties],
-             parentId:         Option[ContainerId],
-             position:         Option[ContainerSchemaPosition])
-      : DomainValidation[SpecimenContainer] = {
+  def create(
+      id: ContainerId,
+      version: Long,
+      inventoryId: String,
+      label: String,
+      containerTypeId: ContainerTypeId,
+      sharedProperties: Option[ContainerSharedProperties],
+      parentId: Option[ContainerId],
+      position: Option[ContainerSchemaPosition]
+    ): DomainValidation[SpecimenContainer] = {
     (Container.validate(id,
                         version,
                         inventoryId,
@@ -382,18 +389,19 @@ object SpecimenContainer extends ContainerValidations {
                         sharedProperties,
                         parentId,
                         position) |@|
-       Container.validatePosition(position)) { case _ =>
-      SpecimenContainer(id               = id,
-                        version          = version,
-                        timeAdded        = OffsetDateTime.now,
-                        timeModified     = None,
-                        slug             = Slug(inventoryId),
-                        inventoryId      = inventoryId,
-                        label            = label,
-                        containerTypeId  = containerTypeId,
-                        sharedProperties = sharedProperties,
-                        parentId         = parentId,
-                        position         = position)
+      Container.validatePosition(position)) {
+      case _ =>
+        SpecimenContainer(id = id,
+                          version = version,
+                          timeAdded = OffsetDateTime.now,
+                          timeModified = None,
+                          slug = Slug(inventoryId),
+                          inventoryId = inventoryId,
+                          label = label,
+                          containerTypeId = containerTypeId,
+                          sharedProperties = sharedProperties,
+                          parentId = parentId,
+                          position = position)
     }
   }
 

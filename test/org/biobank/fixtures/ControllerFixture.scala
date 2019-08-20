@@ -10,6 +10,7 @@ import org.biobank.controllers.CacheForTesting
 import org.biobank.domain._
 import org.biobank.domain.access._
 import org.biobank.domain.centres._
+import org.biobank.domain.containers._
 import org.biobank.domain.participants._
 import org.biobank.domain.processing._
 import org.biobank.domain.studies._
@@ -135,6 +136,8 @@ abstract class ControllerFixture
   protected def centreRepository                       = app.injector.instanceOf[CentreRepository]
   protected def shipmentRepository                     = app.injector.instanceOf[ShipmentRepository]
   protected def shipmentSpecimenRepository             = app.injector.instanceOf[ShipmentSpecimenRepository]
+  protected def containerTypeRepository                = app.injector.instanceOf[ContainerTypeRepository]
+  protected def containerRepository                    = app.injector.instanceOf[ContainerRepository]
 
   protected def addToRepository[T <: ConcurrencySafeEntity[_]](entity: T): Unit = {
     entity match {

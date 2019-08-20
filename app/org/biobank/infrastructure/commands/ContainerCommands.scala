@@ -18,8 +18,6 @@ object ContainerCommands {
 
   trait AddContainerCommand extends ContainerCommand
 
-  trait AddRootContainerCommand extends AddContainerCommand with HasCentreIdentity
-
   trait AddSubContainerCommand extends AddContainerCommand with HasParentIdentity
 
   trait ContainerModifyCommand extends ContainerCommand with HasIdentity with HasExpectedVersion

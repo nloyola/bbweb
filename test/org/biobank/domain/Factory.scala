@@ -634,7 +634,7 @@ class Factory {
         slug                  = Slug(name),
         name                  = name,
         description           = Some(nameGenerator.next[ContainerConstraints]),
-        centreId              = defaultDisabledCentre.id,
+        centreId              = Some(defaultDisabledCentre.id),
         anatomicalSourceTypes = Set.empty[AnatomicalSourceType],
         preservationTypes     = Set.empty[PreservationType],
         specimenTypes         = Set.empty[SpecimenType])

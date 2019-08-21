@@ -267,7 +267,9 @@ object BbpspTestData {
           specimenType            = SpecimenType.CdpaPlasma,
           maxCount                = 1,
           amount                  = 15)
-    ).map { sd                    => sd.copy(slug = Slug(sd.name)) }
+    ).map { sd =>
+      sd.copy(slug = Slug(sd.name))
+    }
 
   val EventTypeAnnotationTypes: Set[AnnotationType] =
     Set(
@@ -345,17 +347,23 @@ class TestData @Inject() (config:         Configuration,
 
   lazy val participantData: List[ParticipantData] = createParticipants
 
-  private val loadTestData =
-    (env.mode == Mode.Dev) && config.get[Boolean]("application.testData.load")
+  /**
+   * When TRUE, the system will load test data.
+   */
+  private val loadTestDataMode = (env.mode == Mode.Dev) || (env.mode == Mode.Prod)
+
+  private val loadTestData = {
+    loadTestDataMode && config.get[Boolean]("application.testData.load")
+  }
 
   private val loadSpecimenTestData =
-    (env.mode == Mode.Dev) && loadTestData && config.get[Boolean]("application.testData.loadSpecimens")
+    loadTestDataMode && loadTestData && config.get[Boolean]("application.testData.loadSpecimens")
 
   private val loadShipmentTestData =
-    (env.mode == Mode.Dev) && loadSpecimenTestData && config.get[Boolean]("application.testData.loadShipments")
+    loadTestDataMode && loadSpecimenTestData && config.get[Boolean]("application.testData.loadShipments")
 
   private val loadAccessTestData =
-    (env.mode == Mode.Dev) && config.get[Boolean]("application.testData.loadAccessData")
+    loadTestDataMode && config.get[Boolean]("application.testData.loadAccessData")
 
   def testUsers(): List[User] = {
     if (!loadTestData) {

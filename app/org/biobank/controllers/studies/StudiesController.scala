@@ -151,10 +151,10 @@ class StudiesController @Inject()(
   def specimenDefinitionValueTypes: Action[Unit] = Action(parse.empty) { request =>
     // FIXME add container types to this response
     Ok(
-      Map("anatomicalSourceType"    -> AnatomicalSourceType.values.map(x    => x),
-          "preservationType"        -> PreservationType.values.map(x        => x),
+      Map("anatomicalSourceType" -> AnatomicalSourceType.values.map(x => x),
+          "preservationType" -> PreservationType.values.map(x => x),
           "preservationTemperature" -> PreservationTemperature.values.map(x => x),
-          "specimenType"            -> SpecimenType.values.map(x            => x))
+          "specimenType" -> SpecimenType.values.map(x => x))
     )
   }
 

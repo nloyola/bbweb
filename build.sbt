@@ -70,24 +70,25 @@ packageDescription := "Biorepository application for tracking biospecimens."
 
 scalaVersion := Option(System.getProperty("scala.version")).getOrElse("2.12.8")
 
-scalacOptions in Compile ++= Seq("-target:jvm-1.8",
-                                 "-encoding",
-                                 "UTF-8",
-                                 "-deprecation", // warning and location for usages of deprecated APIs
-                                 "-feature", // warning and location for usages of features that should be imported explicitly
-                                 "-language:implicitConversions",
-                                 "-language:higherKinds",
-                                 "-language:existentials",
-                                 "-language:postfixOps",
-                                 "-unchecked", // additional warnings where generated code depends on assumptions
-                                 "-Xlint:_",
-                                 "-Ywarn-adapted-args", // Warn if an argument list is modified to match the receiver
-                                 "-Ywarn-dead-code",
-                                 "-Ywarn-inaccessible",
-                                 "-Ywarn-numeric-widen",
-                                 "-Ywarn-unused-import",
-                                 "-Ywarn-value-discard" // Warn when non-Unit expression results are unused
-)
+scalacOptions in Compile ++=
+  Seq("-target:jvm-1.8",
+      "-encoding",
+      "UTF-8",
+      "-deprecation", // warning and location for usages of deprecated APIs
+      "-feature", // warning and location for usages of features that should be imported explicitly
+      "-language:implicitConversions",
+      "-language:higherKinds",
+      "-language:existentials",
+      "-language:postfixOps",
+      "-unchecked", // additional warnings where generated code depends on assumptions
+      "-Xlint:_",
+      "-Ywarn-adapted-args", // Warn if an argument list is modified to match the receiver
+      "-Ywarn-dead-code",
+      "-Ywarn-inaccessible",
+      "-Ywarn-numeric-widen",
+      "-Ywarn-unused-import",
+      "-Ywarn-value-discard" // Warn when non-Unit expression results are unused
+  )
 
 scalacOptions in (Compile, doc) ++= Seq("-groups", "-implicits")
 
@@ -115,7 +116,7 @@ testOptions in Test := Nil
 
 (testOptions in Test) += Tests.Argument(TestFrameworks.ScalaTest, "-oDS")
 
-addCompilerPlugin("com.github.ghik" %% "silencer-plugin" % "1.4.1")
+addCompilerPlugin("com.github.ghik" %% "silencer-plugin" % "1.4.2")
 
 resolvers ++= Seq(Classpaths.sbtPluginReleases,
                   "Typesafe repository" at "https://repo.typesafe.com/typesafe/releases/",
@@ -137,7 +138,7 @@ libraryDependencies ++=
       "com.typesafe.akka" %% "akka-remote"            % akkaVer % "compile",
       ("com.github.dnvriend" %% "akka-persistence-jdbc" % "3.5.2" % "compile")
         .excludeAll(ExclusionRule(organization = "com.typesafe.akka")),
-      "mysql"                      % "mysql-connector-java"             % "8.0.16",
+      "mysql"                      % "mysql-connector-java"             % "8.0.17",
       "org.scalaz"                 %% "scalaz-core"                     % "7.2.28" % "compile",
       "com.github.mauricio"        %% "mysql-async"                     % "0.2.21",
       "com.github.t3hnar"          %% "scala-bcrypt"                    % "4.1",
@@ -149,7 +150,7 @@ libraryDependencies ++=
       "com.mohiva"                 %% "play-silhouette-password-bcrypt" % silhouetteVersion,
       "com.mohiva"                 %% "play-silhouette-crypto-jca"      % silhouetteVersion,
       "com.typesafe.scala-logging" %% "scala-logging"                   % "3.9.2",
-      "com.github.ghik"            %% "silencer-lib"                    % "1.4.1" % "compile",
+      "com.github.ghik"            %% "silencer-lib"                    % "1.4.2" % "compile",
       "com.chuusai"                %% "shapeless"                       % "2.3.3" % "compile",
       // Testing
       ("com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.2" % "test")
@@ -158,7 +159,7 @@ libraryDependencies ++=
       "org.scalatestplus.play" %% "scalatestplus-play"      % "4.0.3"           % "test",
       "com.mohiva"             %% "play-silhouette-testkit" % silhouetteVersion % "test",
       "org.pegdown"            % "pegdown"                  % "1.6.0"           % "test",
-      "org.codehaus.janino"    % "janino"                   % "3.0.14"          % "test",
+      "org.codehaus.janino"    % "janino"                   % "3.1.0"           % "test",
       "org.mockito"            % "mockito-core"             % "3.0.0"           % "test",
       "it.bitbl"               %% "scala-faker"             % "0.4"             % "test",
       "org.gnieh"              %% "diffson-play-json"       % "3.1.1"           % "test")

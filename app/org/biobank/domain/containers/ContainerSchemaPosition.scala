@@ -14,16 +14,6 @@ object ContainerSchemaPositionValidations {
 
   case object ContainerSchemaPositionInvalid extends ValidationKey
 
-  def validate(position: Option[ContainerSchemaPosition]): DomainValidation[Unit] =
-    ContainerSchemaPosition.validate(position).leftMap { err =>
-      nel(ContainerSchemaPositionValidations.ContainerSchemaPositionInvalid.toString, err.list)
-    }
-
-}
-
-trait HasContainerSchemaPosition {
-
-  val position: Option[ContainerSchemaPosition]
 }
 
 /**
@@ -32,15 +22,10 @@ trait HasContainerSchemaPosition {
  *
  * This is a value object because it must be referenced and the [[label]] could be quite long.
  */
-final case class ContainerSchemaPosition(
-    id:       ContainerSchemaPositionId,
-    schemaId: ContainerSchemaId,
-    label:    String)
-    extends IdentifiedDomainObject[ContainerSchemaPositionId] {
+final case class ContainerSchemaPosition(schemaId: ContainerSchemaId, label: String) {
 
   override def toString: String =
     s"""|${this.getClass.getSimpleName}: {
-        |  id:       $id,
         |  schemaId: $schemaId,
         |  label:    $label
         |}""".stripMargin
@@ -52,31 +37,26 @@ object ContainerSchemaPosition {
   import org.biobank.domain.DomainValidations._
   import ContainerSchemaPositionValidations._
 
-  def create(
-      id:       ContainerSchemaPositionId,
-      schemaId: ContainerSchemaId,
-      label:    String
-    ): DomainValidation[ContainerSchemaPosition] =
-    validate(id, schemaId, label) map { _ =>
-      ContainerSchemaPosition(id, schemaId, label)
+  def create(schemaId: ContainerSchemaId, label: String): DomainValidation[ContainerSchemaPosition] =
+    validate(schemaId, label) map { _ =>
+      ContainerSchemaPosition(schemaId, label)
     }
 
-  def validate(
-      id:       ContainerSchemaPositionId,
-      schemaId: ContainerSchemaId,
-      label:    String
-    ): DomainValidation[Unit] =
-    (validateId(id) |@|
-      validateId(schemaId, InvalidContainerSchemaId) |@|
+  def validate(schemaId: ContainerSchemaId, label: String): DomainValidation[Unit] =
+    (validateId(schemaId, InvalidContainerSchemaId) |@|
       validateNonEmptyString(label, InvalidLabel)) {
       case _ =>
         ()
     }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  def validate(position: ContainerSchemaPosition): DomainValidation[Unit] =
+    ContainerSchemaPosition.validate(position.schemaId, position.label)
+
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def validate(position: Option[ContainerSchemaPosition]): DomainValidation[Unit] =
     position match {
-      case Some(p) => ContainerSchemaPosition.validate(p.id, p.schemaId, p.label)
+      case Some(p) => ContainerSchemaPosition.validate(p.schemaId, p.label)
       case None    => ().successNel[String]
     }
 

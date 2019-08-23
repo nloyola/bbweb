@@ -14,6 +14,7 @@ import org.biobank.domain.participants._
 import org.biobank.domain.studies._
 import org.biobank.domain.users._
 import org.biobank.fixtures.NameGenerator
+import org.scalatest.OptionValues._
 import scala.reflect._
 import scalaz.Scalaz._
 
@@ -495,35 +496,29 @@ class Factory {
   def createSentShipment(fromCentre: Centre, toCentre: Centre): SentShipment = {
     val shipment = createPackedShipment(fromCentre, toCentre)
     shipment
-      .send(shipment.timePacked.get.plusDays(1)).fold(err => sys.error("failed to create a sent shipment"),
-                                                      s   => s)
+      .send(shipment.timePacked.get.plusDays(1))
+      .fold(err => sys.error("failed to create a sent shipment"), s => s)
   }
 
   def createReceivedShipment(fromCentre: Centre, toCentre: Centre): ReceivedShipment = {
     val shipment = createSentShipment(fromCentre, toCentre)
     shipment
-      .receive(shipment.timeSent.get.plusDays(1)).fold(
-        err => sys.error("failed to create a received shipment"),
-        s   => s
-      )
+      .receive(shipment.timeSent.get.plusDays(1))
+      .fold(err => sys.error("failed to create a received shipment"), s => s)
   }
 
   def createUnpackedShipment(fromCentre: Centre, toCentre: Centre): UnpackedShipment = {
     val shipment = createReceivedShipment(fromCentre, toCentre)
     shipment
-      .unpack(shipment.timeReceived.get.plusDays(1)).fold(
-        err => sys.error("failed to create a unpacked shipment"),
-        s   => s
-      )
+      .unpack(shipment.timeReceived.get.plusDays(1))
+      .fold(err => sys.error("failed to create a unpacked shipment"), s => s)
   }
 
   def createCompletedShipment(fromCentre: Centre, toCentre: Centre): CompletedShipment = {
     val shipment = createUnpackedShipment(fromCentre, toCentre)
     shipment
-      .complete(shipment.timeReceived.get.plusDays(1)).fold(
-        err => sys.error("failed to create a completed shipment"),
-        s   => s
-      )
+      .complete(shipment.timeReceived.get.plusDays(1))
+      .fold(err => sys.error("failed to create a completed shipment"), s => s)
   }
 
   def createLostShipment(fromCentre: Centre, toCentre: Centre): LostShipment =
@@ -610,10 +605,12 @@ class Factory {
     containerSchema
   }
 
-  def createContainerSchemaPosition(): ContainerSchemaPosition =
-    ContainerSchemaPosition(id       = ContainerSchemaPositionId(nextIdentityAsString[ContainerSchemaPosition]),
-                            schemaId = defaultContainerSchema.id,
+  def createContainerSchemaPosition(containerSchema: ContainerSchema): ContainerSchemaPosition =
+    ContainerSchemaPosition(schemaId = containerSchema.id,
                             label    = nextIdentityAsString[ContainerSchemaPosition])
+
+  def createContainerSchemaPosition(): ContainerSchemaPosition =
+    createContainerSchemaPosition(defaultContainerSchema)
 
   def createContainerConstraints(): ContainerConstraints = {
     val name = nameGenerator.next[ContainerConstraints]
@@ -622,7 +619,7 @@ class Factory {
       slug                  = Slug(name),
       name                  = name,
       description           = Some(nameGenerator.next[ContainerConstraints]),
-      centreId              = Some(defaultDisabledCentre.id),
+      centreId              = defaultDisabledCentre.id,
       anatomicalSourceTypes = Set.empty[AnatomicalSourceType],
       preservationTypes     = Set.empty[PreservationType],
       specimenTypes         = Set.empty[SpecimenType]
@@ -631,41 +628,72 @@ class Factory {
     containerConstraints
   }
 
-  def createStorageContainer(): StorageContainer = {
+  def createRootContainer(centre: Centre, containerType: StorageContainerType): RootContainer = {
+    val label      = nameGenerator.next[Container]
+    val locationId = centre.locations.headOption.value.id
+    val container = RootContainer(id = ContainerId(nextIdentityAsString[Container]),
+                                  version         = 0L,
+                                  timeAdded       = OffsetDateTime.now,
+                                  timeModified    = None,
+                                  slug            = Slug(label),
+                                  inventoryId     = nameGenerator.next[Container],
+                                  label           = label,
+                                  enabled         = false,
+                                  containerTypeId = containerType.id,
+                                  centreId        = centre.id,
+                                  locationId      = locationId,
+                                  temperature     = PreservationTemperature.Minus80celcius,
+                                  constraints     = None)
+    domainObjects = domainObjects + (classOf[RootContainer] -> container)
+    container
+  }
+
+  def createRootContainer(): RootContainer =
+    createRootContainer(defaultEnabledCentre, defaultStorageContainerType)
+
+  def createStorageContainer(containerType: StorageContainerType, parent: Container): StorageContainer = {
     val inventoryId = nameGenerator.next[Container]
+    val position    = ContainerSchemaPosition(schemaId = defaultContainerSchema.id, label = "01")
     val container = StorageContainer(id = ContainerId(nextIdentityAsString[Container]),
-                                     version          = 0L,
-                                     timeAdded        = OffsetDateTime.now,
-                                     timeModified     = None,
-                                     slug             = Slug(inventoryId),
-                                     inventoryId      = inventoryId,
-                                     label            = nameGenerator.next[Container],
-                                     enabled          = false,
-                                     containerTypeId  = defaultStorageContainerType.id,
-                                     sharedProperties = none,
-                                     parentId         = none,
-                                     position         = none,
-                                     constraints      = Some(createContainerConstraints))
+                                     version         = 0L,
+                                     timeAdded       = OffsetDateTime.now,
+                                     timeModified    = None,
+                                     slug            = Slug(position.label),
+                                     inventoryId     = inventoryId,
+                                     enabled         = false,
+                                     containerTypeId = containerType.id,
+                                     parentId        = parent.id,
+                                     position        = position,
+                                     constraints     = None)
     domainObjects = domainObjects + (classOf[StorageContainer] -> container)
     container
   }
 
-  def createSpecimenContainer(): SpecimenContainer = {
+  def createStorageContainer(): StorageContainer =
+    createStorageContainer(defaultStorageContainerType, defaultRootContainer)
+
+  def createSpecimenContainer(
+      containerType: SpecimenContainerType,
+      parent:        StorageContainer
+    ): SpecimenContainer = {
     val inventoryId = nameGenerator.next[ContainerType]
+    val position =
+      ContainerSchemaPosition(schemaId = defaultContainerSchema.id, label = parent.position.label + "A1")
     val container = SpecimenContainer(id = ContainerId(nextIdentityAsString[Container]),
-                                      version          = 0L,
-                                      timeAdded        = OffsetDateTime.now,
-                                      timeModified     = None,
-                                      slug             = Slug(inventoryId),
-                                      inventoryId      = inventoryId,
-                                      label            = nameGenerator.next[Container],
-                                      containerTypeId  = defaultSpecimenContainerType.id,
-                                      sharedProperties = none,
-                                      parentId         = None,
-                                      position         = None)
+                                      version         = 0L,
+                                      timeAdded       = OffsetDateTime.now,
+                                      timeModified    = None,
+                                      slug            = Slug(position.label),
+                                      inventoryId     = inventoryId,
+                                      containerTypeId = containerType.id,
+                                      parentId        = parent.id,
+                                      position        = position)
     domainObjects = domainObjects + (classOf[SpecimenContainer] -> container)
     container
   }
+
+  def createSpecimenContainer(): SpecimenContainer =
+    createSpecimenContainer(defaultSpecimenContainerType, defaultStorageContainer)
 
   // def defaultRegisteredUser: RegisteredUser = {
   //   defaultObject(classOf[RegisteredUser], createRegisteredUser)
@@ -739,6 +767,15 @@ class Factory {
 
   def defaultSpecimenContainerType: SpecimenContainerType =
     defaultObject(classOf[SpecimenContainerType], createSpecimenContainerType)
+
+  def defaultRootContainer: RootContainer =
+    defaultObject(classOf[RootContainer], createRootContainer)
+
+  def defaultStorageContainer: StorageContainer =
+    defaultObject(classOf[StorageContainer], createStorageContainer)
+
+  def defaultSpecimenContainer: SpecimenContainer =
+    defaultObject(classOf[SpecimenContainer], createSpecimenContainer)
 
   /** Retrieves the class from the map, or calls 'create' if value does not exist
    */

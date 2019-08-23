@@ -24,6 +24,8 @@ import scalaz.Validation.FlatMap._
 @ImplementedBy(classOf[ContainersServiceImpl])
 trait ContainersService extends BbwebService {
 
+  def getContainer(requestUserId: UserId, id: ContainerId): ServiceValidation[ContainerDto]
+
   /** All Top [[domain.containers.Container Containers]] for a [domain.centres.Centre Centre]. */
   def getContainers(
       requestUserId: UserId,
@@ -40,10 +42,14 @@ class ContainersServiceImpl @Inject()(
     val centresService:                          CentresService,
     val centreRepository:                        CentreRepository,
     val containerTypeRepository:                 ContainerTypeRepository,
-    val containerRepository:                     ContainerRepository)
+    val containerRepository:                     ContainerRepository,
+    val containerSchemaRepository:               ContainerSchemaRepository)
     extends ContainersService with AccessChecksSerivce with ServicePermissionChecks {
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
+
+  def getContainer(requestUserId: UserId, id: ContainerId): ServiceValidation[ContainerDto] =
+    whenContainerPermitted(requestUserId, id)(container => containerToDto(container))
 
   def getContainers(
       requestUserId: UserId,
@@ -56,7 +62,7 @@ class ContainersServiceImpl @Inject()(
         rootContainers = containerRepository.rootContainers(centreId).toSeq
         containers <- filterContainersInternal(rootContainers, query.filter, query.sort)
         validPage  <- query.validPage(containers.size)
-        dtos       <- containers.map(containerToDto(requestUserId, _)).toList.sequenceU.map(_.toSeq)
+        dtos       <- containers.map(containerToDto).toList.sequenceU.map(_.toSeq)
         result     <- PagedResults.create(dtos, query.page, query.limit)
       } yield result
     }
@@ -67,8 +73,8 @@ class ContainersServiceImpl @Inject()(
         for {
           centre <- centreRepository.getByKey(CentreId(c.centreId))
         } yield centre.id
-      case c: AddSubContainerCommand => containerRepository.getSubContainerCentre(ContainerId(c.parentId))
-      case c: ContainerModifyCommand => containerRepository.getSubContainerCentre(ContainerId(c.id))
+      case c: AddSubContainerCommand => getContainerCentreId(ContainerId(c.parentId))
+      case c: ContainerModifyCommand => getContainerCentreId(ContainerId(c.id))
     }
 
     val permission = cmd match {
@@ -78,19 +84,38 @@ class ContainersServiceImpl @Inject()(
 
     val requestUserId = UserId(cmd.sessionUserId)
 
-    validCentreId.fold(err => Future.successful((err.failure[ContainerDto])),
-                       centreId =>
-                         whenPermittedAndIsMemberAsync(requestUserId, permission, None, Some(centreId)) {
-                           () =>
-                             ask(processor, cmd).mapTo[ServiceValidation[ContainerEvent]].map { validation =>
-                               for {
-                                 event     <- validation
-                                 container <- containerRepository.getByKey(ContainerId(event.id))
-                                 dto       <- containerToDto(requestUserId, container)
-                               } yield dto
-                             }
-                         })
+    validCentreId
+      .fold(err => Future.successful((err.failure[ContainerDto])),
+            centreId =>
+              whenPermittedAndIsMemberAsync(requestUserId, permission, None, Some(centreId)) { () =>
+                ask(processor, cmd).mapTo[ServiceValidation[ContainerEvent]].map { validation =>
+                  for {
+                    event     <- validation
+                    container <- containerRepository.getByKey(ContainerId(event.id))
+                    dto       <- containerToDto(container)
+                  } yield dto
+                }
+              })
   }
+
+  //
+  // Invokes function "block" if user that invoked this service has the permission and membership
+  // to do so.
+  //
+  private def whenContainerPermitted[T](
+      requestUserId: UserId,
+      containerId:   ContainerId
+    )(block:         Container => ServiceValidation[T]
+    ): ServiceValidation[T] =
+    for {
+      container <- containerRepository.getByKey(containerId)
+      centreId  <- getContainerCentreId(containerId)
+      permitted <- {
+        whenPermittedAndIsMember(requestUserId, PermissionId.ContainerRead, None, Some(centreId))(
+          () => block(container)
+        )
+      }
+    } yield permitted
 
   private def filterContainersInternal(
       unfiltered: Seq[Container],
@@ -118,37 +143,82 @@ class ContainersServiceImpl @Inject()(
     }
   }
 
-  private def containerToDto(requestUserId: UserId, container: Container): ServiceValidation[ContainerDto] =
-    container match {
-      case c: StorageContainer =>
-        for {
-          containerType <- containerTypeRepository.getByKey(c.containerTypeId)
-          //centre          <- c.constraints.flatMap(_.centreId.map(centreRepository.getByKey))
-        } yield {
-          val parentInfo = c.parentId.flatMap { containerId =>
-            containerRepository
-              .getByKey(containerId)
-              .map((pc: Container) => EntityInfoDto(pc.id.id, pc.slug, pc.label))
-              .toOption
+  private def containerToDto(container: Container): ServiceValidation[ContainerDto] =
+    containerTypeRepository.getByKey(container.containerTypeId).flatMap { containerType =>
+      val containerTypeInfo = EntityInfoDto(containerType.id.id, containerType.slug, containerType.name)
+
+      container match {
+        case c: RootContainer =>
+          for {
+            centre       <- centreRepository.getByKey(c.centreId)
+            locationName <- centre.locationName(c.locationId)
+          } yield {
+            val centreLocationInfo = CentreLocationInfo(centre.id.id, c.locationId.id, locationName)
+            val constraintsDto     = c.constraints.flatMap(containerConstraintsToDto(_).toOption)
+            RootContainerDto(id        = c.id.id,
+                             version   = c.version,
+                             timeAdded = c.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                             timeModified =
+                               c.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                             slug               = c.slug,
+                             label              = c.label,
+                             inventoryId        = c.inventoryId,
+                             enabled            = c.enabled,
+                             containerType      = containerTypeInfo,
+                             centreLocationInfo = centreLocationInfo,
+                             temperature        = c.temperature,
+                             constraints        = constraintsDto)
           }
-          val containerTypeInfo = EntityInfoDto(containerType.id.id, containerType.slug, containerType.name)
-          StorageContainerDto(id        = c.id.id,
-                              version   = c.version,
-                              timeAdded = c.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                              timeModified =
-                                c.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                              slug             = c.slug,
-                              inventoryId      = c.inventoryId,
-                              label            = c.label,
-                              enabled          = c.enabled,
-                              sharedProperties = c.sharedProperties,
-                              containerType    = containerTypeInfo,
-                              parent           = parentInfo,
-                              position         = c.position,
-                              constraints      = None)
-        }
-      case c: SpecimenContainer =>
-        ServiceError("not implemented yet").failureNel[ContainerDto]
+
+        case c: ChildContainer =>
+          for {
+            parent <- containerRepository.getByKey(c.parentId)
+            schema <- containerSchemaRepository.getByKey(containerType.schemaId)
+          } yield {
+            val parentInfo  = ContainerInfoDto(parent.id.id, parent.slug.id, parent.getLabel)
+            val positionDto = ContainerSchemaPositionDto(c.position, schema)
+
+            c match {
+              case c: StorageContainer =>
+                val constraintsDto = c.constraints.flatMap(containerConstraintsToDto(_).toOption)
+
+                StorageContainerDto(id        = c.id.id,
+                                    version   = c.version,
+                                    timeAdded = c.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                                    timeModified =
+                                      c.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                                    slug          = c.slug,
+                                    inventoryId   = c.inventoryId,
+                                    enabled       = c.enabled,
+                                    containerType = containerTypeInfo,
+                                    parent        = parentInfo,
+                                    position      = positionDto,
+                                    constraints   = constraintsDto)
+
+              case c: SpecimenContainer =>
+                SpecimenContainerDto(id        = c.id.id,
+                                     version   = c.version,
+                                     timeAdded = c.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                                     timeModified =
+                                       c.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                                     slug          = c.slug,
+                                     inventoryId   = c.inventoryId,
+                                     containerType = containerTypeInfo,
+                                     parent        = parentInfo,
+                                     position      = positionDto)
+            }
+          }
+      }
     }
+
+  private def containerConstraintsToDto(
+      constraints: ContainerConstraints
+    ): ServiceValidation[ContainerConstraintsDto] =
+    centreRepository.getByKey(constraints.centreId).map { centre =>
+      ContainerConstraintsDto(constraints, centre)
+    }
+
+  private def getContainerCentreId(containerId: ContainerId): ServiceValidation[CentreId] =
+    containerRepository.getRootContainer(containerId).map(_.centreId)
 
 }

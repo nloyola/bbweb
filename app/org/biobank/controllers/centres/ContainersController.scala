@@ -4,8 +4,6 @@ import javax.inject.{Inject, Singleton}
 import org.biobank.controllers._
 import org.biobank.domain.Slug
 import org.biobank.domain.containers.ContainerId
-//import org.biobank.dto._
-//import org.biobank.services._
 import org.biobank.services.centres.ContainersService
 import play.api.libs.json._
 import play.api.mvc._

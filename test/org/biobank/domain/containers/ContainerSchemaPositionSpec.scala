@@ -15,7 +15,7 @@ class ContainerSchemaPositionSpec extends DomainSpec {
 
   def createFrom(schemaPosition: ContainerSchemaPosition): DomainValidation[ContainerSchemaPosition] =
     ContainerSchemaPosition
-      .create(id = schemaPosition.id, schemaId = schemaPosition.schemaId, label = schemaPosition.label)
+      .create(schemaId = schemaPosition.schemaId, label = schemaPosition.label)
 
   describe("A container position schema") {
 
@@ -30,11 +30,6 @@ class ContainerSchemaPositionSpec extends DomainSpec {
   }
 
   describe("A container schema can") {
-
-    it("not be created with an empty id") {
-      val schemaPosition = factory.createContainerSchemaPosition().copy(id = ContainerSchemaPositionId(""))
-      createFrom(schemaPosition) mustFail "IdRequired"
-    }
 
     it("not be created with an empty schema id") {
       val schemaPosition = factory.createContainerSchemaPosition().copy(schemaId = ContainerSchemaId(""))

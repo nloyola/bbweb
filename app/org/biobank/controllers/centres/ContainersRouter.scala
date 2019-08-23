@@ -25,7 +25,7 @@ class ContainersRouter @Inject()(controller: ContainersController) extends Simpl
       controller.addStorageContainer
 
     case POST(p"/add-specimen") =>
-      controller.addStorageContainer
+      controller.addSpecimenContainer
 
     case POST(p"/snapshot") =>
       controller.snapshot

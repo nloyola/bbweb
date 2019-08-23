@@ -20,7 +20,7 @@ final case class ContainerConstraints(
     slug:                  Slug,
     name:                  String,
     description:           Option[String],
-    centreId:              Option[CentreId],
+    centreId:              CentreId,
     anatomicalSourceTypes: Set[AnatomicalSourceType],
     preservationTypes:     Set[PreservationType],
     specimenTypes:         Set[SpecimenType])
@@ -41,8 +41,8 @@ final case class ContainerConstraints(
       copy(description = description)
     }
 
-  def withCentre(centreId: Option[CentreId]): DomainValidation[ContainerConstraints] =
-    validateIdOption(centreId, CentreIdRequired) map { _ =>
+  def withCentre(centreId: CentreId): DomainValidation[ContainerConstraints] =
+    validateId(centreId, CentreIdRequired) map { _ =>
       copy(centreId = centreId)
     }
 
@@ -65,7 +65,7 @@ object ContainerConstraints {
       id:                    ContainerConstraintsId,
       name:                  String,
       description:           Option[String],
-      centreId:              Option[CentreId],
+      centreId:              CentreId,
       anatomicalSourceTypes: Set[AnatomicalSourceType],
       preservationTypes:     Set[PreservationType],
       specimenTypes:         Set[SpecimenType]
@@ -85,12 +85,12 @@ object ContainerConstraints {
       id:          ContainerConstraintsId,
       name:        String,
       description: Option[String],
-      centreId:    Option[CentreId]
+      centreId:    CentreId
     ): DomainValidation[Unit] =
     (validateId(id) |@|
       validateNonEmptyString(name, InvalidName) |@|
       validateNonEmptyStringOption(description, InvalidDescription) |@|
-      validateIdOption(centreId, CentreIdRequired)) {
+      validateId(centreId, CentreIdRequired)) {
       case _ => ()
     }
 

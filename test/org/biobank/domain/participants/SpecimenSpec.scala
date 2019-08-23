@@ -3,7 +3,7 @@ package org.biobank.domain.participants
 import java.time.OffsetDateTime
 import org.biobank.fixtures.NameGenerator
 import org.biobank.domain._
-import org.biobank.domain.containers.{ContainerId, ContainerSchemaPositionId}
+import org.biobank.domain.containers.{ContainerId, ContainerSchemaId}
 import org.biobank.domain.studies.SpecimenDefinitionId
 import org.slf4j.LoggerFactory
 
@@ -165,7 +165,8 @@ class SpecimenSpec extends DomainSpec {
       }
 
       it("with an empty position id") {
-        val position = Some(factory.createContainerSchemaPosition.copy(id = ContainerSchemaPositionId("")))
+        val position =
+          Some(factory.createContainerSchemaPosition.copy(schemaId = ContainerSchemaId("")))
         val specimen = factory.createUsableSpecimen.copy(position = position)
         createFrom(specimen) mustFail "PositionInvalid"
       }
@@ -205,7 +206,7 @@ class SpecimenSpec extends DomainSpec {
 
     it("with an invalid position") {
       val specimen    = factory.createUsableSpecimen
-      val newPosition = factory.createContainerSchemaPosition.copy(id = ContainerSchemaPositionId(""))
+      val newPosition = factory.createContainerSchemaPosition.copy(schemaId = ContainerSchemaId(""))
 
       specimen.withPosition(Some(newPosition)) mustFail "PositionInvalid"
     }

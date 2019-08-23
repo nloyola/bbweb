@@ -130,6 +130,7 @@ abstract class ControllerFixture
   protected def shipmentRepository         = app.injector.instanceOf[ShipmentRepository]
   protected def shipmentSpecimenRepository = app.injector.instanceOf[ShipmentSpecimenRepository]
   protected def containerTypeRepository    = app.injector.instanceOf[ContainerTypeRepository]
+  protected def containerSchemaRepository  = app.injector.instanceOf[ContainerSchemaRepository]
   protected def containerRepository        = app.injector.instanceOf[ContainerRepository]
 
   protected def addToRepository[T <: ConcurrencySafeEntity[_]](entity: T): Unit =
@@ -146,6 +147,9 @@ abstract class ControllerFixture
       case e: Specimen            => specimenRepository.put(e)
       case e: ShipmentSpecimen    => shipmentSpecimenRepository.put(e)
       case e: Shipment            => shipmentRepository.put(e)
+      case e: ContainerSchema     => containerSchemaRepository.put(e)
+      case e: ContainerType       => containerTypeRepository.put(e)
+      case e: Container           => containerRepository.put(e)
       case _ => fail("invalid entity")
     }
 

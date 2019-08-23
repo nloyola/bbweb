@@ -223,7 +223,7 @@ class CentresServiceImpl @Inject()(
     }
   }
 
-  private def centreToDto(requestUserId: UserId, centre: Centre): ServiceValidation[CentreDto] = {
+  def centreToDto(requestUserId: UserId, centre: Centre): ServiceValidation[CentreDto] = {
     val v = centre.studyIds
       .map { id =>
         studiesService.getStudy(requestUserId, id).map { study =>

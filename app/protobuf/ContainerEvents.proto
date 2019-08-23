@@ -2,13 +2,13 @@ syntax = "proto2";
 
 package org.biobank.infrastructure.events;
 
-import "CommonEvents.proto";
+// import "CommonEvents.proto";
 
 message ContainerEvent {
 
   message RootAdded {
-    optional string inventoryId     = 1;
-    optional string label           = 2;
+    optional string label           = 1;
+    optional string inventoryId     = 2;
     optional string centreId        = 3;
     optional string locationId      = 4;
     optional string temperature     = 5;
@@ -17,9 +17,10 @@ message ContainerEvent {
 
   message ChildAdded {
     optional string inventoryId     = 1;
-    optional string label           = 2;
-    optional string containerTypeId = 3;
-    optional string parentId        = 4;
+    optional string containerTypeId = 2;
+    optional string parentId        = 3;
+    optional string schemaId        = 4;
+    optional string label           = 5;
   }
 
   required string id            = 1;

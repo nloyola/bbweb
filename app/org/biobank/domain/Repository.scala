@@ -18,6 +18,8 @@ trait ReadRepository[K, A] {
 
   def getKeys: Iterable[K]
 
+  def exists(predicate: A => Boolean): Boolean
+
 }
 
 /** A read/write repository.
@@ -72,6 +74,7 @@ trait ReadWriteRepositoryWithSlug[K, A] extends ReadWriteRepository[K, A] {
 
   def getKeys: Iterable[K] = getMap.keys
 
+  def exists(predicate: A => Boolean): Boolean = getValues.exists(predicate)
 }
 
 /** A read/write wrapper around an STM Ref of a map.
@@ -81,8 +84,7 @@ trait ReadWriteRepositoryWithSlug[K, A] extends ReadWriteRepository[K, A] {
 abstract private[domain] class ReadWriteRepositoryRefImpl[K, A](keyGetter: (A) => K)
     extends ReadRepositoryRefImpl[K, A](keyGetter) with ReadWriteRepository[K, A] {
 
-  def init(): Unit =
-    removeAll
+  def init(): Unit = removeAll
 
   protected def nextIdentityAsString: String =
     // ensure all IDs can be used in URLs

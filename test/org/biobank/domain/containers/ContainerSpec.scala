@@ -8,7 +8,7 @@ import org.scalatest.FunSpec
 import org.slf4j.LoggerFactory
 import scalaz.Scalaz._
 
-trait ContainerSharedSpec { this: FunSpec =>
+trait ContainerSharedSpec[T <: Container] { this: FunSpec =>
   import org.biobank.TestUtils._
   import org.biobank.matchers.EntityMatchers._
 
@@ -16,21 +16,21 @@ trait ContainerSharedSpec { this: FunSpec =>
 
   protected val nameGenerator: NameGenerator
 
-  protected def createFrom(container: Container): DomainValidation[Container]
+  protected def createFrom(container: T): DomainValidation[Container]
 
-  protected def createEntity(): Container
+  protected def createEntity(): T
 
-  protected def createWithId(id: ContainerId): Container
+  protected def createWithId(id: ContainerId): T
 
-  protected def createWithInventoryId(inventoryId: String): Container
+  protected def createWithInventoryId(inventoryId: String): T
 
-  protected def createWithVersion(version: Long): Container
+  protected def createWithVersion(version: Long): T
 
-  protected def createWithContainerTypeId(id: ContainerTypeId): Container
+  protected def createWithContainerTypeId(id: ContainerTypeId): T
 
-  protected def createWithParentId(id: Option[ContainerId]): Container
+  protected def createWithParentId(id: ContainerId): T
 
-  protected def createWithPosition(id: Option[ContainerSchemaPosition]): Container
+  protected def createWithPosition(id: ContainerSchemaPosition): T
 
   describe("(container shared behaviour)") {
 
@@ -49,42 +49,7 @@ trait ContainerSharedSpec { this: FunSpec =>
                     'version (container.version + 1),
                     'slug (container.slug.id),
                     'inventoryId (inventoryId),
-                    'containerTypeId (container.containerTypeId),
-                    'parentId (container.parentId),
-                    'position (container.position))
-
-        c must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
-      }
-    }
-
-    it("can have it's position ID updated") {
-      val container = createEntity
-      val position  = Some(factory.createContainerSchemaPosition)
-      container.withPosition(position) mustSucceed { c =>
-        c must have('id (container.id),
-                    'version (container.version + 1),
-                    'slug (container.slug.id),
-                    'inventoryId (container.inventoryId),
-                    'containerTypeId (container.containerTypeId),
-                    'parentId (container.parentId),
-                    'position (position))
-
-        c must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
-      }
-    }
-
-    it("can have it's parent ID and position ID updated") {
-      val container = createEntity
-      val parentId  = Some(ContainerId(nameGenerator.next[Container]))
-      val position  = Some(factory.createContainerSchemaPosition)
-      container.withParentPosition(parentId, position) mustSucceed { c =>
-        c must have('id (container.id),
-                    'version (container.version + 1),
-                    'slug (container.slug.id),
-                    'inventoryId (container.inventoryId),
-                    'containerTypeId (container.containerTypeId),
-                    'parentId (parentId),
-                    'position (position))
+                    'containerTypeId (container.containerTypeId))
 
         c must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
       }
@@ -111,19 +76,19 @@ trait ContainerSharedSpec { this: FunSpec =>
     }
 
     it("not be created with an invalid parent ID") {
-      val container = createWithParentId(Some(ContainerId("")))
+      val container = createWithParentId(ContainerId(""))
       createFrom(container) mustFail "ContainerParentIdInvalid"
     }
 
     it("not be created with an invalid position") {
-      val position  = factory.createContainerSchemaPosition.copy(id = ContainerSchemaPositionId(""))
-      val container = createWithPosition(Some(position))
+      val position  = factory.createContainerSchemaPosition.copy(schemaId = ContainerSchemaId(""))
+      val container = createWithPosition(position)
       createFrom(container) mustFail ("ContainerSchemaPositionInvalid", "IdRequired")
     }
   }
 }
 
-class StorageContainerSpec extends DomainSpec with ContainerSharedSpec {
+class StorageContainerSpec extends DomainSpec with ContainerSharedSpec[StorageContainer] {
   import org.biobank.TestUtils._
   import org.biobank.matchers.EntityMatchers._
 
@@ -131,40 +96,38 @@ class StorageContainerSpec extends DomainSpec with ContainerSharedSpec {
 
   val nameGenerator = new NameGenerator(this.getClass)
 
-  protected def createFrom(container: Container): DomainValidation[StorageContainer] =
+  protected def createFrom(container: StorageContainer): DomainValidation[StorageContainer] =
     container match {
       case c: StorageContainer =>
-        StorageContainer.create(id               = c.id,
-                                version          = c.version,
-                                inventoryId      = c.inventoryId,
-                                label            = c.label,
-                                enabled          = c.enabled,
-                                containerTypeId  = c.containerTypeId,
-                                sharedProperties = c.sharedProperties,
-                                parentId         = c.parentId,
-                                position         = c.position,
-                                constraints      = c.constraints)
+        StorageContainer.create(id              = c.id,
+                                version         = c.version,
+                                inventoryId     = c.inventoryId,
+                                containerTypeId = c.containerTypeId,
+                                parentId        = c.parentId,
+                                position        = c.position,
+                                constraints     = c.constraints)
       case _ => DomainError("invalid container").failureNel[StorageContainer]
     }
 
-  protected def createEntity(): StorageContainer = factory.createStorageContainer()
+  protected def createEntity(): StorageContainer =
+    factory.createStorageContainer()
 
-  protected def createWithId(id: ContainerId): Container =
+  protected def createWithId(id: ContainerId): StorageContainer =
     factory.createStorageContainer().copy(id = id)
 
-  protected def createWithInventoryId(inventoryId: String): Container =
+  protected def createWithInventoryId(inventoryId: String): StorageContainer =
     factory.createStorageContainer().copy(inventoryId = inventoryId)
 
-  protected def createWithVersion(version: Long): Container =
+  protected def createWithVersion(version: Long): StorageContainer =
     factory.createStorageContainer().copy(version = version)
 
-  protected def createWithContainerTypeId(id: ContainerTypeId): Container =
+  protected def createWithContainerTypeId(id: ContainerTypeId): StorageContainer =
     factory.createStorageContainer().copy(containerTypeId = id)
 
-  protected def createWithParentId(id: Option[ContainerId]): Container =
+  protected def createWithParentId(id: ContainerId): StorageContainer =
     factory.createStorageContainer().copy(parentId = id)
 
-  protected def createWithPosition(position: Option[ContainerSchemaPosition]): Container =
+  protected def createWithPosition(position: ContainerSchemaPosition): StorageContainer =
     factory.createStorageContainer().copy(position = position)
 
   describe("A StorageContainer") {
@@ -211,41 +174,39 @@ class StorageContainerSpec extends DomainSpec with ContainerSharedSpec {
 
 }
 
-class SpecimenContainerSpec extends DomainSpec with ContainerSharedSpec {
+class SpecimenContainerSpec extends DomainSpec with ContainerSharedSpec[SpecimenContainer] {
   import org.biobank.TestUtils._
 
   val log = LoggerFactory.getLogger(this.getClass)
 
   val nameGenerator = new NameGenerator(this.getClass)
 
-  protected def createFrom(container: Container): DomainValidation[Container] =
-    SpecimenContainer.create(id               = container.id,
-                             version          = container.version,
-                             inventoryId      = container.inventoryId,
-                             label            = container.label,
-                             containerTypeId  = container.containerTypeId,
-                             sharedProperties = container.sharedProperties,
-                             parentId         = container.parentId,
-                             position         = container.position)
+  protected def createFrom(container: SpecimenContainer): DomainValidation[SpecimenContainer] =
+    SpecimenContainer.create(id              = container.id,
+                             version         = container.version,
+                             inventoryId     = container.inventoryId,
+                             containerTypeId = container.containerTypeId,
+                             parentId        = container.parentId,
+                             position        = container.position)
 
-  protected def createEntity(): Container = factory.createSpecimenContainer()
+  protected def createEntity(): SpecimenContainer = factory.createSpecimenContainer()
 
-  protected def createWithId(id: ContainerId): Container =
-    factory.createStorageContainer().copy(id = id)
+  protected def createWithId(id: ContainerId): SpecimenContainer =
+    factory.createSpecimenContainer().copy(id = id)
 
-  protected def createWithInventoryId(inventoryId: String): Container =
+  protected def createWithInventoryId(inventoryId: String): SpecimenContainer =
     factory.createSpecimenContainer().copy(inventoryId = inventoryId)
 
-  protected def createWithVersion(version: Long): Container =
+  protected def createWithVersion(version: Long): SpecimenContainer =
     factory.createSpecimenContainer().copy(version = version)
 
-  protected def createWithContainerTypeId(id: ContainerTypeId): Container =
+  protected def createWithContainerTypeId(id: ContainerTypeId): SpecimenContainer =
     factory.createSpecimenContainer().copy(containerTypeId = id)
 
-  protected def createWithParentId(id: Option[ContainerId]): Container =
+  protected def createWithParentId(id: ContainerId): SpecimenContainer =
     factory.createSpecimenContainer().copy(parentId = id)
 
-  protected def createWithPosition(position: Option[ContainerSchemaPosition]): Container =
+  protected def createWithPosition(position: ContainerSchemaPosition): SpecimenContainer =
     factory.createSpecimenContainer().copy(position = position)
 
   describe("A SpecimenContainer") {

@@ -7,18 +7,29 @@ import play.api.libs.json.Reads._
 
 object ContainerCommands {
 
+  trait HasContainerTypeIdentity {
+
+    /** A command that includes the container type ID that it is related to. */
+    val containerTypeId: String
+
+  }
+
   trait HasParentIdentity {
 
-    /** A command that includes the parent conatainer ID that it is related to. */
+    /** A command that includes the parent container ID that it is related to. */
     val parentId: String
 
   }
 
   trait ContainerCommand extends Command with HasSessionUserId
 
-  trait AddContainerCommand extends ContainerCommand
+  trait AddContainerCommand extends ContainerCommand with HasContainerTypeIdentity
 
-  trait AddSubContainerCommand extends AddContainerCommand with HasParentIdentity
+  trait AddSubContainerCommand
+      extends AddContainerCommand with HasContainerTypeIdentity with HasParentIdentity {
+    val inventoryId: String
+    val label:       String
+  }
 
   trait ContainerModifyCommand extends ContainerCommand with HasIdentity with HasExpectedVersion
 
@@ -37,18 +48,20 @@ object ContainerCommands {
 
   final case class AddStorageContainerCmd(
       sessionUserId:   String,
-      inventoryId:     String,
       label:           String,
+      inventoryId:     String,
       containerTypeId: String,
-      parentId:        String)
+      parentId:        String,
+      schemaId:        String)
       extends AddSubContainerCommand
 
   final case class AddSpecimenContainerCmd(
       sessionUserId:   String,
-      inventoryId:     String,
       label:           String,
+      inventoryId:     String,
       containerTypeId: String,
-      parentId:        String)
+      parentId:        String,
+      schemaId:        String)
       extends AddSubContainerCommand
 
   final case class UpdateContainerCmd(

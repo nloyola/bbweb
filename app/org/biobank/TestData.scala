@@ -937,6 +937,9 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
       ).map(m => m.copy(slug = Slug(m.name)))
     }
 
+  def testContainerSchemas(): List[ContainerSchema] =
+    ???
+
   def testContainerTypes(): List[ContainerType] =
     ???
 

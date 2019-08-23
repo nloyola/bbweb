@@ -126,7 +126,7 @@ final case class StorageContainerType(
     update.copy(enabled = enabled).success
 
   private def update(): StorageContainerType =
-    copy(version = version + 1L, timeModified = Some(OffsetDateTime.now))
+    copy(version = nextVersion, timeModified = Some(OffsetDateTime.now))
 
 }
 
@@ -203,7 +203,7 @@ final case class SpecimenContainerType(
     update.copy(enabled = enabled).success
 
   private def update() =
-    copy(version = version + 1L, timeModified = Some(OffsetDateTime.now))
+    copy(version = nextVersion, timeModified = Some(OffsetDateTime.now))
 
 }
 

@@ -40,7 +40,7 @@ trait Processor extends PersistentActor with ActorLogging {
       repository: R
     ): ServiceValidation[I] =
     repository
-      .getByKey(id).fold(err  => id.successNel[String],
+      .getByKey(id).fold(err => id.successNel[String],
                          item => ServiceError(s"could not generate a unique ID: $id").failureNel[I])
 
   /**
@@ -50,12 +50,10 @@ trait Processor extends PersistentActor with ActorLogging {
       name:         String,
       repository:   ReadRepository[_, T],
       errMsgPrefix: String
-    )(matcher:      T => Boolean
-    ): ServiceValidation[Unit] = {
-    val exists = repository.getValues.exists(matcher)
-    if (exists) EntityCriteriaError(s"$errMsgPrefix: $name").failureNel[Unit]
+    )(predicate:    T => Boolean
+    ): ServiceValidation[Unit] =
+    if (repository.exists(predicate)) EntityCriteriaError(s"$errMsgPrefix: $name").failureNel[Unit]
     else ().successNel[String]
-  }
 
   /** Checks that the domain objects version matches the expected one.
    */

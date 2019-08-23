@@ -22,7 +22,7 @@ import scalaz.Scalaz._
  * SpecimenDefinition]] defined in either the [[domain.participants.CollectionEvent
  * CollectionEvent]] or the specimen link type to which it corresponds .
  */
-sealed trait Specimen extends ConcurrencySafeEntity[SpecimenId] with HasSlug with HasContainerSchemaPosition {
+sealed trait Specimen extends ConcurrencySafeEntity[SpecimenId] with HasSlug {
 
   val state: EntityState
 
@@ -213,7 +213,7 @@ with SpecimenValidations with ParticipantValidations with StudyValidations {
     }
 
   def withPosition(position: Option[ContainerSchemaPosition]): DomainValidation[Specimen] =
-    ContainerSchemaPositionValidations.validate(position).map { s =>
+    ContainerSchemaPosition.validate(position).map { s =>
       update.copy(position = position)
     }
 
@@ -298,7 +298,7 @@ object UsableSpecimen extends SpecimenValidations with ParticipantValidations wi
       validateNonEmptyString(originLocationId.id, OriginLocationIdInvalid) |@|
       validateNonEmptyString(locationId.id, LocationIdInvalid) |@|
       validateIdOption(containerId, ContainerIdInvalid) |@|
-      ContainerSchemaPositionValidations.validate(position) |@|
+      ContainerSchemaPosition.validate(position) |@|
       validatePositiveNumber(amount, AmountInvalid)) {
       case _ => ()
     }

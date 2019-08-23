@@ -11,15 +11,21 @@ import scalaz.Validation.FlatMap._
 @ImplementedBy(classOf[ContainerRepositoryImpl])
 trait ContainerRepository extends ReadWriteRepositoryWithSlug[ContainerId, Container] {
 
+  def getByInventoryId(inventoryId: String): DomainValidation[Container]
+
   def getStorageContainer(id: ContainerId): DomainValidation[StorageContainer]
 
   def getSpecimenContainer(id: ContainerId): DomainValidation[SpecimenContainer]
+
+  def getChildContainer(id: ContainerId, label: String): DomainValidation[Container]
+
+  def positionEmpty(id: ContainerId, label: String): DomainValidation[Unit]
 
   def containerSharedProperties(ids: ContainerId): ContainerSharedProperties
 
   def rootContainers(centreId: CentreId): Set[StorageContainer]
 
-  def getSubContainerCentre(id: ContainerId): DomainValidation[CentreId]
+  def getRootContainer(id: ContainerId): DomainValidation[RootContainer]
 
 }
 
@@ -40,23 +46,42 @@ class ContainerRepositoryImpl @Inject()(val testData: TestData)
   protected def slugNotFound(slug: Slug): EntityCriteriaNotFound =
     EntityCriteriaNotFound(s"container slug: $slug")
 
+  def getByInventoryId(inventoryId: String): DomainValidation[Container] =
+    getValues
+      .find { c =>
+        c.inventoryId == inventoryId
+      }.toSuccessNel(EntityCriteriaError(s"container with inventory ID not found: $inventoryId").toString)
+
   def getStorageContainer(id: ContainerId): DomainValidation[StorageContainer] =
-    for {
-      container <- getByKey(id)
-      storage <- container match {
-                  case c: StorageContainer => c.successNel[String]
-                  case _ => InvalidStatus(s"not a storage container: $id").failureNel[StorageContainer]
-                }
-    } yield storage
+    getByKey(id).flatMap {
+      _ match {
+        case c: StorageContainer => c.successNel[String]
+        case _ => InvalidStatus(s"not a storage container: $id").failureNel[StorageContainer]
+      }
+    }
 
   def getSpecimenContainer(id: ContainerId): DomainValidation[SpecimenContainer] =
-    for {
-      container <- getByKey(id)
-      sc <- container match {
-             case c: SpecimenContainer => c.successNel[String]
-             case _ => InvalidStatus(s"not a specimen container: $id").failureNel[SpecimenContainer]
-           }
-    } yield sc
+    getByKey(id).flatMap {
+      _ match {
+        case c: SpecimenContainer => c.successNel[String]
+        case _ => InvalidStatus(s"not a specimen container: $id").failureNel[SpecimenContainer]
+      }
+    }
+
+  def getChildContainer(id: ContainerId, label: String): DomainValidation[Container] =
+    getValues
+      .collect { case c: ChildContainer => c }
+      .find { c =>
+        c.parentId == id && c.position.label == label
+      }
+      .toSuccessNel(EntityCriteriaError(s"container with parent $id and label $label not found").toString)
+
+  def positionEmpty(id: ContainerId, label: String): DomainValidation[Unit] =
+    getChildContainer(id, label).fold(
+      err => ().successNel[String],
+      container =>
+        EntityCriteriaError(s"position not empty at label $label in container $id").failureNel[Unit]
+    )
 
   def containerSharedProperties(ids: ContainerId): ContainerSharedProperties =
     ???
@@ -64,6 +89,27 @@ class ContainerRepositoryImpl @Inject()(val testData: TestData)
   def rootContainers(centreId: CentreId): Set[StorageContainer] =
     ???
 
-  def getSubContainerCentre(id: ContainerId): DomainValidation[CentreId] =
-    ???
+  def getRootContainer(id: ContainerId): DomainValidation[RootContainer] = {
+    val parent = getByKey(id).flatMap { container =>
+      container match {
+        case c: ChildContainer => getParent(c)
+        case c: RootContainer  => c.successNel[String]
+      }
+    }
+    parent.flatMap { p =>
+      p match {
+        case c: RootContainer  => c.successNel[String]
+        case c: ChildContainer => EntityCriteriaError("parent not found").failureNel[RootContainer]
+      }
+    }
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
+  private def getParent(container: ChildContainer): DomainValidation[Container] =
+    getByKey(container.parentId).flatMap { parent =>
+      parent match {
+        case c: ChildContainer => getParent(c)
+        case c: RootContainer  => c.successNel[String]
+      }
+    }
 }

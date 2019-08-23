@@ -14,6 +14,7 @@ import org.biobank.services.{Processor, ServiceValidation, SnapshotWriter}
 import play.api.libs.json._
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
+import org.biobank.CommonValidations.EntityCriteriaError
 
 object ContainersProcessor {
 
@@ -25,12 +26,20 @@ object ContainersProcessor {
 
 }
 
+final case class AddChildRequest(
+    containerType:  ContainerType,
+    schema:         ContainerSchema,
+    parent:         Container,
+    newContainerId: ContainerId)
+
 class ContainersProcessor @Inject()(
-    val containerRepository: ContainerRepository,
-    val snapshotWriter:      SnapshotWriter)
+    val containerRepository:       ContainerRepository,
+    val containerTypeRepository:   ContainerTypeRepository,
+    val containerSchemaRepository: ContainerSchemaRepository,
+    val snapshotWriter:            SnapshotWriter)
     extends Processor {
   import ContainersProcessor._
-  //import org.biobank.CommonValidations._
+  import org.biobank.CommonValidations._
   import ContainerEvent.EventType
 
   override def persistenceId: String = "container-processor-id"
@@ -42,7 +51,9 @@ class ContainersProcessor @Inject()(
   val receiveRecover: Receive = {
     case event: ContainerEvent =>
       event.eventType match {
-        case et: EventType.RootAdded => applyRootAddedEvent(event)
+        case et: EventType.RootAdded     => applyRootAddedEvent(event)
+        case et: EventType.StorageAdded  => applyStorageAddedEvent(event)
+        case et: EventType.SpecimenAdded => applySpecimenAddedEvent(event)
         // case et: EventType.NameUpdated        => applyNameUpdatedEvent(event)
         // case et: EventType.DescriptionUpdated => applyDescriptionUpdatedEvent(event)
 
@@ -61,7 +72,13 @@ class ContainersProcessor @Inject()(
   @SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Throw"))
   val receiveCommand: Receive = {
     case cmd: AddRootContainerCmd =>
-      process(addTopContainerCmdToEvent(cmd))(applyRootAddedEvent)
+      process(addRootContainerCmdToEvent(cmd))(applyRootAddedEvent)
+
+    case cmd: AddStorageContainerCmd =>
+      process(addStorageContainerCmdToEvent(cmd))(applyStorageAddedEvent)
+
+    case cmd: AddSpecimenContainerCmd =>
+      process(addSpecimenContainerCmdToEvent(cmd))(applySpecimenAddedEvent)
 
     case "snap" =>
       mySaveSnapshot
@@ -102,30 +119,91 @@ class ContainersProcessor @Inject()(
       )
   }
 
-  private def addTopContainerCmdToEvent(cmd: AddRootContainerCmd): ServiceValidation[ContainerEvent] =
+  private def addRootContainerCmdToEvent(cmd: AddRootContainerCmd): ServiceValidation[ContainerEvent] = {
+    val containerTypeId = ContainerTypeId(cmd.containerTypeId)
     for {
+      containerId   <- validNewIdentity(containerRepository.nextIdentity, containerRepository)
+      containerType <- containerTypeRepository.getByKey(containerTypeId)
+      validCtype    <- containerTypeRepository.getStorageContainerType(containerType.id)
+      inventoryId   <- inventoryIdAvailable(cmd.inventoryId)
+      newContainer <- RootContainer
+                       .create(id              = containerId,
+                               version         = 0L,
+                               inventoryId     = cmd.inventoryId,
+                               label           = cmd.label,
+                               containerTypeId = containerType.id,
+                               centreId        = CentreId(cmd.centreId),
+                               locationId      = LocationId(cmd.locationId),
+                               temperature     = cmd.temperature,
+                               constraints     = None)
+    } yield ContainerEvent(newContainer.id.id)
+      .update(_.sessionUserId             := cmd.sessionUserId,
+              _.time                      := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+              _.rootAdded.inventoryId     := cmd.inventoryId,
+              _.rootAdded.label           := cmd.label,
+              _.rootAdded.centreId        := cmd.centreId,
+              _.rootAdded.locationId      := cmd.locationId,
+              _.rootAdded.temperature     := cmd.temperature.toString,
+              _.rootAdded.containerTypeId := cmd.containerTypeId)
+  }
+
+  private def addStorageContainerCmdToEvent(cmd: AddStorageContainerCmd): ServiceValidation[ContainerEvent] =
+    for {
+      values     <- addChildValidate(cmd)
+      validCtype <- containerTypeRepository.getStorageContainerType(values.containerType.id)
+      position   <- ContainerSchemaPosition.create(values.containerType.schemaId, cmd.label)
+      newContainer <- StorageContainer
+                       .create(id              = values.newContainerId,
+                               version         = 0L,
+                               inventoryId     = cmd.inventoryId,
+                               containerTypeId = values.containerType.id,
+                               parentId        = values.parent.id,
+                               position        = position,
+                               constraints     = None)
+    } yield ContainerEvent(newContainer.id.id)
+      .update(_.sessionUserId                := cmd.sessionUserId,
+              _.time                         := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+              _.storageAdded.inventoryId     := cmd.inventoryId,
+              _.storageAdded.label           := cmd.label,
+              _.storageAdded.containerTypeId := cmd.containerTypeId,
+              _.storageAdded.parentId        := cmd.parentId,
+              _.storageAdded.schemaId        := cmd.schemaId)
+
+  private def addSpecimenContainerCmdToEvent(
+      cmd: AddSpecimenContainerCmd
+    ): ServiceValidation[ContainerEvent] =
+    for {
+      values     <- addChildValidate(cmd)
+      validCtype <- containerTypeRepository.getSpecimenContainerType(values.containerType.id)
+      position   <- ContainerSchemaPosition.create(values.containerType.schemaId, cmd.label)
+      newContainer <- SpecimenContainer
+                       .create(id              = values.newContainerId,
+                               version         = 0L,
+                               inventoryId     = cmd.inventoryId,
+                               containerTypeId = values.containerType.id,
+                               parentId        = values.parent.id,
+                               position        = position)
+    } yield ContainerEvent(newContainer.id.id)
+      .update(_.sessionUserId                 := cmd.sessionUserId,
+              _.time                          := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+              _.specimenAdded.inventoryId     := cmd.inventoryId,
+              _.specimenAdded.label           := cmd.label,
+              _.specimenAdded.containerTypeId := cmd.containerTypeId,
+              _.specimenAdded.parentId        := cmd.parentId,
+              _.specimenAdded.schemaId        := cmd.schemaId)
+
+  private def addChildValidate(cmd: AddSubContainerCommand): ServiceValidation[AddChildRequest] =
+    for {
+      containerType <- containerTypeRepository.getByKey(ContainerTypeId(cmd.containerTypeId))
+      schema        <- containerSchemaRepository.getByKey(containerType.schemaId)
+      inventoryId   <- inventoryIdAvailable(cmd.inventoryId)
+      parent <- containerRepository
+                 .getByKey(ContainerId(cmd.parentId)).leftMap(
+                   err => IdNotFound(s"parent id ${cmd.parentId}").nel
+                 )
+      posEmpty    <- containerRepository.positionEmpty(parent.id, cmd.label)
       containerId <- validNewIdentity(containerRepository.nextIdentity, containerRepository)
-      sharedProperties <- ContainerSharedProperties
-                           .create(CentreId(cmd.centreId), LocationId(cmd.locationId), cmd.temperature)
-      newContainer <- StorageContainer.create(id = containerId,
-                                              version          = 0L,
-                                              inventoryId      = cmd.inventoryId,
-                                              label            = cmd.label,
-                                              enabled          = false,
-                                              containerTypeId  = ContainerTypeId(cmd.containerTypeId),
-                                              sharedProperties = Some(sharedProperties),
-                                              parentId         = None,
-                                              position         = None,
-                                              constraints      = None)
-    } yield ContainerEvent(newContainer.id.id).update(_.sessionUserId := cmd.sessionUserId,
-                                                      _.time := OffsetDateTime.now
-                                                        .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                                                      _.rootAdded.inventoryId     := cmd.inventoryId,
-                                                      _.rootAdded.label           := cmd.label,
-                                                      _.rootAdded.centreId        := cmd.centreId,
-                                                      _.rootAdded.locationId      := cmd.locationId,
-                                                      _.rootAdded.temperature     := cmd.temperature.toString,
-                                                      _.rootAdded.containerTypeId := cmd.containerTypeId)
+    } yield AddChildRequest(containerType, schema, parent, containerId)
 
   private def applyRootAddedEvent(event: ContainerEvent): Unit =
     if (!event.eventType.isRootAdded) {
@@ -133,32 +211,90 @@ class ContainersProcessor @Inject()(
     } else {
       val addedEvent = event.getRootAdded
       val validation = for {
-        sharedProperties <- ContainerSharedProperties.create(
-                             CentreId(addedEvent.getCentreId),
-                             LocationId(addedEvent.getLocationId),
-                             PreservationTemperature.withName(addedEvent.getTemperature)
-                           )
-        container <- StorageContainer
-                      .create(id               = ContainerId(event.id),
-                              version          = 0L,
-                              inventoryId      = addedEvent.getInventoryId,
-                              label            = addedEvent.getLabel,
-                              enabled          = false,
-                              containerTypeId  = ContainerTypeId(addedEvent.getContainerTypeId),
-                              sharedProperties = Some(sharedProperties),
-                              parentId         = None,
-                              position         = None,
-                              constraints      = None).map { c =>
-                        c.copy(slug      = containerRepository.uniqueSlugFromStr(c.inventoryId),
+        container <- RootContainer
+                      .create(id              = ContainerId(event.id),
+                              version         = 0L,
+                              label           = addedEvent.getLabel,
+                              inventoryId     = addedEvent.getInventoryId,
+                              containerTypeId = ContainerTypeId(addedEvent.getContainerTypeId),
+                              centreId        = CentreId(addedEvent.getCentreId),
+                              locationId      = LocationId(addedEvent.getLocationId),
+                              temperature     = PreservationTemperature.withName(addedEvent.getTemperature),
+                              constraints     = None).map { c =>
+                        c.copy(slug      = containerRepository.uniqueSlugFromStr(c.label),
                                timeAdded = OffsetDateTime.parse(event.getTime))
                       }
       } yield container
 
       if (validation.isFailure) {
-        log.error(s"could not add container from event: $event")
+        log.error(s"could not add root container from event: $event")
       }
 
       validation.foreach(containerRepository.put)
     }
 
+  private def applyStorageAddedEvent(event: ContainerEvent): Unit =
+    if (!event.eventType.isStorageAdded) {
+      log.error(s"invalid event type: $event")
+    } else {
+      val addedEvent = event.getStorageAdded
+      val validation = for {
+        position <- ContainerSchemaPosition
+                     .create(ContainerSchemaId(addedEvent.getSchemaId), addedEvent.getLabel)
+        container <- StorageContainer
+                      .create(id              = ContainerId(event.id),
+                              version         = 0L,
+                              inventoryId     = addedEvent.getInventoryId,
+                              containerTypeId = ContainerTypeId(addedEvent.getContainerTypeId),
+                              parentId        = ContainerId(addedEvent.getParentId),
+                              position        = position,
+                              constraints     = None).map { c =>
+                        c.copy(slug      = containerRepository.uniqueSlugFromStr(c.position.label),
+                               timeAdded = OffsetDateTime.parse(event.getTime))
+                      }
+      } yield container
+
+      if (validation.isFailure) {
+        log.error(s"could not add storage container from event: $event")
+      }
+
+      validation.foreach(containerRepository.put)
+    }
+
+  private def applySpecimenAddedEvent(event: ContainerEvent): Unit =
+    if (!event.eventType.isSpecimenAdded) {
+      log.error(s"invalid event type: $event")
+    } else {
+      val addedEvent = event.getSpecimenAdded
+      val validation = for {
+        position <- ContainerSchemaPosition
+                     .create(ContainerSchemaId(addedEvent.getSchemaId), addedEvent.getLabel)
+        container <- SpecimenContainer
+                      .create(id              = ContainerId(event.id),
+                              version         = 0L,
+                              inventoryId     = addedEvent.getInventoryId,
+                              containerTypeId = ContainerTypeId(addedEvent.getContainerTypeId),
+                              parentId        = ContainerId(addedEvent.getParentId),
+                              position        = position).map { c =>
+                        c.copy(slug      = containerRepository.uniqueSlugFromStr(c.position.label),
+                               timeAdded = OffsetDateTime.parse(event.getTime))
+                      }
+      } yield container
+
+      if (validation.isFailure) {
+        log.error(s"could not add specimen container from event: $event")
+      }
+
+      validation.foreach(containerRepository.put)
+    }
+
+  private def inventoryIdAvailable(inventoryId: String): ServiceValidation[Unit] = {
+    val exists = containerRepository
+      .exists { e =>
+        e.inventoryId == inventoryId
+      }
+    if (exists)
+      EntityCriteriaError(s"container with inventory ID already exists: $inventoryId").failureNel[Unit]
+    else ().successNel[String]
+  }
 }

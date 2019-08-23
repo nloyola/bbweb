@@ -34,6 +34,8 @@ trait ConcurrencySafeEntity[T] extends IdentifiedDomainObject[T] {
     if (this.version != expectedVersion) invalidVersion(expectedVersion).failureNel[Unit]
     else ().successNel[String]
 
+  def nextVersion: Long = version + 1L
+
 }
 
 object ConcurrencySafeEntity {

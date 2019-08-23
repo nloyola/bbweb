@@ -474,9 +474,8 @@ trait EntityMatchers {
     new Matcher[ContainerSchemaPosition] {
 
       def apply(left: ContainerSchemaPosition) = {
-        val matchers = Map(("id" -> (left.id equals containerSchemaPosition.id)),
-                           ("schemaId" -> (left.schemaId equals containerSchemaPosition.schemaId)),
-                           ("label"    -> (left.label equals containerSchemaPosition.label)))
+        val matchers = Map(("schemaId" -> (left.schemaId equals containerSchemaPosition.schemaId)),
+                           ("label" -> (left.label equals containerSchemaPosition.label)))
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
         MatchResult(
@@ -488,17 +487,30 @@ trait EntityMatchers {
       }
     }
 
+  def matchContainer(container: Container): Matcher[Container] =
+    new Matcher[Container] {
+
+      def apply(left: Container) =
+        (left, container) match {
+          case (l: RootContainer, c:     RootContainer)     => matchContainer(c).apply(l)
+          case (l: StorageContainer, c:  StorageContainer)  => matchContainer(c).apply(l)
+          case (l: SpecimenContainer, c: SpecimenContainer) => matchContainer(c).apply(l)
+          case _ => MatchResult(false, "containers have different scala types", "")
+        }
+    }
+
   /**
    * This matcher allows for time differences in `timeAdded` and `timeModified` of 5 seconds.
    *
    * The `equals` matcher, from scalatest, cannot be used since ConcurrencySafeEntity overrides `equals`
    * and `hashCode`.
    */
-  def matchContainer(container: Container) =
-    new Matcher[Container] {
+  def matchContainer(container: RootContainer) =
+    new Matcher[RootContainer] {
 
-      def apply(left: Container) = {
-        val matchers    = containersMatch(left, container)
+      def apply(left: RootContainer) = {
+        val matchers =
+          Map(("label" -> (left.label equals container.label))) ++ containersMatch(left, container)
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
         MatchResult(nonMatching.size <= 0,
@@ -519,7 +531,32 @@ trait EntityMatchers {
 
       def apply(left: StorageContainer) = {
         val matchers = Map(("enabled" -> (left.enabled equals container.enabled)),
+                           ("parentId"    -> (left.parentId equals container.parentId)),
+                           ("position"    -> (left.position equals container.position)),
                            ("constraints" -> (left.constraints equals container.constraints))) ++
+          containersMatch(left, container)
+
+        val nonMatching = matchers filter { case (k, v) => !v } keys
+
+        MatchResult(nonMatching.size <= 0,
+                    "containers do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
+                    "containers match: actual: {1},\nexpected: {2}",
+                    IndexedSeq(nonMatching.mkString(", "), left, container))
+      }
+    }
+
+  /**
+   * This matcher allows for time differences in `timeAdded` and `timeModified` of 5 seconds.
+   *
+   * The `equals` matcher, from scalatest, cannot be used since ConcurrencySafeEntity overrides `equals`
+   * and `hashCode`.
+   */
+  def matchContainer(container: SpecimenContainer) =
+    new Matcher[SpecimenContainer] {
+
+      def apply(left: SpecimenContainer) = {
+        val matchers = Map(("parentId" -> (left.parentId equals container.parentId)),
+                           ("position" -> (left.position equals container.position))) ++
           containersMatch(left, container)
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
@@ -681,35 +718,22 @@ trait EntityMatchers {
   private def outputSpecimenDefinitionsMatch(a: ProcessingType, b: ProcessingType) = {
     val aOsd = a.output.specimenDefinition
     val bOsd = b.output.specimenDefinition
-    Map(
-      ("output.specimenDefinition.id" ->
-        (aOsd.id equals bOsd.id)),
-      ("output.specimenDefinition.slug" ->
-        (aOsd.slug equals bOsd.slug)),
-      ("output.specimenDefinition.name" ->
-        (aOsd.name equals bOsd.name)),
-      ("output.specimenDefinition.description" ->
-        (aOsd.description equals bOsd.description)),
-      ("output.specimenDefinition.units" ->
-        (aOsd.units equals bOsd.units)),
-      ("output.specimenDefinition.anatomicalSourceType" ->
-        (aOsd.anatomicalSourceType equals bOsd.anatomicalSourceType)),
-      ("output.specimenDefinition.preservationType" ->
-        (aOsd.preservationType equals bOsd.preservationType)),
-      ("output.specimenDefinition.preservationTemperature" ->
-        (aOsd.preservationTemperature equals bOsd.preservationTemperature)),
-      ("output.specimenDefinition.specimenType" ->
-        (aOsd.specimenType equals bOsd.specimenType))
-    )
+    Map(("output.specimenDefinition.id"                      -> (aOsd.id equals bOsd.id)),
+        ("output.specimenDefinition.slug"                    -> (aOsd.slug equals bOsd.slug)),
+        ("output.specimenDefinition.name"                    -> (aOsd.name equals bOsd.name)),
+        ("output.specimenDefinition.description"             -> (aOsd.description equals bOsd.description)),
+        ("output.specimenDefinition.units"                   -> (aOsd.units equals bOsd.units)),
+        ("output.specimenDefinition.anatomicalSourceType"    -> (aOsd.anatomicalSourceType equals bOsd.anatomicalSourceType)),
+        ("output.specimenDefinition.preservationType"        -> (aOsd.preservationType equals bOsd.preservationType)),
+        ("output.specimenDefinition.preservationTemperature" -> (aOsd.preservationTemperature equals bOsd.preservationTemperature)),
+        ("output.specimenDefinition.specimenType"            -> (aOsd.specimenType equals bOsd.specimenType)))
   }
 
   private def containersMatch(a: Container, b: Container) =
     Map(("id"              -> (a.id equals b.id)),
         ("slug"            -> (a.slug equals b.slug)),
         ("inventoryId"     -> (a.inventoryId equals b.inventoryId)),
-        ("containerTypeId" -> (a.containerTypeId equals b.containerTypeId)),
-        ("parentId"        -> (a.parentId equals b.parentId)),
-        ("osition"         -> (a.position equals b.position))) ++
+        ("containerTypeId" -> (a.containerTypeId equals b.containerTypeId))) ++
       entityAttrsMatch(b, a)
 
 }

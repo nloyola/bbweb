@@ -77,5 +77,5 @@ object ContainerSchema {
                         centreId     = centreId)
     }
 
-  implicit val containerSchemaWrites: Writes[ContainerSchema] = Json.writes[ContainerSchema]
+  implicit val containerSchemaFormat: Format[ContainerSchema] = Json.format[ContainerSchema]
 }

@@ -55,8 +55,8 @@ class ContainerConstraintsSpec extends DomainSpec {
     it("can have it's centre updated") {
       val constraints = factory.createContainerConstraints
       val centre      = factory.createDisabledCentre
-      constraints.withCentre(Some(centre.id)) mustSucceed {
-        _ must matchContainerConstraints(constraints.copy(centreId = Some(centre.id)))
+      constraints.withCentre(centre.id) mustSucceed {
+        _ must matchContainerConstraints(constraints.copy(centreId = centre.id))
       }
     }
 
@@ -100,7 +100,7 @@ class ContainerConstraintsSpec extends DomainSpec {
     }
 
     it("be created with an empty centre id") {
-      val constraints = factory.createContainerConstraints.copy(centreId = Some(CentreId("")))
+      val constraints = factory.createContainerConstraints.copy(centreId = CentreId(""))
       createFrom(constraints) mustFail "CentreIdRequired"
     }
 

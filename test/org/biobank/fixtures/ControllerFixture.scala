@@ -5,7 +5,7 @@ import com.mohiva.play.silhouette.api._
 import com.mohiva.play.silhouette.test._
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
 import net.codingwell.scalaguice.ScalaModule
-import org.biobank.Global.{ DefaultUserId, DefaultUserEmail }
+import org.biobank.Global.{DefaultUserEmail, DefaultUserId}
 import org.biobank.controllers.CacheForTesting
 import org.biobank.domain._
 import org.biobank.domain.access._
@@ -41,9 +41,8 @@ class Url(val path: String) extends AnyVal {
     Url(allPaths.mkString("/"))
   }
 
-  def addQueryString(params: String*): Url = {
+  def addQueryString(params: String*): Url =
     Url(path + "?" + params.mkString("&"))
-  }
 }
 
 object Url {
@@ -59,14 +58,8 @@ object Url {
  * make it easier to drop all items in the database prior to running a test in a test suite.
  */
 abstract class ControllerFixture
-    extends FunSpec
-    with GuiceOneServerPerTest
-    with OneBrowserPerTest
-    with HtmlUnitFactory
-    with BeforeAndAfter
-    with MustMatchers
-    with OptionValues
-    with ApiResultMatchers {
+    extends FunSpec with GuiceOneServerPerTest with OneBrowserPerTest with HtmlUnitFactory with BeforeAndAfter
+    with MustMatchers with OptionValues with ApiResultMatchers {
 
   protected val log: Logger = LoggerFactory.getLogger(this.getClass)
 
@@ -82,7 +75,7 @@ abstract class ControllerFixture
 
   private val identity =
     org.biobank.utils.auth.User(
-      user = RegisteredUser(id           = DefaultUserId,
+      user = RegisteredUser(id = DefaultUserId,
                             version      = 0L,
                             timeAdded    = org.biobank.Global.StartOfTime,
                             timeModified = None,
@@ -91,7 +84,8 @@ abstract class ControllerFixture
                             email        = DefaultUserEmail,
                             password     = "",
                             salt         = "",
-                            avatarUrl    = None))
+                            avatarUrl    = None)
+    )
 
   implicit val env: Environment[DefaultEnv] =
     new FakeEnvironment[DefaultEnv](Seq(loginInfo -> identity))
@@ -100,9 +94,8 @@ abstract class ControllerFixture
    * A fake Guice module.
    */
   class FakeModule extends AbstractModule with ScalaModule {
-    override def configure() = {
+    override def configure() =
       bind[Environment[DefaultEnv]].toInstance(env)
-    }
   }
 
   override def newAppForTest(testData: org.scalatest.TestData) =
@@ -117,29 +110,29 @@ abstract class ControllerFixture
 
   protected def passwordHasher = app.injector.instanceOf[PasswordHasher]
 
-  protected def accessItemRepository                   = app.injector.instanceOf[AccessItemRepository]
-  protected def membershipRepository                   = app.injector.instanceOf[MembershipRepository]
+  protected def accessItemRepository = app.injector.instanceOf[AccessItemRepository]
+  protected def membershipRepository = app.injector.instanceOf[MembershipRepository]
 
-  protected def userRepository                         = app.injector.instanceOf[UserRepository]
+  protected def userRepository = app.injector.instanceOf[UserRepository]
 
-  protected def studyRepository                        = app.injector.instanceOf[StudyRepository]
-  protected def collectionEventTypeRepository          = app.injector.instanceOf[CollectionEventTypeRepository]
-  protected def processingTypeRepository               = app.injector.instanceOf[ProcessingTypeRepository]
+  protected def studyRepository               = app.injector.instanceOf[StudyRepository]
+  protected def collectionEventTypeRepository = app.injector.instanceOf[CollectionEventTypeRepository]
+  protected def processingTypeRepository      = app.injector.instanceOf[ProcessingTypeRepository]
 
-  protected def participantRepository                  = app.injector.instanceOf[ParticipantRepository]
-  protected def collectionEventRepository              = app.injector.instanceOf[CollectionEventRepository]
-  protected def ceventSpecimenRepository               = app.injector.instanceOf[CeventSpecimenRepository]
-  protected def specimenRepository                     = app.injector.instanceOf[SpecimenRepository]
-  protected def processingEventInputSpecimenRepository = app.injector.instanceOf[ProcessingEventInputSpecimenRepository]
+  protected def participantRepository     = app.injector.instanceOf[ParticipantRepository]
+  protected def collectionEventRepository = app.injector.instanceOf[CollectionEventRepository]
+  protected def ceventSpecimenRepository  = app.injector.instanceOf[CeventSpecimenRepository]
+  protected def specimenRepository        = app.injector.instanceOf[SpecimenRepository]
+  protected def processingEventInputSpecimenRepository =
+    app.injector.instanceOf[ProcessingEventInputSpecimenRepository]
 
+  protected def centreRepository           = app.injector.instanceOf[CentreRepository]
+  protected def shipmentRepository         = app.injector.instanceOf[ShipmentRepository]
+  protected def shipmentSpecimenRepository = app.injector.instanceOf[ShipmentSpecimenRepository]
+  protected def containerTypeRepository    = app.injector.instanceOf[ContainerTypeRepository]
+  protected def containerRepository        = app.injector.instanceOf[ContainerRepository]
 
-  protected def centreRepository                       = app.injector.instanceOf[CentreRepository]
-  protected def shipmentRepository                     = app.injector.instanceOf[ShipmentRepository]
-  protected def shipmentSpecimenRepository             = app.injector.instanceOf[ShipmentSpecimenRepository]
-  protected def containerTypeRepository                = app.injector.instanceOf[ContainerTypeRepository]
-  protected def containerRepository                    = app.injector.instanceOf[ContainerRepository]
-
-  protected def addToRepository[T <: ConcurrencySafeEntity[_]](entity: T): Unit = {
+  protected def addToRepository[T <: ConcurrencySafeEntity[_]](entity: T): Unit =
     entity match {
       case e: AccessItem          => accessItemRepository.put(e)
       case e: Membership          => membershipRepository.put(e)
@@ -153,12 +146,10 @@ abstract class ControllerFixture
       case e: Specimen            => specimenRepository.put(e)
       case e: ShipmentSpecimen    => shipmentSpecimenRepository.put(e)
       case e: Shipment            => shipmentRepository.put(e)
-      case _                      => fail("invalid entity")
+      case _ => fail("invalid entity")
     }
-  }
 
-  protected def makeAuthRequest(method: String, url: Url, json: JsValue = JsNull)
-      : Option[Future[Result]] = {
+  protected def makeAuthRequest(method: String, url: Url, json: JsValue = JsNull): Option[Future[Result]] = {
     val fakeRequest = FakeRequest(method, url.path)
       .withJsonBody(json)
       .withAuthenticator(loginInfo)
@@ -173,7 +164,7 @@ abstract class ControllerFixture
   }
 
   protected def uri(paths: String*): Url = {
-    val prefix = if (basePath.isEmpty()) Array(apiPath) else Array(apiPath, basePath)
+    val prefix   = if (basePath.isEmpty()) Array(apiPath) else Array(apiPath, basePath)
     val allPaths = prefix ++ paths
     Url(allPaths.mkString("/"))
   }

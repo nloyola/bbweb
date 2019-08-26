@@ -6,8 +6,10 @@ import scalaz.Scalaz._
 trait EntityNameFilter[A <: HasName] extends PredicateHelper with HasNamePredicates[A] {
   import Comparator._
 
-  protected def nameFilter(comparator: Comparator, names: List[String]):
-      ServiceValidation[EntityNameFilter] = {
+  protected def nameFilter(
+      comparator: Comparator,
+      names:      List[String]
+    ): ServiceValidation[EntityNameFilter] = {
     val nameSet = names.toSet
     comparator match {
       case Equal =>

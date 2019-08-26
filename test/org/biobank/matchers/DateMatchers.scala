@@ -8,8 +8,10 @@ trait DateMatchers {
   def beTimeWithinSeconds(time: OffsetDateTime, diffSeconds: Long): Matcher[OffsetDateTime] =
     new TimeWithinSeconds(time, diffSeconds)
 
-  def beOptionalTimeWithinSeconds(time: Option[OffsetDateTime], diffSeconds: Long = 0L)
-      : Matcher[Option[OffsetDateTime]] =
+  def beOptionalTimeWithinSeconds(
+      time:        Option[OffsetDateTime],
+      diffSeconds: Long = 0L
+    ): Matcher[Option[OffsetDateTime]] =
     new TimeOptionWithinSeconds(time, diffSeconds)
 
   private class TimeWithinSeconds(time: OffsetDateTime, diffSeconds: Long) extends Matcher[OffsetDateTime] {
@@ -25,7 +27,7 @@ trait DateMatchers {
 
   private class TimeOptionWithinSeconds(timeMaybe: Option[OffsetDateTime], diffSeconds: Long)
       extends Matcher[Option[OffsetDateTime]] {
-    override def apply(left: Option[OffsetDateTime]) = {
+    override def apply(left: Option[OffsetDateTime]) =
       (left, timeMaybe) match {
         case (Some(leftTime), Some(time)) =>
           beTimeWithinSeconds(time, diffSeconds)(leftTime)
@@ -38,7 +40,6 @@ trait DateMatchers {
                       "actual time and expected time are both None",
                       "actual time and expected time are both None")
       }
-    }
   }
 
 }

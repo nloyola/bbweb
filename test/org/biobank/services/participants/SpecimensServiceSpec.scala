@@ -13,20 +13,17 @@ import org.scalatest.prop.TableDrivenPropertyChecks._
 /**
  * Primarily these are tests that exercise the User Access aspect of SpecimenService.
  */
-class SpecimensServiceSpec
-    extends ProcessorTestFixture
-    with ParticipantsServiceFixtures
-    with ScalaFutures {
+class SpecimensServiceSpec extends ProcessorTestFixture with ParticipantsServiceFixtures with ScalaFutures {
 
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.SpecimenCommands._
 
   class UsersWithSpecimenAccessFixture extends UsersWithCeventAccessFixture {
     val location = factory.createLocation
-    val centre = factory.createEnabledCentre.copy(studyIds = Set(enabledStudy.id),
-                                                  locations = Set(location))
-    val specimen = factory.createUsableSpecimen.copy(specimenDefinitionId = specimenDefinition.id,
-                                                     locationId = location.id)
+    val centre   = factory.createEnabledCentre.copy(studyIds = Set(enabledStudy.id), locations = Set(location))
+
+    val specimen = factory.createUsableSpecimen
+      .copy(specimenDefinitionId = specimenDefinition.id, locationId = location.id)
     Set(specimen, centre).foreach(addToRepository)
     ceventSpecimenRepository.put(CeventSpecimen(cevent.id, specimen.id))
   }
@@ -55,34 +52,30 @@ class SpecimensServiceSpec
 
   private val specimensService = app.injector.instanceOf[SpecimensService]
 
-  override protected def addToRepository[T <: ConcurrencySafeEntity[_]](entity: T): Unit = {
+  override protected def addToRepository[T <: ConcurrencySafeEntity[_]](entity: T): Unit =
     entity match {
       case e: Specimen => specimenRepository.put(e)
       case e: Centre   => centreRepository.put(e)
-      case e           => super.addToRepository(e)
+      case e => super.addToRepository(e)
     }
-  }
 
-  private def getSpecimenInfo(specimen: Specimen) = {
-    SpecimenInfo(inventoryId           = specimen.inventoryId,
+  private def getSpecimenInfo(specimen: Specimen) =
+    SpecimenInfo(inventoryId          = specimen.inventoryId,
                  specimenDefinitionId = specimen.specimenDefinitionId.id,
-                 timeCreated           = specimen.timeCreated,
-                 locationId            = specimen.locationId.id,
-                 amount                = specimen.amount)
-  }
+                 timeCreated          = specimen.timeCreated,
+                 locationId           = specimen.locationId.id,
+                 amount               = specimen.amount)
 
-  private def getAddSpecimensCmd(userId: UserId, ceventId: CollectionEventId, specimen: Specimen) = {
+  private def getAddSpecimensCmd(userId: UserId, ceventId: CollectionEventId, specimen: Specimen) =
     AddSpecimensCmd(sessionUserId     = userId.id,
                     collectionEventId = ceventId.id,
                     specimenData      = List(getSpecimenInfo(specimen)))
-  }
 
-  private def getRemoveSpecimenCmd(userId: UserId, ceventId: CollectionEventId, specimen: Specimen) = {
+  private def getRemoveSpecimenCmd(userId: UserId, ceventId: CollectionEventId, specimen: Specimen) =
     RemoveSpecimenCmd(sessionUserId     = userId.id,
                       id                = specimen.id.id,
                       collectionEventId = ceventId.id,
                       expectedVersion   = specimen.version)
-  }
 
   // private def updateCommandsTable(sessionUserId:   UserId,
   //                                 collectionEvent: CollectionEvent,
@@ -116,20 +109,22 @@ class SpecimensServiceSpec
 
       it("users can access") {
         val f = new UsersWithSpecimenAccessFixture
-        forAll (f.usersCanReadTable) { (user, label) =>
+        forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
-          specimensService.get(user.id, f.specimen.id).mustSucceed { _.id must be (f.specimen.id.id) }
+          specimensService.get(user.id, f.specimen.id).mustSucceed { _.id must be(f.specimen.id.id) }
         }
       }
 
       it("users cannot access") {
         val f = new UsersWithSpecimenAccessFixture
         info("no membership user")
-        specimensService.get(f.noMembershipUser.id, f.specimen.id)
+        specimensService
+          .get(f.noMembershipUser.id, f.specimen.id)
           .mustFail("Unauthorized")
 
         info("no permission user")
-        specimensService.get(f.nonStudyPermissionUser.id, f.specimen.id)
+        specimensService
+          .get(f.nonStudyPermissionUser.id, f.specimen.id)
           .mustFail("Unauthorized")
 
       }
@@ -140,11 +135,12 @@ class SpecimensServiceSpec
 
       it("users can access") {
         val f = new UsersWithSpecimenAccessFixture
-        forAll (f.usersCanReadTable) { (user, label) =>
+        forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
-          specimensService.getByInventoryId(user.id, f.specimen.inventoryId)
+          specimensService
+            .getByInventoryId(user.id, f.specimen.inventoryId)
             .mustSucceed { specimen =>
-              specimen.id must be (f.specimen.id)
+              specimen.id must be(f.specimen.id)
             }
         }
       }
@@ -152,11 +148,13 @@ class SpecimensServiceSpec
       it("users cannot access") {
         val f = new UsersWithSpecimenAccessFixture
         info("no membership user")
-        specimensService.getByInventoryId(f.noMembershipUser.id, f.specimen.inventoryId)
+        specimensService
+          .getByInventoryId(f.noMembershipUser.id, f.specimen.inventoryId)
           .mustFail("Unauthorized")
 
         info("no permission user")
-        specimensService.getByInventoryId(f.nonStudyPermissionUser.id, f.specimen.inventoryId)
+        specimensService
+          .getByInventoryId(f.nonStudyPermissionUser.id, f.specimen.inventoryId)
           .mustFail("Unauthorized")
 
       }
@@ -166,12 +164,13 @@ class SpecimensServiceSpec
     describe("when listing specimens") {
 
       it("users can access") {
-        val f = new UsersWithSpecimenAccessFixture
-        val query = PagedQuery(new FilterString(""), new SortString(""), 0 , 1)
+        val f     = new UsersWithSpecimenAccessFixture
+        val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
 
-        forAll (f.usersCanReadTable) { (user, label) =>
+        forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
-          specimensService.list(user.id, f.cevent.id, query).futureValue
+          specimensService
+            .list(user.id, f.cevent.id, query).futureValue
             .mustSucceed { result =>
               result.items must have size 1
             }
@@ -179,15 +178,17 @@ class SpecimensServiceSpec
       }
 
       it("users cannot access") {
-        val f = new UsersWithSpecimenAccessFixture
-        val query = PagedQuery(new FilterString(""), new SortString(""), 0 , 1)
+        val f     = new UsersWithSpecimenAccessFixture
+        val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
 
         info("no membership user")
-        specimensService.list(f.noMembershipUser.id, f.cevent.id, query).futureValue
+        specimensService
+          .list(f.noMembershipUser.id, f.cevent.id, query).futureValue
           .mustFail("Unauthorized")
 
         info("no permission user")
-        specimensService.list(f.nonStudyPermissionUser.id, f.cevent.id, query).futureValue
+        specimensService
+          .list(f.nonStudyPermissionUser.id, f.cevent.id, query).futureValue
           .mustFail("Unauthorized")
       }
 
@@ -197,18 +198,18 @@ class SpecimensServiceSpec
 
       it("users can access") {
         val f = new UsersWithSpecimenAccessFixture
-        forAll (f.usersCanAddOrUpdateTable) { (user, label) =>
+        forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           val cmd = getAddSpecimensCmd(user.id, f.cevent.id, f.specimen)
           specimenRepository.removeAll
           specimensService.processCommand(cmd).futureValue mustSucceed { reply =>
-            reply.participantId must be (f.participant.id.id)
+            reply.participantId must be(f.participant.id.id)
           }
         }
       }
 
       it("users cannot access") {
         val f = new UsersWithSpecimenAccessFixture
-        forAll (f.usersCannotAddOrUpdateTable) { (user, label) =>
+        forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           val cmd = getAddSpecimensCmd(user.id, f.cevent.id, f.specimen)
           specimenRepository.removeAll
           specimensService.processCommand(cmd).futureValue mustFail "Unauthorized"
@@ -254,7 +255,7 @@ class SpecimensServiceSpec
 
       it("users with access") {
         val f = new UsersWithSpecimenAccessFixture
-        forAll (f.usersCanAddOrUpdateTable) { (user, label) =>
+        forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           info(label)
           val cmd = getRemoveSpecimenCmd(user.id, f.cevent.id, f.specimen)
           specimenRepository.put(f.specimen) // restore it to it's previous state
@@ -267,7 +268,7 @@ class SpecimensServiceSpec
 
       it("users without access") {
         val f = new UsersWithSpecimenAccessFixture
-        forAll (f.usersCannotAddOrUpdateTable) { (user, label) =>
+        forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           info(label)
           val cmd = getRemoveSpecimenCmd(user.id, f.cevent.id, f.specimen)
           specimensService.processRemoveCommand(cmd).futureValue mustFail "Unauthorized"

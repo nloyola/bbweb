@@ -122,25 +122,22 @@ class AccessRouter @Inject()(controller: AccessController) extends SimpleRouter 
 
 object AccessItemRouting {
 
-  implicit object bindableAccessItemId extends Parsing[AccessItemId](
-    AccessItemId.apply,
-    _.toString,
-    (key: String, e: Exception) => s"$key is not a valid access item id"
-  )
+  implicit object bindableAccessItemId
+      extends Parsing[AccessItemId](AccessItemId.apply,
+                                    _.toString,
+                                    (key: String, e: Exception) => s"$key is not a valid access item id")
 
   val accessItemId: PathBindableExtractor[AccessItemId] =
     new PathBindableExtractor[AccessItemId]
 
 }
 
-
 object MembershipRouting {
 
-  implicit object bindableMembershipId extends Parsing[MembershipId](
-    MembershipId.apply,
-    _.toString,
-    (key: String, e: Exception) => s"$key is not a valid membership id"
-  )
+  implicit object bindableMembershipId
+      extends Parsing[MembershipId](MembershipId.apply,
+                                    _.toString,
+                                    (key: String, e: Exception) => s"$key is not a valid membership id")
 
   val membershipId: PathBindableExtractor[MembershipId] =
     new PathBindableExtractor[MembershipId]

@@ -19,14 +19,12 @@ class AnnotationTypeSpec extends DomainSpec {
         val tuple = AnnotationValueTypeToTuple(vt)
         createAnnotationType(tuple).mustSucceed { annotType =>
           annotType.id.id must not be empty
-          annotType must have (
-            'name          (tuple._1),
-            'description   (tuple._2),
-            'valueType     (tuple._3),
-            'maxValueCount (tuple._4),
-            'options       (tuple._5),
-            'required      (tuple._6)
-          )
+          annotType must have('name (tuple._1),
+                              'description (tuple._2),
+                              'valueType (tuple._3),
+                              'maxValueCount (tuple._4),
+                              'options (tuple._5),
+                              'required (tuple._6))
           ()
         }
       }
@@ -64,8 +62,7 @@ class AnnotationTypeSpec extends DomainSpec {
     }
 
     it("have more than one validation fail") {
-      createAnnotationType(numberAnnotationTypeTuple.copy(_1 = "",
-                                                          _5 = Seq("dup", "dup")))
+      createAnnotationType(numberAnnotationTypeTuple.copy(_1 = "", _5 = Seq("dup", "dup")))
         .mustFail("NameRequired",
                   "DuplicateOptionsError",
                   "non select annotation type with options to select")

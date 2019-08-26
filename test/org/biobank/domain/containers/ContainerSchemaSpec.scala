@@ -14,14 +14,13 @@ class ContainerSchemaSpec extends DomainSpec {
 
   val nameGenerator = new NameGenerator(this.getClass)
 
-  def createFrom(schema: ContainerSchema) = {
+  def createFrom(schema: ContainerSchema) =
     ContainerSchema.create(id          = schema.id,
                            version     = schema.version,
                            name        = schema.name,
                            description = schema.description,
                            shared      = schema.shared,
                            centreId    = schema.centreId)
-  }
 
   describe("A container schema can") {
 
@@ -36,12 +35,12 @@ class ContainerSchemaSpec extends DomainSpec {
     it("have it's name updated") {
 
       val containerSchema = factory.createContainerSchema
-      val name = nameGenerator.next[ContainerSchema]
+      val name            = nameGenerator.next[ContainerSchema]
 
       containerSchema.withName(name) mustSucceed {
         _ must matchContainerSchema(
-          containerSchema.copy(name = name,
-                               version = containerSchema.version + 1L,
+          containerSchema.copy(name         = name,
+                               version      = containerSchema.version + 1L,
                                timeModified = Some(OffsetDateTime.now))
         )
       }
@@ -49,12 +48,12 @@ class ContainerSchemaSpec extends DomainSpec {
 
     it("have it's description updated") {
       val containerSchema = factory.createContainerSchema
-      val description = Some(nameGenerator.next[ContainerSchema])
+      val description     = Some(nameGenerator.next[ContainerSchema])
 
       containerSchema.withDescription(description) mustSucceed {
         _ must matchContainerSchema(
-          containerSchema.copy(description = description,
-                               version = containerSchema.version + 1L,
+          containerSchema.copy(description  = description,
+                               version      = containerSchema.version + 1L,
                                timeModified = Some(OffsetDateTime.now))
         )
       }
@@ -92,7 +91,7 @@ class ContainerSchemaSpec extends DomainSpec {
 
     it("have more than one validation fail") {
       val schema = factory.createContainerSchema.copy(version = -2, name = "")
-      createFrom(schema) mustFail ("InvalidVersion",  "InvalidName")
+      createFrom(schema) mustFail ("InvalidVersion", "InvalidName")
     }
 
   }

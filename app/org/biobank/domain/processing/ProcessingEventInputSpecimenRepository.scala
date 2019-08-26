@@ -1,9 +1,6 @@
 package org.biobank.domain.processing
 
-import org.biobank.domain.{
-  ReadWriteRepository,
-  ReadWriteRepositoryRefImpl
-}
+import org.biobank.domain.{ReadWriteRepository, ReadWriteRepositoryRefImpl}
 import com.google.inject.ImplementedBy
 import javax.inject.Singleton
 import org.biobank.domain.participants.SpecimenId
@@ -23,8 +20,9 @@ trait ProcessingEventInputSpecimenRepository
 
 @Singleton
 class ProcessingEventInputSpecimenRepositoryImpl
-    extends ReadWriteRepositoryRefImpl[ProcessingEventInputSpecimenId, ProcessingEventInputSpecimen](v => v.id)
-    with ProcessingEventInputSpecimenRepository {
+    extends ReadWriteRepositoryRefImpl[ProcessingEventInputSpecimenId, ProcessingEventInputSpecimen](
+      v => v.id
+    ) with ProcessingEventInputSpecimenRepository {
 
   import org.biobank.CommonValidations._
 
@@ -33,7 +31,6 @@ class ProcessingEventInputSpecimenRepositoryImpl
 
   protected def notFound(id: ProcessingEventInputSpecimenId): IdNotFound =
     IdNotFound(s"processing event input specimen type: $id")
-
 
   // private def processingEventIdCriteriaError(processingEventId: ProcessingEventId) =
   //   EntityCriteriaError(

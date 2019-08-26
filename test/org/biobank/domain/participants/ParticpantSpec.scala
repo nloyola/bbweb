@@ -15,12 +15,12 @@ class ParticipantSpec extends DomainSpec {
   val nameGenerator = new NameGenerator(this.getClass)
 
   def createFrom(participant: Participant): DomainValidation[Participant] =
-    Participant.create(id           = participant.id,
-                       studyId      = participant.studyId,
-                       version      = participant.version,
-                       uniqueId     = participant.uniqueId,
-                       annotations  = participant.annotations,
-                       timeAdded    = OffsetDateTime.now)
+    Participant.create(id          = participant.id,
+                       studyId     = participant.studyId,
+                       version     = participant.version,
+                       uniqueId    = participant.uniqueId,
+                       annotations = participant.annotations,
+                       timeAdded   = OffsetDateTime.now)
 
   describe("A participant") {
 
@@ -29,30 +29,25 @@ class ParticipantSpec extends DomainSpec {
       it("when valid arguments are used and without annotations") {
         val participant = factory.createParticipant.copy(version = 0L)
         createFrom(participant) mustSucceed { p =>
-          p must have (
-              'id           (participant.id),
-              'studyId      (participant.studyId),
-              'version      (participant.version),
-              'uniqueId     (participant.uniqueId),
-              'annotations  (participant.annotations)
-          )
+          p must have('id (participant.id),
+                      'studyId (participant.studyId),
+                      'version (participant.version),
+                      'uniqueId (participant.uniqueId),
+                      'annotations (participant.annotations))
 
           p must beEntityWithTimeStamps(participant.timeAdded, None, 5L)
         }
       }
 
       it("when valid arguments are used and with an annotation") {
-        val annotation = factory.createAnnotation
-        val participant = factory.createParticipant.copy(annotations = Set(annotation),
-                                                         version     = 0L)
+        val annotation  = factory.createAnnotation
+        val participant = factory.createParticipant.copy(annotations = Set(annotation), version = 0L)
         createFrom(participant) mustSucceed { p =>
-          p must have (
-              'id           (participant.id),
-              'studyId      (participant.studyId),
-              'version      (participant.version),
-              'uniqueId     (participant.uniqueId),
-              'annotations  (participant.annotations)
-          )
+          p must have('id (participant.id),
+                      'studyId (participant.studyId),
+                      'version (participant.version),
+                      'uniqueId (participant.uniqueId),
+                      'annotations (participant.annotations))
 
           p must beEntityWithTimeStamps(participant.timeAdded, None, 5L)
         }
@@ -67,30 +62,30 @@ class ParticipantSpec extends DomainSpec {
         val newUniqueId = nameGenerator.next[Participant]
 
         participant.withUniqueId(newUniqueId) mustSucceed { p =>
-          p.uniqueId must be (newUniqueId)
-          p.version must be (participant.version + 1)
+          p.uniqueId must be(newUniqueId)
+          p.version must be(participant.version + 1)
           p must beEntityWithTimeStamps(participant.timeAdded, Some(OffsetDateTime.now), 5L)
-       }
+        }
       }
 
       it("with a new annotation") {
         val participant = factory.createParticipant.copy(annotations = Set())
-        val annotation = factory.createAnnotation
+        val annotation  = factory.createAnnotation
 
         participant.withAnnotation(annotation) mustSucceed { p =>
           p.annotations must have size 1
-          p.version must be (participant.version + 1)
+          p.version must be(participant.version + 1)
           p must beEntityWithTimeStamps(participant.timeAdded, Some(OffsetDateTime.now), 5L)
         }
       }
 
       it("without an annotation") {
-        val annotation = factory.createAnnotation
+        val annotation  = factory.createAnnotation
         val participant = factory.createParticipant.copy(annotations = Set(annotation))
 
         participant.withoutAnnotation(annotation.annotationTypeId) mustSucceed { p =>
           p.annotations must have size 0
-          p.version must be (participant.version + 1)
+          p.version must be(participant.version + 1)
           p must beEntityWithTimeStamps(participant.timeAdded, Some(OffsetDateTime.now), 5L)
         }
       }
@@ -120,7 +115,8 @@ class ParticipantSpec extends DomainSpec {
 
     it("to remove an annotation, with an invalid annotation type ID") {
       val participant = factory.createParticipant
-      participant.withoutAnnotation(AnnotationTypeId(nameGenerator.next[Participant]))
+      participant
+        .withoutAnnotation(AnnotationTypeId(nameGenerator.next[Participant]))
         .mustFail("annotation does not exist:.*")
     }
 

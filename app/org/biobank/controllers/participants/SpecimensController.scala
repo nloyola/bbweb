@@ -8,18 +8,21 @@ import org.biobank.dto.SpecimenDto
 import org.biobank.services._
 import org.biobank.services.participants.SpecimensService
 import play.api.libs.json._
-import play.api.{ Environment, Logger }
+import play.api.{Environment, Logger}
 import play.api.mvc.{Action, ControllerComponents}
 import scala.concurrent.{ExecutionContext, Future}
 import scalaz.Scalaz._
 
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
 @Singleton
-class SpecimensController @Inject() (controllerComponents: ControllerComponents,
-                                     val action:       BbwebAction,
-                                     val env:          Environment,
-                                     val service:      SpecimensService)
-                                 (implicit val ec: ExecutionContext)
+class SpecimensController @Inject()(
+    controllerComponents: ControllerComponents,
+    val action:           BbwebAction,
+    val env:              Environment,
+    val service:          SpecimensService
+  )(
+    implicit
+    val ec: ExecutionContext)
     extends CommandController(controllerComponents) {
   import org.biobank.infrastructure.commands.SpecimenCommands._
 
@@ -38,14 +41,11 @@ class SpecimensController @Inject() (controllerComponents: ControllerComponents,
 
   def list(ceventSlug: Slug): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(
-        err => {
-          validationReply(Future.successful(err.failure[PagedResults[SpecimenDto]]))
-        },
-        pagedQuery => {
-          validationReply(service.listBySlug(request.identity.user.id, ceventSlug, pagedQuery))
-        }
-      )
+      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(err => {
+        validationReply(Future.successful(err.failure[PagedResults[SpecimenDto]]))
+      }, pagedQuery => {
+        validationReply(service.listBySlug(request.identity.user.id, ceventSlug, pagedQuery))
+      })
     }
 
   def snapshot: Action[Unit] =
@@ -61,11 +61,10 @@ class SpecimensController @Inject() (controllerComponents: ControllerComponents,
 
   def removeSpecimen(ceventId: CollectionEventId, spcId: SpecimenId, ver: Long): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = RemoveSpecimenCmd(
-          sessionUserId         = request.identity.user.id.id,
-          id                    = spcId.id,
-          collectionEventId     = ceventId.id,
-          expectedVersion       = ver)
+      val cmd = RemoveSpecimenCmd(sessionUserId = request.identity.user.id.id,
+                                  id                = spcId.id,
+                                  collectionEventId = ceventId.id,
+                                  expectedVersion   = ver)
       val future = service.processRemoveCommand(cmd)
       validationReply(future)
     }

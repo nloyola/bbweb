@@ -2,7 +2,7 @@ package org.biobank.services.participants
 
 import akka.actor._
 import akka.pattern._
-import javax.inject.{ Inject, Named }
+import javax.inject.{Inject, Named}
 import org.biobank.fixtures._
 import org.biobank.domain.studies.StudyRepository
 import org.biobank.domain.participants.ParticipantRepository
@@ -13,7 +13,7 @@ import play.api.libs.json._
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
-case class NamedParticipantsProcessor @Inject() (@Named("participantsProcessor") processor: ActorRef)
+case class NamedParticipantsProcessor @Inject()(@Named("participantsProcessor") processor: ActorRef)
 
 class ParticipantsProcessorSpec extends ProcessorTestFixture {
 
@@ -38,10 +38,11 @@ class ParticipantsProcessorSpec extends ProcessorTestFixture {
     val stopped = gracefulStop(processor, 5 seconds, PoisonPill)
     Await.result(stopped, 6 seconds)
 
-    val actor = system.actorOf(Props(new ParticipantsProcessor(
-                                       participantRepository,
-                                       studyRepository,
-                                       app.injector.instanceOf[SnapshotWriter])),
+    val actor = system.actorOf(Props(
+                                 new ParticipantsProcessor(participantRepository,
+                                                           studyRepository,
+                                                           app.injector.instanceOf[SnapshotWriter])
+                               ),
                                "participants")
     Thread.sleep(250)
     actor
@@ -51,30 +52,37 @@ class ParticipantsProcessorSpec extends ProcessorTestFixture {
 
     it("allow recovery from journal", PersistenceTest) {
       val participant = factory.createParticipant
-      val study = factory.defaultEnabledStudy
+      val study       = factory.defaultEnabledStudy
       val cmd = AddParticipantCmd(sessionUserId = nameGenerator.next[String],
-                                  studyId       = study.id.id,
-                                  uniqueId      = participant.uniqueId,
-                                  annotations   = List.empty)
+                                  studyId     = study.id.id,
+                                  uniqueId    = participant.uniqueId,
+                                  annotations = List.empty)
       studyRepository.put(study)
       val v = ask(participantsProcessor, cmd).mapTo[ServiceValidation[ParticipantEvent]].futureValue
-      v.isSuccess must be (true)
-      participantRepository.getValues.map { s => s.uniqueId } must contain (participant.uniqueId)
+      v.isSuccess must be(true)
+      participantRepository.getValues.map { s =>
+        s.uniqueId
+      } must contain(participant.uniqueId)
       participantRepository.removeAll
       participantsProcessor = restartProcessor(participantsProcessor)
 
-      participantRepository.getValues.size must be (1)
-      participantRepository.getValues.map { s => s.uniqueId } must contain (participant.uniqueId)
+      participantRepository.getValues.size must be(1)
+      participantRepository.getValues.map { s =>
+        s.uniqueId
+      } must contain(participant.uniqueId)
     }
 
     it("recovers a snapshot", PersistenceTest) {
       val snapshotFilename = "testfilename"
-      val participants = (1 to 2).map { _ => factory.createParticipant }
+      val participants = (1 to 2).map { _ =>
+        factory.createParticipant
+      }
       val snapshotParticipant = participants(1)
-      val snapshotState = ParticipantsProcessor.SnapshotState(Set(snapshotParticipant))
+      val snapshotState       = ParticipantsProcessor.SnapshotState(Set(snapshotParticipant))
 
       Mockito.when(snapshotWriterMock.save(anyString, anyString)).thenReturn(snapshotFilename);
-      Mockito.when(snapshotWriterMock.load(snapshotFilename))
+      Mockito
+        .when(snapshotWriterMock.load(snapshotFilename))
         .thenReturn(Json.toJson(snapshotState).toString);
 
       participants.foreach(participantRepository.put)
@@ -83,9 +91,9 @@ class ParticipantsProcessorSpec extends ProcessorTestFixture {
       participantRepository.removeAll
       participantsProcessor = restartProcessor(participantsProcessor)
 
-      participantRepository.getValues.size must be (1)
+      participantRepository.getValues.size must be(1)
       participantRepository.getByKey(snapshotParticipant.id) mustSucceed { repoParticipant =>
-        repoParticipant.uniqueId must be (snapshotParticipant.uniqueId)
+        repoParticipant.uniqueId must be(snapshotParticipant.uniqueId)
         ()
       }
     }

@@ -47,19 +47,17 @@ trait ContainerTypeSharedSpec { this: FunSpec =>
 
     it("have it's name updated") {
       val containerType = createEntity
-      val name = nameGenerator.next[StorageContainer]
+      val name          = nameGenerator.next[StorageContainer]
 
       containerType.withName(name) mustSucceed { updatedCt =>
-        updatedCt must have (
-          'id          (containerType.id),
-          'version     (containerType.version + 1),
-          'name        (name),
-          'description (containerType.description),
-          'centreId    (containerType.centreId),
-          'schemaId    (containerType.schemaId),
-          'shared      (containerType.shared),
-          'enabled     (containerType.enabled)
-        )
+        updatedCt must have('id (containerType.id),
+                            'version (containerType.version + 1),
+                            'name (name),
+                            'description (containerType.description),
+                            'centreId (containerType.centreId),
+                            'schemaId (containerType.schemaId),
+                            'shared (containerType.shared),
+                            'enabled (containerType.enabled))
 
         updatedCt must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
       }
@@ -68,19 +66,17 @@ trait ContainerTypeSharedSpec { this: FunSpec =>
 
     it("have it's description updated") {
       val containerType = createEntity
-      val description = Some(nameGenerator.next[StorageContainer])
+      val description   = Some(nameGenerator.next[StorageContainer])
 
       containerType.withDescription(description) mustSucceed { updatedCt =>
-        updatedCt must have (
-          'id          (containerType.id),
-          'version     (containerType.version + 1),
-          'name        (containerType.name),
-          'description (description),
-          'centreId    (containerType.centreId),
-          'schemaId    (containerType.schemaId),
-          'shared      (containerType.shared),
-          'enabled     (containerType.enabled)
-        )
+        updatedCt must have('id (containerType.id),
+                            'version (containerType.version + 1),
+                            'name (containerType.name),
+                            'description (description),
+                            'centreId (containerType.centreId),
+                            'schemaId (containerType.schemaId),
+                            'shared (containerType.shared),
+                            'enabled (containerType.enabled))
 
         updatedCt must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
       }
@@ -91,7 +87,7 @@ trait ContainerTypeSharedSpec { this: FunSpec =>
       Set(true, false).foreach { value =>
         val containerType = createEntity
         containerType.withEnabled(value) mustSucceed { updatedCt =>
-          updatedCt.enabled must be (value)
+          updatedCt.enabled must be(value)
           updatedCt must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
         }
       }
@@ -148,28 +144,28 @@ class StorageContainerTypeSpec extends DomainSpec with ContainerTypeSharedSpec {
   protected def createEntity(): ContainerType = factory.createStorageContainerType
 
   protected def createWithId(id: ContainerTypeId): ContainerType =
-      factory.createStorageContainerType.copy(id = id)
+    factory.createStorageContainerType.copy(id = id)
 
   protected def createWithVersion(version: Long): ContainerType =
-      factory.createStorageContainerType.copy(version = version)
+    factory.createStorageContainerType.copy(version = version)
 
   protected def createWithName(name: String): ContainerType =
-      factory.createStorageContainerType.copy(name = name)
+    factory.createStorageContainerType.copy(name = name)
 
   protected def createWithDescription(description: Option[String]): ContainerType =
-      factory.createStorageContainerType.copy(description = description)
+    factory.createStorageContainerType.copy(description = description)
 
   protected def createWithCentreId(id: Option[CentreId]): ContainerType =
-      factory.createStorageContainerType.copy(centreId = id)
+    factory.createStorageContainerType.copy(centreId = id)
 
   protected def createWithSchemaId(id: ContainerSchemaId): ContainerType =
-      factory.createStorageContainerType.copy(schemaId = id)
+    factory.createStorageContainerType.copy(schemaId = id)
 
   protected def createWithShared(shared: Boolean): ContainerType =
-      factory.createStorageContainerType.copy(shared = shared)
+    factory.createStorageContainerType.copy(shared = shared)
 
   protected def createWithEnabled(enabled: Boolean): ContainerType =
-      factory.createStorageContainerType.copy(enabled = enabled)
+    factory.createStorageContainerType.copy(enabled = enabled)
 
   describe("A Storage Container Type") {
 
@@ -183,7 +179,6 @@ class StorageContainerTypeSpec extends DomainSpec with ContainerTypeSharedSpec {
   }
 
 }
-
 
 class SpecimenContainerTypeSpec extends DomainSpec with ContainerTypeSharedSpec {
   import org.biobank.TestUtils._
@@ -206,28 +201,28 @@ class SpecimenContainerTypeSpec extends DomainSpec with ContainerTypeSharedSpec 
   protected def createEntity(): ContainerType = factory.createSpecimenContainerType
 
   protected def createWithId(id: ContainerTypeId): ContainerType =
-      factory.createSpecimenContainerType.copy(id = id)
+    factory.createSpecimenContainerType.copy(id = id)
 
   protected def createWithVersion(version: Long): ContainerType =
-      factory.createSpecimenContainerType.copy(version = version)
+    factory.createSpecimenContainerType.copy(version = version)
 
   protected def createWithName(name: String): ContainerType =
-      factory.createSpecimenContainerType.copy(name = name)
+    factory.createSpecimenContainerType.copy(name = name)
 
   protected def createWithDescription(description: Option[String]): ContainerType =
-      factory.createSpecimenContainerType.copy(description = description)
+    factory.createSpecimenContainerType.copy(description = description)
 
   protected def createWithCentreId(id: Option[CentreId]): ContainerType =
-      factory.createSpecimenContainerType.copy(centreId = id)
+    factory.createSpecimenContainerType.copy(centreId = id)
 
   protected def createWithSchemaId(id: ContainerSchemaId): ContainerType =
-      factory.createSpecimenContainerType.copy(schemaId = id)
+    factory.createSpecimenContainerType.copy(schemaId = id)
 
   protected def createWithShared(shared: Boolean): ContainerType =
-      factory.createSpecimenContainerType.copy(shared = shared)
+    factory.createSpecimenContainerType.copy(shared = shared)
 
   protected def createWithEnabled(enabled: Boolean): ContainerType =
-      factory.createSpecimenContainerType.copy(enabled = enabled)
+    factory.createSpecimenContainerType.copy(enabled = enabled)
 
   describe("A Specimen Container Type") {
 

@@ -20,9 +20,7 @@ import scala.concurrent.Future
  * Tests for [[ShipmentSpecimen]]s in ShipmentSpecimensControllerSpec.scala.
  */
 class ShipmentsControllerSpec
-    extends ShipmentsControllerSpecFixtures
-    with ShipmentsControllerSpecUtils
-    with PagedResultsSharedSpec
+    extends ShipmentsControllerSpecFixtures with ShipmentsControllerSpecUtils with PagedResultsSharedSpec
     with PagedResultsMatchers {
 
   import org.biobank.TestUtils._
@@ -82,7 +80,7 @@ class ShipmentsControllerSpec
 
         describe("when filtered by 'from centre'") {
           listMultipleShipments() { () =>
-            val f = createdShipmentsFixture(2)
+            val f         = createdShipmentsFixture(2)
             val shipments = f.shipmentMap.values.toList.sortWith(_.courierName < _.courierName)
             shipments.foreach(shipmentRepository.put)
             (uri(s"list?filter=fromCentre:in:${f.fromCentre.name}"), shipments)
@@ -91,7 +89,7 @@ class ShipmentsControllerSpec
 
         describe("when filtered by 'to centre'") {
           listMultipleShipments() { () =>
-            val f = createdShipmentsFixture(2)
+            val f         = createdShipmentsFixture(2)
             val shipments = f.shipmentMap.values.toList.sortWith(_.courierName < _.courierName)
             shipments.foreach(shipmentRepository.put)
             (uri(s"list?filter=toCentre:in:${f.toCentre.name}"), shipments)
@@ -100,7 +98,7 @@ class ShipmentsControllerSpec
 
         describe("when filtered by 'with centre'") {
           listMultipleShipments() { () =>
-            val f = createdShipmentsFixture(2)
+            val f         = createdShipmentsFixture(2)
             val shipments = f.shipmentMap.values.toList.sortWith(_.courierName < _.courierName)
             shipments.foreach(shipmentRepository.put)
             (uri(s"list?filter=withCentre:in:(${f.fromCentre.name},${f.toCentre.name})"), shipments)
@@ -110,7 +108,7 @@ class ShipmentsControllerSpec
       }
 
       it("list a shipment when using a 'not equal to' filter on centre name") {
-        val f = createdShipmentsFixture(2)
+        val f         = createdShipmentsFixture(2)
         val shipments = f.shipmentMap.values.toList.sortWith(_.courierName < _.courierName)
         shipments.foreach(shipmentRepository.put)
 
@@ -131,7 +129,7 @@ class ShipmentsControllerSpec
         forAll(centreFilters(f.fromCentre, f.toCentre)) { centreNameFilter =>
           forAll(states) { state =>
             info(s"$state shipment")
-            val url = uri(s"list?filter=$centreNameFilter;state::$state")
+            val url   = uri(s"list?filter=$centreNameFilter;state::$state")
             val reply = makeAuthRequest(GET, url).value
             reply must beOkResponseWithJsonReply
 
@@ -139,7 +137,7 @@ class ShipmentsControllerSpec
             json must beSingleItemResults()
 
             val dtosValidation = (json \ "data" \ "items").validate[List[ShipmentDto]]
-            dtosValidation must be (jsSuccess)
+            dtosValidation must be(jsSuccess)
             dtosValidation.get.foreach { _ must matchDtoToShipment(f.shipments.get(state).value) }
           }
         }
@@ -148,30 +146,24 @@ class ShipmentsControllerSpec
       describe("list multiple shipments when filtered by states") {
         listMultipleShipments() { () =>
           val shipmentStates = List(Shipment.createdState, Shipment.unpackedState)
-          val f = allShipmentsFixture
+          val f              = allShipmentsFixture
           f.shipments.values.foreach(shipmentRepository.put)
           val url = uri(s"""list?filter=state:in:(${shipmentStates.mkString(",")})&sort=state""")
-          val expectedShipments = List(f.shipments(Shipment.createdState),
-                                       f.shipments(Shipment.unpackedState))
+          val expectedShipments =
+            List(f.shipments(Shipment.createdState), f.shipments(Shipment.unpackedState))
           (url, expectedShipments)
         }
       }
 
       it("fail when using an invalid filter string") {
         val invalidFilterString = "xxx"
-        val reply = makeAuthRequest(
-            GET,
-            uri("list").addQueryString(s"filter=$invalidFilterString")
-          ).value
+        val reply               = makeAuthRequest(GET, uri("list").addQueryString(s"filter=$invalidFilterString")).value
         reply must beBadRequestWithMessage("could not parse filter expression:")
       }
 
       it("fail when using an invalid state filter") {
         val invalidStateName = nameGenerator.next[Shipment]
-        val reply = makeAuthRequest(
-            GET,
-            uri("list").addQueryString(s"filter=state::$invalidStateName")
-          ).value
+        val reply            = makeAuthRequest(GET, uri("list").addQueryString(s"filter=state::$invalidStateName")).value
         reply must beNotFoundWithMessage("shipment state does not exist:")
       }
 
@@ -180,17 +172,17 @@ class ShipmentsControllerSpec
           val f = createdShipmentsFixture(2)
           f.shipmentMap.values.foreach(shipmentRepository.put)
           val shipment = f.shipmentMap.values.head
-          val filter = s"courierName::${shipment.courierName}"
+          val filter   = s"courierName::${shipment.courierName}"
           (uri(s"list?filter=$filter"), shipment)
         }
       }
 
       describe("list a single shipment when using a 'like' filter on courier name") {
         listSingleShipment() { () =>
-          val f = createdShipmentsFixture(2)
+          val f         = createdShipmentsFixture(2)
           val shipments = f.shipmentMap.values.toList
-          val shipment = shipments(0).copy(courierName = "ABC")
-          val filter = s"courierName:like:b"
+          val shipment  = shipments(0).copy(courierName = "ABC")
+          val filter    = s"courierName:like:b"
 
           shipmentRepository.put(shipment)
           shipmentRepository.put(shipments(1).copy(courierName = "DEF"))
@@ -202,8 +194,8 @@ class ShipmentsControllerSpec
       describe("list multiple shipments when filtered by courier name") {
         listMultipleShipments() { () =>
           val numShipments = 2
-          val f = createdShipmentsFixture(numShipments)
-          val shipments = f.shipmentMap.values.toList
+          val f            = createdShipmentsFixture(numShipments)
+          val shipments    = f.shipmentMap.values.toList
           val courierNames = shipments.map(_.courierName)
 
           shipments.foreach(shipmentRepository.put)
@@ -218,31 +210,28 @@ class ShipmentsControllerSpec
           val f = createdShipmentsFixture(2)
           f.shipmentMap.values.foreach(shipmentRepository.put)
           val shipment = f.shipmentMap.values.head
-          val url = uri(s"list?filter=trackingNumber::${shipment.trackingNumber}")
+          val url      = uri(s"list?filter=trackingNumber::${shipment.trackingNumber}")
           (url, shipment)
         }
       }
 
       describe("list a single shipment when filtered with a logical expression") {
         listSingleShipment() { () =>
-          val f = createdShipmentsFixture(2)
+          val f         = createdShipmentsFixture(2)
           val shipments = f.shipmentMap.values.toList
-          val shipment = shipments(0)
-          val filter = s"""courierName::${shipment.courierName};trackingNumber::${shipment.trackingNumber}"""
+          val shipment  = shipments(0)
+          val filter    = s"""courierName::${shipment.courierName};trackingNumber::${shipment.trackingNumber}"""
           shipments.foreach(shipmentRepository.put)
           (uri(s"list?filter=$filter"), shipment)
         }
       }
 
-
       describe("list shipments sorted by courier name") {
         def commonSetup: List[Shipment] = {
           val f = centresFixture
-          val shipments = List("FedEx", "UPS", "Canada Post")
-            .map { name =>
-              factory.createShipment(f.fromCentre, f.toCentre).copy(courierName = name)
-            }
-            .toList
+          val shipments = List("FedEx", "UPS", "Canada Post").map { name =>
+            factory.createShipment(f.fromCentre, f.toCentre).copy(courierName = name)
+          }.toList
           shipments.foreach(shipmentRepository.put)
           shipments
         }
@@ -265,11 +254,9 @@ class ShipmentsControllerSpec
 
         def commonSetup: List[Shipment] = {
           val f = centresFixture
-          val shipments = List("TN2", "TN3", "TN1")
-            .map { trackingNumber =>
-              factory.createShipment(f.fromCentre, f.toCentre).copy(trackingNumber = trackingNumber)
-            }
-            .toList
+          val shipments = List("TN2", "TN3", "TN1").map { trackingNumber =>
+            factory.createShipment(f.fromCentre, f.toCentre).copy(trackingNumber = trackingNumber)
+          }.toList
           shipments.foreach(shipmentRepository.put)
           shipments
         }
@@ -292,10 +279,9 @@ class ShipmentsControllerSpec
 
         def commonSetup = {
           val f = centresFixture
-          val shipments = List("FedEx", "UPS", "Canada Post")
-            .map { name =>
-              factory.createShipment(f.fromCentre, f.toCentre).copy(courierName = name)
-            }.toList
+          val shipments = List("FedEx", "UPS", "Canada Post").map { name =>
+            factory.createShipment(f.fromCentre, f.toCentre).copy(courierName = name)
+          }.toList
           shipments.foreach(shipmentRepository.put)
           shipments
         }
@@ -317,10 +303,10 @@ class ShipmentsControllerSpec
 
       describe("list a single shipment when using a 'like' filter on tracking number") {
         listSingleShipment() { () =>
-          val f = createdShipmentsFixture(2)
+          val f         = createdShipmentsFixture(2)
           val shipments = f.shipmentMap.values.toList
-          val shipment = shipments(0).copy(trackingNumber = "ABC")
-          val filter = s"trackingNumber:like:b"
+          val shipment  = shipments(0).copy(trackingNumber = "ABC")
+          val filter    = s"trackingNumber:like:b"
           shipmentRepository.put(shipment)
           shipmentRepository.put(shipments(1).copy(trackingNumber = "DEF"))
           (uri(s"list?filter=$filter"), shipment)
@@ -342,13 +328,13 @@ class ShipmentsControllerSpec
         reply must beOkResponseWithJsonReply
 
         val dto = (contentAsJson(reply) \ "data").validate[ShipmentDto]
-        dto must be (jsSuccess)
+        dto must be(jsSuccess)
         dto.get must matchDtoToShipment(f.shipment)
       }
 
       it("returns an error for an invalid shipment ID") {
         val shipment = factory.createShipment
-        val reply = makeAuthRequest(GET, uri(shipment.id.id)).value
+        val reply    = makeAuthRequest(GET, uri(shipment.id.id)).value
         reply must beNotFoundWithMessage("IdNotFound.*shipment")
       }
     }
@@ -369,50 +355,48 @@ class ShipmentsControllerSpec
         reply must beOkResponseWithJsonReply
 
         val shipmentId = (contentAsJson(reply) \ "data" \ "id").validate[ShipmentId]
-        shipmentId must be (jsSuccess)
+        shipmentId must be(jsSuccess)
         val updatedShipment = f.shipment.copy(id = shipmentId.get)
         reply must matchUpdatedShipment(updatedShipment)
       }
 
       it("fail when adding a shipment with no courier name") {
         val shipment = createdShipmentFixture.shipment.copy(courierName = "")
-        val reply = makeAuthRequest(POST, uri(""), shipmentToAddJson(shipment)).value
+        val reply    = makeAuthRequest(POST, uri(""), shipmentToAddJson(shipment)).value
         reply must beBadRequestWithMessage("CourierNameInvalid")
       }
 
       it("fail when adding a shipment with no tracking number") {
         val shipment = createdShipmentFixture.shipment.copy(trackingNumber = "")
-        val reply = makeAuthRequest(POST, uri(""), shipmentToAddJson(shipment)).value
+        val reply    = makeAuthRequest(POST, uri(""), shipmentToAddJson(shipment)).value
         reply must beBadRequestWithMessage("TrackingNumberInvalid")
       }
 
       it("fail when adding a shipment with no FROM location id") {
         val shipment = createdShipmentFixture.shipment.copy(fromLocationId = LocationId(""))
-        val reply = makeAuthRequest(POST, uri(""), shipmentToAddJson(shipment)).value
+        val reply    = makeAuthRequest(POST, uri(""), shipmentToAddJson(shipment)).value
         reply must beNotFoundWithMessage("EntityCriteriaError.*centre with location id")
       }
 
       it("fail when adding a shipment with no TO location id") {
         val shipment = createdShipmentFixture.shipment.copy(toLocationId = LocationId(""))
-        val reply = makeAuthRequest(POST, uri(""), shipmentToAddJson(shipment)).value
+        val reply    = makeAuthRequest(POST, uri(""), shipmentToAddJson(shipment)).value
         reply must beNotFoundWithMessage("EntityCriteriaError.*centre with location id")
       }
 
     }
 
-
     describe("POST /api/shipments/courier/:id") {
 
       it("allow updating the courier name") {
-        val f = createdShipmentFixture
+        val f          = createdShipmentFixture
         val newCourier = nameGenerator.next[Shipment]
         shipmentRepository.put(f.shipment)
-        val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
-                                  "courierName"     -> newCourier)
-        val reply = makeAuthRequest(POST, uri("courier", f.shipment.id.id), updateJson).value
+        val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "courierName" -> newCourier)
+        val reply      = makeAuthRequest(POST, uri("courier", f.shipment.id.id), updateJson).value
         reply must beOkResponseWithJsonReply
 
-        val updatedShipment = f.shipment.copy(version      = f.shipment.version + 1,
+        val updatedShipment = f.shipment.copy(version = f.shipment.version + 1,
                                               courierName  = newCourier,
                                               timeModified = Some(OffsetDateTime.now))
         reply must matchUpdatedShipment(updatedShipment)
@@ -421,9 +405,8 @@ class ShipmentsControllerSpec
       it("not allow updating the courier name to an empty string") {
         val f = createdShipmentFixture
         shipmentRepository.put(f.shipment)
-        val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
-                                  "courierName"     -> "")
-        val reply = makeAuthRequest(POST, uri("courier", f.shipment.id.id), updateJson).value
+        val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "courierName" -> "")
+        val reply      = makeAuthRequest(POST, uri("courier", f.shipment.id.id), updateJson).value
         reply must beBadRequestWithMessage("CourierNameInvalid")
       }
 
@@ -433,8 +416,8 @@ class ShipmentsControllerSpec
         nonCreatedStates.foreach { state =>
           val shipment = f.shipments(state)
           shipmentRepository.put(shipment)
-          val updateJson = Json.obj("expectedVersion" -> shipment.version,
-                                    "courierName"     -> nameGenerator.next[String])
+          val updateJson =
+            Json.obj("expectedVersion" -> shipment.version, "courierName" -> nameGenerator.next[String])
 
           val reply = makeAuthRequest(POST, uri("courier", shipment.id.id), updateJson).value
           reply must beBadRequestWithMessage("InvalidState: shipment not created")
@@ -446,15 +429,15 @@ class ShipmentsControllerSpec
     describe("POST /api/shipments/trackingnumber/:id") {
 
       it("allow updating the tracking number") {
-        val f = createdShipmentFixture
+        val f                 = createdShipmentFixture
         val newTrackingNumber = nameGenerator.next[Shipment]
         shipmentRepository.put(f.shipment)
-        val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
-                                  "trackingNumber"  -> newTrackingNumber)
+        val updateJson =
+          Json.obj("expectedVersion" -> f.shipment.version, "trackingNumber" -> newTrackingNumber)
         val reply = makeAuthRequest(POST, uri("trackingnumber", f.shipment.id.id), updateJson).value
         reply must beOkResponseWithJsonReply
 
-        val updatedShipment = f.shipment.copy(version        = f.shipment.version + 1,
+        val updatedShipment = f.shipment.copy(version = f.shipment.version + 1,
                                               trackingNumber = newTrackingNumber,
                                               timeModified   = Some(OffsetDateTime.now))
         reply must matchUpdatedShipment(updatedShipment)
@@ -463,9 +446,8 @@ class ShipmentsControllerSpec
       it("not allow updating the tracking number to an empty string") {
         val f = createdShipmentFixture
         shipmentRepository.put(f.shipment)
-        val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
-                                  "trackingNumber"     -> "")
-        val reply = makeAuthRequest(POST, uri("trackingnumber", f.shipment.id.id), updateJson).value
+        val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "trackingNumber" -> "")
+        val reply      = makeAuthRequest(POST, uri("trackingnumber", f.shipment.id.id), updateJson).value
         reply must beBadRequestWithMessage("TrackingNumberInvalid")
       }
 
@@ -475,8 +457,8 @@ class ShipmentsControllerSpec
         nonCreatedStates.foreach { state =>
           val shipment = f.shipments(state)
           shipmentRepository.put(shipment)
-          val updateJson = Json.obj("expectedVersion" -> shipment.version,
-                                    "trackingNumber"  -> nameGenerator.next[String])
+          val updateJson =
+            Json.obj("expectedVersion" -> shipment.version, "trackingNumber" -> nameGenerator.next[String])
 
           val reply = makeAuthRequest(POST, uri("trackingnumber", shipment.id.id), updateJson).value
           reply must beBadRequestWithMessage("InvalidState: shipment not created")
@@ -492,15 +474,14 @@ class ShipmentsControllerSpec
         shipmentRepository.put(f.shipment)
 
         val newLocation = factory.createLocation
-        val centre = factory.createEnabledCentre.copy(locations = Set(newLocation))
+        val centre      = factory.createEnabledCentre.copy(locations = Set(newLocation))
         centreRepository.put(centre)
 
-        val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
-                                  "locationId"      -> newLocation.id.id)
-        val reply = makeAuthRequest(POST, uri("fromlocation", f.shipment.id.id), updateJson).value
+        val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "locationId" -> newLocation.id.id)
+        val reply      = makeAuthRequest(POST, uri("fromlocation", f.shipment.id.id), updateJson).value
         reply must beOkResponseWithJsonReply
 
-        val updatedShipment = f.shipment.copy(version        = f.shipment.version + 1,
+        val updatedShipment = f.shipment.copy(version = f.shipment.version + 1,
                                               fromCentreId   = centre.id,
                                               fromLocationId = newLocation.id,
                                               timeModified   = Some(OffsetDateTime.now))
@@ -510,9 +491,8 @@ class ShipmentsControllerSpec
       it("not allow updating the from location to an empty string") {
         val f = createdShipmentFixture
         shipmentRepository.put(f.shipment)
-        val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
-                                  "locationId"      -> "")
-        val reply = makeAuthRequest(POST, uri("fromlocation", f.shipment.id.id), updateJson).value
+        val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "locationId" -> "")
+        val reply      = makeAuthRequest(POST, uri("fromlocation", f.shipment.id.id), updateJson).value
         reply must beNotFoundWithMessage("EntityCriteriaError.*centre with location id")
       }
 
@@ -522,21 +502,19 @@ class ShipmentsControllerSpec
 
         val badLocation = factory.createLocation
 
-        val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
-                                  "locationId"      -> badLocation.id.id)
-        val reply = makeAuthRequest(POST, uri("fromlocation", f.shipment.id.id), updateJson).value
+        val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "locationId" -> badLocation.id.id)
+        val reply      = makeAuthRequest(POST, uri("fromlocation", f.shipment.id.id), updateJson).value
         reply must beNotFoundWithMessage("EntityCriteriaError.*centre with location id")
       }
 
       it("must not allow updating the from location on a shipment not in created state") {
-        val f = allShipmentsFixture
+        val f           = allShipmentsFixture
         val badLocation = factory.createLocation
 
         nonCreatedStates.foreach { state =>
           val shipment = f.shipments(state)
           shipmentRepository.put(shipment)
-          val updateJson = Json.obj("expectedVersion" -> shipment.version,
-                                    "locationId"      -> badLocation.id.id)
+          val updateJson = Json.obj("expectedVersion" -> shipment.version, "locationId" -> badLocation.id.id)
 
           val reply = makeAuthRequest(POST, uri("fromlocation", shipment.id.id), updateJson).value
           reply must beBadRequestWithMessage("InvalidState: shipment not created")
@@ -552,15 +530,14 @@ class ShipmentsControllerSpec
         shipmentRepository.put(f.shipment)
 
         val newLocation = factory.createLocation
-        val centre = factory.createEnabledCentre.copy(locations = Set(newLocation))
+        val centre      = factory.createEnabledCentre.copy(locations = Set(newLocation))
         centreRepository.put(centre)
 
-        val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
-                                  "locationId"      -> newLocation.id.id)
-        val reply = makeAuthRequest(POST, uri("tolocation", f.shipment.id.id), updateJson).value
+        val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "locationId" -> newLocation.id.id)
+        val reply      = makeAuthRequest(POST, uri("tolocation", f.shipment.id.id), updateJson).value
         reply must beOkResponseWithJsonReply
 
-        val updatedShipment = f.shipment.copy(version      = f.shipment.version + 1,
+        val updatedShipment = f.shipment.copy(version = f.shipment.version + 1,
                                               toCentreId   = centre.id,
                                               toLocationId = newLocation.id,
                                               timeModified = Some(OffsetDateTime.now))
@@ -570,9 +547,8 @@ class ShipmentsControllerSpec
       it("not allow updating the TO location to an empty string") {
         val f = createdShipmentFixture
         shipmentRepository.put(f.shipment)
-        val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
-                                  "locationId"      -> "")
-        val reply = makeAuthRequest(POST, uri("tolocation", f.shipment.id.id), updateJson).value
+        val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "locationId" -> "")
+        val reply      = makeAuthRequest(POST, uri("tolocation", f.shipment.id.id), updateJson).value
         reply must beNotFoundWithMessage("EntityCriteriaError.*centre with location id")
       }
 
@@ -582,21 +558,19 @@ class ShipmentsControllerSpec
 
         val badLocation = factory.createLocation
 
-        val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
-                                  "locationId"      -> badLocation.id.id)
-        val reply = makeAuthRequest(POST, uri("tolocation", f.shipment.id.id), updateJson).value
+        val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "locationId" -> badLocation.id.id)
+        val reply      = makeAuthRequest(POST, uri("tolocation", f.shipment.id.id), updateJson).value
         reply must beNotFoundWithMessage("EntityCriteriaError.*centre with location id")
       }
 
       it("must not allow updating the TO location on a shipment not in created state") {
-        val f = allShipmentsFixture
+        val f           = allShipmentsFixture
         val badLocation = factory.createLocation
 
         nonCreatedStates.foreach { state =>
           val shipment = f.shipments(state)
           shipmentRepository.put(shipment)
-          val updateJson = Json.obj("expectedVersion" -> shipment.version,
-                                    "locationId"      -> badLocation.id.id)
+          val updateJson = Json.obj("expectedVersion" -> shipment.version, "locationId" -> badLocation.id.id)
 
           val reply = makeAuthRequest(POST, uri("tolocation", shipment.id.id), updateJson).value
           reply must beBadRequestWithMessage("InvalidState: shipment not created")
@@ -610,14 +584,14 @@ class ShipmentsControllerSpec
       describe("for all states") {
 
         it("fail requests to update the state on a shipment that does not exist") {
-          val f = createdShipmentFixture
+          val f    = createdShipmentFixture
           val time = OffsetDateTime.now.minusDays(10)
 
           forAll(states) { state =>
             info(s"for $state state")
-            val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
-                                      "datetime"        -> time)
-            val reply = makeAuthRequest(POST, uri("state", state.toString, f.shipment.id.id), updateJson).value
+            val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "datetime" -> time)
+            val reply =
+              makeAuthRequest(POST, uri("state", state.toString, f.shipment.id.id), updateJson).value
             reply must beNotFoundWithMessage("IdNotFound.*shipment.*")
           }
         }
@@ -628,7 +602,7 @@ class ShipmentsControllerSpec
 
         describe("change to CREATED state from PACKED state") {
           changeStateSharedBehaviour { () =>
-            val f = packedShipmentFixture
+            val f               = packedShipmentFixture
             val updatedShipment = f.shipment.created
             ChangeStateInfo(f.shipment, updatedShipment, Shipment.createdState, None)
           }
@@ -646,9 +620,9 @@ class ShipmentsControllerSpec
 
           forAll(states) { state =>
             info(s"from $state state")
-            val shipment = f.shipments(state)
+            val shipment   = f.shipments(state)
             val updateJson = Json.obj("expectedVersion" -> shipment.version)
-            val reply = makeAuthRequest(POST, uri("state/created", shipment.id.id), updateJson).value
+            val reply      = makeAuthRequest(POST, uri("state/created", shipment.id.id), updateJson).value
             reply must beBadRequestWithMessage("InvalidState: shipment is not packed")
           }
         }
@@ -658,7 +632,7 @@ class ShipmentsControllerSpec
 
         describe("change to PACKED state from CREATED") {
           changeStateSharedBehaviour { () =>
-            val f = allShipmentsFixture
+            val f        = allShipmentsFixture
             val shipment = f.shipments(Shipment.createdState).asInstanceOf[CreatedShipment]
             addSpecimenToShipment(shipment, f.fromCentre)
             val stateChangeTime = OffsetDateTime.now.minusDays(10)
@@ -669,7 +643,7 @@ class ShipmentsControllerSpec
 
         describe("change to PACKED state from SENT") {
           changeStateSharedBehaviour { () =>
-            val f = allShipmentsFixture
+            val f        = allShipmentsFixture
             val shipment = f.shipments(Shipment.sentState).asInstanceOf[SentShipment]
             addSpecimenToShipment(shipment, f.fromCentre)
             val stateChangeTime = OffsetDateTime.now.minusDays(10)
@@ -686,10 +660,9 @@ class ShipmentsControllerSpec
 
           forAll(testStates) { state =>
             info(s"change to $state state")
-            val shipment = f.shipments(state)
-            val updateJson = Json.obj("expectedVersion" -> shipment.version,
-                                      "datetime"        -> OffsetDateTime.now)
-            val reply = makeAuthRequest(POST, uri("state/packed", shipment.id.id), updateJson).value
+            val shipment   = f.shipments(state)
+            val updateJson = Json.obj("expectedVersion" -> shipment.version, "datetime" -> OffsetDateTime.now)
+            val reply      = makeAuthRequest(POST, uri("state/packed", shipment.id.id), updateJson).value
             reply must beBadRequestWithMessage("InvalidState: shipment has no specimens")
           }
         }
@@ -710,9 +683,8 @@ class ShipmentsControllerSpec
 
             addSpecimenToShipment(shipment, f.fromCentre)
 
-            val updateJson = Json.obj("expectedVersion" -> shipment.version,
-                                      "datetime"        -> OffsetDateTime.now)
-            val reply = makeAuthRequest(POST, uri("state/packed", shipment.id.id), updateJson).value
+            val updateJson = Json.obj("expectedVersion" -> shipment.version, "datetime" -> OffsetDateTime.now)
+            val reply      = makeAuthRequest(POST, uri("state/packed", shipment.id.id), updateJson).value
             reply must beBadRequestWithMessage("InvalidState: cannot change to packed state")
           }
         }
@@ -722,7 +694,7 @@ class ShipmentsControllerSpec
 
         describe("change to SENT state from PACKED") {
           changeStateSharedBehaviour { () =>
-            val f = allShipmentsFixture
+            val f        = allShipmentsFixture
             val shipment = f.shipments(Shipment.packedState).asInstanceOf[PackedShipment]
             addSpecimenToShipment(shipment, f.fromCentre)
             val stateChangeTime = OffsetDateTime.now.minusDays(10)
@@ -733,7 +705,7 @@ class ShipmentsControllerSpec
 
         describe("change to SENT state from RECEIVED") {
           changeStateSharedBehaviour { () =>
-            val f = allShipmentsFixture
+            val f        = allShipmentsFixture
             val shipment = f.shipments(Shipment.receivedState).asInstanceOf[ReceivedShipment]
             addSpecimenToShipment(shipment, f.fromCentre)
             val stateChangeTime = OffsetDateTime.now.minusDays(10)
@@ -744,7 +716,7 @@ class ShipmentsControllerSpec
 
         describe("change to SENT state from LOST") {
           changeStateSharedBehaviour { () =>
-            val f = allShipmentsFixture
+            val f        = allShipmentsFixture
             val shipment = f.shipments(Shipment.lostState).asInstanceOf[LostShipment]
             addSpecimenToShipment(shipment, f.fromCentre)
             val stateChangeTime = OffsetDateTime.now.minusDays(10)
@@ -757,7 +729,7 @@ class ShipmentsControllerSpec
           val f = packedShipmentFixture
           shipmentRepository.put(f.shipment)
           val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
-                                    "datetime"        -> f.shipment.timePacked.get.minusDays(1))
+                                    "datetime" -> f.shipment.timePacked.get.minusDays(1))
           val reply = makeAuthRequest(POST, uri("state/sent", f.shipment.id.id), updateJson).value
           reply must beBadRequestWithMessage("TimeSentBeforePacked")
         }
@@ -766,17 +738,13 @@ class ShipmentsControllerSpec
           val f = allShipmentsFixture
           f.shipments.values.foreach(shipmentRepository.put)
 
-          val states = Table("state",
-                             Shipment.createdState,
-                             Shipment.sentState,
-                             Shipment.unpackedState)
+          val states = Table("state", Shipment.createdState, Shipment.sentState, Shipment.unpackedState)
 
           forAll(states) { state =>
             info(s"from state $state")
-            val shipment = f.shipments(state)
-            val updateJson = Json.obj("expectedVersion" -> shipment.version,
-                                      "datetime"        -> OffsetDateTime.now)
-            val reply = makeAuthRequest(POST, uri("state/sent", shipment.id.id), updateJson).value
+            val shipment   = f.shipments(state)
+            val updateJson = Json.obj("expectedVersion" -> shipment.version, "datetime" -> OffsetDateTime.now)
+            val reply      = makeAuthRequest(POST, uri("state/sent", shipment.id.id), updateJson).value
             reply must beBadRequestWithMessage("InvalidState: cannot change to sent state")
           }
         }
@@ -787,7 +755,7 @@ class ShipmentsControllerSpec
 
         describe("change to RECEIVED state from SENT") {
           changeStateSharedBehaviour { () =>
-            val f = allShipmentsFixture
+            val f        = allShipmentsFixture
             val shipment = f.shipments(Shipment.sentState).asInstanceOf[SentShipment]
             addSpecimenToShipment(shipment, f.fromCentre)
             val stateChangeTime = shipment.timeSent.get.plusDays(1)
@@ -798,7 +766,7 @@ class ShipmentsControllerSpec
 
         describe("change to RECEIVED state from UNPACKED") {
           changeStateSharedBehaviour { () =>
-            val f = allShipmentsFixture
+            val f        = allShipmentsFixture
             val shipment = f.shipments(Shipment.unpackedState).asInstanceOf[UnpackedShipment]
             addSpecimenToShipment(shipment, f.fromCentre)
             val stateChangeTime = shipment.timeSent.get.plusDays(1)
@@ -819,10 +787,9 @@ class ShipmentsControllerSpec
 
           forAll(states) { state =>
             info(s"from state $state")
-            val shipment = f.shipments(state)
-            val updateJson = Json.obj("expectedVersion" -> shipment.version,
-                                      "datetime"        -> OffsetDateTime.now)
-            val reply = makeAuthRequest(POST, uri("state/received", shipment.id.id), updateJson).value
+            val shipment   = f.shipments(state)
+            val updateJson = Json.obj("expectedVersion" -> shipment.version, "datetime" -> OffsetDateTime.now)
+            val reply      = makeAuthRequest(POST, uri("state/received", shipment.id.id), updateJson).value
             reply must beBadRequestWithMessage("InvalidState: cannot change to received state")
           }
         }
@@ -831,7 +798,7 @@ class ShipmentsControllerSpec
           val f = sentShipmentFixture
           shipmentRepository.put(f.shipment)
           val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
-                                    "datetime"        -> f.shipment.timeSent.get.minusDays(1))
+                                    "datetime" -> f.shipment.timeSent.get.minusDays(1))
 
           val reply = makeAuthRequest(POST, uri("state/received", f.shipment.id.id), updateJson).value
           reply must beBadRequestWithMessage("TimeReceivedBeforeSent")
@@ -850,12 +817,13 @@ class ShipmentsControllerSpec
                                                 state      = ShipmentItemState.Received)
           shipmentSpecimenRepository.put(shipmentSpecimen)
 
-          val updateJson = Json.obj("expectedVersion" -> shipment.version,
-                                    "datetime"        -> shipment.timeReceived)
+          val updateJson =
+            Json.obj("expectedVersion" -> shipment.version, "datetime" -> shipment.timeReceived)
 
           val reply = makeAuthRequest(POST, uri("state/received", f.shipment.id.id), updateJson).value
           reply must beBadRequestWithMessage(
-            "InvalidState: cannot change to received state, items have already been processed")
+            "InvalidState: cannot change to received state, items have already been processed"
+          )
         }
 
         ignore("fail to change from UNPACKED to RECEIVED if some containers are not in PRESENT state") {
@@ -867,7 +835,7 @@ class ShipmentsControllerSpec
 
         describe("change to UNPACKED state from RECEIVED") {
           changeStateSharedBehaviour { () =>
-            val f = allShipmentsFixture
+            val f        = allShipmentsFixture
             val shipment = f.shipments(Shipment.receivedState).asInstanceOf[ReceivedShipment]
             addSpecimenToShipment(shipment, f.fromCentre)
             val stateChangeTime = OffsetDateTime.now.plusDays(1)
@@ -878,7 +846,7 @@ class ShipmentsControllerSpec
 
         describe("change to UNPACKED state from COMPLETED") {
           changeStateSharedBehaviour { () =>
-            val f = allShipmentsFixture
+            val f        = allShipmentsFixture
             val shipment = f.shipments(Shipment.completedState).asInstanceOf[CompletedShipment]
             addSpecimenToShipment(shipment, f.fromCentre)
             val stateChangeTime = OffsetDateTime.now.plusDays(1)
@@ -899,11 +867,10 @@ class ShipmentsControllerSpec
 
           forAll(states) { state =>
             info(s"from state $state")
-            val shipment = f.shipments(state)
-            val updateJson = Json.obj("expectedVersion" -> shipment.version,
-                                      "datetime"        -> OffsetDateTime.now)
-            val reply = makeAuthRequest(POST, uri("state/unpacked", shipment.id.id), updateJson).value
-          reply must beBadRequestWithMessage("InvalidState: cannot change to unpacked state")
+            val shipment   = f.shipments(state)
+            val updateJson = Json.obj("expectedVersion" -> shipment.version, "datetime" -> OffsetDateTime.now)
+            val reply      = makeAuthRequest(POST, uri("state/unpacked", shipment.id.id), updateJson).value
+            reply must beBadRequestWithMessage("InvalidState: cannot change to unpacked state")
           }
         }
 
@@ -913,8 +880,8 @@ class ShipmentsControllerSpec
 
         describe("change to COMPLETED state from UNPACKED") {
           changeStateSharedBehaviour { () =>
-            val f = allShipmentsFixture
-            val shipment = f.shipments(Shipment.unpackedState).asInstanceOf[UnpackedShipment]
+            val f               = allShipmentsFixture
+            val shipment        = f.shipments(Shipment.unpackedState).asInstanceOf[UnpackedShipment]
             val stateChangeTime = OffsetDateTime.now.plusDays(1)
             val updatedShipment = shipment.complete(stateChangeTime).toOption.value
             ChangeStateInfo(shipment, updatedShipment, Shipment.completedState, Some(stateChangeTime))
@@ -922,15 +889,14 @@ class ShipmentsControllerSpec
         }
 
         it("must not change to COMPLETED state from UNPACKED if there are present specimens") {
-          val f = unpackedShipmentFixture
+          val f             = unpackedShipmentFixture
           val timeCompleted = f.shipment.timeUnpacked.get.plusDays(1)
 
           shipmentRepository.put(f.shipment)
           addSpecimenToShipment(f.shipment, f.fromCentre)
 
-          val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
-                                    "datetime"        -> timeCompleted)
-          val reply = makeAuthRequest(POST, uri("state/completed", f.shipment.id.id), updateJson).value
+          val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "datetime" -> timeCompleted)
+          val reply      = makeAuthRequest(POST, uri("state/completed", f.shipment.id.id), updateJson).value
           reply must beBadRequestWithMessage("InvalidState: shipment has specimens in present state")
         }
 
@@ -947,10 +913,9 @@ class ShipmentsControllerSpec
 
           forAll(states) { state =>
             info(s"from state $state")
-            val shipment = f.shipments(state)
-            val updateJson = Json.obj("expectedVersion" -> shipment.version,
-                                      "datetime"        -> OffsetDateTime.now)
-            val reply = makeAuthRequest(POST, uri("state/completed", shipment.id.id), updateJson).value
+            val shipment   = f.shipments(state)
+            val updateJson = Json.obj("expectedVersion" -> shipment.version, "datetime" -> OffsetDateTime.now)
+            val reply      = makeAuthRequest(POST, uri("state/completed", shipment.id.id), updateJson).value
             reply must beBadRequestWithMessage("InvalidState: cannot change to completed state")
           }
         }
@@ -961,8 +926,8 @@ class ShipmentsControllerSpec
 
         describe("change to SENT state from LOST") {
           changeStateSharedBehaviour { () =>
-            val f = allShipmentsFixture
-            val shipment = f.shipments(Shipment.sentState).asInstanceOf[SentShipment]
+            val f               = allShipmentsFixture
+            val shipment        = f.shipments(Shipment.sentState).asInstanceOf[SentShipment]
             val stateChangeTime = OffsetDateTime.now.plusDays(1)
             val updatedShipment = shipment.lost
             ChangeStateInfo(shipment, updatedShipment, Shipment.lostState, Some(stateChangeTime))
@@ -981,10 +946,9 @@ class ShipmentsControllerSpec
 
           forAll(states) { state =>
             info(s"from state $state")
-            val shipment = f.shipments(state)
-            val updateJson = Json.obj("expectedVersion" -> shipment.version,
-                                      "datetime"        -> OffsetDateTime.now)
-            val reply = makeAuthRequest(POST, uri("state/lost", shipment.id.id), updateJson).value
+            val shipment   = f.shipments(state)
+            val updateJson = Json.obj("expectedVersion" -> shipment.version, "datetime" -> OffsetDateTime.now)
+            val reply      = makeAuthRequest(POST, uri("state/lost", shipment.id.id), updateJson).value
             reply must beBadRequestWithMessage("InvalidState: cannot change to lost state")
           }
         }
@@ -996,12 +960,12 @@ class ShipmentsControllerSpec
 
       describe("switch from CREATED to SENT state") {
         skipStateSharedBehaviour { () =>
-          val f = createdShipmentFixture
+          val f          = createdShipmentFixture
           val timePacked = OffsetDateTime.now.minusDays(10)
-          val timeSent = timePacked.plusDays(1)
+          val timeSent   = timePacked.plusDays(1)
           val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
-                                    "timePacked"      -> timePacked,
-                                    "timeSent"        -> timeSent)
+                                    "timePacked" -> timePacked,
+                                    "timeSent"   -> timeSent)
           val updatedShipment = f.shipment.skipToSent(timePacked, timeSent).toOption.value
           SkipStateInfo(f.shipment, updatedShipment, uri("state/skip-to-sent"), updateJson)
         }
@@ -1018,11 +982,10 @@ class ShipmentsControllerSpec
                                Shipment.lostState)
         forAll(fromStates) { fromState =>
           info(s"$fromState")
-          val shipment =  f.shipments(fromState)
-          val time = OffsetDateTime.now.minusDays(10)
-          val updateJson = Json.obj("expectedVersion" -> shipment.version,
-                                    "timePacked"      -> time,
-                                    "timeSent"        -> time)
+          val shipment = f.shipments(fromState)
+          val time     = OffsetDateTime.now.minusDays(10)
+          val updateJson =
+            Json.obj("expectedVersion" -> shipment.version, "timePacked" -> time, "timeSent" -> time)
           shipmentRepository.put(shipment)
           val reply = makeAuthRequest(POST, uri("state/skip-to-sent", shipment.id.id), updateJson).value
           reply must beBadRequestWithMessage("InvalidState: shipment not created")
@@ -1036,11 +999,13 @@ class ShipmentsControllerSpec
       describe("switch from CREATED to SENT state") {
         skipStateSharedBehaviour { () =>
           val f = sentShipmentFixture
-          val timeReceived = f.shipment.timeSent.fold { OffsetDateTime.now } { t => t.plusDays(1) }
+          val timeReceived = f.shipment.timeSent.fold { OffsetDateTime.now } { t =>
+            t.plusDays(1)
+          }
           val timeUnpacked = timeReceived.plusDays(1)
           val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
-                                    "timeReceived"    -> timeReceived,
-                                    "timeUnpacked"    -> timeUnpacked)
+                                    "timeReceived" -> timeReceived,
+                                    "timeUnpacked" -> timeUnpacked)
           val updatedShipment = f.shipment.skipToUnpacked(timeReceived, timeUnpacked).toOption.value
           SkipStateInfo(f.shipment, updatedShipment, uri("state/skip-to-unpacked"), updateJson)
         }
@@ -1057,11 +1022,12 @@ class ShipmentsControllerSpec
                                Shipment.lostState)
         forAll(fromStates) { fromState =>
           info(s"$fromState")
-          val shipment =  f.shipments(fromState)
-          val time = shipment.timeSent.fold { OffsetDateTime.now } { t => t }
-          val updateJson = Json.obj("expectedVersion" -> shipment.version,
-                                    "timeReceived"    -> time,
-                                    "timeUnpacked"    -> time)
+          val shipment = f.shipments(fromState)
+          val time = shipment.timeSent.fold { OffsetDateTime.now } { t =>
+            t
+          }
+          val updateJson =
+            Json.obj("expectedVersion" -> shipment.version, "timeReceived" -> time, "timeUnpacked" -> time)
           shipmentRepository.put(shipment)
           val reply = makeAuthRequest(POST, uri("state/skip-to-unpacked", shipment.id.id), updateJson).value
           reply must beBadRequestWithMessage("InvalidState: shipment not sent")
@@ -1082,7 +1048,7 @@ class ShipmentsControllerSpec
       }
 
       it("fail on attempt to delete a shipment not in the system") {
-        val f = createdShipmentFixture
+        val f     = createdShipmentFixture
         val reply = makeAuthRequest(DELETE, uri(f.shipment.id.id, s"${f.shipment.version}")).value
         reply must beNotFoundWithMessage("IdNotFound.*shipment id")
       }
@@ -1099,10 +1065,10 @@ class ShipmentsControllerSpec
       }
 
       it("attempt to remove a shipment containing specimens fails") {
-        val f = specimensFixture(1)
+        val f        = specimensFixture(1)
         val specimen = f.specimens.head
-        val shipmentSpecimen = factory.createShipmentSpecimen.copy(shipmentId = f.shipment.id,
-                                                                   specimenId = specimen.id)
+        val shipmentSpecimen =
+          factory.createShipmentSpecimen.copy(shipmentId = f.shipment.id, specimenId = specimen.id)
         shipmentSpecimenRepository.put(shipmentSpecimen)
         val reply = makeAuthRequest(DELETE, uri(f.shipment.id.id, s"${f.shipment.version}")).value
         reply must beBadRequestWithMessage("shipment has specimens.*")
@@ -1110,30 +1076,31 @@ class ShipmentsControllerSpec
     }
   }
 
-  private def listSingleShipment(offset:    Long = 0,
-                                 maybeNext: Option[Int] = None,
-                                 maybePrev: Option[Int] = None)
-                                (setupFunc: () => (Url, Shipment)) = {
-
+  private def listSingleShipment(
+      offset:    Long = 0,
+      maybeNext: Option[Int] = None,
+      maybePrev: Option[Int] = None
+    )(setupFunc: () => (Url, Shipment)
+    ) =
     it("list single shipment") {
       val (url, expectedShipment) = setupFunc()
-      val reply = makeAuthRequest(GET, url).value
+      val reply                   = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)
       json must beSingleItemResults(offset, maybeNext, maybePrev)
 
       val dtosValidation = (json \ "data" \ "items").validate[List[ShipmentDto]]
-      dtosValidation must be (jsSuccess)
+      dtosValidation must be(jsSuccess)
       dtosValidation.get.foreach { _ must matchDtoToShipment(expectedShipment) }
     }
-  }
 
-  private def listMultipleShipments(offset:    Long = 0,
-                                    maybeNext: Option[Int] = None,
-                                    maybePrev: Option[Int] = None)
-                                   (setupFunc: () => (Url, List[Shipment])) = {
-
+  private def listMultipleShipments(
+      offset:    Long = 0,
+      maybeNext: Option[Int] = None,
+      maybePrev: Option[Int] = None
+    )(setupFunc: () => (Url, List[Shipment])
+    ) =
     it("list multiple shipments") {
       val (url, expectedShipments) = setupFunc()
 
@@ -1141,25 +1108,25 @@ class ShipmentsControllerSpec
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)
-      json must beMultipleItemResults(offset = offset,
-                                      total = expectedShipments.size.toLong,
+      json must beMultipleItemResults(offset    = offset,
+                                      total     = expectedShipments.size.toLong,
                                       maybeNext = maybeNext,
                                       maybePrev = maybePrev)
 
       val dtosValidation = (json \ "data" \ "items").validate[List[ShipmentDto]]
-      dtosValidation must be (jsSuccess)
+      dtosValidation must be(jsSuccess)
 
-      (dtosValidation.get zip expectedShipments).foreach { case (dto, shipment) =>
-        dto must matchDtoToShipment(shipment)
+      (dtosValidation.get zip expectedShipments).foreach {
+        case (dto, shipment) =>
+          dto must matchDtoToShipment(shipment)
       }
     }
 
-  }
-
   def matchUpdatedShipment(shipment: Shipment) =
     new Matcher[Future[Result]] {
-      def apply (left: Future[Result]) = {
-        val replyDto = (contentAsJson(left) \ "data").validate[ShipmentDto]
+
+      def apply(left: Future[Result]) = {
+        val replyDto         = (contentAsJson(left) \ "data").validate[ShipmentDto]
         val jsSuccessMatcher = jsSuccess(replyDto)
 
         if (!jsSuccessMatcher.matches) {
@@ -1180,57 +1147,53 @@ class ShipmentsControllerSpec
 
   def matchRepositoryShipment =
     new Matcher[Shipment] {
-      def apply (left: Shipment) = {
-        shipmentRepository.getByKey(left.id).fold(
-          err => {
-            MatchResult(false, s"not found in repository: ${err.head}", "")
 
-          },
-          repoCet => {
-            val repoMatcher = matchShipment(left)(repoCet)
-            MatchResult(repoMatcher.matches,
-                        s"repository shipment does not match expected: ${repoMatcher.failureMessage}",
-                        s"repository shipment matches expected: ${repoMatcher.failureMessage}")
-          }
-        )
-      }
+      def apply(left: Shipment) =
+        shipmentRepository
+          .getByKey(left.id).fold(
+            err => {
+              MatchResult(false, s"not found in repository: ${err.head}", "")
+
+            },
+            repoCet => {
+              val repoMatcher = matchShipment(left)(repoCet)
+              MatchResult(repoMatcher.matches,
+                          s"repository shipment does not match expected: ${repoMatcher.failureMessage}",
+                          s"repository shipment matches expected: ${repoMatcher.failureMessage}")
+            }
+          )
     }
 
-  private case class ChangeStateInfo(shipment:        Shipment,
-                                     updatedShipment: Shipment,
-                                     newState:        EntityState,
-                                     timeMaybe:       Option[OffsetDateTime])
+  private case class ChangeStateInfo(
+      shipment:        Shipment,
+      updatedShipment: Shipment,
+      newState:        EntityState,
+      timeMaybe:       Option[OffsetDateTime])
 
-  private def changeStateSharedBehaviour(setupFunc: () => ChangeStateInfo) = {
-
+  private def changeStateSharedBehaviour(setupFunc: () => ChangeStateInfo) =
     it("must change state") {
       val info = setupFunc()
       shipmentRepository.put(info.shipment)
       val baseJson = Json.obj("expectedVersion" -> info.shipment.version)
-      val reqJson = info.timeMaybe.fold { baseJson } { time => baseJson ++ Json.obj("datetime" -> time) }
-      val url = uri("state", info.newState.toString, info.shipment.id.id)
+      val reqJson = info.timeMaybe.fold { baseJson } { time =>
+        baseJson ++ Json.obj("datetime" -> time)
+      }
+      val url   = uri("state", info.newState.toString, info.shipment.id.id)
       val reply = makeAuthRequest(POST, url, reqJson).value
       reply must beOkResponseWithJsonReply
       reply must matchUpdatedShipment(info.updatedShipment)
     }
-  }
 
-  private case class SkipStateInfo(shipment:        Shipment,
-                                   updatedShipment: Shipment,
-                                   url:             Url,
-                                   json:            JsValue)
+  private case class SkipStateInfo(shipment: Shipment, updatedShipment: Shipment, url: Url, json: JsValue)
 
-  private def skipStateSharedBehaviour(setupFunc: () => SkipStateInfo) = {
-
+  private def skipStateSharedBehaviour(setupFunc: () => SkipStateInfo) =
     it("must change state") {
       val info = setupFunc()
       shipmentRepository.put(info.shipment)
-      val url = info.url.append(info.shipment.id.id)
+      val url   = info.url.append(info.shipment.id.id)
       val reply = makeAuthRequest(POST, url, info.json).value
       reply must beOkResponseWithJsonReply
       reply must matchUpdatedShipment(info.updatedShipment)
     }
-  }
-
 
 }

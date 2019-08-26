@@ -17,7 +17,10 @@ trait Processor extends PersistentActor with ActorLogging {
    *
    * TODO: convert to single parameter list
    */
-  protected def process[T <: GeneratedMessage](validation: ServiceValidation[T])(successFn: T => Unit): Unit = {
+  protected def process[T <: GeneratedMessage](
+      validation: ServiceValidation[T]
+    )(successFn:  T => Unit
+    ): Unit = {
     val originalSender = context.sender
     validation.fold(
       err => {
@@ -32,33 +35,35 @@ trait Processor extends PersistentActor with ActorLogging {
     )
   }
 
-  protected def validNewIdentity[I <: IdentifiedValueObject[_], R <: ReadWriteRepository[I,_]]
-    (id: I, repository: R): ServiceValidation[I] = {
-    repository.getByKey(id).fold(
-      err  =>  id.successNel[String],
-      item => ServiceError(s"could not generate a unique ID: $id").failureNel[I]
-    )
-  }
+  protected def validNewIdentity[I <: IdentifiedValueObject[_], R <: ReadWriteRepository[I, _]](
+      id:         I,
+      repository: R
+    ): ServiceValidation[I] =
+    repository
+      .getByKey(id).fold(err  => id.successNel[String],
+                         item => ServiceError(s"could not generate a unique ID: $id").failureNel[I])
 
   /**
    * Searches the repository for a matching item.
    */
-  protected def nameAvailableMatcher[T <: IdentifiedDomainObject[_]]
-    (name: String, repository: ReadRepository[_, T], errMsgPrefix: String)
-    (matcher: T => Boolean)
-      : ServiceValidation[Unit] = {
+  protected def nameAvailableMatcher[T <: IdentifiedDomainObject[_]](
+      name:         String,
+      repository:   ReadRepository[_, T],
+      errMsgPrefix: String
+    )(matcher:      T => Boolean
+    ): ServiceValidation[Unit] = {
     val exists = repository.getValues.exists(matcher)
     if (exists) EntityCriteriaError(s"$errMsgPrefix: $name").failureNel[Unit]
     else ().successNel[String]
   }
 
   /** Checks that the domain objects version matches the expected one.
-    */
-  protected def validateVersion[T <: ConcurrencySafeEntity[_]]
-    (item: T,expectedVersion: Option[Long])
-      : ServiceValidation[Unit] = {
+   */
+  protected def validateVersion[T <: ConcurrencySafeEntity[_]](
+      item:            T,
+      expectedVersion: Option[Long]
+    ): ServiceValidation[Unit] =
     if (item.versionOption == expectedVersion) ().successNel[String]
     else ServiceError(s"version mismatch").failureNel[Unit]
-  }
 
 }

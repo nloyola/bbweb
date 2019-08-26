@@ -17,6 +17,7 @@ object Commands {
     /** A command that must include the version of the object the command applies to. */
     val expectedVersion: Long
   }
+
   trait HasIdentity {
 
     /** A command that includes the ID of the object it references. */

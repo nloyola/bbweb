@@ -3,7 +3,7 @@ package org.biobank.domain.participants
 import java.time.OffsetDateTime
 import org.biobank.fixtures.NameGenerator
 import org.biobank.domain._
-import org.biobank.domain.containers.{ ContainerId, ContainerSchemaPositionId }
+import org.biobank.domain.containers.{ContainerId, ContainerSchemaPositionId}
 import org.biobank.domain.studies.SpecimenDefinitionId
 import org.slf4j.LoggerFactory
 
@@ -17,17 +17,17 @@ class SpecimenSpec extends DomainSpec {
   val nameGenerator = new NameGenerator(this.getClass)
 
   def createFrom(specimen: Specimen): DomainValidation[Specimen] =
-    UsableSpecimen.create(id                    = specimen.id,
-                          inventoryId           = specimen.inventoryId,
+    UsableSpecimen.create(id                   = specimen.id,
+                          inventoryId          = specimen.inventoryId,
                           specimenDefinitionId = specimen.specimenDefinitionId,
-                          version               = specimen.version,
-                          timeAdded             = OffsetDateTime.now,
-                          timeCreated           = specimen.timeCreated,
-                          originLocationId      = specimen.originLocationId,
-                          locationId            = specimen.locationId,
-                          containerId           = specimen.containerId,
-                          position              = specimen.position,
-                          amount                = specimen.amount)
+                          version              = specimen.version,
+                          timeAdded            = OffsetDateTime.now,
+                          timeCreated          = specimen.timeCreated,
+                          originLocationId     = specimen.originLocationId,
+                          locationId           = specimen.locationId,
+                          containerId          = specimen.containerId,
+                          position             = specimen.position,
+                          amount               = specimen.amount)
 
   describe("A usable specimen") {
 
@@ -36,17 +36,15 @@ class SpecimenSpec extends DomainSpec {
       it("when valid arguments are used") {
         val specimen = factory.createUsableSpecimen.copy(version = 0L)
         createFrom(specimen) mustSucceed { spc =>
-          spc must have(
-            'id                    (specimen.id),
-            'inventoryId           (specimen.inventoryId),
-            'specimenDefinitionId (specimen.specimenDefinitionId),
-            'version               (0),
-            'originLocationId      (specimen.originLocationId),
-            'locationId            (specimen.locationId),
-            'containerId           (specimen.containerId),
-            'position              (specimen.position),
-            'amount                (specimen.amount)
-          )
+          spc must have('id (specimen.id),
+                        'inventoryId (specimen.inventoryId),
+                        'specimenDefinitionId (specimen.specimenDefinitionId),
+                        'version (0),
+                        'originLocationId (specimen.originLocationId),
+                        'locationId (specimen.locationId),
+                        'containerId (specimen.containerId),
+                        'position (specimen.position),
+                        'amount (specimen.amount))
 
           spc must beEntityWithTimeStamps(OffsetDateTime.now, None, 5L)
 
@@ -59,57 +57,57 @@ class SpecimenSpec extends DomainSpec {
     describe("can be updated") {
 
       it("with a new inventory ID") {
-        val specimen = factory.createUsableSpecimen
+        val specimen       = factory.createUsableSpecimen
         val newInventoryId = nameGenerator.next[Specimen]
 
         specimen.withInventoryId(newInventoryId) mustSucceed { s =>
-          s.inventoryId must be (newInventoryId)
-          s.version must be (specimen.version + 1)
+          s.inventoryId must be(newInventoryId)
+          s.version must be(specimen.version + 1)
 
           s must beEntityWithTimeStamps(specimen.timeAdded, Some(OffsetDateTime.now), 5L)
         }
       }
 
       it("with a new amount") {
-        val specimen = factory.createUsableSpecimen
+        val specimen  = factory.createUsableSpecimen
         val newAmount = specimen.amount + 1
 
         specimen.withAmount(newAmount) mustSucceed { s =>
-          s.amount must be (newAmount)
-          s.version must be (specimen.version + 1)
+          s.amount must be(newAmount)
+          s.version must be(specimen.version + 1)
           s must beEntityWithTimeStamps(specimen.timeAdded, Some(OffsetDateTime.now), 5L)
         }
       }
 
       it("with a new origin location") {
-        val specimen = factory.createUsableSpecimen
+        val specimen    = factory.createUsableSpecimen
         val newLocation = factory.createLocation
 
         specimen.withOriginLocation(newLocation.id) mustSucceed { s =>
-          s.originLocationId must be (newLocation.id)
-          s.version must be (specimen.version + 1)
+          s.originLocationId must be(newLocation.id)
+          s.version must be(specimen.version + 1)
           s must beEntityWithTimeStamps(specimen.timeAdded, Some(OffsetDateTime.now), 5L)
         }
       }
 
       it("with a new location") {
-        val specimen = factory.createUsableSpecimen
+        val specimen    = factory.createUsableSpecimen
         val newLocation = factory.createLocation
 
         specimen.withLocation(newLocation.id) mustSucceed { s =>
-          s.locationId must be (newLocation.id)
-          s.version must be (specimen.version + 1)
+          s.locationId must be(newLocation.id)
+          s.version must be(specimen.version + 1)
           s must beEntityWithTimeStamps(specimen.timeAdded, Some(OffsetDateTime.now), 5L)
         }
       }
 
       it("with a new position") {
-        val specimen = factory.createUsableSpecimen
+        val specimen    = factory.createUsableSpecimen
         val newPosition = Some(factory.createContainerSchemaPosition)
 
         specimen.withPosition(newPosition) mustSucceed { s =>
           s.position mustBe newPosition
-          s.version must be (specimen.version + 1)
+          s.version must be(specimen.version + 1)
           s must beEntityWithTimeStamps(specimen.timeAdded, Some(OffsetDateTime.now), 5L)
         }
       }
@@ -122,7 +120,7 @@ class SpecimenSpec extends DomainSpec {
 
         specimen.makeUnusable mustSucceed { s =>
           s mustBe a[UnusableSpecimen]
-          s.version must be (specimen.version + 1)
+          s.version must be(specimen.version + 1)
           s must beEntityWithTimeStamps(specimen.timeAdded, Some(OffsetDateTime.now), 5L)
         }
       }
@@ -194,19 +192,19 @@ class SpecimenSpec extends DomainSpec {
     }
 
     it("with an invalid origin location") {
-      val specimen = factory.createUsableSpecimen
+      val specimen    = factory.createUsableSpecimen
       val newLocation = factory.createLocation.copy(id = LocationId(""))
       specimen.withOriginLocation(newLocation.id) mustFail "LocationIdInvalid"
     }
 
     it("with an invalid location") {
-      val specimen = factory.createUsableSpecimen
+      val specimen    = factory.createUsableSpecimen
       val newLocation = factory.createLocation.copy(id = LocationId(""))
       specimen.withLocation(newLocation.id) mustFail "LocationIdInvalid"
     }
 
     it("with an invalid position") {
-      val specimen = factory.createUsableSpecimen
+      val specimen    = factory.createUsableSpecimen
       val newPosition = factory.createContainerSchemaPosition.copy(id = ContainerSchemaPositionId(""))
 
       specimen.withPosition(Some(newPosition)) mustFail "PositionInvalid"
@@ -220,7 +218,7 @@ class SpecimenSpec extends DomainSpec {
 
       specimen.makeUnusable mustSucceed { s =>
         s mustBe a[UnusableSpecimen]
-        s.version must be (specimen.version + 1)
+        s.version must be(specimen.version + 1)
         s must beEntityWithTimeStamps(specimen.timeAdded, Some(OffsetDateTime.now), 5L)
       }
     }
@@ -236,7 +234,7 @@ class SpecimenSpec extends DomainSpec {
 
         specimen.makeUsable mustSucceed { s =>
           s mustBe a[UsableSpecimen]
-          s.version must be (specimen.version + 1)
+          s.version must be(specimen.version + 1)
           s must beEntityWithTimeStamps(specimen.timeAdded, Some(OffsetDateTime.now), 5L)
         }
       }

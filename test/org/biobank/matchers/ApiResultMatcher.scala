@@ -19,7 +19,7 @@ trait ApiResultMatchers { this: org.biobank.fixtures.ControllerFixture =>
   def beBadRequestWithMessage(errMessage: String): Matcher[Future[Result]] =
     new BadRequestMessageMatcher(errMessage)
 
- def beForbiddenRequestWithMessage(errMessage: String): Matcher[Future[Result]] =
+  def beForbiddenRequestWithMessage(errMessage: String): Matcher[Future[Result]] =
     new ForbiddenRequestMessageMatcher(errMessage)
 
   def beNotFoundWithMessage(errMessage: String): Matcher[Future[Result]] =
@@ -36,10 +36,11 @@ trait ApiResultMatchers { this: org.biobank.fixtures.ControllerFixture =>
       val responseStatus = status(left)
 
       if (responseStatus != htmlStatus) {
-        val content = if (contentType(left) == Some("application/json"))
-                        Json.prettyPrint(contentAsJson(left))
-                      else
-                        contentAsString(left)
+        val content =
+          if (contentType(left) == Some("application/json"))
+            Json.prettyPrint(contentAsJson(left))
+          else
+            contentAsString(left)
         MatchResult(false,
                     "got {0} while expecting {1}, response was {2}",
                     "got expected status code {0}",
@@ -54,7 +55,7 @@ trait ApiResultMatchers { this: org.biobank.fixtures.ControllerFixture =>
                       IndexedSeq(respContentType))
         } else {
           val responseJson = contentAsJson(left)
-          val status = (responseJson \ "status").as[String]
+          val status       = (responseJson \ "status").as[String]
 
           log.debug(s"response: status: $responseStatus,\njson: ${Json.prettyPrint(responseJson)}")
 
@@ -73,11 +74,12 @@ trait ApiResultMatchers { this: org.biobank.fixtures.ControllerFixture =>
       log.debug(s"response: status: $responseStatus")
 
       if (responseStatus != htmlStatus) {
-        val content = if (contentType(left) == Some("application/json"))
-                        Json.prettyPrint(contentAsJson(left))
-                      else
-                        contentAsString(left)
-           MatchResult(false,
+        val content =
+          if (contentType(left) == Some("application/json"))
+            Json.prettyPrint(contentAsJson(left))
+          else
+            contentAsString(left)
+        MatchResult(false,
                     "got {0} while expecting {1}, response was {2}",
                     "got expected status code {0}",
                     IndexedSeq(responseStatus, htmlStatus, content))
@@ -93,7 +95,8 @@ trait ApiResultMatchers { this: org.biobank.fixtures.ControllerFixture =>
 
   private class ReplyWithJson(httpStatus: Int) extends ReplyWithJsonStatus(httpStatus, "success")
 
-  private class ReplyWithError(error: ApiErrorResponse) extends ReplyWithJsonStatus(error.htmlStatus, "error") {
+  private class ReplyWithError(error: ApiErrorResponse)
+      extends ReplyWithJsonStatus(error.htmlStatus, "error") {
     override def apply(left: Future[Result]) = {
       val superMatchResult = super.apply(left)
 
@@ -101,14 +104,13 @@ trait ApiResultMatchers { this: org.biobank.fixtures.ControllerFixture =>
         superMatchResult
       } else {
         val responseJson = contentAsJson(left)
-        val message = (responseJson \ "message").as[String]
-        val regex = new Regex(error.messageRegex)
+        val message      = (responseJson \ "message").as[String]
+        val regex        = new Regex(error.messageRegex)
 
-        MatchResult(
-          regex.findFirstIn(message) != None,
-          "message does not contain expected regex: got: {0}, expected: {1}, reponse was {2}",
-          "message contains expected regex: got: {0}, expected: {1}, reponse was {2}",
-          IndexedSeq(message, error.messageRegex, Json.prettyPrint(responseJson)))
+        MatchResult(regex.findFirstIn(message) != None,
+                    "message does not contain expected regex: got: {0}, expected: {1}, reponse was {2}",
+                    "message contains expected regex: got: {0}, expected: {1}, reponse was {2}",
+                    IndexedSeq(message, error.messageRegex, Json.prettyPrint(responseJson)))
       }
     }
   }
@@ -121,7 +123,6 @@ trait ApiResultMatchers { this: org.biobank.fixtures.ControllerFixture =>
 
   final private class ForbiddenRequestMessageMatcher(errMessage: String)
       extends ReplyWithError(ApiErrorResponse(FORBIDDEN, errMessage))
-
 
   final private class OkRequestWithJsonReplyMatcher extends ReplyWithJson(200)
 }

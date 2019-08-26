@@ -1,7 +1,7 @@
 package org.biobank.services.access
 
 import akka.actor._
-import akka.persistence.{RecoveryCompleted, SnapshotOffer, SaveSnapshotSuccess, SaveSnapshotFailure}
+import akka.persistence.{RecoveryCompleted, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
 //import com.github.ghik.silencer.silent
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -29,8 +29,9 @@ object AccessProcessor {
 /**
  * Handles commands related to access.
  */
-class AccessProcessor @Inject() (val accessItemRepository: AccessItemRepository,
-                                 val snapshotWriter:       SnapshotWriter)
+class AccessProcessor @Inject()(
+    val accessItemRepository: AccessItemRepository,
+    val snapshotWriter:       SnapshotWriter)
     extends Processor {
 
   import AccessProcessor._
@@ -99,16 +100,16 @@ class AccessProcessor @Inject() (val accessItemRepository: AccessItemRepository,
           processUpdateRoleCmd(cmd, removeParentCmdToEvent, applyParentRemovedEvent)
         case cmd: RoleRemoveChildCmd =>
           processUpdateRoleCmd(cmd, removeChildCmdToEvent, applyChildRemovedEvent)
-       case cmd: RemoveRoleCmd =>
+        case cmd: RemoveRoleCmd =>
           processUpdateRoleCmd(cmd, removeRoleCmdToEvent, applyRoleRemovedEvent)
-       }
+      }
 
     case "persistence_restart" =>
       throw new Exception("Intentionally throwing exception to test persistence by restarting the actor")
 
     case "snap" =>
       mySaveSnapshot
-     replyTo = Some(sender())
+      replyTo = Some(sender())
 
     case SaveSnapshotSuccess(metadata) =>
       log.debug(s"SaveSnapshotSuccess: $metadata")
@@ -125,27 +126,28 @@ class AccessProcessor @Inject() (val accessItemRepository: AccessItemRepository,
 
   private def mySaveSnapshot(): Unit = {
     val snapshotState = SnapshotState(accessItemRepository.getValues.toSet)
-    val filename = snapshotWriter.save(persistenceId, Json.toJson(snapshotState).toString)
+    val filename      = snapshotWriter.save(persistenceId, Json.toJson(snapshotState).toString)
     saveSnapshot(filename)
   }
 
   private def applySnapshot(filename: String): Unit = {
     log.debug(s"snapshot recovery file: $filename")
     val fileContents = snapshotWriter.load(filename);
-    Json.parse(fileContents).validate[SnapshotState].fold(
-      errors => log.error(s"could not apply snapshot: $filename: $errors"),
-      snapshot =>  {
-        log.debug(s"snapshot contains ${snapshot.accessItems.size} accessItems")
-        snapshot.accessItems.foreach(accessItemRepository.put)
-      }
-    )
+    Json
+      .parse(fileContents).validate[SnapshotState].fold(
+        errors => log.error(s"could not apply snapshot: $filename: $errors"),
+        snapshot => {
+          log.debug(s"snapshot contains ${snapshot.accessItems.size} accessItems")
+          snapshot.accessItems.foreach(accessItemRepository.put)
+        }
+      )
   }
 
-  private def addRoleCmdToEvent(cmd: AddRoleCmd): ServiceValidation[AccessEvent] = {
+  private def addRoleCmdToEvent(cmd: AddRoleCmd): ServiceValidation[AccessEvent] =
     for {
-      name    <- nameAvailable(cmd.name)
-      roleId  <- validNewIdentity(accessItemRepository.nextIdentity, accessItemRepository)
-      newRole <- Role.create(id           = roleId,
+      name   <- nameAvailable(cmd.name)
+      roleId <- validNewIdentity(accessItemRepository.nextIdentity, accessItemRepository)
+      newRole <- Role.create(id = roleId,
                              version      = 0L,
                              timeAdded    = OffsetDateTime.now,
                              timeModified = None,
@@ -161,23 +163,25 @@ class AccessProcessor @Inject() (val accessItemRepository: AccessItemRepository,
       _.role.added.optionalDescription := cmd.description,
       _.role.added.userIds             := cmd.userIds,
       _.role.added.parentIds           := cmd.parentIds,
-      _.role.added.childrenIds         := cmd.childrenIds);
+      _.role.added.childrenIds         := cmd.childrenIds
+    );
 
-  }
-
-  private def updateNameCmdToEvent(cmd: RoleUpdateNameCmd, role: Role): ServiceValidation[AccessEvent] = {
+  private def updateNameCmdToEvent(cmd: RoleUpdateNameCmd, role: Role): ServiceValidation[AccessEvent] =
     (nameAvailable(cmd.name, AccessItemId(cmd.roleId)) |@|
-       role.withName(cmd.name)) { case _ =>
+      role.withName(cmd.name)) {
+      case _ =>
         AccessEvent(cmd.sessionUserId).update(
           _.time                     := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
           _.role.id                  := role.id.id,
           _.role.nameUpdated.version := cmd.expectedVersion,
-          _.role.nameUpdated.name    := cmd.name)
+          _.role.nameUpdated.name    := cmd.name
+        )
     }
-  }
 
-  private def updateDescriptionCmdToEvent(cmd: RoleUpdateDescriptionCmd, role: Role)
-      : ServiceValidation[AccessEvent] = {
+  private def updateDescriptionCmdToEvent(
+      cmd:  RoleUpdateDescriptionCmd,
+      role: Role
+    ): ServiceValidation[AccessEvent] =
     role.withDescription(cmd.description).map { _ =>
       val timeStr = OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
       AccessEvent(cmd.sessionUserId).update(
@@ -185,25 +189,24 @@ class AccessProcessor @Inject() (val accessItemRepository: AccessItemRepository,
           := timeStr,
         _.role.id                                     := role.id.id,
         _.role.descriptionUpdated.version             := cmd.expectedVersion,
-        _.role.descriptionUpdated.optionalDescription := cmd.description)
+        _.role.descriptionUpdated.optionalDescription := cmd.description
+      )
     }
-  }
 
   private def addUserCmdToEvent(cmd: RoleAddUserCmd, role: Role): ServiceValidation[AccessEvent] = {
     val userId = UserId(cmd.userId)
     if (role.userIds.exists(_ == userId)) {
       EntityCriteriaError(s"user ID is already in role: ${userId}").failureNel[AccessEvent]
     } else {
-      AccessEvent(cmd.sessionUserId).update(
-        _.time                   := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-        _.role.id                := role.id.id,
-        _.role.userAdded.version := cmd.expectedVersion,
-        _.role.userAdded.id      := cmd.userId
-      ).successNel[String]
+      AccessEvent(cmd.sessionUserId)
+        .update(_.time                   := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                _.role.id                := role.id.id,
+                _.role.userAdded.version := cmd.expectedVersion,
+                _.role.userAdded.id      := cmd.userId).successNel[String]
     }
   }
 
-  private def addParentCmdToEvent(cmd: RoleAddParentCmd, role: Role): ServiceValidation[AccessEvent] = {
+  private def addParentCmdToEvent(cmd: RoleAddParentCmd, role: Role): ServiceValidation[AccessEvent] =
     role.addParent(AccessItemId(cmd.parentRoleId)).map { updated =>
       AccessEvent(cmd.sessionUserId).update(
         _.time                     := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
@@ -212,9 +215,8 @@ class AccessProcessor @Inject() (val accessItemRepository: AccessItemRepository,
         _.role.parentAdded.id      := cmd.parentRoleId
       )
     }
-  }
 
-  private def addChildCmdToEvent(cmd: RoleAddChildCmd, role: Role): ServiceValidation[AccessEvent] = {
+  private def addChildCmdToEvent(cmd: RoleAddChildCmd, role: Role): ServiceValidation[AccessEvent] =
     role.addChild(AccessItemId(cmd.childRoleId)).map { updated =>
       AccessEvent(cmd.sessionUserId).update(
         _.time                    := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
@@ -223,24 +225,21 @@ class AccessProcessor @Inject() (val accessItemRepository: AccessItemRepository,
         _.role.childAdded.id      := cmd.childRoleId
       )
     }
-  }
 
   private def removeUserCmdToEvent(cmd: RoleRemoveUserCmd, role: Role): ServiceValidation[AccessEvent] = {
     val userId = UserId(cmd.userId)
     if (!role.userIds.exists(_ == userId)) {
       EntityCriteriaError(s"user ID is not in role: ${userId}").failureNel[AccessEvent]
     } else {
-      AccessEvent(cmd.sessionUserId).update(
-        _.time                     := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-        _.role.id                  := role.id.id,
-        _.role.userRemoved.version := cmd.expectedVersion,
-        _.role.userRemoved.id      := cmd.userId
-      ).successNel[String]
+      AccessEvent(cmd.sessionUserId)
+        .update(_.time                     := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                _.role.id                  := role.id.id,
+                _.role.userRemoved.version := cmd.expectedVersion,
+                _.role.userRemoved.id      := cmd.userId).successNel[String]
     }
   }
 
-  private def removeParentCmdToEvent(cmd:  RoleRemoveParentCmd,
-                                     role: Role): ServiceValidation[AccessEvent] = {
+  private def removeParentCmdToEvent(cmd: RoleRemoveParentCmd, role: Role): ServiceValidation[AccessEvent] =
     role.removeParent(AccessItemId(cmd.parentRoleId)).map { updated =>
       AccessEvent(cmd.sessionUserId).update(
         _.time                       := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
@@ -249,49 +248,45 @@ class AccessProcessor @Inject() (val accessItemRepository: AccessItemRepository,
         _.role.parentRemoved.id      := cmd.parentRoleId
       )
     }
-  }
 
-  private def removeChildCmdToEvent(cmd:  RoleRemoveChildCmd,
-                                    role: Role): ServiceValidation[AccessEvent] = {
+  private def removeChildCmdToEvent(cmd: RoleRemoveChildCmd, role: Role): ServiceValidation[AccessEvent] =
     role.removeChild(AccessItemId(cmd.childRoleId)).map { udpated =>
       AccessEvent(cmd.sessionUserId).update(
-        _.time                       := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-        _.role.id                    := role.id.id,
+        _.time                      := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+        _.role.id                   := role.id.id,
         _.role.childRemoved.version := cmd.expectedVersion,
         _.role.childRemoved.id      := cmd.childRoleId
       )
     }
-  }
 
-  private def removeRoleCmdToEvent(cmd: RemoveRoleCmd, role: Role): ServiceValidation[AccessEvent] = {
-    AccessEvent(cmd.sessionUserId).update(
-      _.time                 := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-      _.role.id              := role.id.id,
-      _.role.removed.version := cmd.expectedVersion
-    ).successNel[String]
-  }
+  private def removeRoleCmdToEvent(cmd: RemoveRoleCmd, role: Role): ServiceValidation[AccessEvent] =
+    AccessEvent(cmd.sessionUserId)
+      .update(_.time                 := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+              _.role.id              := role.id.id,
+              _.role.removed.version := cmd.expectedVersion).successNel[String]
 
-  private def processUpdateRoleCmd[T <: RoleModifyCommand]
-    (cmd:           T,
-     validateCmd:   (T, Role) => ServiceValidation[AccessEvent],
-     applyEvent:    AccessEvent => Unit): Unit = {
+  private def processUpdateRoleCmd[T <: RoleModifyCommand](
+      cmd:         T,
+      validateCmd: (T, Role) => ServiceValidation[AccessEvent],
+      applyEvent:  AccessEvent => Unit
+    ): Unit = {
     val event = for {
-        role         <- accessItemRepository.getRole(AccessItemId(cmd.roleId))
-        validVersion <- role.requireVersion(cmd.expectedVersion)
-        event        <- validateCmd(cmd, role)
-      } yield event
+      role         <- accessItemRepository.getRole(AccessItemId(cmd.roleId))
+      validVersion <- role.requireVersion(cmd.expectedVersion)
+      event        <- validateCmd(cmd, role)
+    } yield event
 
     process(event)(applyEvent)
   }
 
-  private def applyRoleAddedEvent(event: AccessEvent): Unit = {
+  private def applyRoleAddedEvent(event: AccessEvent): Unit =
     if (!event.eventType.isRole || !event.getRole.eventType.isAdded) {
       log.error(s"applyAddedEvent: invalid event type: $event")
     } else {
       val addedEvent = event.getRole.getAdded
-      val timeAdded = OffsetDateTime.parse(event.getTime)
+      val timeAdded  = OffsetDateTime.parse(event.getTime)
 
-      val v = Role.create(id           = AccessItemId(event.getRole.getId),
+      val v = Role.create(id = AccessItemId(event.getRole.getId),
                           version      = 0L,
                           timeAdded    = timeAdded,
                           timeModified = None,
@@ -307,139 +302,120 @@ class AccessProcessor @Inject() (val accessItemRepository: AccessItemRepository,
 
       v.foreach(accessItemRepository.put)
     }
-  }
 
-  private def onValidRoleEventAndVersion(event:        AccessEvent,
-                                         eventType:    Boolean,
-                                         eventVersion: Long)
-                                        (applyEvent: ApplyRoleEvent): Unit = {
+  private def onValidRoleEventAndVersion(
+      event:        AccessEvent,
+      eventType:    Boolean,
+      eventVersion: Long
+    )(applyEvent:   ApplyRoleEvent
+    ): Unit =
     if (!eventType) {
       log.error(s"invalid role event type: $event")
     } else {
-      accessItemRepository.getRole(AccessItemId(event.getRole.getId)).fold(
-        err => log.error(s"role from event does not exist: $err"),
-        role => {
-          if (role.version != eventVersion) {
-            log.error(s"event version check failed: role version: ${role.version}, event: $event")
-          } else {
-            val eventTime = OffsetDateTime.parse(event.getTime)
-            val update = applyEvent(role, eventTime)
+      accessItemRepository
+        .getRole(AccessItemId(event.getRole.getId)).fold(
+          err => log.error(s"role from event does not exist: $err"),
+          role => {
+            if (role.version != eventVersion) {
+              log.error(s"event version check failed: role version: ${role.version}, event: $event")
+            } else {
+              val eventTime = OffsetDateTime.parse(event.getTime)
+              val update    = applyEvent(role, eventTime)
 
-            if (update.isFailure) {
-              log.error(s"role update from event failed: $update")
+              if (update.isFailure) {
+                log.error(s"role update from event failed: $update")
+              }
             }
           }
-        }
-      )
+        )
     }
-  }
 
-
-  private def updateRole(role: Role, time: OffsetDateTime): Unit = {
+  private def updateRole(role: Role, time: OffsetDateTime): Unit =
     accessItemRepository.put(role.copy(timeModified = Some(time)))
-  }
 
-  private def applyNameUpdatedEvent(event: AccessEvent): Unit = {
+  private def applyNameUpdatedEvent(event: AccessEvent): Unit =
     onValidRoleEventAndVersion(event,
                                event.getRole.eventType.isNameUpdated,
-                               event.getRole.getNameUpdated.getVersion) {
-      (role, time) =>
+                               event.getRole.getNameUpdated.getVersion) { (role, time) =>
       role.withName(event.getRole.getNameUpdated.getName).map { r =>
-        accessItemRepository.put(r.copy(slug         = accessItemRepository.uniqueSlugFromStr(r.name),
-                                        timeModified = Some(time)))
+        accessItemRepository
+          .put(r.copy(slug = accessItemRepository.uniqueSlugFromStr(r.name), timeModified = Some(time)))
         ()
       }
     }
-  }
 
-  private def applyDescriptionUpdatedEvent(event: AccessEvent): Unit = {
+  private def applyDescriptionUpdatedEvent(event: AccessEvent): Unit =
     onValidRoleEventAndVersion(event,
                                event.getRole.eventType.isDescriptionUpdated,
-                               event.getRole.getDescriptionUpdated.getVersion) {
-      (role, time) =>
+                               event.getRole.getDescriptionUpdated.getVersion) { (role, time) =>
       role.withDescription(event.getRole.getDescriptionUpdated.description).map(r => updateRole(r, time))
     }
-  }
 
-  private def applyUserAddedEvent(event: AccessEvent): Unit = {
+  private def applyUserAddedEvent(event: AccessEvent): Unit =
     onValidRoleEventAndVersion(event,
                                event.getRole.eventType.isUserAdded,
                                event.getRole.getUserAdded.getVersion) { (role, time) =>
       role.addUser(UserId(event.getRole.getUserAdded.getId)).map(r => updateRole(r, time))
     }
-  }
 
-  private def applyParentAddedEvent(event: AccessEvent): Unit = {
+  private def applyParentAddedEvent(event: AccessEvent): Unit =
     onValidRoleEventAndVersion(event,
                                event.getRole.eventType.isParentAdded,
                                event.getRole.getParentAdded.getVersion) { (role, time) =>
       role.addParent(AccessItemId(event.getRole.getParentAdded.getId)).map(r => updateRole(r, time))
     }
-  }
 
-  private def applyChildAddedEvent(event: AccessEvent): Unit = {
+  private def applyChildAddedEvent(event: AccessEvent): Unit =
     onValidRoleEventAndVersion(event,
                                event.getRole.eventType.isChildAdded,
                                event.getRole.getChildAdded.getVersion) { (role, time) =>
       role.addChild(AccessItemId(event.getRole.getChildAdded.getId)).map(r => updateRole(r, time))
     }
-  }
 
-  private def applyUserRemovedEvent(event: AccessEvent): Unit = {
+  private def applyUserRemovedEvent(event: AccessEvent): Unit =
     onValidRoleEventAndVersion(event,
                                event.getRole.eventType.isUserRemoved,
                                event.getRole.getUserRemoved.getVersion) { (role, time) =>
       role.removeUser(UserId(event.getRole.getUserRemoved.getId)).map(r => updateRole(r, time))
     }
-  }
 
-  private def applyParentRemovedEvent(event: AccessEvent): Unit = {
+  private def applyParentRemovedEvent(event: AccessEvent): Unit =
     onValidRoleEventAndVersion(event,
                                event.getRole.eventType.isParentRemoved,
-                               event.getRole.getParentRemoved.getVersion) {
-      (role, time) =>
+                               event.getRole.getParentRemoved.getVersion) { (role, time) =>
       role.removeParent(AccessItemId(event.getRole.getParentRemoved.getId)).map(r => updateRole(r, time))
     }
-  }
 
-  private def applyChildRemovedEvent(event: AccessEvent): Unit = {
+  private def applyChildRemovedEvent(event: AccessEvent): Unit =
     onValidRoleEventAndVersion(event,
                                event.getRole.eventType.isChildRemoved,
-                               event.getRole.getChildRemoved.getVersion) {
-      (role, time) =>
+                               event.getRole.getChildRemoved.getVersion) { (role, time) =>
       role.removeChild(AccessItemId(event.getRole.getChildRemoved.getId)).map(r => updateRole(r, time))
     }
-  }
 
-  private def applyRoleRemovedEvent(event: AccessEvent): Unit = {
-    onValidRoleEventAndVersion(event,
-                               event.getRole.eventType.isRemoved,
-                               event.getRole.getRemoved.getVersion) {
+  private def applyRoleRemovedEvent(event: AccessEvent): Unit =
+    onValidRoleEventAndVersion(event, event.getRole.eventType.isRemoved, event.getRole.getRemoved.getVersion) {
       (role, time) =>
-      accessItemRepository.remove(role)
-      ().successNel[String]
+        accessItemRepository.remove(role)
+        ().successNel[String]
     }
-  }
 
   val ErrMsgNameExists: String = "name already used"
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  private def nameAvailable(name: String): ServiceValidation[Unit] = {
+  private def nameAvailable(name: String): ServiceValidation[Unit] =
     nameAvailableMatcher(name, accessItemRepository, ErrMsgNameExists) { item =>
       item.name == name
     }
-  }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  private def nameAvailable(name: String, excludeId: AccessItemId): ServiceValidation[Unit] = {
-    nameAvailableMatcher(name, accessItemRepository, ErrMsgNameExists){ item =>
+  private def nameAvailable(name: String, excludeId: AccessItemId): ServiceValidation[Unit] =
+    nameAvailableMatcher(name, accessItemRepository, ErrMsgNameExists) { item =>
       (item.name == name) && (item.id != excludeId)
     }
-  }
 
-  private def init(): Unit = {
+  private def init(): Unit =
     accessItemRepository.init
-  }
 
   init
 }

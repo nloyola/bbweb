@@ -20,37 +20,35 @@ import scala.language.reflectiveCalls
  * Tests the REST API for [[domain.studies.Study Study]].
  */
 class StudiesControllerSpec
-    extends ControllerFixture
-    with AnnotationTypeJson
-    with PagedResultsSharedSpec
-    with PagedResultsMatchers {
+    extends ControllerFixture with AnnotationTypeJson with PagedResultsSharedSpec with PagedResultsMatchers {
 
   import org.biobank.TestUtils._
   import org.biobank.matchers.JsonMatchers._
   import org.biobank.matchers.EntityMatchers._
 
   class CollectionFixture {
-    val study = factory.createEnabledStudy
+    val study              = factory.createEnabledStudy
     val specimenDefinition = factory.createCollectionSpecimenDefinition
-    val ceventType = factory.createCollectionEventType.copy(studyId               = study.id,
-                                                            specimenDefinitions = Set(specimenDefinition),
-                                                            annotationTypes      = Set.empty)
+
+    val ceventType = factory.createCollectionEventType
+      .copy(studyId = study.id, specimenDefinitions = Set(specimenDefinition), annotationTypes = Set.empty)
     val participant = factory.createParticipant.copy(studyId = study.id)
-    val cevent = factory.createCollectionEvent
-    val centre = factory.createEnabledCentre.copy(studyIds  = Set(study.id),
-                                                  locations = Set(factory.createLocation))
+    val cevent      = factory.createCollectionEvent
+
+    val centre =
+      factory.createEnabledCentre.copy(studyIds = Set(study.id), locations = Set(factory.createLocation))
 
     Set(centre, study, ceventType, participant, cevent).foreach(addToRepository)
   }
 
   protected val basePath = "studies"
 
-  private def urlName(study: Study): Url = uri("name", study.id.id)
+  private def urlName(study:        Study): Url = uri("name", study.id.id)
   private def urlDescription(study: Study): Url = uri("description", study.id.id)
-  private def urlDisable(study: Study): Url = uri("disable", study.id.id)
-  private def urlEnable(study: Study): Url = uri("enable", study.id.id)
-  private def urlRetire(study: Study): Url = uri("retire", study.id.id)
-  private def urlUnretire(study: Study): Url = uri("unretire", study.id.id)
+  private def urlDisable(study:     Study): Url = uri("disable", study.id.id)
+  private def urlEnable(study:      Study): Url = uri("enable", study.id.id)
+  private def urlRetire(study:      Study): Url = uri("retire", study.id.id)
+  private def urlUnretire(study:    Study): Url = uri("unretire", study.id.id)
 
   private def urlAddAnnotationType(study: Study) = uri("pannottype", study.id.id)
 
@@ -62,18 +60,17 @@ class StudiesControllerSpec
     describe("GET /api/studies/collectionStudies") {
 
       it("returns the studies that a user can collect specimens for") {
-        val f = new CollectionFixture
+        val f     = new CollectionFixture
         val reply = makeAuthRequest(GET, uri("collectionStudies")).value
         reply must beOkResponseWithJsonReply
 
         val json = contentAsJson(reply)
         val dtos = (json \ "data").validate[List[EntityInfoAndStateDto]]
-        dtos must be (jsSuccess)
+        dtos must be(jsSuccess)
         dtos.get must have size 1
-        dtos.get(0) must equal (EntityInfoAndStateDto(f.study.id.id,
-                                                f.study.slug,
-                                                f.study.name,
-                                                f.study.state.id))
+        dtos.get(0) must equal(
+          EntityInfoAndStateDto(f.study.id.id, f.study.slug, f.study.name, f.study.state.id)
+        )
       }
 
       it("when study disabled, returns zero studies") {
@@ -85,7 +82,7 @@ class StudiesControllerSpec
 
         val json = contentAsJson(reply)
         val dtos = (json \ "data").validate[List[EntityInfoAndStateDto]]
-        dtos must be (jsSuccess)
+        dtos must be(jsSuccess)
         dtos.get must have size 0
       }
 
@@ -98,7 +95,7 @@ class StudiesControllerSpec
 
         val json = contentAsJson(reply)
         val dtos = (json \ "data").validate[List[EntityInfoAndStateDto]]
-        dtos must be (jsSuccess)
+        dtos must be(jsSuccess)
         dtos.get must have size 0
       }
 
@@ -109,10 +106,10 @@ class StudiesControllerSpec
       it("return empty counts") {
         val reply = makeAuthRequest(GET, uri("counts")).value
         reply must beOkResponseWithJsonReply
-        val json = contentAsJson(reply)
+        val json   = contentAsJson(reply)
         val counts = (json \ "data").validate[StudyCountsByStatus]
-        counts must be (jsSuccess)
-        counts.get must equal (StudyCountsByStatus(0, 0, 0, 0))
+        counts must be(jsSuccess)
+        counts.get must equal(StudyCountsByStatus(0, 0, 0, 0))
       }
 
       it("return valid counts") {
@@ -127,10 +124,10 @@ class StudiesControllerSpec
 
         val reply = makeAuthRequest(GET, uri("counts")).value
         reply must beOkResponseWithJsonReply
-        val json = contentAsJson(reply)
+        val json   = contentAsJson(reply)
         val counts = (json \ "data").validate[StudyCountsByStatus]
-        counts must be (jsSuccess)
-        counts.get must equal (StudyCountsByStatus(6, 3, 2, 1))
+        counts must be(jsSuccess)
+        counts.get must equal(StudyCountsByStatus(6, 3, 2, 1))
       }
 
     }
@@ -155,8 +152,7 @@ class StudiesControllerSpec
       describe("list multiple studies") {
 
         listMultipleStudies() { () =>
-          val studies = List(factory.createDisabledStudy,
-                             factory.createDisabledStudy)
+          val studies = List(factory.createDisabledStudy, factory.createDisabledStudy)
           studies.foreach(studyRepository.put)
           (uri("search"), studies.sortWith(_.name < _.name))
         }
@@ -176,9 +172,8 @@ class StudiesControllerSpec
       describe("list a single disabled study when filtered by status") {
 
         listSingleStudy() { () =>
-          val studies = List(factory.createDisabledStudy,
-                             factory.createEnabledStudy,
-                           factory.createRetiredStudy)
+          val studies =
+            List(factory.createDisabledStudy, factory.createEnabledStudy, factory.createRetiredStudy)
           studies.foreach(studyRepository.put)
           (new Url(uri("search") + s"?filter=state::disabled"), studies(0))
         }
@@ -200,7 +195,10 @@ class StudiesControllerSpec
 
           listMultipleStudies() { () =>
             (new Url(uri("search") + s"?filter=state::disabled"),
-             commonSetup.filter { c => c.state == Study.disabledState  }.sortWith(_.name < _.name))
+             commonSetup
+               .filter { c =>
+                 c.state == Study.disabledState
+               }.sortWith(_.name < _.name))
           }
 
         }
@@ -209,15 +207,18 @@ class StudiesControllerSpec
 
           listMultipleStudies() { () =>
             (new Url(uri("search") + s"?filter=state::enabled"),
-             commonSetup.filter { c => c.state == Study.enabledState  }.sortWith(_.name < _.name))
+             commonSetup
+               .filter { c =>
+                 c.state == Study.enabledState
+               }.sortWith(_.name < _.name))
           }
 
         }
 
         it("fail with an invalid state name") {
           val invalidStateName = "state::" + nameGenerator.next[Study]
-          val reply = makeAuthRequest(GET, uri("search").addQueryString(s"filter=$invalidStateName")).value
-          reply must beNotFoundWithMessage ("InvalidState: entity state does not exist")
+          val reply            = makeAuthRequest(GET, uri("search").addQueryString(s"filter=$invalidStateName")).value
+          reply must beNotFoundWithMessage("InvalidState: entity state does not exist")
         }
 
       }
@@ -227,8 +228,8 @@ class StudiesControllerSpec
         def commonSetup = {
           val studies = List(factory.createDisabledStudy.copy(name = "CTR3"),
                              factory.createDisabledStudy.copy(name = "CTR2"),
-                             factory.createEnabledStudy.copy(name = "CTR1"),
-                             factory.createEnabledStudy.copy(name = "CTR0"))
+                             factory.createEnabledStudy.copy(name  = "CTR1"),
+                             factory.createEnabledStudy.copy(name  = "CTR0"))
           studies.foreach(studyRepository.put)
           studies
         }
@@ -275,8 +276,8 @@ class StudiesControllerSpec
 
         it("fail with an invalid state name") {
           val invalidStateName = nameGenerator.next[Study]
-          val reply = makeAuthRequest(GET, uri("search").addQueryString(s"sort=$invalidStateName")).value
-          reply must beBadRequestWithMessage ("could not parse sort expression")
+          val reply            = makeAuthRequest(GET, uri("search").addQueryString(s"sort=$invalidStateName")).value
+          reply must beBadRequestWithMessage("could not parse sort expression")
         }
 
       }
@@ -286,8 +287,8 @@ class StudiesControllerSpec
         def commonSetup = {
           val studies = List(factory.createDisabledStudy.copy(name = "CTR3"),
                              factory.createDisabledStudy.copy(name = "CTR2"),
-                             factory.createEnabledStudy.copy(name = "CTR1"),
-                             factory.createEnabledStudy.copy(name = "CTR0"))
+                             factory.createEnabledStudy.copy(name  = "CTR1"),
+                             factory.createEnabledStudy.copy(name  = "CTR0"))
           studies.foreach(studyRepository.put)
           studies
         }
@@ -326,13 +327,13 @@ class StudiesControllerSpec
         reply must beOkResponseWithJsonReply
 
         val json = contentAsJson(reply)
-        json must containValue((JsPath \ "data" ), Json.toJson(study))
+        json must containValue((JsPath \ "data"), Json.toJson(study))
       }
 
       it("fails for an invalid study ID") {
         val study = factory.createEnabledStudy
         val reply = makeAuthRequest(GET, uri(study.slug.id)).value
-        reply must beNotFoundWithMessage ("EntityCriteriaNotFound: study slug")
+        reply must beNotFoundWithMessage("EntityCriteriaNotFound: study slug")
       }
 
     }
@@ -340,20 +341,19 @@ class StudiesControllerSpec
     describe("POST /api/studies") {
 
       it("add a study") {
-        val study = factory.createDisabledStudy
-        val reqJson = Json.obj("name" -> study.name,
-                               "description" -> study.description)
+        val study   = factory.createDisabledStudy
+        val reqJson = Json.obj("name" -> study.name, "description" -> study.description)
 
         val reply = makeAuthRequest(POST, uri(""), reqJson).value
         reply must beOkResponseWithJsonReply
 
         val replyStudy = (contentAsJson(reply) \ "data").validate[Study]
-        replyStudy must be (jsSuccess)
+        replyStudy must be(jsSuccess)
 
         studyRepository.getByKey(replyStudy.get.id) mustSucceed { repoStudy =>
           val updatedStudy = study.copy(id = replyStudy.get.id)
-          replyStudy.get must matchStudy (updatedStudy)
-          repoStudy must matchStudy (updatedStudy)
+          replyStudy.get must matchStudy(updatedStudy)
+          repoStudy must matchStudy(updatedStudy)
         }
       }
 
@@ -361,14 +361,14 @@ class StudiesControllerSpec
         val study = factory.createDisabledStudy
         studyRepository.put(study)
 
-        val resp = makeAuthRequest(POST, uri(""), Json.obj("name" -> study.name,
-                                                           "description" -> study.description))
+        val resp =
+          makeAuthRequest(POST, uri(""), Json.obj("name" -> study.name, "description" -> study.description))
         resp.value must beBadRequestWithMessage("EntityCriteriaError.*name already used")
       }
 
       it("not add add a new study an empty name") {
         val reply = makeAuthRequest(POST, uri(""), Json.obj("name" -> ""))
-        reply.value must beBadRequestWithMessage ("InvalidName")
+        reply.value must beBadRequestWithMessage("InvalidName")
       }
 
     }
@@ -377,38 +377,37 @@ class StudiesControllerSpec
 
       it("update a study's name") {
         val newName = nameGenerator.next[Study]
-        val study = factory.createDisabledStudy
+        val study   = factory.createDisabledStudy
         studyRepository.put(study)
 
-        val reqJson = Json.obj("expectedVersion" -> Some(study.version),
-                               "name"            -> newName)
-        val reply = makeAuthRequest(POST, uri("name", study.id.id), reqJson).value
+        val reqJson = Json.obj("expectedVersion" -> Some(study.version), "name" -> newName)
+        val reply   = makeAuthRequest(POST, uri("name", study.id.id), reqJson).value
         reply must beOkResponseWithJsonReply
 
         val replyStudy = (contentAsJson(reply) \ "data").validate[Study]
-        replyStudy must be (jsSuccess)
+        replyStudy must be(jsSuccess)
 
-        val updatedStudy = study.copy(version      = study.version + 1,
+        val updatedStudy = study.copy(version = study.version + 1,
                                       name         = newName,
                                       slug         = Slug(newName),
                                       timeModified = Some(OffsetDateTime.now))
-        replyStudy.get must matchStudy (updatedStudy)
+        replyStudy.get must matchStudy(updatedStudy)
         studyRepository.getByKey(study.id) mustSucceed { repoStudy =>
-          repoStudy must matchStudy (updatedStudy)
+          repoStudy must matchStudy(updatedStudy)
         }
       }
 
       it("not update a study with a duplicate name") {
         val studies = (1 to 2).map { _ =>
-            val study = factory.createDisabledStudy
-            studyRepository.put(study)
-            study
-          }
+          val study = factory.createDisabledStudy
+          studyRepository.put(study)
+          study
+        }
 
-        val reply = makeAuthRequest(POST,
-                                    uri("name", studies(0).id.id),
-                                    Json.obj("expectedVersion" -> Some(studies(0).version),
-                                             "name"            -> studies(1).name))
+        val reply =
+          makeAuthRequest(POST,
+                          uri("name", studies(0).id.id),
+                          Json.obj("expectedVersion" -> Some(studies(0).version), "name" -> studies(1).name))
         reply.value must beBadRequestWithMessage("EntityCriteriaError.*name already used")
       }
 
@@ -417,9 +416,8 @@ class StudiesControllerSpec
         studyRepository.put(study)
 
         val reply = makeAuthRequest(POST,
-                                   uri("name", study.id.id),
-                                   Json.obj("expectedVersion" -> Some(study.version),
-                                            "name"            -> "a"))
+                                    uri("name", study.id.id),
+                                    Json.obj("expectedVersion" -> Some(study.version), "name" -> "a"))
         reply.value must beBadRequestWithMessage("InvalidName")
       }
 
@@ -429,15 +427,13 @@ class StudiesControllerSpec
 
       describe("fail when updating name with invalid version") {
 
-        updateWithInvalidVersionSharedBehaviour(urlName,
-                                                Json.obj("name" -> nameGenerator.next[Study]))
+        updateWithInvalidVersionSharedBehaviour(urlName, Json.obj("name" -> nameGenerator.next[Study]))
 
       }
 
       describe("fail when updating name on a non disabled study") {
 
-        updateNonDisabledStudySharedBehaviour(Json.obj("name" -> nameGenerator.next[Study]),
-                                              urlName)
+        updateNonDisabledStudySharedBehaviour(Json.obj("name" -> nameGenerator.next[Study]), urlName)
       }
 
     }
@@ -446,23 +442,22 @@ class StudiesControllerSpec
 
       it("update a study's description") {
         val newDescription = Some(nameGenerator.next[Study])
-        val study = factory.createDisabledStudy
+        val study          = factory.createDisabledStudy
         studyRepository.put(study)
 
-        val reqJson = Json.obj("expectedVersion" -> study.version,
-                               "description"     -> newDescription)
-        val reply = makeAuthRequest(POST, uri("description", study.id.id), reqJson).value
+        val reqJson = Json.obj("expectedVersion" -> study.version, "description" -> newDescription)
+        val reply   = makeAuthRequest(POST, uri("description", study.id.id), reqJson).value
         reply must beOkResponseWithJsonReply
 
         val replyStudy = (contentAsJson(reply) \ "data").validate[Study]
-        replyStudy must be (jsSuccess)
+        replyStudy must be(jsSuccess)
 
-        val updatedStudy = study.copy(version      = study.version + 1,
+        val updatedStudy = study.copy(version = study.version + 1,
                                       description  = newDescription,
                                       timeModified = Some(OffsetDateTime.now))
-        replyStudy.get must matchStudy (updatedStudy)
+        replyStudy.get must matchStudy(updatedStudy)
         studyRepository.getByKey(study.id) mustSucceed { repoStudy =>
-          repoStudy must matchStudy (updatedStudy)
+          repoStudy must matchStudy(updatedStudy)
         }
       }
 
@@ -491,31 +486,30 @@ class StudiesControllerSpec
 
       it("add a participant annotation type") {
         val annotType = factory.createAnnotationType
-        val study = factory.createDisabledStudy
+        val study     = factory.createDisabledStudy
         studyRepository.put(study)
 
-        val reqJson = Json.obj(
-            "id"              -> study.id.id,
-            "expectedVersion" -> Some(study.version),
-            "name"            -> annotType.name,
-            "description"     -> annotType.description,
-            "valueType"       -> annotType.valueType,
-            "options"         -> annotType.options,
-            "required"        -> annotType.required)
+        val reqJson = Json.obj("id" -> study.id.id,
+                               "expectedVersion" -> Some(study.version),
+                               "name"            -> annotType.name,
+                               "description"     -> annotType.description,
+                               "valueType"       -> annotType.valueType,
+                               "options"         -> annotType.options,
+                               "required"        -> annotType.required)
 
         val reply = makeAuthRequest(POST, uri("pannottype", study.id.id), reqJson).value
         reply must beOkResponseWithJsonReply
 
         val replyStudy = (contentAsJson(reply) \ "data").validate[Study]
-        replyStudy must be (jsSuccess)
+        replyStudy must be(jsSuccess)
 
         val updatedAnnotationType = annotType.copy(id = replyStudy.get.annotationTypes.head.id)
-        val updatedStudy = study.copy(version         = study.version + 1,
+        val updatedStudy = study.copy(version = study.version + 1,
                                       annotationTypes = Set(updatedAnnotationType),
                                       timeModified    = Some(OffsetDateTime.now))
-        replyStudy.get must matchStudy (updatedStudy)
+        replyStudy.get must matchStudy(updatedStudy)
         studyRepository.getByKey(study.id) mustSucceed { repoStudy =>
-          repoStudy must matchStudy (updatedStudy)
+          repoStudy must matchStudy(updatedStudy)
         }
       }
 
@@ -543,34 +537,32 @@ class StudiesControllerSpec
 
       it("update a participant annotation type") {
         val annotType = factory.createAnnotationType
-        val newName = nameGenerator.next[Study]
-        val study = factory.createDisabledStudy.copy(annotationTypes = Set(annotType))
+        val newName   = nameGenerator.next[Study]
+        val study     = factory.createDisabledStudy.copy(annotationTypes = Set(annotType))
         studyRepository.put(study)
 
-        val reqJson = Json.obj(
-            "id"               -> study.id.id,
-            "expectedVersion"  -> Some(study.version),
-            "annotationTypeId" -> annotType.id,
-            "name"             -> newName,
-            "description"      -> annotType.description,
-            "valueType"        -> annotType.valueType,
-            "options"          -> annotType.options,
-            "required"         -> annotType.required)
+        val reqJson = Json.obj("id" -> study.id.id,
+                               "expectedVersion"  -> Some(study.version),
+                               "annotationTypeId" -> annotType.id,
+                               "name"             -> newName,
+                               "description"      -> annotType.description,
+                               "valueType"        -> annotType.valueType,
+                               "options"          -> annotType.options,
+                               "required"         -> annotType.required)
 
         val reply = makeAuthRequest(POST, uri("pannottype", study.id.id, annotType.id.id), reqJson).value
         reply must beOkResponseWithJsonReply
 
         val replyStudy = (contentAsJson(reply) \ "data").validate[Study]
-        replyStudy must be (jsSuccess)
+        replyStudy must be(jsSuccess)
 
-        val updatedAnnotationType = annotType.copy(slug = Slug(newName),
-                                                   name = newName)
-        val updatedStudy = study.copy(version         = study.version + 1,
+        val updatedAnnotationType = annotType.copy(slug = Slug(newName), name = newName)
+        val updatedStudy = study.copy(version = study.version + 1,
                                       annotationTypes = Set(updatedAnnotationType),
                                       timeModified    = Some(OffsetDateTime.now))
-        replyStudy.get must matchStudy (updatedStudy)
+        replyStudy.get must matchStudy(updatedStudy)
         studyRepository.getByKey(study.id) mustSucceed { repoStudy =>
-          repoStudy must matchStudy (updatedStudy)
+          repoStudy must matchStudy(updatedStudy)
         }
       }
 
@@ -602,64 +594,62 @@ class StudiesControllerSpec
 
       it("remove a participant annotation type") {
         val annotationType = factory.createAnnotationType
-        val study = factory.createDisabledStudy.copy(annotationTypes = Set(annotationType))
+        val study          = factory.createDisabledStudy.copy(annotationTypes = Set(annotationType))
         studyRepository.put(study)
 
-        val url = uri("pannottype", study.id.id, s"${study.version}/${annotationType.id}")
+        val url   = uri("pannottype", study.id.id, s"${study.version}/${annotationType.id}")
         val reply = makeAuthRequest(DELETE, url).value
         reply must beOkResponseWithJsonReply
 
         val replyStudy = (contentAsJson(reply) \ "data").validate[Study]
-        replyStudy must be (jsSuccess)
+        replyStudy must be(jsSuccess)
 
-        val updatedStudy = study.copy(version         = study.version + 1,
+        val updatedStudy = study.copy(version = study.version + 1,
                                       annotationTypes = Set.empty[AnnotationType],
                                       timeModified    = Some(OffsetDateTime.now))
-        replyStudy.get must matchStudy (updatedStudy)
+        replyStudy.get must matchStudy(updatedStudy)
         studyRepository.getByKey(replyStudy.get.id) mustSucceed { repoStudy =>
-          repoStudy must matchStudy (updatedStudy)
+          repoStudy must matchStudy(updatedStudy)
         }
       }
 
       it("fail when removing annotation type and an invalid version") {
         val annotationType = factory.createAnnotationType
-        val study = factory.createDisabledStudy.copy(annotationTypes = Set(annotationType))
-        val badVersion = study.version + 1
+        val study          = factory.createDisabledStudy.copy(annotationTypes = Set(annotationType))
+        val badVersion     = study.version + 1
         studyRepository.put(study)
 
-        val url = uri("pannottype", study.id.id, s"${badVersion}/${annotationType.id}")
+        val url   = uri("pannottype", study.id.id, s"${badVersion}/${annotationType.id}")
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
       }
 
       it("fail when removing annotation type and study ID does not exist") {
         val studyId = nameGenerator.next[Study]
-        val reply = makeAuthRequest(DELETE, uri(s"pannottype/$studyId/0/xyz"))
+        val reply   = makeAuthRequest(DELETE, uri(s"pannottype/$studyId/0/xyz"))
         reply.value must beNotFoundWithMessage("IdNotFound.*study")
       }
 
       it("fail when removing an annotation type that does not exist") {
-        val badUniqueId = nameGenerator.next[Study]
+        val badUniqueId    = nameGenerator.next[Study]
         val annotationType = factory.createAnnotationType
-        val study = factory.createDisabledStudy.copy(annotationTypes = Set(annotationType))
+        val study          = factory.createDisabledStudy.copy(annotationTypes = Set(annotationType))
         studyRepository.put(study)
 
-        val reply = makeAuthRequest(DELETE,
-                                    uri("pannottype", study.id.id, s"${study.version}/$badUniqueId"))
+        val reply = makeAuthRequest(DELETE, uri("pannottype", study.id.id, s"${study.version}/$badUniqueId"))
         reply.value must beNotFoundWithMessage("annotation type does not exist")
       }
 
       it("fail when removing an annotation type on a non disabled study") {
         val annotationType = factory.createAnnotationType
-        val enabledStudy = factory.createEnabledStudy.copy(annotationTypes = Set(annotationType))
-        val retiredStudy = factory.createRetiredStudy.copy(annotationTypes = Set(annotationType))
+        val enabledStudy   = factory.createEnabledStudy.copy(annotationTypes = Set(annotationType))
+        val retiredStudy   = factory.createRetiredStudy.copy(annotationTypes = Set(annotationType))
 
         forAll(Table("studies", enabledStudy, retiredStudy)) { study =>
           studyRepository.put(study)
 
-          val reply = makeAuthRequest(
-              DELETE,
-              uri("pannottype", study.id.id, s"${study.version}/${annotationType.id}"))
+          val reply =
+            makeAuthRequest(DELETE, uri("pannottype", study.id.id, s"${study.version}/${annotationType.id}"))
 
           reply.value must beBadRequestWithMessage("InvalidStatus: study not disabled")
         }
@@ -673,22 +663,22 @@ class StudiesControllerSpec
         val study = factory.createDisabledStudy
         studyRepository.put(study)
 
-        val cet = factory.createCollectionEventType.copy(
-            studyId              = study.id,
-            specimenDefinitions = Set(factory.createCollectionSpecimenDefinition))
+        val cet = factory.createCollectionEventType.copy(studyId = study.id,
+                                                         specimenDefinitions =
+                                                           Set(factory.createCollectionSpecimenDefinition))
         collectionEventTypeRepository.put(cet)
 
         val reqJson = Json.obj("expectedVersion" -> Some(study.version))
-        val reply = makeAuthRequest(POST, uri("enable", study.id.id), reqJson).value
+        val reply   = makeAuthRequest(POST, uri("enable", study.id.id), reqJson).value
         reply must beOkResponseWithJsonReply
 
         val replyStudy = (contentAsJson(reply) \ "data").validate[Study]
-        replyStudy must be (jsSuccess)
+        replyStudy must be(jsSuccess)
 
         study.enable.mustSucceed { updatedStudy =>
-          replyStudy.get must matchStudy (updatedStudy)
+          replyStudy.get must matchStudy(updatedStudy)
           studyRepository.getByKey(replyStudy.get.id) mustSucceed { repoStudy =>
-            repoStudy must matchStudy (updatedStudy)
+            repoStudy must matchStudy(updatedStudy)
           }
         }
       }
@@ -701,7 +691,7 @@ class StudiesControllerSpec
         collectionEventTypeRepository.put(cet)
 
         val reqJson = Json.obj("expectedVersion" -> Some(study.version))
-        val reply = makeAuthRequest(POST, uri("enable", study.id.id), reqJson)
+        val reply   = makeAuthRequest(POST, uri("enable", study.id.id), reqJson)
         reply.value must beBadRequestWithMessage("no collection specimen specs")
       }
 
@@ -710,7 +700,7 @@ class StudiesControllerSpec
         studyRepository.put(study)
 
         val reqJson = Json.obj("expectedVersion" -> Some(study.version))
-        val reply = makeAuthRequest(POST, uri("enable", study.id.id), reqJson)
+        val reply   = makeAuthRequest(POST, uri("enable", study.id.id), reqJson)
         reply.value must beBadRequestWithMessage("no collection event types")
       }
 
@@ -719,12 +709,12 @@ class StudiesControllerSpec
         studyRepository.put(study)
 
         val updateJson = Json.obj("expectedVersion" -> Some(study.version))
-        val reply = makeAuthRequest(POST, uri("enable", study.id.id), updateJson).value
+        val reply      = makeAuthRequest(POST, uri("enable", study.id.id), updateJson).value
         reply must beBadRequestWithMessage("InvalidStatus: study not disabled")
       }
 
       it("fail when enabling a study and the study ID is invalid") {
-        val study = factory.createDisabledStudy
+        val study   = factory.createDisabledStudy
         val reqJson = Json.obj("expectedVersion" -> Some(study.version))
 
         val reply = makeAuthRequest(POST, uri("enable", study.id.id), reqJson)
@@ -750,16 +740,16 @@ class StudiesControllerSpec
         studyRepository.put(study)
 
         val reqJson = Json.obj("expectedVersion" -> Some(study.version))
-        val reply = makeAuthRequest(POST, uri("disable", study.id.id), reqJson).value
+        val reply   = makeAuthRequest(POST, uri("disable", study.id.id), reqJson).value
         reply must beOkResponseWithJsonReply
 
         val replyStudy = (contentAsJson(reply) \ "data").validate[Study]
-        replyStudy must be (jsSuccess)
+        replyStudy must be(jsSuccess)
 
         study.disable mustSucceed { updatedStudy =>
-          replyStudy.get must matchStudy (updatedStudy)
+          replyStudy.get must matchStudy(updatedStudy)
           studyRepository.getByKey(replyStudy.get.id) mustSucceed { repoStudy =>
-            repoStudy must matchStudy (updatedStudy)
+            repoStudy must matchStudy(updatedStudy)
           }
         }
       }
@@ -769,7 +759,7 @@ class StudiesControllerSpec
         studyRepository.put(study)
 
         val updateJson = Json.obj("expectedVersion" -> Some(study.version))
-        val reply = makeAuthRequest(POST, uri("disable", study.id.id), updateJson).value
+        val reply      = makeAuthRequest(POST, uri("disable", study.id.id), updateJson).value
         reply must beBadRequestWithMessage("InvalidStatus: study not enabled")
       }
 
@@ -794,12 +784,12 @@ class StudiesControllerSpec
         reply must beOkResponseWithJsonReply
 
         val replyStudy = (contentAsJson(reply) \ "data").validate[Study]
-        replyStudy must be (jsSuccess)
+        replyStudy must be(jsSuccess)
 
         study.retire mustSucceed { updatedStudy =>
-          replyStudy.get must matchStudy (updatedStudy)
+          replyStudy.get must matchStudy(updatedStudy)
           studyRepository.getByKey(replyStudy.get.id) mustSucceed { repoStudy =>
-            repoStudy must matchStudy (updatedStudy)
+            repoStudy must matchStudy(updatedStudy)
           }
         }
       }
@@ -809,7 +799,7 @@ class StudiesControllerSpec
         studyRepository.put(study)
 
         val updateJson = Json.obj("expectedVersion" -> Some(study.version))
-        val reply = makeAuthRequest(POST, uri("retire", study.id.id), updateJson).value
+        val reply      = makeAuthRequest(POST, uri("retire", study.id.id), updateJson).value
         reply must beBadRequestWithMessage("InvalidStatus: study not disabled")
       }
 
@@ -829,16 +819,16 @@ class StudiesControllerSpec
         studyRepository.put(study)
 
         val reqJson = Json.obj("expectedVersion" -> Some(study.version))
-        val reply = makeAuthRequest(POST, uri("unretire", study.id.id), reqJson).value
+        val reply   = makeAuthRequest(POST, uri("unretire", study.id.id), reqJson).value
         reply must beOkResponseWithJsonReply
 
         val replyStudy = (contentAsJson(reply) \ "data").validate[Study]
-        replyStudy must be (jsSuccess)
+        replyStudy must be(jsSuccess)
 
         study.unretire mustSucceed { updatedStudy =>
-          replyStudy.get must matchStudy (updatedStudy)
+          replyStudy.get must matchStudy(updatedStudy)
           studyRepository.getByKey(replyStudy.get.id) mustSucceed { repoStudy =>
-            repoStudy must matchStudy (updatedStudy)
+            repoStudy must matchStudy(updatedStudy)
           }
         }
       }
@@ -849,7 +839,7 @@ class StudiesControllerSpec
         forAll(studyTable) { study =>
           studyRepository.put(study)
           val updateJson = Json.obj("expectedVersion" -> Some(study.version))
-          val reply = makeAuthRequest(POST, uri("unretire", study.id.id), updateJson).value
+          val reply      = makeAuthRequest(POST, uri("unretire", study.id.id), updateJson).value
           reply must beBadRequestWithMessage("InvalidStatus: study not retired")
         }
       }
@@ -869,7 +859,7 @@ class StudiesControllerSpec
         val reply = makeAuthRequest(GET, uri("valuetypes")).value
         reply must beOkResponseWithJsonReply
         val values = (contentAsJson(reply) \ "data").validate[List[String]]
-        values must be (jsSuccess)
+        values must be(jsSuccess)
         values.get.size must be > 0
         values.get.foreach { value =>
           AnnotationValueType.withName(value)
@@ -882,7 +872,7 @@ class StudiesControllerSpec
         val reply = makeAuthRequest(GET, uri("anatomicalsrctypes")).value
         reply must beOkResponseWithJsonReply
         val values = (contentAsJson(reply) \ "data").validate[List[String]]
-        values must be (jsSuccess)
+        values must be(jsSuccess)
         values.get.size must be > 0
         values.get.foreach { value =>
           AnatomicalSourceType.withName(value)
@@ -895,7 +885,7 @@ class StudiesControllerSpec
         val reply = makeAuthRequest(GET, uri("specimentypes")).value
         reply must beOkResponseWithJsonReply
         val values = (contentAsJson(reply) \ "data").validate[List[String]]
-        values must be (jsSuccess)
+        values must be(jsSuccess)
         values.get.size must be > 0
         values.get.foreach { value =>
           SpecimenType.withName(value)
@@ -908,7 +898,7 @@ class StudiesControllerSpec
         val reply = makeAuthRequest(GET, uri("preservtypes")).value
         reply must beOkResponseWithJsonReply
         val values = (contentAsJson(reply) \ "data").validate[List[String]]
-        values must be (jsSuccess)
+        values must be(jsSuccess)
         values.get.size must be > 0
         values.get.foreach { value =>
           PreservationType.withName(value)
@@ -921,7 +911,7 @@ class StudiesControllerSpec
         val reply = makeAuthRequest(GET, uri("preservtemptypes")).value
         reply must beOkResponseWithJsonReply
         val values = (contentAsJson(reply) \ "data").validate[List[String]]
-        values must be (jsSuccess)
+        values must be(jsSuccess)
         values.get.size must be > 0
         values.get.foreach { value =>
           PreservationTemperature.withName(value)
@@ -935,21 +925,21 @@ class StudiesControllerSpec
         reply must beOkResponseWithJsonReply
         val json = contentAsJson(reply)
 
-        (json \ "data" \ "anatomicalSourceType").as[List[String]].size    must be > 0
+        (json \ "data" \ "anatomicalSourceType").as[List[String]].size must be > 0
 
-        (json \ "data" \ "preservationType").as[List[String]].size        must be > 0
+        (json \ "data" \ "preservationType").as[List[String]].size must be > 0
 
         (json \ "data" \ "preservationTemperature").as[List[String]].size must be > 0
 
-        (json \ "data" \ "specimenType").as[List[String]].size            must be > 0
+        (json \ "data" \ "specimenType").as[List[String]].size must be > 0
       }
     }
 
     describe("GET /api/studies/names") {
 
       def fixture = {
-        val _studies = List(factory.createDisabledStudy.copy(name = "ABC"),
-                            factory.createDisabledStudy.copy(name = "DEF"))
+        val _studies =
+          List(factory.createDisabledStudy.copy(name = "ABC"), factory.createDisabledStudy.copy(name = "DEF"))
 
         studyRepository.removeAll
         _studies.foreach(studyRepository.put)
@@ -960,30 +950,30 @@ class StudiesControllerSpec
       }
 
       it("list multiple study names in ascending order") {
-        val f = fixture
+        val f     = fixture
         val reply = makeAuthRequest(GET, uri("names").addQueryString("order=asc")).value
         reply must beOkResponseWithJsonReply
-        val dtos = (contentAsJson(reply) \ "data" ).validate[Seq[EntityInfoAndStateDto]]
-        dtos must be (jsSuccess)
-        dtos.get must equal (Seq(EntityInfoAndStateDto(f.studies(0)), EntityInfoAndStateDto(f.studies(1))))
+        val dtos = (contentAsJson(reply) \ "data").validate[Seq[EntityInfoAndStateDto]]
+        dtos must be(jsSuccess)
+        dtos.get must equal(Seq(EntityInfoAndStateDto(f.studies(0)), EntityInfoAndStateDto(f.studies(1))))
       }
 
       it("list single study when using a filter") {
-        val f = fixture
+        val f     = fixture
         val reply = makeAuthRequest(GET, uri("names").addQueryString("filter=name::ABC")).value
         reply must beOkResponseWithJsonReply
-        val dtos = (contentAsJson(reply) \ "data" ).validate[Seq[EntityInfoAndStateDto]]
-        dtos must be (jsSuccess)
-        dtos.get must equal (Seq(EntityInfoAndStateDto(f.studies(0))))
+        val dtos = (contentAsJson(reply) \ "data").validate[Seq[EntityInfoAndStateDto]]
+        dtos must be(jsSuccess)
+        dtos.get must equal(Seq(EntityInfoAndStateDto(f.studies(0))))
       }
 
       it("list nothing when using a name filter for name not in system") {
         fixture // create studies to populate repository
         val reply = makeAuthRequest(GET, uri("names").addQueryString("filter=name::xxx")).value
         reply must beOkResponseWithJsonReply
-        val dtos = (contentAsJson(reply) \ "data" ).validate[Seq[EntityInfoAndStateDto]]
-        dtos must be (jsSuccess)
-        dtos.get must equal (Seq.empty[EntityInfoAndStateDto])
+        val dtos = (contentAsJson(reply) \ "data").validate[Seq[EntityInfoAndStateDto]]
+        dtos must be(jsSuccess)
+        dtos.get must equal(Seq.empty[EntityInfoAndStateDto])
       }
 
       it("fail for invalid sort field") {
@@ -996,19 +986,18 @@ class StudiesControllerSpec
     describe("GET /api/studies/centres/:id") {
 
       it("list the centres associated with a study") {
-        val study = factory.createEnabledStudy
+        val study    = factory.createEnabledStudy
         val location = factory.createLocation
-        val centre = factory.createEnabledCentre.copy(studyIds = Set(study.id),
-                                                      locations = Set(location))
+        val centre   = factory.createEnabledCentre.copy(studyIds = Set(study.id), locations = Set(location))
 
         Set(study, centre).foreach(addToRepository)
 
         val reply = makeAuthRequest(GET, uri("centres", study.id.id)).value
         reply must beOkResponseWithJsonReply
 
-        val dtos = (contentAsJson(reply) \ "data" ).validate[Seq[CentreLocation]]
-        dtos must be (jsSuccess)
-        dtos.get must equal (Seq(CentreLocation(centre, location)))
+        val dtos = (contentAsJson(reply) \ "data").validate[Seq[CentreLocation]]
+        dtos must be(jsSuccess)
+        dtos.get must equal(Seq(CentreLocation(centre, location)))
       }
 
     }
@@ -1030,62 +1019,58 @@ class StudiesControllerSpec
 
   }
 
-  private def updateNonDisabledStudySharedBehaviour(jsonField: JsObject,
-                                                    urlFunc:   Study => Url): Unit = {
+  private def updateNonDisabledStudySharedBehaviour(jsonField: JsObject, urlFunc: Study => Url): Unit =
     it("should return bad request") {
 
       val studiesTable = Table(("study", "state"),
                                (factory.createEnabledStudy, "enabled"),
                                (factory.createRetiredStudy, "retored"))
 
-      forAll (studiesTable) { (study, label) =>
+      forAll(studiesTable) { (study, label) =>
         info(label)
         studyRepository.put(study)
         val requestJson = Json.obj("expectedVersion" -> Some(study.version)) ++ jsonField
-        val reply = makeAuthRequest(POST, urlFunc(study), requestJson)
-        reply.value must beBadRequestWithMessage ("InvalidStatus: study not disabled")
+        val reply       = makeAuthRequest(POST, urlFunc(study), requestJson)
+        reply.value must beBadRequestWithMessage("InvalidStatus: study not disabled")
       }
     }
 
-  }
-
-  private def checkInvalidStudyIdSharedBehaviour(json: JsValue, urlFunc: Study => Url): Unit = {
-
+  private def checkInvalidStudyIdSharedBehaviour(json: JsValue, urlFunc: Study => Url): Unit =
     it("should return not found") {
       val invalidStudy = factory.createDisabledStudy
-      var reqJson = Json.obj("expectedVersion" -> 0L)
+      var reqJson      = Json.obj("expectedVersion" -> 0L)
       if (json != JsNull) {
         reqJson = reqJson ++ json.as[JsObject]
       }
       val reply = makeAuthRequest(POST, urlFunc(invalidStudy), reqJson).value
-      reply must beNotFoundWithMessage ("IdNotFound.*study")
+      reply must beNotFoundWithMessage("IdNotFound.*study")
     }
-  }
 
-  private def listSingleStudy(offset:    Long = 0,
-                               maybeNext: Option[Int] = None,
-                               maybePrev: Option[Int] = None)
-                              (setupFunc: () => (Url, Study)) = {
-
+  private def listSingleStudy(
+      offset:    Long = 0,
+      maybeNext: Option[Int] = None,
+      maybePrev: Option[Int] = None
+    )(setupFunc: () => (Url, Study)
+    ) =
     it("list single study") {
       val (url, expectedStudy) = setupFunc()
-      val reply = makeAuthRequest(GET, url).value
+      val reply                = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)
       json must beSingleItemResults(offset, maybeNext, maybePrev)
 
       val replyStudies = (json \ "data" \ "items").validate[List[Study]]
-      replyStudies must be (jsSuccess)
+      replyStudies must be(jsSuccess)
       replyStudies.get.foreach { _ must matchStudy(expectedStudy) }
     }
-  }
 
-  private def listMultipleStudies(offset:    Long = 0,
-                                  maybeNext: Option[Int] = None,
-                                  maybePrev: Option[Int] = None)
-                                 (setupFunc: () => (Url, List[Study])) = {
-
+  private def listMultipleStudies(
+      offset:    Long = 0,
+      maybeNext: Option[Int] = None,
+      maybePrev: Option[Int] = None
+    )(setupFunc: () => (Url, List[Study])
+    ) =
     it("list multiple studies") {
       val (url, expectedStudies) = setupFunc()
 
@@ -1093,19 +1078,18 @@ class StudiesControllerSpec
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)
-      json must beMultipleItemResults(offset = offset,
-                                      total = expectedStudies.size.toLong,
+      json must beMultipleItemResults(offset    = offset,
+                                      total     = expectedStudies.size.toLong,
                                       maybeNext = maybeNext,
                                       maybePrev = maybePrev)
 
       val replyStudies = (json \ "data" \ "items").validate[List[Study]]
-      replyStudies must be (jsSuccess)
+      replyStudies must be(jsSuccess)
 
-      (replyStudies.get zip expectedStudies).foreach { case (replyStudy, study) =>
-        replyStudy must matchStudy(study)
+      (replyStudies.get zip expectedStudies).foreach {
+        case (replyStudy, study) =>
+          replyStudy must matchStudy(study)
       }
     }
-
-  }
 
 }

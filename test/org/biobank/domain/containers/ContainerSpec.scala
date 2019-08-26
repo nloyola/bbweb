@@ -42,18 +42,16 @@ trait ContainerSharedSpec { this: FunSpec =>
     }
 
     it("can have it's inventory ID updated") {
-      val container = createEntity
+      val container   = createEntity
       val inventoryId = nameGenerator.next[Container]
       container.withInventoryId(inventoryId) mustSucceed { c =>
-        c must have (
-          'id              (container.id),
-          'version         (container.version + 1),
-          'slug            (container.slug.id),
-          'inventoryId     (inventoryId),
-          'containerTypeId (container.containerTypeId),
-          'parentId        (container.parentId),
-          'position        (container.position)
-        )
+        c must have('id (container.id),
+                    'version (container.version + 1),
+                    'slug (container.slug.id),
+                    'inventoryId (inventoryId),
+                    'containerTypeId (container.containerTypeId),
+                    'parentId (container.parentId),
+                    'position (container.position))
 
         c must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
       }
@@ -62,16 +60,14 @@ trait ContainerSharedSpec { this: FunSpec =>
     it("can have it's position ID updated") {
       val container = createEntity
       val position  = Some(factory.createContainerSchemaPosition)
-      container.withPosition(position) mustSucceed{ c =>
-        c must have (
-          'id              (container.id),
-          'version         (container.version + 1),
-          'slug            (container.slug.id),
-          'inventoryId     (container.inventoryId),
-          'containerTypeId (container.containerTypeId),
-          'parentId        (container.parentId),
-          'position        (position)
-        )
+      container.withPosition(position) mustSucceed { c =>
+        c must have('id (container.id),
+                    'version (container.version + 1),
+                    'slug (container.slug.id),
+                    'inventoryId (container.inventoryId),
+                    'containerTypeId (container.containerTypeId),
+                    'parentId (container.parentId),
+                    'position (position))
 
         c must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
       }
@@ -79,18 +75,16 @@ trait ContainerSharedSpec { this: FunSpec =>
 
     it("can have it's parent ID and position ID updated") {
       val container = createEntity
-      val parentId = Some(ContainerId(nameGenerator.next[Container]))
-      val position = Some(factory.createContainerSchemaPosition)
-      container.withParentPosition(parentId, position) mustSucceed{ c =>
-        c must have (
-          'id              (container.id),
-          'version         (container.version + 1),
-          'slug            (container.slug.id),
-          'inventoryId     (container.inventoryId),
-          'containerTypeId (container.containerTypeId),
-          'parentId        (parentId),
-          'position        (position)
-        )
+      val parentId  = Some(ContainerId(nameGenerator.next[Container]))
+      val position  = Some(factory.createContainerSchemaPosition)
+      container.withParentPosition(parentId, position) mustSucceed { c =>
+        c must have('id (container.id),
+                    'version (container.version + 1),
+                    'slug (container.slug.id),
+                    'inventoryId (container.inventoryId),
+                    'containerTypeId (container.containerTypeId),
+                    'parentId (parentId),
+                    'position (position))
 
         c must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
       }
@@ -122,9 +116,9 @@ trait ContainerSharedSpec { this: FunSpec =>
     }
 
     it("not be created with an invalid position") {
-      val position = factory.createContainerSchemaPosition.copy(id = ContainerSchemaPositionId(""))
+      val position  = factory.createContainerSchemaPosition.copy(id = ContainerSchemaPositionId(""))
       val container = createWithPosition(Some(position))
-      createFrom(container) mustFail("ContainerSchemaPositionInvalid", "IdRequired")
+      createFrom(container) mustFail ("ContainerSchemaPositionInvalid", "IdRequired")
     }
   }
 }
@@ -137,7 +131,7 @@ class StorageContainerSpec extends DomainSpec with ContainerSharedSpec {
 
   val nameGenerator = new NameGenerator(this.getClass)
 
-  protected def createFrom(container: Container): DomainValidation[StorageContainer] = {
+  protected def createFrom(container: Container): DomainValidation[StorageContainer] =
     container match {
       case c: StorageContainer =>
         StorageContainer.create(id               = c.id,
@@ -152,7 +146,6 @@ class StorageContainerSpec extends DomainSpec with ContainerSharedSpec {
                                 constraints      = c.constraints)
       case _ => DomainError("invalid container").failureNel[StorageContainer]
     }
-  }
 
   protected def createEntity(): StorageContainer = factory.createStorageContainer()
 
@@ -188,27 +181,31 @@ class StorageContainerSpec extends DomainSpec with ContainerSharedSpec {
       Set(true, false).foreach { enabled =>
         val container = factory.createStorageContainer()
         container.withEnabled(enabled) mustSucceed { c =>
-          c must matchContainer(container.copy(enabled = enabled,
-                                               version = container.version + 1L,
-                                               timeModified = Some(OffsetDateTime.now)))
+          c must matchContainer(
+            container.copy(enabled      = enabled,
+                           version      = container.version + 1L,
+                           timeModified = Some(OffsetDateTime.now))
+          )
         }
       }
     }
 
     it("can have it's constraints updated") {
-      val container = createEntity
+      val container   = createEntity
       val constraints = Some(factory.createContainerConstraints)
       container.withConstraints(constraints) mustSucceed {
-        _ must matchContainer(container.copy(constraints = constraints,
-                                             version = container.version + 1L,
-                                             timeModified = Some(OffsetDateTime.now)))
+        _ must matchContainer(
+          container.copy(constraints  = constraints,
+                         version      = container.version + 1L,
+                         timeModified = Some(OffsetDateTime.now))
+        )
       }
     }
 
     it("not be created with an invalid constraints") {
       val constraints = Some(factory.createContainerConstraints.copy(id = ContainerConstraintsId("")))
-      val container = factory.createStorageContainer().copy(constraints = constraints)
-      createFrom(container) mustFail("ContainerConstraintsInvalid", "IdRequired")
+      val container   = factory.createStorageContainer().copy(constraints = constraints)
+      createFrom(container) mustFail ("ContainerConstraintsInvalid", "IdRequired")
     }
   }
 

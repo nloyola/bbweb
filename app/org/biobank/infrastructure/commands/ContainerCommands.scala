@@ -25,39 +25,41 @@ object ContainerCommands {
   /**
    * The treeId field is filled  in by the service.
    */
-  final case class AddRootContainerCmd(sessionUserId:   String,
-                                       inventoryId:     String,
-                                       label:           String,
-                                       centreId:        String,
-                                       locationId:      String,
-                                       temperature:     PreservationTemperature,
-                                       containerTypeId: String)
+  final case class AddRootContainerCmd(
+      sessionUserId:   String,
+      inventoryId:     String,
+      label:           String,
+      centreId:        String,
+      locationId:      String,
+      temperature:     PreservationTemperature,
+      containerTypeId: String)
       extends AddContainerCommand
 
-  final case class AddStorageContainerCmd(sessionUserId:     String,
-                                          inventoryId:       String,
-                                          label:             String,
-                                          containerTypeId:   String,
-                                          parentId:          String)
+  final case class AddStorageContainerCmd(
+      sessionUserId:   String,
+      inventoryId:     String,
+      label:           String,
+      containerTypeId: String,
+      parentId:        String)
       extends AddSubContainerCommand
 
-  final case class AddSpecimenContainerCmd(sessionUserId:     String,
-                                           inventoryId:       String,
-                                           label:             String,
-                                           containerTypeId:   String,
-                                           parentId:          String)
+  final case class AddSpecimenContainerCmd(
+      sessionUserId:   String,
+      inventoryId:     String,
+      label:           String,
+      containerTypeId: String,
+      parentId:        String)
       extends AddSubContainerCommand
 
-  final case class UpdateContainerCmd(sessionUserId:   String,
-                                      id:              String,
-                                      expectedVersion: Long,
-                                      attribute:       String,
-                                      value:           String)
+  final case class UpdateContainerCmd(
+      sessionUserId:   String,
+      id:              String,
+      expectedVersion: Long,
+      attribute:       String,
+      value:           String)
       extends ContainerModifyCommand
 
-  final case class RemoveContainerCmd(sessionUserId:   String,
-                                      id:              String,
-                                      expectedVersion: Long)
+  final case class RemoveContainerCmd(sessionUserId: String, id: String, expectedVersion: Long)
       extends ContainerModifyCommand
 
   implicit val addTopContainerCmdReads: Reads[AddRootContainerCmd] =

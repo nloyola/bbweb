@@ -2,24 +2,27 @@ package org.biobank.controllers.participants
 
 import javax.inject.{Inject, Singleton}
 import org.biobank.controllers._
-import org.biobank.domain.participants.{ParticipantId, CollectionEventId}
+import org.biobank.domain.participants.{CollectionEventId, ParticipantId}
 import org.biobank.dto.CollectionEventDto
 import org.biobank.infrastructure.commands.CollectionEventCommands._
 import org.biobank.services.PagedResults
 import org.biobank.services.participants.CollectionEventsService
 import play.api.libs.json._
-import play.api.{ Environment, Logger }
+import play.api.{Environment, Logger}
 import play.api.mvc.{Action, ControllerComponents, Result}
 import scala.concurrent.{ExecutionContext, Future}
 import scalaz.Scalaz._
 
 @Singleton
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
-class CollectionEventsController @Inject() (controllerComponents: ControllerComponents,
-                                            val action:           BbwebAction,
-                                            val env:              Environment,
-                                            val service:          CollectionEventsService)
-                                        (implicit val ec: ExecutionContext)
+class CollectionEventsController @Inject()(
+    controllerComponents: ControllerComponents,
+    val action:           BbwebAction,
+    val env:              Environment,
+    val service:          CollectionEventsService
+  )(
+    implicit
+    val ec: ExecutionContext)
     extends CommandController(controllerComponents) {
 
   val log: Logger = Logger(this.getClass)
@@ -33,14 +36,11 @@ class CollectionEventsController @Inject() (controllerComponents: ControllerComp
 
   def list(participantId: ParticipantId): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(
-        err => {
-          validationReply(Future.successful(err.failure[PagedResults[CollectionEventDto]]))
-        },
-        pagedQuery => {
-          validationReply(service.list(request.identity.user.id, participantId, pagedQuery))
-        }
-      )
+      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(err => {
+        validationReply(Future.successful(err.failure[PagedResults[CollectionEventDto]]))
+      }, pagedQuery => {
+        validationReply(service.list(request.identity.user.id, participantId, pagedQuery))
+      })
     }
 
   def getByVisitNumber(participantId: ParticipantId, visitNumber: Int): Action[Unit] =
@@ -65,11 +65,9 @@ class CollectionEventsController @Inject() (controllerComponents: ControllerComp
   def addAnnotation(ceventId: CollectionEventId): Action[JsValue] =
     commandAction[CollectionEventUpdateAnnotationCmd](Json.obj("id" -> ceventId))(processCommand)
 
-  def removeAnnotation(ceventId: CollectionEventId,
-                       annotTypeId:   String,
-                       ver:           Long): Action[Unit] =
+  def removeAnnotation(ceventId: CollectionEventId, annotTypeId: String, ver: Long): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = RemoveCollectionEventAnnotationCmd(sessionUserId    = request.identity.user.id.id,
+      val cmd = RemoveCollectionEventAnnotationCmd(sessionUserId = request.identity.user.id.id,
                                                    id               = ceventId.id,
                                                    expectedVersion  = ver,
                                                    annotationTypeId = annotTypeId)
@@ -78,7 +76,7 @@ class CollectionEventsController @Inject() (controllerComponents: ControllerComp
 
   def remove(participantId: ParticipantId, ceventId: CollectionEventId, ver: Long): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = RemoveCollectionEventCmd(sessionUserId   = request.identity.user.id.id,
+      val cmd = RemoveCollectionEventCmd(sessionUserId = request.identity.user.id.id,
                                          id              = ceventId.id,
                                          participantId   = participantId.id,
                                          expectedVersion = ver)

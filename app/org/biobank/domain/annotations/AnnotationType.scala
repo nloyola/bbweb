@@ -8,10 +8,10 @@ import play.api.libs.json._
 import scalaz.Scalaz._
 
 /** Identifies a unique [[domain.annotations.AnnotationType AnnotationType]] in a [[domain.studies.Study
-  * Study]] or [[domain.studies.CollectionEventType CollectionEventType]].
-  *
-  * Used as a value object to maintain associations to with entities in the system.
-  */
+ * Study]] or [[domain.studies.CollectionEventType CollectionEventType]].
+ *
+ * Used as a value object to maintain associations to with entities in the system.
+ */
 final case class AnnotationTypeId(id: String) extends IdentifiedValueObject[String]
 
 object AnnotationTypeId {
@@ -20,11 +20,11 @@ object AnnotationTypeId {
   // to a single string
   implicit val annotationTypeIdFormat: Format[AnnotationTypeId] = new Format[AnnotationTypeId] {
 
-      override def writes(id: AnnotationTypeId): JsValue = JsString(id.id)
+    override def writes(id: AnnotationTypeId): JsValue = JsString(id.id)
 
-      override def reads(json: JsValue): JsResult[AnnotationTypeId] =
-        Reads.StringReads.reads(json).map(AnnotationTypeId.apply _)
-    }
+    override def reads(json: JsValue): JsResult[AnnotationTypeId] =
+      Reads.StringReads.reads(json).map(AnnotationTypeId.apply _)
+  }
 
 }
 
@@ -47,17 +47,16 @@ object AnnotationTypeId {
  *
  * @param required When true, the user must enter a value for this annotation.
  */
-final case class AnnotationType(id:            AnnotationTypeId,
-                                slug: Slug,
-                                name:          String,
-                                description:   Option[String],
-                                valueType:     AnnotationValueType,
-                                maxValueCount: Option[Int],
-                                options:       Seq[String],
-                                required:      Boolean)
-    extends IdentifiedValueObject[AnnotationTypeId]
-    with HasName
-    with HasOptionalDescription
+final case class AnnotationType(
+    id:            AnnotationTypeId,
+    slug:          Slug,
+    name:          String,
+    description:   Option[String],
+    valueType:     AnnotationValueType,
+    maxValueCount: Option[Int],
+    options:       Seq[String],
+    required:      Boolean)
+    extends IdentifiedValueObject[AnnotationTypeId] with HasName with HasOptionalDescription
     with AnnotationTypeValidations {
 
   override def toString: String =
@@ -85,31 +84,30 @@ trait AnnotationTypeValidations {
   case object DuplicateOptionsError extends ValidationKey
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validate(name:          String,
-               description:   Option[String],
-               valueType:     AnnotationValueType,
-               maxValueCount: Option[Int],
-               options:       Seq[String])
-      : DomainValidation[Unit] = {
+  def validate(
+      name:          String,
+      description:   Option[String],
+      valueType:     AnnotationValueType,
+      maxValueCount: Option[Int],
+      options:       Seq[String]
+    ): DomainValidation[Unit] =
     (validateString(name, NameRequired) |@|
-       validateNonEmptyStringOption(description, InvalidDescription) |@|
-       validateMaxValueCount(maxValueCount) |@|
-       validateOptions(options) |@|
-       validateSelectParams(valueType, maxValueCount, options)) {
+      validateNonEmptyStringOption(description, InvalidDescription) |@|
+      validateMaxValueCount(maxValueCount) |@|
+      validateOptions(options) |@|
+      validateSelectParams(valueType, maxValueCount, options)) {
       case _ => ()
     }
-  }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validate(annotationType: AnnotationType): DomainValidation[Unit] = {
+  def validate(annotationType: AnnotationType): DomainValidation[Unit] =
     validate(annotationType.name,
              annotationType.description,
              annotationType.valueType,
              annotationType.maxValueCount,
              annotationType.options)
-  }
 
-  def validateMaxValueCount(option: Option[Int]): DomainValidation[Option[Int]] = {
+  def validateMaxValueCount(option: Option[Int]): DomainValidation[Option[Int]] =
     option match {
       case None => option.successNel[String]
       case Some(n) =>
@@ -119,21 +117,20 @@ trait AnnotationTypeValidations {
           MaxValueCountError.failureNel[Option[Int]]
         }
     }
-  }
 
   /**
    *  Validates each item in the map and returns all failures.
    */
-  def validateOptions(options: Seq[String]): DomainValidation[Seq[String]] = {
+  def validateOptions(options: Seq[String]): DomainValidation[Seq[String]] =
     if (options.distinct.size === options.size) {
-      options.toList.map(validateNonEmptyString(_, OptionRequired)).sequenceU.fold(
-        err => err.toList.mkString(",").failureNel[Seq[String]],
-        list => list.toSeq.successNel
-      )
+      options.toList
+        .map(validateNonEmptyString(_, OptionRequired)).sequenceU.fold(
+          err  => err.toList.mkString(",").failureNel[Seq[String]],
+          list => list.toSeq.successNel
+        )
     } else {
       DuplicateOptionsError.failureNel[Seq[String]]
     }
-  }
 
   /** If an annotation type is for a select, the following is required:
    *
@@ -145,46 +142,46 @@ trait AnnotationTypeValidations {
    * - max value count must be 0
    * - options must be None
    */
-  def validateSelectParams(valueType:     AnnotationValueType,
-                           maxValueCount: Option[Int],
-                           options:       Seq[String])
-      : DomainValidation[Unit] = {
+  def validateSelectParams(
+      valueType:     AnnotationValueType,
+      maxValueCount: Option[Int],
+      options:       Seq[String]
+    ): DomainValidation[Unit] =
     if (valueType == AnnotationValueType.Select) {
       maxValueCount.fold {
         DomainError(s"max value count is invalid for select").failureNel[Unit]
       } { count =>
         val countValidation = if ((count < 1) || (count > 2)) {
-            DomainError(s"select annotation type with invalid maxValueCount: $count").failureNel[Unit]
-          } else {
-            ().successNel[String]
-          }
+          DomainError(s"select annotation type with invalid maxValueCount: $count").failureNel[Unit]
+        } else {
+          ().successNel[String]
+        }
 
         val optionsValidation = if (options.isEmpty) {
-            DomainError("select annotation type with no options to select").failureNel[Unit]
-          } else {
-            ().successNel[String]
-          }
+          DomainError("select annotation type with no options to select").failureNel[Unit]
+        } else {
+          ().successNel[String]
+        }
 
         (countValidation |@| optionsValidation) { case _ => () }
       }
     } else {
       val countValidation = maxValueCount.fold {
-          ().successNel[String]
-        } { count =>
-          DomainError(s"max value count is invalid for non-select").failureNel[Unit]
-        }
+        ().successNel[String]
+      } { count =>
+        DomainError(s"max value count is invalid for non-select").failureNel[Unit]
+      }
 
       val optionsValidation = if (options.isEmpty) {
-          ().successNel[String]
-        } else {
-          DomainError("non select annotation type with options to select").failureNel[Unit]
-        }
+        ().successNel[String]
+      } else {
+        DomainError("non select annotation type with options to select").failureNel[Unit]
+      }
 
-        (countValidation |@| optionsValidation) {
-          case _ => ()
-        }
+      (countValidation |@| optionsValidation) {
+        case _ => ()
+      }
     }
-  }
 
 }
 
@@ -194,18 +191,21 @@ object AnnotationType extends AnnotationTypeValidations {
 
   implicit val annotationTypeFormat: Format[AnnotationType] = Json.format[AnnotationType]
 
-  def create(name:          String,
-             description:   Option[String],
-             valueType:     AnnotationValueType,
-             maxValueCount: Option[Int],
-             options:       Seq[String],
-             required:      Boolean): DomainValidation[AnnotationType] = {
+  def create(
+      name:          String,
+      description:   Option[String],
+      valueType:     AnnotationValueType,
+      maxValueCount: Option[Int],
+      options:       Seq[String],
+      required:      Boolean
+    ): DomainValidation[AnnotationType] =
     (validateNonEmptyString(name, NameRequired) |@|
-       validateNonEmptyStringOption(description, InvalidDescription) |@|
-       validateMaxValueCount(maxValueCount) |@|
-       validateOptions(options) |@|
-       validateSelectParams(valueType, maxValueCount, options)) { case _ =>
-        val id = AnnotationTypeId(java.util.UUID.randomUUID.toString.replaceAll("-","").toUpperCase)
+      validateNonEmptyStringOption(description, InvalidDescription) |@|
+      validateMaxValueCount(maxValueCount) |@|
+      validateOptions(options) |@|
+      validateSelectParams(valueType, maxValueCount, options)) {
+      case _ =>
+        val id = AnnotationTypeId(java.util.UUID.randomUUID.toString.replaceAll("-", "").toUpperCase)
         AnnotationType(id            = id,
                        slug          = Slug(name),
                        name          = name,
@@ -215,6 +215,5 @@ object AnnotationType extends AnnotationTypeValidations {
                        options       = options,
                        required      = required)
     }
-  }
 
 }

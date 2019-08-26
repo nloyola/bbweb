@@ -1,7 +1,7 @@
 package org.biobank.services.users
 
 import akka.actor._
-import akka.persistence.{RecoveryCompleted, SaveSnapshotSuccess, SaveSnapshotFailure, SnapshotOffer}
+import akka.persistence.{RecoveryCompleted, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -32,12 +32,13 @@ object UsersProcessor {
 /**
  * Handles the commands to configure users.
  */
-class UsersProcessor @Inject() (val config:         Configuration,
-                                val userRepository: UserRepository,
-                                val passwordHasher: PasswordHasher,
-                                val emailService:   EmailService,
-                                val env:            Environment,
-                                val snapshotWriter: SnapshotWriter)
+class UsersProcessor @Inject()(
+    val config:         Configuration,
+    val userRepository: UserRepository,
+    val passwordHasher: PasswordHasher,
+    val emailService:   EmailService,
+    val env:            Environment,
+    val snapshotWriter: SnapshotWriter)
     extends Processor {
 
   import UsersProcessor._
@@ -58,7 +59,7 @@ class UsersProcessor @Inject() (val config:         Configuration,
         case _: EventType.Unlocked   => applyUnlockedEvent(event)
         case _: EventType.Locked     => applyLockedEvent(event)
 
-        case _: EventType.WhenActive       =>
+        case _: EventType.WhenActive =>
           event.getWhenActive.eventType match {
             case _: UserEvent.WhenActive.EventType.NameUpdated      => applyNameUpdatedEvent(event)
             case _: UserEvent.WhenActive.EventType.EmailUpdated     => applyEmailUpdatedEvent(event)
@@ -110,8 +111,8 @@ class UsersProcessor @Inject() (val config:         Configuration,
       processUpdateCmdOnLockedUser(cmd, unlockUserCmdToEvent, applyUnlockedEvent)
 
     case "snap" =>
-     mySaveSnapshot
-     replyTo = Some(sender())
+      mySaveSnapshot
+      replyTo = Some(sender())
 
     case SaveSnapshotSuccess(metadata) =>
       log.debug(s"snapshot saved successfully: ${metadata}")
@@ -125,14 +126,15 @@ class UsersProcessor @Inject() (val config:         Configuration,
 
     case "persistence_restart" =>
       throw new Exception(
-        "UsersProcessor: Intentionally throwing exception to test persistence by restarting the actor")
+        "UsersProcessor: Intentionally throwing exception to test persistence by restarting the actor"
+      )
 
     case cmd => log.error(s"UsersProcessor: message not handled: $cmd")
   }
 
   private def mySaveSnapshot(): Unit = {
     val snapshotState = SnapshotState(userRepository.getValues.toSet)
-    val filename = snapshotWriter.save(persistenceId, Json.toJson(snapshotState).toString)
+    val filename      = snapshotWriter.save(persistenceId, Json.toJson(snapshotState).toString)
     log.debug(s"saved snapshot to: $filename")
     saveSnapshot(filename)
   }
@@ -140,29 +142,24 @@ class UsersProcessor @Inject() (val config:         Configuration,
   private def applySnapshot(filename: String): Unit = {
     log.debug(s"snapshot recovery file: $filename")
     val fileContents = snapshotWriter.load(filename);
-    Json.parse(fileContents).validate[SnapshotState].fold(
-      errors => log.error(s"could not apply snapshot: $filename: $errors"),
-      snapshot =>  {
-        log.debug(s"snapshot contains ${snapshot.users.size} users")
-        snapshot.users.foreach(userRepository.put)
-      }
-    )
+    Json
+      .parse(fileContents).validate[SnapshotState].fold(
+        errors => log.error(s"could not apply snapshot: $filename: $errors"),
+        snapshot => {
+          log.debug(s"snapshot contains ${snapshot.users.size} users")
+          snapshot.users.foreach(userRepository.put)
+        }
+      )
   }
 
   private def registerUserCmdToEvent(cmd: RegisterUserCmd): ServiceValidation[UserEvent] = {
-    val salt = passwordHasher.generateSalt
+    val salt         = passwordHasher.generateSalt
     val encryptedPwd = passwordHasher.encrypt(cmd.password, salt)
 
     for {
       emailAvailable <- emailAvailable(cmd.email)
       userId         <- validNewIdentity(userRepository.nextIdentity, userRepository)
-      user           <- RegisteredUser.create(userId,
-                                              0L,
-                                              cmd.name,
-                                              cmd.email,
-                                              encryptedPwd,
-                                              salt,
-                                              cmd.avatarUrl)
+      user           <- RegisteredUser.create(userId, 0L, cmd.name, cmd.email, encryptedPwd, salt, cmd.avatarUrl)
     } yield {
       emailService.userRegisteredEmail(cmd.name, cmd.email)
 
@@ -172,35 +169,33 @@ class UsersProcessor @Inject() (val config:         Configuration,
         _.registered.email             := cmd.email,
         _.registered.password          := encryptedPwd,
         _.registered.salt              := salt,
-        _.registered.optionalAvatarUrl := cmd.avatarUrl)
+        _.registered.optionalAvatarUrl := cmd.avatarUrl
+      )
     }
   }
 
-  private def activateCmdToEvent(cmd:  ActivateUserCmd,
-                                 user: RegisteredUser): ServiceValidation[UserEvent] = {
+  private def activateCmdToEvent(cmd: ActivateUserCmd, user: RegisteredUser): ServiceValidation[UserEvent] =
     user.activate.map { u =>
       emailService.userActivatedEmail(u.email)
 
       UserEvent(user.id.id).update(
         _.time                     := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
         _.whenActive.sessionUserId := cmd.sessionUserId,
-        _.activated.version        := cmd.expectedVersion)
+        _.activated.version        := cmd.expectedVersion
+      )
     }
-  }
 
-  private def updateNameCmdToEvent(cmd:  UpdateUserNameCmd,
-                                   user: ActiveUser): ServiceValidation[UserEvent] = {
+  private def updateNameCmdToEvent(cmd: UpdateUserNameCmd, user: ActiveUser): ServiceValidation[UserEvent] =
     user.withName(cmd.name).map { _ =>
       UserEvent(user.id.id).update(
         _.time                        := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
         _.whenActive.sessionUserId    := cmd.sessionUserId,
         _.whenActive.version          := cmd.expectedVersion,
-        _.whenActive.nameUpdated.name := cmd.name)
+        _.whenActive.nameUpdated.name := cmd.name
+      )
     }
-  }
 
-  private def updateEmailCmdToEvent(cmd:  UpdateUserEmailCmd,
-                                    user: ActiveUser): ServiceValidation[UserEvent] = {
+  private def updateEmailCmdToEvent(cmd: UpdateUserEmailCmd, user: ActiveUser): ServiceValidation[UserEvent] =
     for {
       emailAvailable <- emailAvailable(cmd.email, user.id)
       updatedUser    <- user.withEmail(cmd.email)
@@ -208,11 +203,13 @@ class UsersProcessor @Inject() (val config:         Configuration,
       _.time                          := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
       _.whenActive.sessionUserId      := cmd.sessionUserId,
       _.whenActive.version            := cmd.expectedVersion,
-      _.whenActive.emailUpdated.email := cmd.email)
-  }
+      _.whenActive.emailUpdated.email := cmd.email
+    )
 
-  private def updatePasswordCmdToEvent(cmd:  UpdateUserPasswordCmd,
-                                       user: ActiveUser): ServiceValidation[UserEvent] = {
+  private def updatePasswordCmdToEvent(
+      cmd:  UpdateUserPasswordCmd,
+      user: ActiveUser
+    ): ServiceValidation[UserEvent] =
     if (passwordHasher.valid(user.password, user.salt, cmd.currentPassword)) {
       for {
         validNewPassword <- validateNonEmptyString(cmd.newPassword, InvalidNewPassword)
@@ -223,22 +220,24 @@ class UsersProcessor @Inject() (val config:         Configuration,
         _.whenActive.sessionUserId            := cmd.sessionUserId,
         _.whenActive.version                  := cmd.expectedVersion,
         _.whenActive.passwordUpdated.password := passwordInfo.password,
-        _.whenActive.passwordUpdated.salt     := passwordInfo.salt)
+        _.whenActive.passwordUpdated.salt     := passwordInfo.salt
+      )
     } else {
       InvalidPassword.failureNel[UserEvent]
     }
-  }
 
-  private def updateAvatarUrlCmdToEvent(cmd:  UpdateUserAvatarUrlCmd,
-                                        user: ActiveUser): ServiceValidation[UserEvent] = {
+  private def updateAvatarUrlCmdToEvent(
+      cmd:  UpdateUserAvatarUrlCmd,
+      user: ActiveUser
+    ): ServiceValidation[UserEvent] =
     user.withAvatarUrl(cmd.avatarUrl).map { _ =>
       UserEvent(user.id.id).update(
         _.time                                          := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
         _.whenActive.sessionUserId                      := cmd.sessionUserId,
         _.whenActive.version                            := cmd.expectedVersion,
-        _.whenActive.avatarUrlUpdated.optionalAvatarUrl := cmd.avatarUrl)
+        _.whenActive.avatarUrlUpdated.optionalAvatarUrl := cmd.avatarUrl
+      )
     }
-  }
 
   /**
    * only active users can request a password reset
@@ -263,301 +262,288 @@ class UsersProcessor @Inject() (val config:         Configuration,
         _.whenActive.optionalSessionUserId  := None,
         _.whenActive.version                := user.version,
         _.whenActive.passwordReset.password := passwordInfo.password,
-        _.whenActive.passwordReset.salt     := passwordInfo.salt)
+        _.whenActive.passwordReset.salt     := passwordInfo.salt
+      )
     }
   }
 
-  private def lockUserCmdToEvent(cmd:  LockUserCmd, user: User): ServiceValidation[UserEvent] = {
+  private def lockUserCmdToEvent(cmd: LockUserCmd, user: User): ServiceValidation[UserEvent] = {
     val v = user match {
-        case au: ActiveUser => au.lock
-        case ru: RegisteredUser => ru.lock
-        case _ => InvalidStatus(s"user not registered or active: ${user.id.id}").failureNel[LockedUser]
-      }
+      case au: ActiveUser     => au.lock
+      case ru: RegisteredUser => ru.lock
+      case _ => InvalidStatus(s"user not registered or active: ${user.id.id}").failureNel[LockedUser]
+    }
 
     v.map { _ =>
       UserEvent(user.id.id).update(
-        _.time           := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+        _.time                 := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
         _.locked.sessionUserId := cmd.sessionUserId,
-        _.locked.version := cmd.expectedVersion)
+        _.locked.version       := cmd.expectedVersion
+      )
     }
   }
 
-  private def unlockUserCmdToEvent(cmd: UnlockUserCmd,
-                                   user: LockedUser): ServiceValidation[UserEvent] = {
+  private def unlockUserCmdToEvent(cmd: UnlockUserCmd, user: LockedUser): ServiceValidation[UserEvent] =
     user.unlock.map { _ =>
       UserEvent(user.id.id).update(
-        _.time           := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+        _.time                   := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
         _.unlocked.sessionUserId := cmd.sessionUserId,
-        _.unlocked.version := cmd.expectedVersion)
+        _.unlocked.version       := cmd.expectedVersion
+      )
     }
-  }
 
-  private def processUpdateCmd[T <: UserModifyCommand]
-    (cmd:           T,
-     validateCmd:   (T, User) => ServiceValidation[UserEvent],
-     applyEvent:    UserEvent => Unit): Unit = {
+  private def processUpdateCmd[T <: UserModifyCommand](
+      cmd:         T,
+      validateCmd: (T, User) => ServiceValidation[UserEvent],
+      applyEvent:  UserEvent => Unit
+    ): Unit = {
     val event = for {
-        user         <- userRepository.getByKey(UserId(cmd.id))
-        validVersion <- user.requireVersion(cmd.expectedVersion)
-        event        <- validateCmd(cmd, user)
-      } yield event
+      user         <- userRepository.getByKey(UserId(cmd.id))
+      validVersion <- user.requireVersion(cmd.expectedVersion)
+      event        <- validateCmd(cmd, user)
+    } yield event
 
     process(event)(applyEvent)
   }
 
-  private def processUpdateCmdOnRegisteredUser[T <: UserModifyCommand]
-    (cmd:           T,
-     validateCmd:   (T, RegisteredUser) => ServiceValidation[UserEvent],
-     applyEvent:    UserEvent => Unit): Unit = {
+  private def processUpdateCmdOnRegisteredUser[T <: UserModifyCommand](
+      cmd:         T,
+      validateCmd: (T, RegisteredUser) => ServiceValidation[UserEvent],
+      applyEvent:  UserEvent => Unit
+    ): Unit = {
 
-    def udpateOnRegisteredUser(cmd: T, user: User): ServiceValidation[UserEvent] = {
+    def udpateOnRegisteredUser(cmd: T, user: User): ServiceValidation[UserEvent] =
       user match {
         case u: RegisteredUser => validateCmd(cmd, u)
         case _ => InvalidStatus(s"user not registered: ${cmd.id}").failureNel[UserEvent]
       }
-    }
 
     processUpdateCmd(cmd, udpateOnRegisteredUser, applyEvent)
   }
 
-  private def processUpdateCmdOnActiveUser[T <: UserModifyCommand]
-    (cmd:           T,
-     validateCmd:   (T, ActiveUser) => ServiceValidation[UserEvent],
-     applyEvent:    UserEvent => Unit): Unit = {
+  private def processUpdateCmdOnActiveUser[T <: UserModifyCommand](
+      cmd:         T,
+      validateCmd: (T, ActiveUser) => ServiceValidation[UserEvent],
+      applyEvent:  UserEvent => Unit
+    ): Unit = {
 
-    def udpateOnActiveUser(cmd: T, user: User): ServiceValidation[UserEvent] = {
+    def udpateOnActiveUser(cmd: T, user: User): ServiceValidation[UserEvent] =
       user match {
         case u: ActiveUser => validateCmd(cmd, u)
         case _ => InvalidStatus(s"user not active: ${cmd.id}").failureNel[UserEvent]
       }
-    }
 
     processUpdateCmd(cmd, udpateOnActiveUser, applyEvent)
   }
 
-  private def processUpdateCmdOnLockedUser[T <: UserModifyCommand]
-    (cmd:           T,
-     validateCmd:   (T, LockedUser) => ServiceValidation[UserEvent],
-     applyEvent:    UserEvent => Unit): Unit = {
+  private def processUpdateCmdOnLockedUser[T <: UserModifyCommand](
+      cmd:         T,
+      validateCmd: (T, LockedUser) => ServiceValidation[UserEvent],
+      applyEvent:  UserEvent => Unit
+    ): Unit = {
 
-    def udpateOnLockedUser(cmd: T, user: User): ServiceValidation[UserEvent] = {
+    def udpateOnLockedUser(cmd: T, user: User): ServiceValidation[UserEvent] =
       user match {
         case u: LockedUser => validateCmd(cmd, u)
         case _ => InvalidStatus(s"user not locked: ${cmd.id}").failureNel[UserEvent]
       }
-    }
 
     processUpdateCmd(cmd, udpateOnLockedUser, applyEvent)
   }
 
-  private def applyRegisteredEvent(event: UserEvent): Unit = {
+  private def applyRegisteredEvent(event: UserEvent): Unit =
     if (!event.eventType.isRegistered) {
       log.error(s"invalid event type: $event")
     } else {
       val registeredEvent = event.getRegistered
 
-      val v = RegisteredUser.create(id           = UserId(event.id),
-                                    version      = 0L,
-                                    name         = registeredEvent.getName,
-                                    email        = registeredEvent.getEmail,
-                                    password     = registeredEvent.getPassword,
-                                    salt         = registeredEvent.getSalt,
-                                    avatarUrl    = registeredEvent.avatarUrl)
+      val v = RegisteredUser.create(id = UserId(event.id),
+                                    version   = 0L,
+                                    name      = registeredEvent.getName,
+                                    email     = registeredEvent.getEmail,
+                                    password  = registeredEvent.getPassword,
+                                    salt      = registeredEvent.getSalt,
+                                    avatarUrl = registeredEvent.avatarUrl)
 
       if (v.isFailure) {
         log.error(s"could not add user from event: $v")
       }
 
       v.foreach { u =>
-        userRepository.put(u.copy(slug      = userRepository.uniqueSlugFromStr(registeredEvent.getName),
-                                  timeAdded = OffsetDateTime.parse(event.getTime)))
+        userRepository.put(
+          u.copy(slug      = userRepository.uniqueSlugFromStr(registeredEvent.getName),
+                 timeAdded = OffsetDateTime.parse(event.getTime))
+        )
       }
     }
-  }
 
-  private def onValidEventUserAndVersion(event: UserEvent,
-                                         eventType: Boolean,
-                                         eventVersion: Long)
-                                        (applyEvent: (User, OffsetDateTime) => ServiceValidation[Unit])
-      : Unit = {
+  private def onValidEventUserAndVersion(
+      event:        UserEvent,
+      eventType:    Boolean,
+      eventVersion: Long
+    )(applyEvent:   (User, OffsetDateTime) => ServiceValidation[Unit]
+    ): Unit =
     if (!eventType) {
       log.error(s"invalid event type: $event")
     } else {
-      userRepository.getByKey(UserId(event.id)).fold(
-        err => log.error(s"user from event does not exist: $err"),
-        user => {
-          if (user.version != eventVersion) {
-            log.error(s"event version check failed: user version: ${user.version}, event: $event")
-          } else {
-            val eventTime = OffsetDateTime.parse(event.getTime)
-            val update = applyEvent(user, eventTime)
+      userRepository
+        .getByKey(UserId(event.id)).fold(err => log.error(s"user from event does not exist: $err"),
+                                         user => {
+                                           if (user.version != eventVersion) {
+                                             log.error(
+                                               s"event version check failed: user version: ${user.version}, event: $event"
+                                             )
+                                           } else {
+                                             val eventTime = OffsetDateTime.parse(event.getTime)
+                                             val update    = applyEvent(user, eventTime)
 
-            if (update.isFailure) {
-              log.error(s"user update from event failed: $update")
-            }
-          }
-        }
-      )
+                                             if (update.isFailure) {
+                                               log.error(s"user update from event failed: $update")
+                                             }
+                                           }
+                                         })
     }
-  }
 
-  private def onValidEventRegisteredUserAndVersion(event: UserEvent,
-                                                   eventType: Boolean,
-                                                   eventVersion: Long)
-                                                  (applyEvent: (RegisteredUser,
-                                                                OffsetDateTime) => ServiceValidation[Unit])
-      : Unit = {
+  private def onValidEventRegisteredUserAndVersion(
+      event:        UserEvent,
+      eventType:    Boolean,
+      eventVersion: Long
+    )(applyEvent:   (RegisteredUser, OffsetDateTime) => ServiceValidation[Unit]
+    ): Unit =
     onValidEventUserAndVersion(event, eventType, eventVersion) { (user, eventTime) =>
       user match {
         case user: RegisteredUser => applyEvent(user, eventTime)
         case user => ServiceError(s"user not registered: $event").failureNel[Unit]
       }
     }
-  }
 
-  private def onValidUserActiveEvent(event: UserEvent)
-                                    (applyEvent: (ActiveUser, OffsetDateTime) => ServiceValidation[Unit])
-      : Unit = {
-    onValidEventUserAndVersion(event,
-                               event.eventType.isWhenActive,
-                               event.getWhenActive.getVersion) { (user, eventTime) =>
-      user match {
-        case user: ActiveUser => applyEvent(user, eventTime)
-        case user => ServiceError(s"user not active: $event").failureNel[Unit]
-      }
+  private def onValidUserActiveEvent(
+      event:      UserEvent
+    )(applyEvent: (ActiveUser, OffsetDateTime) => ServiceValidation[Unit]
+    ): Unit =
+    onValidEventUserAndVersion(event, event.eventType.isWhenActive, event.getWhenActive.getVersion) {
+      (user, eventTime) =>
+        user match {
+          case user: ActiveUser => applyEvent(user, eventTime)
+          case user => ServiceError(s"user not active: $event").failureNel[Unit]
+        }
     }
-  }
 
-  private def onValidEventLockedUserAndVersion(event: UserEvent,
-                                               eventType: Boolean,
-                                               eventVersion: Long)
-                                              (applyEvent: (LockedUser,
-                                                            OffsetDateTime) => ServiceValidation[Unit])
-      : Unit = {
+  private def onValidEventLockedUserAndVersion(
+      event:        UserEvent,
+      eventType:    Boolean,
+      eventVersion: Long
+    )(applyEvent:   (LockedUser, OffsetDateTime) => ServiceValidation[Unit]
+    ): Unit =
     onValidEventUserAndVersion(event, eventType, eventVersion) { (user, eventTime) =>
       user match {
         case user: LockedUser => applyEvent(user, eventTime)
         case user => ServiceError(s"user not locked: $event").failureNel[Unit]
       }
     }
-  }
 
-  private def applyActivatedEvent(event: UserEvent): Unit = {
-    onValidEventRegisteredUserAndVersion(event,
-                                         event.eventType.isActivated,
-                                         event.getActivated.getVersion) { (user, eventTime) =>
-      val v = user.activate
-      v.foreach { u => userRepository.put(u.copy(timeModified = Some(eventTime))) }
-      v.map(_ => ())
+  private def applyActivatedEvent(event: UserEvent): Unit =
+    onValidEventRegisteredUserAndVersion(event, event.eventType.isActivated, event.getActivated.getVersion) {
+      (user, eventTime) =>
+        val v = user.activate
+        v.foreach { u =>
+          userRepository.put(u.copy(timeModified = Some(eventTime)))
+        }
+        v.map(_ => ())
     }
-  }
 
-  private def applyNameUpdatedEvent(event: UserEvent): Unit = {
+  private def applyNameUpdatedEvent(event: UserEvent): Unit =
     onValidUserActiveEvent(event) { (user, eventTime) =>
       val v = user.withName(event.getWhenActive.getNameUpdated.getName).map { u =>
-          u.copy(slug         = userRepository.uniqueSlugFromStr(u.name),
-                 timeModified = Some(eventTime))
-        }
+        u.copy(slug = userRepository.uniqueSlugFromStr(u.name), timeModified = Some(eventTime))
+      }
       v.foreach(userRepository.put)
       v.map(_ => ())
     }
-  }
 
-  private def applyEmailUpdatedEvent(event: UserEvent): Unit = {
+  private def applyEmailUpdatedEvent(event: UserEvent): Unit =
     onValidUserActiveEvent(event) { (user, eventTime) =>
       val v = user.withEmail(event.getWhenActive.getEmailUpdated.getEmail)
       v.foreach(u => userRepository.put(u.copy(timeModified = Some(eventTime))))
-      v.map(_ => ())
+      v.map(_     => ())
     }
-  }
 
-  private def applyPasswordUpdatedEvent(event: UserEvent): Unit = {
+  private def applyPasswordUpdatedEvent(event: UserEvent): Unit =
     onValidUserActiveEvent(event) { (user, eventTime) =>
       val v = user.withPassword(event.getWhenActive.getPasswordUpdated.getPassword,
                                 event.getWhenActive.getPasswordUpdated.getSalt)
       v.foreach(u => userRepository.put(u.copy(timeModified = Some(eventTime))))
-      v.map(_ => ())
+      v.map(_     => ())
     }
-  }
 
-  private def applyAvatarUrlUpdatedEvent(event: UserEvent): Unit = {
+  private def applyAvatarUrlUpdatedEvent(event: UserEvent): Unit =
     onValidUserActiveEvent(event) { (user, eventTime) =>
       val v = user.withAvatarUrl(event.getWhenActive.getAvatarUrlUpdated.avatarUrl)
       v.foreach(u => userRepository.put(u.copy(timeModified = Some(eventTime))))
-      v.map(_ => ())
+      v.map(_     => ())
     }
-  }
 
-  private def applyPasswordResetEvent(event: UserEvent): Unit = {
+  private def applyPasswordResetEvent(event: UserEvent): Unit =
     onValidUserActiveEvent(event) { (user, eventTime) =>
       val v = user.withPassword(event.getWhenActive.getPasswordReset.getPassword,
                                 event.getWhenActive.getPasswordReset.getSalt)
       v.foreach(u => userRepository.put(u.copy(timeModified = Some(eventTime))))
-      v.map(_ => ())
+      v.map(_     => ())
     }
-  }
 
   /* registered and active users can be locked */
-  private def applyLockedEvent(event: UserEvent): Unit = {
-    onValidEventUserAndVersion(event,
-                               event.eventType.isLocked,
-                               event.getLocked.getVersion) { (user, eventTime) =>
-      val v = user match {
-          case au: ActiveUser => au.lock
+  private def applyLockedEvent(event: UserEvent): Unit =
+    onValidEventUserAndVersion(event, event.eventType.isLocked, event.getLocked.getVersion) {
+      (user, eventTime) =>
+        val v = user match {
+          case au: ActiveUser     => au.lock
           case ru: RegisteredUser => ru.lock
           case _ => InvalidStatus(s"user not registered or active: $event").failureNel[LockedUser]
         }
-      v.foreach(u => userRepository.put(u.copy(timeModified = Some(eventTime))))
-      v.map(_ => ())
+        v.foreach(u => userRepository.put(u.copy(timeModified = Some(eventTime))))
+        v.map(_     => ())
     }
-  }
 
-  private def applyUnlockedEvent(event: UserEvent): Unit = {
-    onValidEventLockedUserAndVersion(event,
-                                     event.eventType.isUnlocked,
-                                     event.getUnlocked.getVersion) { (user, eventTime) =>
-      val v = user.unlock
-      v.foreach(u => userRepository.put(u.copy(timeModified = Some(eventTime))))
-      v.map(_ => ())
+  private def applyUnlockedEvent(event: UserEvent): Unit =
+    onValidEventLockedUserAndVersion(event, event.eventType.isUnlocked, event.getUnlocked.getVersion) {
+      (user, eventTime) =>
+        val v = user.unlock
+        v.foreach(u => userRepository.put(u.copy(timeModified = Some(eventTime))))
+        v.map(_     => ())
     }
-  }
 
   /**
    *  Searches the repository for a matching item.
    */
-  private def emailAvailableMatcher(email: String)(matcher: User => Boolean)
-      : ServiceValidation[Unit] = {
+  private def emailAvailableMatcher(email: String)(matcher: User => Boolean): ServiceValidation[Unit] = {
     val exists = userRepository.getValues.exists { item =>
-        matcher(item)
-      }
+      matcher(item)
+    }
 
     if (exists) EmailNotAvailable(s"user with email already exists: $email").failureNel[Unit]
     else ().successNel[String]
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  private def emailAvailable(email: String): ServiceValidation[Unit] = {
-    emailAvailableMatcher(email){ item =>
+  private def emailAvailable(email: String): ServiceValidation[Unit] =
+    emailAvailableMatcher(email) { item =>
       item.email == email
     }
-  }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  private def emailAvailable(email: String, excludeUserId: UserId): ServiceValidation[Unit] = {
-    emailAvailableMatcher(email){ item =>
+  private def emailAvailable(email: String, excludeUserId: UserId): ServiceValidation[Unit] =
+    emailAvailableMatcher(email) { item =>
       (item.email == email) && (item.id != excludeUserId)
     }
-  }
 
   private def encryptPassword(newPlainPassword: String): PasswordInfo = {
     val newSalt = passwordHasher.generateSalt
-    val newPwd = passwordHasher.encrypt(newPlainPassword, newSalt)
+    val newPwd  = passwordHasher.encrypt(newPlainPassword, newSalt)
     PasswordInfo(newPwd, newSalt)
   }
 
-  private def init(): Unit = {
+  private def init(): Unit =
     userRepository.init
-  }
 
   init
 

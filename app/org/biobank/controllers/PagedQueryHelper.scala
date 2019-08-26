@@ -12,7 +12,7 @@ import scalaz.Validation.FlatMap._
  */
 object PagedQueryHelper {
 
-  def apply(rawQueryString: String, maxPageSize: Int): ControllerValidation[PagedQuery] = {
+  def apply(rawQueryString: String, maxPageSize: Int): ControllerValidation[PagedQuery] =
     for {
       qsExpressions <- {
         val path = URLDecoder.decode(rawQueryString, SC.US_ASCII.name)
@@ -20,27 +20,27 @@ object PagedQueryHelper {
       }
       query <- FilterAndSortQueryHelper.createFromExpressions(qsExpressions).successNel[String]
       page <- {
-        Util.toInt(qsExpressions.get("page").getOrElse("1")).
-          toSuccessNel(s"page is not a number: $rawQueryString")
+        Util
+          .toInt(qsExpressions.get("page").getOrElse("1")).toSuccessNel(
+            s"page is not a number: $rawQueryString"
+          )
       }
       validPage <- {
         if (page > 0) page.successNel[String]
         else ControllerError(s"page is invalid: $page").failureNel[Int]
       }
       limit <- {
-        Util.toInt(qsExpressions.get("limit").getOrElse("5")).
-          toSuccessNel(s"limit is not a number: $rawQueryString")
+        Util
+          .toInt(qsExpressions.get("limit").getOrElse("5")).toSuccessNel(
+            s"limit is not a number: $rawQueryString"
+          )
       }
       validLimit <- validLimit(limit, maxPageSize)
     } yield {
-      PagedQuery(filter = query.filter,
-                 sort   = query.sort,
-                 page   = page,
-                 limit  = limit)
+      PagedQuery(filter = query.filter, sort = query.sort, page = page, limit = limit)
     }
-  }
 
-  private def validLimit(limit: Int, maxPageSize: Int): ControllerValidation[Int] = {
+  private def validLimit(limit: Int, maxPageSize: Int): ControllerValidation[Int] =
     if (limit <= 0) {
       ControllerError(s"page size is invalid: $limit").failureNel[Int]
     } else if (limit > maxPageSize) {
@@ -48,6 +48,5 @@ object PagedQueryHelper {
     } else {
       limit.successNel
     }
-  }
 
 }

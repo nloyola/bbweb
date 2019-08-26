@@ -14,18 +14,21 @@ import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 
 /**
-  * Controller for the main page, and also the about and contact us pages.
+ * Controller for the main page, and also the about and contact us pages.
  */
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
 @Singleton
-class Application @Inject() (controllerComponents: ControllerComponents,
-                             val action:               BbwebAction,
-                             val env:                  Environment,
-                             val accessService:        AccessService,
-                             val usersService:         UsersService,
-                             val studiesService:       StudiesService,
-                             val centresService:       CentresService)
-                         (implicit val ec: ExecutionContext)
+class Application @Inject()(
+    controllerComponents: ControllerComponents,
+    val action:           BbwebAction,
+    val env:              Environment,
+    val accessService:    AccessService,
+    val usersService:     UsersService,
+    val studiesService:   StudiesService,
+    val centresService:   CentresService
+  )(
+    implicit
+    val ec: ExecutionContext)
     extends CommandController(controllerComponents) {
 
   import org.biobank.domain.access.AccessItem._
@@ -36,28 +39,28 @@ class Application @Inject() (controllerComponents: ControllerComponents,
     action.async(parse.empty) { implicit request =>
       val userId = request.identity.user.id
       Future {
-        val counts =  for {
-            studyCounts  <- {
-              accessService.hasPermission(userId, PermissionId.StudyRead).flatMap { p =>
-                if (p) studiesService.getStudyCount(userId)
-                else 0L.successNel[String]
-              }
+        val counts = for {
+          studyCounts <- {
+            accessService.hasPermission(userId, PermissionId.StudyRead).flatMap { p =>
+              if (p) studiesService.getStudyCount(userId)
+              else 0L.successNel[String]
             }
-            centreCounts <- {
-              accessService.hasPermission(userId, PermissionId.CentreRead).flatMap { p =>
-                if (p) centresService.getCentresCount(userId)
-                else 0L.successNel[String]
-              }
+          }
+          centreCounts <- {
+            accessService.hasPermission(userId, PermissionId.CentreRead).flatMap { p =>
+              if (p) centresService.getCentresCount(userId)
+              else 0L.successNel[String]
             }
-            userCounts   <- {
-              accessService.hasPermission(userId, PermissionId.UserRead).flatMap { p =>
-                if (p) usersService.getCountsByStatus(userId).map(c => c.total)
-                else 0L.successNel[String]
-              }
+          }
+          userCounts <- {
+            accessService.hasPermission(userId, PermissionId.UserRead).flatMap { p =>
+              if (p) usersService.getCountsByStatus(userId).map(c => c.total)
+              else 0L.successNel[String]
             }
-          } yield AggregateCountsDto(studyCounts, centreCounts, userCounts)
+          }
+        } yield AggregateCountsDto(studyCounts, centreCounts, userCounts)
         validationReply(counts)
       }
-  }
+    }
 
 }

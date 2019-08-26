@@ -22,15 +22,15 @@ object ShipmentContainerId {
  * [org.biobank.domain.centres.Shipment].
  *
  */
-final case class ShipmentContainer(id:           ShipmentContainerId,
-                                   version:      Long,
-                                   timeAdded:    OffsetDateTime,
-                                   timeModified: Option[OffsetDateTime],
-                                   shipmentId:   ShipmentId,
-                                   containerId:  ContainerId,
-                                   state:        ShipmentItemState)
-    extends ConcurrencySafeEntity[ShipmentContainerId] {
-}
+final case class ShipmentContainer(
+    id:           ShipmentContainerId,
+    version:      Long,
+    timeAdded:    OffsetDateTime,
+    timeModified: Option[OffsetDateTime],
+    shipmentId:   ShipmentId,
+    containerId:  ContainerId,
+    state:        ShipmentItemState)
+    extends ConcurrencySafeEntity[ShipmentContainerId] {}
 
 object ShipmentContainer {
   import org.biobank.CommonValidations._
@@ -38,30 +38,26 @@ object ShipmentContainer {
 
   case object ShipmentIdRequired extends ValidationKey
 
-  def create(id:           ShipmentContainerId,
-             version:      Long,
-             shipmentId:   ShipmentId,
-             containerId:  ContainerId,
-             state:        ShipmentItemState): DomainValidation[ShipmentContainer] = {
+  def create(
+      id:          ShipmentContainerId,
+      version:     Long,
+      shipmentId:  ShipmentId,
+      containerId: ContainerId,
+      state:       ShipmentItemState
+    ): DomainValidation[ShipmentContainer] =
     validate(id, version, shipmentId, containerId)
-      .map(_ => ShipmentContainer(id,
-                                  version,
-                                  OffsetDateTime.now,
-                                  None,
-                                  shipmentId,
-                                  containerId,
-                                  state))
-  }
+      .map(_ => ShipmentContainer(id, version, OffsetDateTime.now, None, shipmentId, containerId, state))
 
-  def validate(id:          ShipmentContainerId,
-               version:     Long,
-               shipmentId:  ShipmentId,
-               containerId: ContainerId): DomainValidation[Unit] = {
+  def validate(
+      id:          ShipmentContainerId,
+      version:     Long,
+      shipmentId:  ShipmentId,
+      containerId: ContainerId
+    ): DomainValidation[Unit] =
     (validateId(id) |@|
-       validateVersion(version) |@|
-       validateId(shipmentId, ShipmentIdRequired) |@|
-       validateId(containerId, ContainerIdInvalid)) {
+      validateVersion(version) |@|
+      validateId(shipmentId, ShipmentIdRequired) |@|
+      validateId(containerId, ContainerIdInvalid)) {
       case _ => ()
     }
-  }
 }

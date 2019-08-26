@@ -1,7 +1,7 @@
 package org.biobank.services
 
 import com.google.inject.ImplementedBy
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import org.biobank.domain.users.UserId
 import play.api.Environment
 import play.api.cache.SyncCacheApi
@@ -32,8 +32,7 @@ trait AuthToken {
 }
 
 @Singleton
-class AuthTokenImpl @Inject() (val env: Environment, val cacheApi: SyncCacheApi)
-    extends AuthToken {
+class AuthTokenImpl @Inject()(val env: Environment, val cacheApi: SyncCacheApi) extends AuthToken {
   import org.biobank.CommonValidations._
 
   val random: Random = new Random(new java.security.SecureRandom())
@@ -75,6 +74,5 @@ class AuthTokenImpl @Inject() (val env: Environment, val cacheApi: SyncCacheApi)
   // Generate a random alphabnumeric string of length n
   private def randomAlphanumericString(n: Int) =
     randomString("abcdefghijklmnopqrstuvwxyz0123456789")(n)
-
 
 }

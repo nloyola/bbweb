@@ -14,9 +14,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks._
  * Primarily these are tests that exercise the User Access aspect of StudiesService.
  */
 class ParticipantsServiceSpec
-    extends ProcessorTestFixture
-    with ParticipantsServiceFixtures
-    with ScalaFutures {
+    extends ProcessorTestFixture with ParticipantsServiceFixtures with ScalaFutures {
 
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.ParticipantCommands._
@@ -39,31 +37,23 @@ class ParticipantsServiceSpec
 
   private val participantsService = app.injector.instanceOf[ParticipantsService]
 
-  private def commandsTable(sessionUserId: UserId, participant: Participant, annotation: Annotation) = {
+  private def commandsTable(sessionUserId: UserId, participant: Participant, annotation: Annotation) =
     Table("participant commands",
-          UpdateParticipantUniqueIdCmd(
-            sessionUserId   = sessionUserId.id,
-            id              = participant.id.id,
-            expectedVersion = participant.version,
-            uniqueId        = participant.uniqueId
-          ),
-          ParticipantUpdateAnnotationCmd(
-            sessionUserId    = sessionUserId.id,
-            id               = participant.id.id,
-            expectedVersion  = participant.version,
-            annotationTypeId = annotation.annotationTypeId.id,
-            stringValue      = annotation.stringValue,
-            numberValue      = annotation.numberValue,
-            selectedValues   = annotation.selectedValues
-          ),
-          ParticipantRemoveAnnotationCmd(
-            sessionUserId    = sessionUserId.id,
-            id               = participant.id.id,
-            expectedVersion  = participant.version,
-            annotationTypeId = annotation.annotationTypeId.id
-          )
-    )
-  }
+          UpdateParticipantUniqueIdCmd(sessionUserId      = sessionUserId.id,
+                                       id                 = participant.id.id,
+                                       expectedVersion    = participant.version,
+                                       uniqueId           = participant.uniqueId),
+          ParticipantUpdateAnnotationCmd(sessionUserId    = sessionUserId.id,
+                                         id               = participant.id.id,
+                                         expectedVersion  = participant.version,
+                                         annotationTypeId = annotation.annotationTypeId.id,
+                                         stringValue      = annotation.stringValue,
+                                         numberValue      = annotation.numberValue,
+                                         selectedValues   = annotation.selectedValues),
+          ParticipantRemoveAnnotationCmd(sessionUserId    = sessionUserId.id,
+                                         id               = participant.id.id,
+                                         expectedVersion  = participant.version,
+                                         annotationTypeId = annotation.annotationTypeId.id))
 
   override def beforeEach() {
     super.beforeEach()
@@ -77,18 +67,19 @@ class ParticipantsServiceSpec
 
       it("users can access") {
         val f = new UsersWithParticipantAccessFixture
-        forAll (f.usersCanReadTable) { (user, label) =>
+        forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
-          participantsService.get(user.id, f.enabledStudy.id, f.participant.id)
+          participantsService
+            .get(user.id, f.enabledStudy.id, f.participant.id)
             .mustSucceed { result =>
-              result.id must be (f.participant.id.id)
+              result.id must be(f.participant.id.id)
             }
         }
       }
 
       it("users cannot access") {
         val f = new UsersWithParticipantAccessFixture
-        forAll (f.usersCannotReadTable) { (user, label) =>
+        forAll(f.usersCannotReadTable) { (user, label) =>
           info(label)
           participantsService.get(user.id, f.enabledStudy.id, f.participant.id) mustFail "Unauthorized"
         }
@@ -100,20 +91,22 @@ class ParticipantsServiceSpec
 
       it("users can access") {
         val f = new UsersWithParticipantAccessFixture
-        forAll (f.usersCanReadTable) { (user, label) =>
+        forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
-          participantsService.getByUniqueId(user.id, f.participant.uniqueId)
+          participantsService
+            .getByUniqueId(user.id, f.participant.uniqueId)
             .mustSucceed { result =>
-              result.id must be (f.participant.id.id)
+              result.id must be(f.participant.id.id)
             }
         }
       }
 
       it("users cannot access") {
         val f = new UsersWithParticipantAccessFixture
-        forAll (f.usersCannotReadTable) { (user, label) =>
+        forAll(f.usersCannotReadTable) { (user, label) =>
           info(label)
-          participantsService.getByUniqueId(user.id, f.participant.uniqueId)
+          participantsService
+            .getByUniqueId(user.id, f.participant.uniqueId)
             .mustFail("Unauthorized")
         }
       }
@@ -124,29 +117,27 @@ class ParticipantsServiceSpec
 
       it("users can access") {
         val f = new UsersWithParticipantAccessFixture
-        forAll (f.usersCanAddOrUpdateTable) { (user, label) =>
+        forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           participantRepository.removeAll
-          val cmd = AddParticipantCmd(
-              sessionUserId   = user.id.id,
-              studyId         = f.participant.studyId.id,
-              uniqueId        = f.participant.uniqueId,
-              annotations     = List.empty[Annotation])
+          val cmd = AddParticipantCmd(sessionUserId = user.id.id,
+                                      studyId     = f.participant.studyId.id,
+                                      uniqueId    = f.participant.uniqueId,
+                                      annotations = List.empty[Annotation])
           participantsService.processCommand(cmd).futureValue mustSucceed { result =>
-            result.uniqueId must be (f.participant.uniqueId)
+            result.uniqueId must be(f.participant.uniqueId)
           }
         }
       }
 
       it("users cannot access") {
         val f = new UsersWithParticipantAccessFixture
-        forAll (f.usersCannotAddOrUpdateTable) { (user, label) =>
+        forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           info(label)
           participantRepository.removeAll
-          val cmd = AddParticipantCmd(
-              sessionUserId   = user.id.id,
-              studyId         = f.participant.studyId.id,
-              uniqueId        = f.participant.uniqueId,
-              annotations     = List.empty[Annotation])
+          val cmd = AddParticipantCmd(sessionUserId = user.id.id,
+                                      studyId     = f.participant.studyId.id,
+                                      uniqueId    = f.participant.uniqueId,
+                                      annotations = List.empty[Annotation])
           participantsService.processCommand(cmd).futureValue mustFail "Unauthorized"
         }
       }
@@ -157,16 +148,17 @@ class ParticipantsServiceSpec
 
       it("users can access") {
         val f = new UsersWithParticipantAccessFixture
-        forAll (f.usersCanAddOrUpdateTable) { (user, label) =>
+        forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           info(label)
           forAll(commandsTable(user.id, f.participant, f.annotation)) { cmd =>
             val participant = cmd match {
-                case c: ParticipantUpdateAnnotationCmd => f.participant.copy(annotations = Set.empty[Annotation])
-                case _ => f.participant
-              }
+              case c: ParticipantUpdateAnnotationCmd =>
+                f.participant.copy(annotations = Set.empty[Annotation])
+              case _ => f.participant
+            }
             participantRepository.put(participant)
             participantsService.processCommand(cmd).futureValue mustSucceed { result =>
-              result.id must be (f.participant.id.id)
+              result.id must be(f.participant.id.id)
             }
           }
         }
@@ -174,7 +166,7 @@ class ParticipantsServiceSpec
 
       it("users cannot access") {
         val f = new UsersWithParticipantAccessFixture
-        forAll (f.usersCannotAddOrUpdateTable) { (user, label) =>
+        forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           info(label)
           forAll(commandsTable(user.id, f.participant, f.annotation)) { cmd =>
             participantsService.processCommand(cmd).futureValue mustFail "Unauthorized"

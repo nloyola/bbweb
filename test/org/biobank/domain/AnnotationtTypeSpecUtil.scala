@@ -5,12 +5,8 @@ import org.biobank.fixtures.NameGenerator
 
 object AnnotationTypeSpecUtil {
 
-  type AnnotTypeTuple = Tuple6[String,
-                               Some[String],
-                               AnnotationValueType.Value,
-                               Option[Int],
-                               Seq[String],
-                               Boolean]
+  type AnnotTypeTuple =
+    Tuple6[String, Some[String], AnnotationValueType.Value, Option[Int], Seq[String], Boolean]
 
   val nameGenerator = new NameGenerator(this.getClass)
 
@@ -23,9 +19,9 @@ object AnnotationTypeSpecUtil {
 
   def nonSelectAnnotationTypeTuple = {
     val (name, description) = annotationTypeNoValue
-    val maxValueCount = None
-    val options = Seq.empty
-    val required = false
+    val maxValueCount       = None
+    val options             = Seq.empty
+    val required            = false
 
     (name, description, maxValueCount, options, required)
   }
@@ -54,16 +50,15 @@ object AnnotationTypeSpecUtil {
   def selectAnnotationTypeTuple(): AnnotTypeTuple = {
     val (name, description) = annotationTypeNoValue
 
-    val valueType = AnnotationValueType.Select
+    val valueType     = AnnotationValueType.Select
     val maxValueCount = Some(1)
-    val options = Seq(nameGenerator.next[String], nameGenerator.next[String])
-    val required = false
+    val options       = Seq(nameGenerator.next[String], nameGenerator.next[String])
+    val required      = false
 
     (name, description, valueType, maxValueCount, options, required)
   }
 
-  val AnnotationValueTypeToTuple
-      : Map[AnnotationValueType.AnnotationValueType, AnnotTypeTuple] = Map(
+  val AnnotationValueTypeToTuple: Map[AnnotationValueType.AnnotationValueType, AnnotTypeTuple] = Map(
     AnnotationValueType.Text     -> textAnnotationTypeTuple,
     AnnotationValueType.Number   -> numberAnnotationTypeTuple,
     AnnotationValueType.DateTime -> dateTimeAnnotationTypeTuple,

@@ -2,7 +2,7 @@ package org.biobank.fixtures
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.{Materializer, ActorMaterializer}
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.persistence.query._
 import akka.stream.scaladsl.Source
 import akka.persistence.query.PersistenceQuery
@@ -16,7 +16,7 @@ trait PresistenceQueryEvents {
 
   implicit val system: ActorSystem
 
-  private implicit val mat: Materializer = ActorMaterializer()(system)
+  implicit private val mat: Materializer = ActorMaterializer()(system)
 
   val readJournal: InMemoryReadJournal =
     PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)

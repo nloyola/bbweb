@@ -1,7 +1,7 @@
 package org.biobank.domain.participants
 
 import com.google.inject.ImplementedBy
-import javax.inject.{Inject , Singleton}
+import javax.inject.{Inject, Singleton}
 import org.biobank.TestData
 import org.biobank.domain._
 import org.biobank.domain.studies.StudyId
@@ -9,8 +9,7 @@ import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 
 @ImplementedBy(classOf[ParticipantRepositoryImpl])
-trait ParticipantRepository
-    extends ReadWriteRepositoryWithSlug[ParticipantId, Participant] {
+trait ParticipantRepository extends ReadWriteRepositoryWithSlug[ParticipantId, Participant] {
 
   def withId(studyId: StudyId, participantId: ParticipantId): DomainValidation[Participant]
 
@@ -21,7 +20,7 @@ trait ParticipantRepository
 }
 
 @Singleton
-class ParticipantRepositoryImpl @Inject() (val testData: TestData)
+class ParticipantRepositoryImpl @Inject()(val testData: TestData)
     extends ReadWriteRepositoryRefImplWithSlug[ParticipantId, Participant](v => v.id)
     with ParticipantRepository {
 
@@ -39,7 +38,7 @@ class ParticipantRepositoryImpl @Inject() (val testData: TestData)
   protected def slugNotFound(slug: Slug): EntityCriteriaNotFound =
     EntityCriteriaNotFound(s"participant slug: $slug")
 
-  def withId(studyId: StudyId, participantId: ParticipantId): DomainValidation[Participant] = {
+  def withId(studyId: StudyId, participantId: ParticipantId): DomainValidation[Participant] =
     for {
       participant <- getByKey(participantId)
       validPtcp <- {
@@ -52,15 +51,14 @@ class ParticipantRepositoryImpl @Inject() (val testData: TestData)
         }
       }
     } yield validPtcp
-  }
 
-  def withUniqueId(uniqueId: String): DomainValidation[Participant] = {
-    getValues.find(p => p.uniqueId == uniqueId).toSuccess(
-      EntityCriteriaNotFound(s"participant with unique ID does not exist: $uniqueId").nel)
-  }
+  def withUniqueId(uniqueId: String): DomainValidation[Participant] =
+    getValues
+      .find(p => p.uniqueId == uniqueId).toSuccess(
+        EntityCriteriaNotFound(s"participant with unique ID does not exist: $uniqueId").nel
+      )
 
-  def allForStudy(studyId: StudyId): Set[Participant] = {
+  def allForStudy(studyId: StudyId): Set[Participant] =
     getValues.filter(x => x.studyId == studyId).toSet
-  }
 
 }

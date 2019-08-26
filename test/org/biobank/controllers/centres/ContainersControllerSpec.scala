@@ -15,12 +15,10 @@ import play.api.libs.json._
 import play.api.test.Helpers._
 
 /**
-  * Tests the REST API for [[Container]]s.
-  */
+ * Tests the REST API for [[Container]]s.
+ */
 class ContainersControllerSpec
-    extends ControllerFixture
-    with PagedResultsSharedSpec
-    with PagedResultsMatchers {
+    extends ControllerFixture with PagedResultsSharedSpec with PagedResultsMatchers {
 
   import org.biobank.TestUtils._
   import org.biobank.matchers.JsonMatchers._
@@ -42,14 +40,14 @@ class ContainersControllerSpec
         centreRepository.put(centre)
         containerTypeRepository.put(containerType)
         val addJson = containerToAddRootJson(container, containerType, centre.locations.toSeq(0))
-        val reply = makeAuthRequest(POST, uri(""), addJson).value
+        val reply   = makeAuthRequest(POST, uri(""), addJson).value
         reply must beOkResponseWithJsonReply
 
-        val json = contentAsJson(reply)
+        val json           = contentAsJson(reply)
         val replyContainer = (json \ "data").validate[StorageContainerDto]
-        replyContainer must be (jsSuccess)
+        replyContainer must be(jsSuccess)
 
-        val newContainerId = ContainerId(replyContainer.get.id)
+        val newContainerId   = ContainerId(replyContainer.get.id)
         val updatedContainer = container.copy(id = newContainerId)
 
         replyContainer.get must matchDtoToStorageContainer(updatedContainer)
@@ -60,8 +58,8 @@ class ContainersControllerSpec
 
       it("adding a container fails if centre is not defined") {
         val (container, containerType, centre) = createEntities
-        val addJson = containerToAddRootJson(container, containerType, centre.locations.toSeq(0))
-        val reply = makeAuthRequest(POST, uri(""), addJson).value
+        val addJson                            = containerToAddRootJson(container, containerType, centre.locations.toSeq(0))
+        val reply                              = makeAuthRequest(POST, uri(""), addJson).value
         reply must beNotFoundWithMessage("IdNotFound: centre id")
       }
 
@@ -69,7 +67,7 @@ class ContainersControllerSpec
         val (container, containerType, centre) = createEntities
         centreRepository.put(centre)
         val addJson = containerToAddRootJson(container, containerType, centre.locations.toSeq(0))
-        val reply = makeAuthRequest(POST, uri(""), addJson).value
+        val reply   = makeAuthRequest(POST, uri(""), addJson).value
         reply must beNotFoundWithMessage("IdNotFound: container type id")
       }
 
@@ -78,19 +76,20 @@ class ContainersControllerSpec
   }
 
   private def createEntities(): (StorageContainer, StorageContainerType, EnabledCentre) = {
-    val location = factory.createLocation
-    val centre = factory.defaultEnabledCentre.copy(locations = Set(location))
+    val location      = factory.createLocation
+    val centre        = factory.defaultEnabledCentre.copy(locations = Set(location))
     val containerType = factory.defaultStorageContainerType
-    val sharedProperties = ContainerSharedProperties(centre.id,
-                                                     location.id,
-                                                     PreservationTemperature.Minus80celcius)
+    val sharedProperties =
+      ContainerSharedProperties(centre.id, location.id, PreservationTemperature.Minus80celcius)
     val rootContainer = factory.createStorageContainer.copy(sharedProperties = Some(sharedProperties))
     (rootContainer, containerType, centre)
   }
 
-  private def containerToAddRootJson(container: Container,
-                                     containerType: ContainerType,
-                                     location: Location): JsValue = {
+  private def containerToAddRootJson(
+      container:     Container,
+      containerType: ContainerType,
+      location:      Location
+    ): JsValue = {
     container.parentId mustBe None
     Json.obj("inventoryId"     -> container.inventoryId,
              "label"           -> container.label,

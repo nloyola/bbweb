@@ -12,11 +12,11 @@ trait HasAnnotations[T <: ConcurrencySafeEntity[_]] {
   def withoutAnnotation(annotationTypeId: AnnotationTypeId): DomainValidation[T]
 
   /** removes an annotation type. */
-  protected def checkRemoveAnnotation(annotationTypeId: AnnotationTypeId)
-      : DomainValidation[Annotation] = {
+  protected def checkRemoveAnnotation(annotationTypeId: AnnotationTypeId): DomainValidation[Annotation] =
     annotations
-      .find { x => x.annotationTypeId == annotationTypeId }
+      .find { x =>
+        x.annotationTypeId == annotationTypeId
+      }
       .toSuccessNel(s"annotation does not exist: $annotationTypeId")
-  }
 
 }

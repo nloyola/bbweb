@@ -25,10 +25,7 @@ trait StudyPredicates extends HasNamePredicates[Study] {
  *
  */
 sealed trait Study
-    extends ConcurrencySafeEntity[StudyId]
-    with HasState
-    with HasUniqueName
-    with HasSlug
+    extends ConcurrencySafeEntity[StudyId] with HasState with HasUniqueName with HasSlug
     with HasOptionalDescription {
 
   val state: EntityState
@@ -54,42 +51,38 @@ sealed trait Study
 object Study {
 
   val disabledState: EntityState = new EntityState("disabled")
-  val enabledState: EntityState  = new EntityState("enabled")
-  val retiredState: EntityState  = new EntityState("retired")
+  val enabledState:  EntityState = new EntityState("enabled")
+  val retiredState:  EntityState = new EntityState("retired")
 
-  val studyStates: List[EntityState] = List(disabledState,
-                                            enabledState,
-                                            retiredState)
+  val studyStates: List[EntityState] = List(disabledState, enabledState, retiredState)
 
   val sort2Compare: Map[String, (Study, Study) => Boolean] =
-    Map[String, (Study, Study) => Boolean](
-      "name"  -> compareByName,
-      "state" -> compareByState)
+    Map[String, (Study, Study) => Boolean]("name" -> compareByName, "state" -> compareByState)
 
   @SuppressWarnings(Array("org.wartremover.warts.Option2Iterable"))
   implicit val studyFormat: Format[Study] = new Format[Study] {
-      override def writes(study: Study): JsValue = {
-        ConcurrencySafeEntity.toJson(study) ++
+    override def writes(study: Study): JsValue =
+      ConcurrencySafeEntity.toJson(study) ++
         Json.obj("state"           -> study.state.id,
                  "slug"            -> study.slug,
                  "name"            -> study.name,
                  "annotationTypes" -> study.annotationTypes) ++
         JsObject(
           Seq[(String, JsValue)]() ++
-            study.description.map("description" -> Json.toJson(_)))
-      }
+            study.description.map("description" -> Json.toJson(_))
+        )
 
-      override def reads(json: JsValue): JsResult[Study] = (json \ "state") match {
-          case JsDefined(JsString(disabledState.id)) => json.validate[DisabledStudy]
-          case JsDefined(JsString(enabledState.id))  => json.validate[EnabledStudy]
-          case JsDefined(JsString(retiredState.id))  => json.validate[RetiredStudy]
-          case _ => JsError("error")
-        }
+    override def reads(json: JsValue): JsResult[Study] = (json \ "state") match {
+      case JsDefined(JsString(disabledState.id)) => json.validate[DisabledStudy]
+      case JsDefined(JsString(enabledState.id))  => json.validate[EnabledStudy]
+      case JsDefined(JsString(retiredState.id))  => json.validate[RetiredStudy]
+      case _                                     => JsError("error")
     }
+  }
 
   implicit val disabledStudyReads: Reads[DisabledStudy] = Json.reads[DisabledStudy]
-  implicit val enabledStudyReads: Reads[EnabledStudy]   = Json.reads[EnabledStudy]
-  implicit val retiredStudyReads: Reads[RetiredStudy]   = Json.reads[RetiredStudy]
+  implicit val enabledStudyReads:  Reads[EnabledStudy]  = Json.reads[EnabledStudy]
+  implicit val retiredStudyReads:  Reads[RetiredStudy]  = Json.reads[RetiredStudy]
 
   def compareByName(a: Study, b: Study): Boolean =
     (a.name compareToIgnoreCase b.name) < 0
@@ -119,45 +112,34 @@ trait StudyValidations {
  * NOTE: functions withName and withDescription should be moved to the Study trait after this
  *       bug is fixed: https://issues.scala-lang.org/browse/SI-5122
  */
-final case class DisabledStudy(id:              StudyId,
-                               version:         Long,
-                               timeAdded:       OffsetDateTime,
-                               timeModified:    Option[OffsetDateTime],
-                               slug: Slug,
-                               name:            String,
-                               description:     Option[String],
-                               annotationTypes: Set[AnnotationType])
-    extends { val state: EntityState = Study.disabledState }
-    with Study
-    with StudyValidations
-    with AnnotationTypeValidations
-    with HasAnnotationTypes
-    with HasSlug {
+final case class DisabledStudy(
+    id:              StudyId,
+    version:         Long,
+    timeAdded:       OffsetDateTime,
+    timeModified:    Option[OffsetDateTime],
+    slug:            Slug,
+    name:            String,
+    description:     Option[String],
+    annotationTypes: Set[AnnotationType])
+    extends { val state: EntityState = Study.disabledState } with Study with StudyValidations
+with AnnotationTypeValidations with HasAnnotationTypes with HasSlug {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
   /** Used to change the name. */
-  def withName(name: String): DomainValidation[DisabledStudy] = {
+  def withName(name: String): DomainValidation[DisabledStudy] =
     validateString(name, NameMinLength, InvalidName) map { _ =>
-      copy(slug         = Slug(name),
-           name         = name,
-           version      = version + 1,
-           timeModified = Some(OffsetDateTime.now))
+      copy(slug = Slug(name), name = name, version = version + 1, timeModified = Some(OffsetDateTime.now))
     }
-  }
 
   /** Used to change the description. */
-  def withDescription(description: Option[String]): DomainValidation[DisabledStudy] = {
+  def withDescription(description: Option[String]): DomainValidation[DisabledStudy] =
     validateNonEmptyStringOption(description, InvalidDescription) map { _ =>
-      copy(description  = description,
-           version      = version + 1,
-           timeModified = Some(OffsetDateTime.now))
+      copy(description = description, version = version + 1, timeModified = Some(OffsetDateTime.now))
     }
-  }
 
   /** adds a participant annotation type to this study. */
-  def withParticipantAnnotationType(annotationType: AnnotationType)
-      : DomainValidation[DisabledStudy] = {
+  def withParticipantAnnotationType(annotationType: AnnotationType): DomainValidation[DisabledStudy] =
     checkAddAnnotationType(annotationType).map { _ =>
       // replaces previous annotation type with same unique id
       val newAnnotationTypes = annotationTypes - annotationType + annotationType
@@ -165,20 +147,18 @@ final case class DisabledStudy(id:              StudyId,
            version         = version + 1,
            timeModified    = Some(OffsetDateTime.now))
     }
-  }
 
   /** removes a participant annotation type from this study. */
-  def removeParticipantAnnotationType(annotationTypeId: AnnotationTypeId): DomainValidation[DisabledStudy] = {
+  def removeParticipantAnnotationType(annotationTypeId: AnnotationTypeId): DomainValidation[DisabledStudy] =
     checkRemoveAnnotationType(annotationTypeId).map { annotationType =>
       val newAnnotationTypes = annotationTypes - annotationType
       copy(annotationTypes = newAnnotationTypes,
            version         = version + 1,
            timeModified    = Some(OffsetDateTime.now))
     }
-  }
 
   /** Used to enable a study after it has been configured, or had configuration changes made on it. */
-  def enable(): DomainValidation[EnabledStudy] = {
+  def enable(): DomainValidation[EnabledStudy] =
     EnabledStudy(id              = this.id,
                  version         = this.version + 1,
                  timeAdded       = this.timeAdded,
@@ -187,10 +167,9 @@ final case class DisabledStudy(id:              StudyId,
                  name            = this.name,
                  description     = this.description,
                  annotationTypes = this.annotationTypes).successNel[String]
-  }
 
   /** When a study will no longer collect specimens from participants it can be retired. */
-  def retire(): DomainValidation[RetiredStudy] = {
+  def retire(): DomainValidation[RetiredStudy] =
     RetiredStudy(id              = this.id,
                  version         = this.version + 1,
                  timeAdded       = this.timeAdded,
@@ -199,7 +178,6 @@ final case class DisabledStudy(id:              StudyId,
                  name            = this.name,
                  description     = this.description,
                  annotationTypes = this.annotationTypes).successNel[String]
-  }
 
 }
 
@@ -215,17 +193,19 @@ object DisabledStudy extends StudyValidations with AnnotationTypeValidations {
    *
    * Performs validation on fields.
    */
-  def create(id:              StudyId,
-             version:         Long,
-             name:            String,
-             description:     Option[String],
-             annotationTypes: Set[AnnotationType])
-      : DomainValidation[DisabledStudy] = {
+  def create(
+      id:              StudyId,
+      version:         Long,
+      name:            String,
+      description:     Option[String],
+      annotationTypes: Set[AnnotationType]
+    ): DomainValidation[DisabledStudy] =
     (validateId(id) |@|
-       validateVersion(version) |@|
-       validateNonEmptyString(name, InvalidName) |@|
-       validateNonEmptyStringOption(description, InvalidDescription) |@|
-       annotationTypes.toList.traverseU(validate)) { case _ =>
+      validateVersion(version) |@|
+      validateNonEmptyString(name, InvalidName) |@|
+      validateNonEmptyStringOption(description, InvalidDescription) |@|
+      annotationTypes.toList.traverseU(validate)) {
+      case _ =>
         DisabledStudy(id              = id,
                       version         = version,
                       timeAdded       = OffsetDateTime.now,
@@ -235,7 +215,6 @@ object DisabledStudy extends StudyValidations with AnnotationTypeValidations {
                       description     = description,
                       annotationTypes = annotationTypes)
     }
-  }
 
 }
 
@@ -245,18 +224,18 @@ object DisabledStudy extends StudyValidations with AnnotationTypeValidations {
  * This class has a private constructor and instances of this class can only be created by enabling a
  * [[domain.studies.DisabledStudy DisabledStudy]].
  */
-final case class EnabledStudy(id:              StudyId,
-                              version:         Long,
-                              timeAdded:       OffsetDateTime,
-                              timeModified:    Option[OffsetDateTime],
-                              slug: Slug,
-                              name:            String,
-                              description:     Option[String],
-                              annotationTypes: Set[AnnotationType])
-    extends { val state: EntityState = Study.enabledState }
-    with Study {
+final case class EnabledStudy(
+    id:              StudyId,
+    version:         Long,
+    timeAdded:       OffsetDateTime,
+    timeModified:    Option[OffsetDateTime],
+    slug:            Slug,
+    name:            String,
+    description:     Option[String],
+    annotationTypes: Set[AnnotationType])
+    extends { val state: EntityState = Study.enabledState } with Study {
 
-  def disable(): DomainValidation[DisabledStudy] = {
+  def disable(): DomainValidation[DisabledStudy] =
     DisabledStudy(id              = this.id,
                   version         = this.version + 1,
                   timeAdded       = this.timeAdded,
@@ -265,7 +244,6 @@ final case class EnabledStudy(id:              StudyId,
                   name            = this.name,
                   description     = this.description,
                   annotationTypes = this.annotationTypes).successNel[String]
-  }
 }
 
 /**
@@ -274,18 +252,18 @@ final case class EnabledStudy(id:              StudyId,
  * This class has a private constructor and instances of this class can only be created by retiring a
  * [[domain.studies.RetiredStudy RetiredStudy]].
  */
-final case class RetiredStudy(id:              StudyId,
-                              version:         Long,
-                              timeAdded:       OffsetDateTime,
-                              timeModified:    Option[OffsetDateTime],
-                              slug: Slug,
-                              name:            String,
-                              description:     Option[String],
-                              annotationTypes: Set[AnnotationType])
-    extends { val state: EntityState = Study.retiredState }
-    with Study {
+final case class RetiredStudy(
+    id:              StudyId,
+    version:         Long,
+    timeAdded:       OffsetDateTime,
+    timeModified:    Option[OffsetDateTime],
+    slug:            Slug,
+    name:            String,
+    description:     Option[String],
+    annotationTypes: Set[AnnotationType])
+    extends { val state: EntityState = Study.retiredState } with Study {
 
-  def unretire(): DomainValidation[DisabledStudy] = {
+  def unretire(): DomainValidation[DisabledStudy] =
     DisabledStudy(id              = this.id,
                   version         = this.version + 1,
                   timeAdded       = this.timeAdded,
@@ -294,5 +272,4 @@ final case class RetiredStudy(id:              StudyId,
                   name            = this.name,
                   description     = this.description,
                   annotationTypes = this.annotationTypes).successNel[String]
-  }
 }

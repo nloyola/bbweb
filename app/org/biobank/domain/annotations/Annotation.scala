@@ -30,22 +30,21 @@ import scalaz.Validation.FlatMap._
  * [[domain.annotations.AnnotationValueType.Select Select]] then the value of the annotation is stored in this
  * property.
  */
-final case class Annotation(annotationTypeId: AnnotationTypeId,
-                            valueType:        AnnotationValueType,
-                            stringValue:      Option[String],
-                            numberValue:      Option[String], // FIXME: should we use java.lang.Number
-                            selectedValues:   Set[String]) {
+final case class Annotation(
+    annotationTypeId: AnnotationTypeId,
+    valueType:        AnnotationValueType,
+    stringValue:      Option[String],
+    numberValue:      Option[String], // FIXME: should we use java.lang.Number
+    selectedValues:   Set[String]) {
 
-  override def equals(that: Any): Boolean = {
+  override def equals(that: Any): Boolean =
     that match {
       case that: Annotation => this.annotationTypeId == that.annotationTypeId
       case _ => false
     }
-  }
 
-  override def hashCode:Int = {
+  override def hashCode: Int =
     annotationTypeId.id.toUpperCase.hashCode
-  }
 
 }
 
@@ -59,56 +58,58 @@ object Annotation {
 
   implicit val annotationFormat: Format[Annotation] = Json.format[Annotation]
 
-  def create(annotationTypeId: AnnotationTypeId,
-             valueType:        AnnotationValueType,
-             stringValue:      Option[String],
-             numberValue:      Option[String],
-             selectedValues:   Set[String])
-      : DomainValidation[Annotation] = {
+  def create(
+      annotationTypeId: AnnotationTypeId,
+      valueType:        AnnotationValueType,
+      stringValue:      Option[String],
+      numberValue:      Option[String],
+      selectedValues:   Set[String]
+    ): DomainValidation[Annotation] =
     validate(annotationTypeId, stringValue, numberValue, selectedValues)
-      .map { _ => Annotation(annotationTypeId, valueType, stringValue, numberValue, selectedValues) }
-  }
+      .map { _ =>
+        Annotation(annotationTypeId, valueType, stringValue, numberValue, selectedValues)
+      }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validate(annotationTypeId: AnnotationTypeId,
-               stringValue:      Option[String],
-               numberValue:      Option[String],
-               selectedValues:   Set[String])
-      : DomainValidation[Unit] = {
+  def validate(
+      annotationTypeId: AnnotationTypeId,
+      stringValue:      Option[String],
+      numberValue:      Option[String],
+      selectedValues:   Set[String]
+    ): DomainValidation[Unit] = {
 
-    def validateAnnotationOption(opt: String) = {
+    def validateAnnotationOption(opt: String) =
       validateNonEmptyString(opt, NonEmptyString)
-    }
 
     // at least one, and only one of the three can be assigned
-    def validateValues(stringValue:    Option[String],
-                       numberValue:    Option[String],
-                       selectedValues: Set[String])
-        : DomainValidation[Unit] = {
+    def validateValues(
+        stringValue:    Option[String],
+        numberValue:    Option[String],
+        selectedValues: Set[String]
+      ): DomainValidation[Unit] =
       if ((selectedValues.isEmpty && stringValue.isDefined && numberValue.isDefined)
-            || (!selectedValues.isEmpty && (stringValue.isDefined || numberValue.isDefined))) {
+          || (!selectedValues.isEmpty && (stringValue.isDefined || numberValue.isDefined))) {
         DomainError("cannot have multiple values assigned").failureNel[Unit]
       } else {
         ().successNel[String]
       }
-    }
 
     (validateId(annotationTypeId, AnnotationTypeIdRequired) |@|
-       validateNonEmptyStringOption(stringValue, NonEmptyString) |@|
-       validateNumberStringOption(numberValue, InvalidNumberString("numberValue")) |@|
-       selectedValues.toList.traverseU(validateAnnotationOption) |@|
-       validateValues(stringValue, numberValue, selectedValues)) { case _ =>
+      validateNonEmptyStringOption(stringValue, NonEmptyString) |@|
+      validateNumberStringOption(numberValue, InvalidNumberString("numberValue")) |@|
+      selectedValues.toList.traverseU(validateAnnotationOption) |@|
+      validateValues(stringValue, numberValue, selectedValues)) {
+      case _ =>
         ()
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validate(annotation: Annotation): DomainValidation[Unit] = {
+  def validate(annotation: Annotation): DomainValidation[Unit] =
     validate(annotation.annotationTypeId,
              annotation.stringValue,
              annotation.numberValue,
              annotation.selectedValues)
-  }
 
   /**
    * Checks the following:
@@ -120,9 +121,10 @@ object Annotation {
    * A DomainError is the result if these conditions fail.
    */
   @SuppressWarnings(Array("org.wartremover.warts.Monad"))
-  def validateAnnotations(annotationTypes: Set[AnnotationType],
-                          annotations:     List[Annotation])
-      : DomainValidation[Unit]= {
+  def validateAnnotations(
+      annotationTypes: Set[AnnotationType],
+      annotations:     List[Annotation]
+    ): DomainValidation[Unit] = {
 
     val requiredAnnotTypeIds = annotationTypes
       .filter(annotationType => annotationType.required)
@@ -163,8 +165,10 @@ object Annotation {
           if (notBelonging.isEmpty) {
             ().successNel[String]
           } else {
-            DomainError("annotation(s) do not belong to annotation types: "
-                          + notBelonging.mkString(", ")).failureNel[Unit]
+            DomainError(
+              "annotation(s) do not belong to annotation types: "
+                + notBelonging.mkString(", ")
+            ).failureNel[Unit]
           }
         }
       } yield allBelong

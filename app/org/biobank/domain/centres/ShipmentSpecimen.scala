@@ -41,81 +41,67 @@ trait ShipmentSpecimenValidations {
  * [org.biobank.domain.centres.Shipment].
  *
  */
-final case class ShipmentSpecimen(id:                  ShipmentSpecimenId,
-                                  version:             Long,
-                                  timeAdded:           OffsetDateTime,
-                                  timeModified:        Option[OffsetDateTime],
-                                  shipmentId:          ShipmentId,
-                                  specimenId:          SpecimenId,
-                                  state:               ShipmentItemState,
-                                  shipmentContainerId: Option[ShipmentContainerId])
-    extends ConcurrencySafeEntity[ShipmentSpecimenId]
-    with ShipmentSpecimenValidations {
+final case class ShipmentSpecimen(
+    id:                  ShipmentSpecimenId,
+    version:             Long,
+    timeAdded:           OffsetDateTime,
+    timeModified:        Option[OffsetDateTime],
+    shipmentId:          ShipmentId,
+    specimenId:          SpecimenId,
+    state:               ShipmentItemState,
+    shipmentContainerId: Option[ShipmentContainerId])
+    extends ConcurrencySafeEntity[ShipmentSpecimenId] with ShipmentSpecimenValidations {
 
   import org.biobank.domain.DomainValidations._
 
-  def withShipmentContainer(id: Option[ShipmentContainerId]): DomainValidation[ShipmentSpecimen] = {
+  def withShipmentContainer(id: Option[ShipmentContainerId]): DomainValidation[ShipmentSpecimen] =
     validateIdOption(id, ShipmentContainerIdInvalid) map { _ =>
-      copy(shipmentContainerId = id,
-           version             = version + 1,
-           timeModified        = Some(OffsetDateTime.now))
+      copy(shipmentContainerId = id, version = version + 1, timeModified = Some(OffsetDateTime.now))
     }
-  }
 
-  def present: DomainValidation[ShipmentSpecimen] = {
+  def present: DomainValidation[ShipmentSpecimen] =
     if (state == ShipmentItemState.Present) {
       DomainError("cannot change state to PRESENT from PRESENT state").failureNel[ShipmentSpecimen]
     } else {
-      copy(state        = ShipmentItemState.Present,
-           version      = version + 1,
-           timeModified = Some(OffsetDateTime.now)).successNel[String]
+      copy(state = ShipmentItemState.Present, version = version + 1, timeModified = Some(OffsetDateTime.now))
+        .successNel[String]
     }
-  }
 
-  def received: DomainValidation[ShipmentSpecimen] = {
+  def received: DomainValidation[ShipmentSpecimen] =
     if (state != ShipmentItemState.Present) {
       DomainError(s"cannot change state to RECEIVED: invalid state: $state").failureNel[ShipmentSpecimen]
     } else {
-      copy(state        = ShipmentItemState.Received,
-           version      = version + 1,
-           timeModified = Some(OffsetDateTime.now)).successNel[String]
+      copy(state = ShipmentItemState.Received, version = version + 1, timeModified = Some(OffsetDateTime.now))
+        .successNel[String]
     }
-  }
 
-  def missing: DomainValidation[ShipmentSpecimen] = {
+  def missing: DomainValidation[ShipmentSpecimen] =
     if (state != ShipmentItemState.Present) {
       DomainError(s"cannot change state to MISSING: invalid state: $state").failureNel[ShipmentSpecimen]
     } else {
-      copy(state        = ShipmentItemState.Missing,
-           version      = version + 1,
-           timeModified = Some(OffsetDateTime.now)).successNel[String]
+      copy(state = ShipmentItemState.Missing, version = version + 1, timeModified = Some(OffsetDateTime.now))
+        .successNel[String]
     }
-  }
 
-  def extra: DomainValidation[ShipmentSpecimen] = {
+  def extra: DomainValidation[ShipmentSpecimen] =
     if (state != ShipmentItemState.Present) {
       DomainError(s"cannot change state to EXTRA: invalid state: $state").failureNel[ShipmentSpecimen]
     } else {
-      copy(state        = ShipmentItemState.Extra,
-           version      = version + 1,
-           timeModified = Some(OffsetDateTime.now)).successNel[String]
+      copy(state = ShipmentItemState.Extra, version = version + 1, timeModified = Some(OffsetDateTime.now))
+        .successNel[String]
     }
-  }
 
-  def isStatePresent(): DomainValidation[Unit] = {
+  def isStatePresent(): DomainValidation[Unit] =
     if (state == ShipmentItemState.Present) ().successNel[String]
     else DomainError(s"shipment specimen is not in present state").failureNel[Unit]
-  }
 
-  def isStateNotPresent(): DomainValidation[Unit] = {
+  def isStateNotPresent(): DomainValidation[Unit] =
     if (state != ShipmentItemState.Present) ().successNel[String]
     else DomainError(s"shipment specimen in present state").failureNel[Unit]
-  }
 
-  def isStateExtra(): DomainValidation[Unit] = {
+  def isStateExtra(): DomainValidation[Unit] =
     if (state == ShipmentItemState.Extra) ().successNel[String]
     else DomainError(s"shipment specimen is not in extra state").failureNel[Unit]
-  }
 
   override def toString: String =
     s"""|${this.getClass.getSimpleName}: {
@@ -137,43 +123,50 @@ object ShipmentSpecimen extends ShipmentSpecimenValidations {
   // Do not want JSON to create a sub object, we just want it to be converted
   // to a single string
   implicit val shipmentIdReader: Reads[ShipmentId] =
-    (__ \ "id").read[String].map( new ShipmentId(_) )
+    (__ \ "id").read[String].map(new ShipmentId(_))
 
   implicit val shipmentIdWriter: Writes[ShipmentId] =
-    Writes{ (shipmentId: ShipmentId) => JsString(shipmentId.id) }
+    Writes { (shipmentId: ShipmentId) =>
+      JsString(shipmentId.id)
+    }
 
   implicit val shipmentSpecimenFormat: Format[ShipmentSpecimen] = Json.format[ShipmentSpecimen]
 
   def compareByState(a: ShipmentSpecimen, b: ShipmentSpecimen): Boolean = (a.state compareTo b.state) < 0
 
-  def create(id:                  ShipmentSpecimenId,
-             version:             Long,
-             shipmentId:          ShipmentId,
-             specimenId:          SpecimenId,
-             state:               ShipmentItemState,
-             shipmentContainerId: Option[ShipmentContainerId]): DomainValidation[ShipmentSpecimen] = {
+  def create(
+      id:                  ShipmentSpecimenId,
+      version:             Long,
+      shipmentId:          ShipmentId,
+      specimenId:          SpecimenId,
+      state:               ShipmentItemState,
+      shipmentContainerId: Option[ShipmentContainerId]
+    ): DomainValidation[ShipmentSpecimen] =
     validate(id, version, shipmentId, specimenId, shipmentContainerId)
-      .map(_ => ShipmentSpecimen(id,
-                                 version,
-                                 OffsetDateTime.now,
-                                 None,
-                                 shipmentId,
-                                 specimenId,
-                                 state,
-                                 shipmentContainerId))
-  }
+      .map(
+        _ =>
+          ShipmentSpecimen(id,
+                           version,
+                           OffsetDateTime.now,
+                           None,
+                           shipmentId,
+                           specimenId,
+                           state,
+                           shipmentContainerId)
+      )
 
-  def validate(id:                  ShipmentSpecimenId,
-               version:             Long,
-               shipmentId:          ShipmentId,
-               specimenId:          SpecimenId,
-               shipmentContainerId: Option[ShipmentContainerId]): DomainValidation[Unit] = {
+  def validate(
+      id:                  ShipmentSpecimenId,
+      version:             Long,
+      shipmentId:          ShipmentId,
+      specimenId:          SpecimenId,
+      shipmentContainerId: Option[ShipmentContainerId]
+    ): DomainValidation[Unit] =
     (validateId(id) |@|
-       validateVersion(version) |@|
-       validateId(shipmentId, ShipmentIdRequired) |@|
-       validateId(specimenId, SpecimenIdRequired) |@|
-       validateIdOption(shipmentContainerId, ShipmentContainerIdInvalid)) {
+      validateVersion(version) |@|
+      validateId(shipmentId, ShipmentIdRequired) |@|
+      validateId(specimenId, SpecimenIdRequired) |@|
+      validateIdOption(shipmentContainerId, ShipmentContainerIdInvalid)) {
       case _ => ()
     }
-  }
 }

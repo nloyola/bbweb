@@ -19,7 +19,7 @@ trait CeventSpecimenRepository extends ReadWriteRepository[SpecimenId, CeventSpe
 }
 
 @Singleton
-class CeventSpecimenRepositoryImpl @Inject() (val testData: TestData)
+class CeventSpecimenRepositoryImpl @Inject()(val testData: TestData)
     extends ReadWriteRepositoryRefImpl[SpecimenId, CeventSpecimen](v => v.specimenId)
     with CeventSpecimenRepository {
 
@@ -38,9 +38,8 @@ class CeventSpecimenRepositoryImpl @Inject() (val testData: TestData)
     testData.testCeventSpecimens.foreach(put)
   }
 
-  def withCeventId(ceventId: CollectionEventId): Set[CeventSpecimen] = {
+  def withCeventId(ceventId: CollectionEventId): Set[CeventSpecimen] =
     getValues.filter(x => x.ceventId == ceventId).toSet
-  }
 
   def withSpecimenId(specimenId: SpecimenId): DomainValidation[CeventSpecimen] = {
     val ceventSpecimens = getValues.filter(x => x.specimenId == specimenId).toSet

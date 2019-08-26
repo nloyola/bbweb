@@ -1,7 +1,7 @@
 package org.biobank.domain.centres
 
 import com.google.inject.ImplementedBy
-import javax.inject.{Inject , Singleton}
+import javax.inject.{Inject, Singleton}
 import org.biobank.TestData
 import org.biobank.domain._
 import org.biobank.domain.studies.StudyId
@@ -24,9 +24,8 @@ trait CentreRepository extends ReadWriteRepositoryWithSlug[CentreId, Centre] {
 }
 
 @Singleton
-class CentreRepositoryImpl @Inject() (val testData: TestData)
-    extends ReadWriteRepositoryRefImplWithSlug[CentreId, Centre](v => v.id)
-    with CentreRepository {
+class CentreRepositoryImpl @Inject()(val testData: TestData)
+    extends ReadWriteRepositoryRefImplWithSlug[CentreId, Centre](v => v.id) with CentreRepository {
   import org.biobank.CommonValidations._
 
   override def init(): Unit = {
@@ -41,7 +40,7 @@ class CentreRepositoryImpl @Inject() (val testData: TestData)
   protected def slugNotFound(slug: Slug): EntityCriteriaNotFound =
     EntityCriteriaNotFound(s"centre slug: $slug")
 
-  def getDisabled(id: CentreId): DomainValidation[DisabledCentre] = {
+  def getDisabled(id: CentreId): DomainValidation[DisabledCentre] =
     for {
       centre <- getByKey(id)
       disabled <- {
@@ -51,9 +50,8 @@ class CentreRepositoryImpl @Inject() (val testData: TestData)
         }
       }
     } yield disabled
-  }
 
-  def getEnabled(id: CentreId): DomainValidation[EnabledCentre] = {
+  def getEnabled(id: CentreId): DomainValidation[EnabledCentre] =
     for {
       centre <- getByKey(id)
       enabled <- {
@@ -63,29 +61,28 @@ class CentreRepositoryImpl @Inject() (val testData: TestData)
         }
       }
     } yield enabled
-  }
 
   def getByLocationId(id: LocationId): DomainValidation[Centre] = {
-    val centres = getValues.filter { c => !c.locations.filter( l => l.id == id ).isEmpty}
+    val centres = getValues.filter { c =>
+      !c.locations.filter(l => l.id == id).isEmpty
+    }
     if (centres.isEmpty) {
       EntityCriteriaError(s"centre with location id does not exist: $id").failureNel[Centre]
-    } else if (centres.size > 1){
+    } else if (centres.size > 1) {
       EntityCriteriaError(s"multiple centres with location id: $id").failureNel[Centre]
     } else {
       centres.headOption.toSuccessNel("list not expected to be empty")
     }
   }
 
-  def withStudy(studyId: StudyId): Set[Centre] = {
-    getValues.filter { c => c.studyIds.contains(studyId) }.toSet
-  }
+  def withStudy(studyId: StudyId): Set[Centre] =
+    getValues.filter { c =>
+      c.studyIds.contains(studyId)
+    }.toSet
 
-  def getByNames(names: Set[String]): Set[Centre] = {
-    getValues.
-      filter { centre =>
-        names.contains(centre.name)
-      }.
-      toSet
-  }
+  def getByNames(names: Set[String]): Set[Centre] =
+    getValues.filter { centre =>
+      names.contains(centre.name)
+    }.toSet
 
 }

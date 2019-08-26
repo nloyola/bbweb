@@ -14,24 +14,25 @@ object Slug {
 
   def slugify(input: String): String = {
     import java.text.Normalizer
-    Normalizer.normalize(input, Normalizer.Form.NFD)
+    Normalizer
+      .normalize(input, Normalizer.Form.NFD)
       .replaceAll("[^\\w\\s-]", "") // Remove all non-word, non-space or non-dash characters
-      .replace('-', ' ')            // Replace dashes with spaces
-      .trim                         // Trim leading/trailing whitespace (including what used to be
-                                    // leading/trailing dashes)
-      .replaceAll("\\s+", "-")      // Replace whitespace (including newlines and repetitions) with single
-                                    // dashes
-      .toLowerCase                  // Lowercase the final results
+      .replace('-', ' ') // Replace dashes with spaces
+      .trim // Trim leading/trailing whitespace (including what used to be
+      // leading/trailing dashes)
+      .replaceAll("\\s+", "-") // Replace whitespace (including newlines and repetitions) with single
+      // dashes
+      .toLowerCase // Lowercase the final results
   }
 
   // Do not want JSON to create a sub object, we just want it to be converted
   // to a single string
   implicit val slugFormat: Format[Slug] = new Format[Slug] {
 
-      override def writes(id: Slug): JsValue = JsString(id.id)
+    override def writes(id: Slug): JsValue = JsString(id.id)
 
-      override def reads(json: JsValue): JsResult[Slug] =
-        Reads.StringReads.reads(json).map(Slug.apply _)
-    }
+    override def reads(json: JsValue): JsResult[Slug] =
+      Reads.StringReads.reads(json).map(Slug.apply _)
+  }
 
 }

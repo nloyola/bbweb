@@ -35,10 +35,10 @@ object QueryStringParser extends RegexParsers {
   import QueryStringParserGrammar._
 
   def singleQuotedValue: Parser[Value] =
-    """'[^\"=!~<>&]*'""".r ^^ { case v => Value(v.substring(1, v.size - 1))}
+    """'[^\"=!~<>&]*'""".r ^^ { case v => Value(v.substring(1, v.size - 1)) }
 
   def doubleQuotedValue: Parser[Value] =
-    """"[^'=!~<>&]*"""".r ^^ { case v => Value(v.substring(1, v.size - 1))}
+    """"[^'=!~<>&]*"""".r ^^ { case v => Value(v.substring(1, v.size - 1)) }
 
   def unquotedValue: Parser[Value] =
     """[^'\"\=!~<>&]+""".r ^^ { case v => Value(v) }
@@ -50,21 +50,22 @@ object QueryStringParser extends RegexParsers {
     """[_a-zA-Z]+[_a-zA-Z0-9.]*""".r ^^ { case n => Name(n) }
 
   def expression: Parser[Expression] =
-    name ~ "=" ~ value ^^ { case n ~ _ ~ v => Expression(n.name, v.name)}
+    name ~ "=" ~ value ^^ { case n ~ _ ~ v => Expression(n.name, v.name) }
 
   def expressions: Parser[List[Expression]] =
     repsep(expression, "&")
 
-  def apply(str: String): Option[QueryStringExpressions] = {
+  def apply(str: String): Option[QueryStringExpressions] =
     if (str.trim.isEmpty) {
       Some(Map[String, String]())
     } else {
       parseAll(expressions, str) match {
         case NoSuccess(_, _) => None
         case Success(result, _) =>
-          val map = result.map { e => (e.name -> e.value) }.toMap
+          val map = result.map { e =>
+            (e.name -> e.value)
+          }.toMap
           Some(map)
       }
     }
-  }
 }

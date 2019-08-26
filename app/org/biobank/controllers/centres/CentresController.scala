@@ -11,7 +11,7 @@ import org.biobank.services.centres.CentresService
 import org.biobank.services.studies.StudiesService
 import play.api.libs.json._
 import play.api.mvc._
-import play.api.{ Environment, Logger }
+import play.api.{Environment, Logger}
 import scala.concurrent.{ExecutionContext, Future}
 import scalaz.Scalaz._
 
@@ -20,12 +20,15 @@ import scalaz.Scalaz._
  */
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
 @Singleton
-class CentresController @Inject()(controllerComponents: ControllerComponents,
-                                  val action:           BbwebAction,
-                                  val env:              Environment,
-                                  val service:          CentresService,
-                                  val studiesService:   StudiesService)
-                               (implicit val ec: ExecutionContext)
+class CentresController @Inject()(
+    controllerComponents: ControllerComponents,
+    val action:           BbwebAction,
+    val env:              Environment,
+    val service:          CentresService,
+    val studiesService:   StudiesService
+  )(
+    implicit
+    val ec: ExecutionContext)
     extends CommandController(controllerComponents) {
 
   val log: Logger = Logger(this.getClass)
@@ -39,32 +42,24 @@ class CentresController @Inject()(controllerComponents: ControllerComponents,
 
   def list: Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(
-        err => {
-          validationReply(Future.successful(err.failure[PagedResults[CentreDto]]))
-        },
-        pagedQuery => {
-          validationReply(service.getCentres(request.identity.user.id, pagedQuery))
-        }
-      )
+      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(err => {
+        validationReply(Future.successful(err.failure[PagedResults[CentreDto]]))
+      }, pagedQuery => {
+        validationReply(service.getCentres(request.identity.user.id, pagedQuery))
+      })
     }
 
   def listNames: Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      FilterAndSortQueryHelper(request.rawQueryString).fold(
-        err => {
-          validationReply(Future.successful(err.failure[Seq[CentreDto]]))
-        },
-        query => {
-          validationReply(service.getCentreNames(request.identity.user.id,
-                                                 query.filter,
-                                                 query.sort))
-        }
-      )
+      FilterAndSortQueryHelper(request.rawQueryString).fold(err => {
+        validationReply(Future.successful(err.failure[Seq[CentreDto]]))
+      }, query => {
+        validationReply(service.getCentreNames(request.identity.user.id, query.filter, query.sort))
+      })
     }
 
   def searchLocations(): Action[JsValue] =
-    commandAction[SearchCentreLocationsCmd](JsNull){ cmd =>
+    commandAction[SearchCentreLocationsCmd](JsNull) { cmd =>
       Future(validationReply(service.searchLocations(cmd)))
     }
 

@@ -2,9 +2,9 @@ package org.biobank.services.participants
 
 import akka.actor._
 import akka.pattern._
-import javax.inject.{ Inject, Named }
+import javax.inject.{Inject, Named}
 import org.biobank.fixtures._
-import org.biobank.domain.studies.{StudyRepository, CollectionEventTypeRepository}
+import org.biobank.domain.studies.{CollectionEventTypeRepository, StudyRepository}
 import org.biobank.domain.centres.CentreRepository
 import org.biobank.domain.participants._
 import org.biobank.domain.processing._
@@ -16,12 +16,10 @@ import scala.language.reflectiveCalls
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
-case class NamedSpecimensProcessor @Inject() (@Named("specimensProcessor") processor: ActorRef)
+case class NamedSpecimensProcessor @Inject()(@Named("specimensProcessor") processor: ActorRef)
 
 class SpecimensProcessorSpec
-    extends ProcessorTestFixture
-    with SpecimenSpecFixtures
-    with PresistenceQueryEvents {
+    extends ProcessorTestFixture with SpecimenSpecFixtures with PresistenceQueryEvents {
 
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.SpecimenCommands._
@@ -52,14 +50,17 @@ class SpecimensProcessorSpec
     val stopped = gracefulStop(processor, 5 seconds, PoisonPill)
     Await.result(stopped, 6 seconds)
 
-    val actor = system.actorOf(Props(new SpecimensProcessor(
-                                       specimenRepository,
-                                       collectionEventRepository,
-                                       collectionEventTypeRepository,
-                                       app.injector.instanceOf[CeventSpecimenRepository],
-                                       app.injector.instanceOf[ProcessingEventInputSpecimenRepository],
-                                       app.injector.instanceOf[SnapshotWriter])),
-                               "specimens-processor-id-2")
+    val actor = system.actorOf(
+      Props(
+        new SpecimensProcessor(specimenRepository,
+                               collectionEventRepository,
+                               collectionEventTypeRepository,
+                               app.injector.instanceOf[CeventSpecimenRepository],
+                               app.injector.instanceOf[ProcessingEventInputSpecimenRepository],
+                               app.injector.instanceOf[SnapshotWriter])
+      ),
+      "specimens-processor-id-2"
+    )
     Thread.sleep(250)
     actor
   }
@@ -76,40 +77,49 @@ class SpecimensProcessorSpec
       collectionEventRepository.put(f.cevent)
 
       f.specimens.foreach { specimen =>
-        val specimenInfo = SpecimenInfo(inventoryId           = specimen.inventoryId,
+        val specimenInfo = SpecimenInfo(inventoryId = specimen.inventoryId,
                                         specimenDefinitionId = specimen.specimenDefinitionId.id,
-                                        timeCreated           = specimen.timeCreated,
-                                        locationId            = specimen.originLocationId.id,
-                                        amount                = specimen.amount)
+                                        timeCreated          = specimen.timeCreated,
+                                        locationId           = specimen.originLocationId.id,
+                                        amount               = specimen.amount)
 
-        val cmd = AddSpecimensCmd(sessionUserId     = nameGenerator.next[String],
+        val cmd = AddSpecimensCmd(sessionUserId = nameGenerator.next[String],
                                   collectionEventId = f.cevent.id.id,
                                   specimenData      = List(specimenInfo))
 
         val v = (specimensProcessor ? cmd).mapTo[ServiceValidation[SpecimenEvent]].futureValue
-        v.isSuccess must be (true)
-        specimenRepository.getValues.map { s => s.inventoryId } must contain (specimen.inventoryId)
+        v.isSuccess must be(true)
+        specimenRepository.getValues.map { s =>
+          s.inventoryId
+        } must contain(specimen.inventoryId)
       }
 
       specimenRepository.removeAll
       specimensProcessor = restartProcessor(specimensProcessor)
 
-      specimenRepository.getValues.size must be (f.specimens.size)
+      specimenRepository.getValues.size must be(f.specimens.size)
       f.specimens.foreach { specimen =>
-        specimenRepository.getValues.map { s => s.inventoryId } must contain (specimen.inventoryId)
+        specimenRepository.getValues.map { s =>
+          s.inventoryId
+        } must contain(specimen.inventoryId)
       }
     }
 
     it("recovers a snapshot", PersistenceTest) {
-      val cevent = factory.createCollectionEvent
+      val cevent           = factory.createCollectionEvent
       val snapshotFilename = "testfilename"
-      val specimens = (1 to 2).map { _ => factory.createUsableSpecimen }
-      val ceventSpecimens = specimens.map { specimen => CeventSpecimen(cevent.id, specimen.id)}
+      val specimens = (1 to 2).map { _ =>
+        factory.createUsableSpecimen
+      }
+      val ceventSpecimens = specimens.map { specimen =>
+        CeventSpecimen(cevent.id, specimen.id)
+      }
       val snapshotSpecimen = specimens(0)
-      val snapshotState = SpecimensProcessor.SnapshotState(Set(snapshotSpecimen), Set(ceventSpecimens(0)))
+      val snapshotState    = SpecimensProcessor.SnapshotState(Set(snapshotSpecimen), Set(ceventSpecimens(0)))
 
       Mockito.when(snapshotWriterMock.save(anyString, anyString)).thenReturn(snapshotFilename);
-      Mockito.when(snapshotWriterMock.load(snapshotFilename))
+      Mockito
+        .when(snapshotWriterMock.load(snapshotFilename))
         .thenReturn(Json.toJson(snapshotState).toString);
 
       specimens.foreach(specimenRepository.put)
@@ -118,9 +128,9 @@ class SpecimensProcessorSpec
       specimenRepository.removeAll
       specimensProcessor = restartProcessor(specimensProcessor)
 
-      specimenRepository.getValues.size must be (1)
+      specimenRepository.getValues.size must be(1)
       specimenRepository.getByKey(snapshotSpecimen.id) mustSucceed { repoSpecimen =>
-        repoSpecimen.inventoryId must be (snapshotSpecimen.inventoryId)
+        repoSpecimen.inventoryId must be(snapshotSpecimen.inventoryId)
         ()
       }
     }

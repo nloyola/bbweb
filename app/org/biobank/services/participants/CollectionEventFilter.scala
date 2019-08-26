@@ -4,7 +4,7 @@ import org.biobank.domain.participants.{CollectionEvent, CollectionEventPredicat
 import org.biobank.domain.PredicateHelper
 import org.biobank.services._
 import org.biobank.services.Comparator._
-import org.biobank.services.{ServiceValidation, ServiceError}
+import org.biobank.services.{ServiceError, ServiceValidation}
 import scalaz.Scalaz._
 
 /**
@@ -12,22 +12,23 @@ import scalaz.Scalaz._
  *
  */
 object CollectionEventFilter
-    extends EntityFilter[CollectionEvent]
-    with PredicateHelper
-    with CollectionEventPredicates {
+    extends EntityFilter[CollectionEvent] with PredicateHelper with CollectionEventPredicates {
 
-  def filterCollectionEvents(cevents: Set[CollectionEvent], filter: FilterString):
-      ServiceValidation[Set[CollectionEvent]] = {
+  def filterCollectionEvents(
+      cevents: Set[CollectionEvent],
+      filter:  FilterString
+    ): ServiceValidation[Set[CollectionEvent]] =
     filterEntities(cevents, filter, cevents.filter)
-  }
 
-  protected def predicateFromSelector(selector: String, comparator: Comparator, args: List[String])
-      : ServiceValidation[CollectionEvent => Boolean] = {
+  protected def predicateFromSelector(
+      selector:   String,
+      comparator: Comparator,
+      args:       List[String]
+    ): ServiceValidation[CollectionEvent => Boolean] =
     selector match {
       case "visitNumber" => visitNumberFilter(comparator, args)
-      case _ => ServiceError(s"invalid filter selector: $selector").failureNel[CollectionEventFilter]
+      case _             => ServiceError(s"invalid filter selector: $selector").failureNel[CollectionEventFilter]
     }
-  }
 
   private def visitNumberFilter(comparator: Comparator, visitNumbers: List[String]) = {
     val visitNumberSet = visitNumbers.toSet

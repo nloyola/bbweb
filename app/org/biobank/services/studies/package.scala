@@ -4,10 +4,11 @@ import play.api.libs.json._
 
 package studies {
 
-  final case class StudyCountsByStatus(total:         Long,
-                                       disabledCount: Long,
-                                       enabledCount:  Long,
-                                       retiredCount:  Long)
+  final case class StudyCountsByStatus(
+      total:         Long,
+      disabledCount: Long,
+      enabledCount:  Long,
+      retiredCount:  Long)
 
   object StudyCountsByStatus {
 

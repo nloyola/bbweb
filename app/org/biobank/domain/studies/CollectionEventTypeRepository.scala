@@ -12,8 +12,7 @@ import scalaz.Validation.FlatMap._
 trait CollectionEventTypeRepository
     extends ReadWriteRepositoryWithSlug[CollectionEventTypeId, CollectionEventType] {
 
-  def withId(studyId: StudyId, ceventTypeId: CollectionEventTypeId)
-      : DomainValidation[CollectionEventType]
+  def withId(studyId: StudyId, ceventTypeId: CollectionEventTypeId): DomainValidation[CollectionEventType]
 
   def allForStudy(studyId: StudyId): Set[CollectionEventType]
 
@@ -24,7 +23,7 @@ trait CollectionEventTypeRepository
 }
 
 @Singleton
-class CollectionEventTypeRepositoryImpl @Inject() (val testData: TestData)
+class CollectionEventTypeRepositoryImpl @Inject()(val testData: TestData)
     extends ReadWriteRepositoryRefImplWithSlug[CollectionEventTypeId, CollectionEventType](v => v.id)
     with CollectionEventTypeRepository {
   import org.biobank.CommonValidations._
@@ -41,30 +40,25 @@ class CollectionEventTypeRepositoryImpl @Inject() (val testData: TestData)
   protected def slugNotFound(slug: Slug): EntityCriteriaNotFound =
     EntityCriteriaNotFound(s"collection event type slug: $slug")
 
-  def withId(studyId: StudyId, ceventTypeId: CollectionEventTypeId)
-      : DomainValidation[CollectionEventType] = {
+  def withId(studyId: StudyId, ceventTypeId: CollectionEventTypeId): DomainValidation[CollectionEventType] =
     for {
-      cet          <- getByKey(ceventTypeId)
+      cet <- getByKey(ceventTypeId)
       validStudyId <- {
         if (cet.studyId == studyId) {
           cet.successNel[String]
         } else {
           EntityCriteriaError(
-            s"collection event type not in study:{ ceventTypeId: $ceventTypeId, studyId: $studyId }")
-            .failureNel[CollectionEventType]
+            s"collection event type not in study:{ ceventTypeId: $ceventTypeId, studyId: $studyId }"
+          ).failureNel[CollectionEventType]
         }
       }
     } yield cet
-  }
 
-  def allForStudy(studyId: StudyId): Set[CollectionEventType] = {
+  def allForStudy(studyId: StudyId): Set[CollectionEventType] =
     getValues.filter(x => x.studyId == studyId).toSet
-  }
 
-  def specimenDefinitionCanBeUpdated(studyId: StudyId, specimenDefinitionId: SpecimenDefinitionId)
-      : Boolean = {
+  def specimenDefinitionCanBeUpdated(studyId: StudyId, specimenDefinitionId: SpecimenDefinitionId): Boolean =
     ???
-  }
 
   def annotationTypeInUse(annotationType: AnnotationType): Boolean = ???
 

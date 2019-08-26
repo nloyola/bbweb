@@ -30,11 +30,8 @@ trait UserRepository extends ReadWriteRepositoryWithSlug[UserId, User] {
  * This repository uses the [[ReadWriteRepository]] implementation.
  */
 @Singleton
-class UserRepositoryImpl @Inject() (val config:   Configuration,
-                                    val env:      Environment,
-                                    val testData: TestData)
-    extends ReadWriteRepositoryRefImplWithSlug[UserId, User](v => v.id)
-    with UserRepository {
+class UserRepositoryImpl @Inject()(val config: Configuration, val env: Environment, val testData: TestData)
+    extends ReadWriteRepositoryRefImplWithSlug[UserId, User](v => v.id) with UserRepository {
   import org.biobank.CommonValidations._
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
@@ -55,7 +52,7 @@ class UserRepositoryImpl @Inject() (val config:   Configuration,
 
   def allUsers(): Set[User] = getValues.toSet
 
-  def getRegistered(id: UserId): DomainValidation[RegisteredUser] = {
+  def getRegistered(id: UserId): DomainValidation[RegisteredUser] =
     for {
       user <- getByKey(id)
       registered <- {
@@ -65,9 +62,8 @@ class UserRepositoryImpl @Inject() (val config:   Configuration,
         }
       }
     } yield registered
-  }
 
-  def getActive(id: UserId): DomainValidation[ActiveUser] = {
+  def getActive(id: UserId): DomainValidation[ActiveUser] =
     for {
       user <- getByKey(id)
       active <- {
@@ -77,9 +73,8 @@ class UserRepositoryImpl @Inject() (val config:   Configuration,
         }
       }
     } yield active
-  }
 
-  def getLocked(id: UserId): DomainValidation[LockedUser] = {
+  def getLocked(id: UserId): DomainValidation[LockedUser] =
     for {
       user <- getByKey(id)
       locked <- {
@@ -89,12 +84,11 @@ class UserRepositoryImpl @Inject() (val config:   Configuration,
         }
       }
     } yield locked
-  }
 
-  def getByEmail(email: String): DomainValidation[User] = {
-    getValues.find(_.email == email)
+  def getByEmail(email: String): DomainValidation[User] =
+    getValues
+      .find(_.email == email)
       .toSuccess(EmailNotFound(s"user email not found: $email").nel)
-  }
 
   /**
    * For new installations startup only:
@@ -108,15 +102,17 @@ class UserRepositoryImpl @Inject() (val config:   Configuration,
       if (env.mode == Mode.Dev) org.biobank.Global.DefaultUserEmail
       else config.get[Option[String]]("admin.email").getOrElse(org.biobank.Global.DefaultUserEmail)
 
-    put(ActiveUser(id           = org.biobank.Global.DefaultUserId,
-                   version      = 0L,
-                   timeAdded    = Global.StartOfTime,
-                   timeModified = None,
-                   slug         = Slug(name),
-                   name         = name,
-                   email        = adminEmail,
-                   password     = "$2a$10$Kvl/h8KVhreNDiiOd0XiB.0nut7rysaLcKpbalteFuDN8uIwaojCa",
-                   salt         = "$2a$10$Kvl/h8KVhreNDiiOd0XiB.",
-                   avatarUrl    = None))
+    put(
+      ActiveUser(id           = org.biobank.Global.DefaultUserId,
+                 version      = 0L,
+                 timeAdded    = Global.StartOfTime,
+                 timeModified = None,
+                 slug         = Slug(name),
+                 name         = name,
+                 email        = adminEmail,
+                 password     = "$2a$10$Kvl/h8KVhreNDiiOd0XiB.0nut7rysaLcKpbalteFuDN8uIwaojCa",
+                 salt         = "$2a$10$Kvl/h8KVhreNDiiOd0XiB.",
+                 avatarUrl    = None)
+    )
   }
 }

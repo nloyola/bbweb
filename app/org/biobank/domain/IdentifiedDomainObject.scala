@@ -26,13 +26,15 @@ object IdentifiedDomainObject {
   // Do not want JSON to create a sub object, we just want it to be converted
   // to a single string
   implicit val identifiedValueObjectIdWrite: Writes[IdentifiedDomainObject[String]] =
-    Writes{ (id: IdentifiedDomainObject[String]) => JsString(id.id) }
+    Writes { (id: IdentifiedDomainObject[String]) =>
+      JsString(id.id)
+    }
 
   implicit val maybeIdentifiedValueObjectIdWrite: Writes[Option[IdentifiedDomainObject[String]]] =
-    Writes {
-      (id: Option[IdentifiedDomainObject[String]]) => id match {
+    Writes { (id: Option[IdentifiedDomainObject[String]]) =>
+      id match {
         case Some(id) => JsString(id.id)
-        case None => JsNull
+        case None     => JsNull
       }
     }
 

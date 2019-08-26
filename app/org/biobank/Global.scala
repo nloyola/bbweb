@@ -12,8 +12,7 @@ import play.api.{Configuration, Logger}
  */
 @Singleton
 @SuppressWarnings(Array("org.wartremover.warts.Throw", "org.wartremover.warts.ImplicitParameter"))
-class Global @Inject()(implicit val mat: Materializer,
-                       configuration: Configuration) {
+class Global @Inject()(implicit val mat: Materializer, configuration: Configuration) {
 
   val log: Logger = Logger(this.getClass)
 

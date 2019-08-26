@@ -1,7 +1,7 @@
 package org.biobank.services.studies
 
 import akka.actor._
-import akka.persistence.{RecoveryCompleted, SaveSnapshotSuccess, SaveSnapshotFailure, SnapshotOffer}
+import akka.persistence.{RecoveryCompleted, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import org.biobank.domain._
@@ -32,11 +32,10 @@ object ProcessingTypeProcessor {
  * they are valid they are converted to events and journaled, afterwhich the state of the
  * [[domain.studies.ProcessingType]] is updated.
  */
-class ProcessingTypeProcessor @javax.inject.Inject() (
-  val processingTypeRepository: ProcessingTypeRepository,
-  val collectionEventTypeRepository: CollectionEventTypeRepository,
-  val snapshotWriter: SnapshotWriter
-)
+class ProcessingTypeProcessor @javax.inject.Inject()(
+    val processingTypeRepository:      ProcessingTypeRepository,
+    val collectionEventTypeRepository: CollectionEventTypeRepository,
+    val snapshotWriter:                SnapshotWriter)
     extends Processor {
 
   import org.biobank.CommonValidations._
@@ -102,9 +101,7 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
       processModifyCmd(cmd, updateEnabledCmdToEvent, applyEnabledUpdatedEvent)
 
     case cmd: UpdateInputSpecimenProcessingCmd =>
-      processModifyCmd(cmd,
-                       updateInputSpecimenProcessingCmdToEvent,
-                       applyInputSpecimenProcessingUpdatedEvent)
+      processModifyCmd(cmd, updateInputSpecimenProcessingCmdToEvent, applyInputSpecimenProcessingUpdatedEvent)
 
     case cmd: UpdateOutputSpecimenProcessingCmd =>
       processModifyCmd(cmd,
@@ -145,55 +142,54 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
 
   private def mySaveSnapshot(): Unit = {
     val snapshotState = SnapshotState(processingTypeRepository.getValues.toSet)
-    val filename = snapshotWriter.save(persistenceId, Json.toJson(snapshotState).toString)
+    val filename      = snapshotWriter.save(persistenceId, Json.toJson(snapshotState).toString)
     saveSnapshot(filename)
   }
 
   private def applySnapshot(filename: String): Unit = {
     log.debug(s"snapshot recovery file: $filename")
     val fileContents = snapshotWriter.load(filename)
-    Json.parse(fileContents).validate[SnapshotState].fold(
-      errors => log.error(s"could not apply snapshot: $filename: $errors"),
-      snapshot =>  {
-        log.debug(s"snapshot contains ${snapshot.processingTypes.size} processing types")
-        snapshot.processingTypes.foreach(processingTypeRepository.put)
-      }
-    )
+    Json
+      .parse(fileContents).validate[SnapshotState].fold(
+        errors => log.error(s"could not apply snapshot: $filename: $errors"),
+        snapshot => {
+          log.debug(s"snapshot contains ${snapshot.processingTypes.size} processing types")
+          snapshot.processingTypes.foreach(processingTypeRepository.put)
+        }
+      )
   }
 
   private def addCmdToEvent(cmd: AddProcessingTypeCmd): ServiceValidation[ProcessingTypeEvent] = {
     val studyId = StudyId(cmd.studyId)
 
     for {
-      ptId               <- validNewIdentity(processingTypeRepository.nextIdentity,
-                                            processingTypeRepository)
-      nameValid          <- nameAvailable(cmd.name, studyId)
-      input              <- studies.InputSpecimenProcessing.create(
-        expectedChange       = cmd.input.expectedChange,
-        count                = cmd.input.count,
-        containerTypeId      = cmd.input.containerTypeId.map(ContainerTypeId.apply),
-        definitionType       = cmd.input.definitionType,
-        entityId             = cmd.input.entityId,
-        specimenDefinitionId = cmd.input.specimenDefinitionId)
+      ptId      <- validNewIdentity(processingTypeRepository.nextIdentity, processingTypeRepository)
+      nameValid <- nameAvailable(cmd.name, studyId)
+      input <- studies.InputSpecimenProcessing.create(expectedChange = cmd.input.expectedChange,
+                                                      count = cmd.input.count,
+                                                      containerTypeId =
+                                                        cmd.input.containerTypeId.map(ContainerTypeId.apply),
+                                                      definitionType       = cmd.input.definitionType,
+                                                      entityId             = cmd.input.entityId,
+                                                      specimenDefinitionId = cmd.input.specimenDefinitionId)
 
       specimenDefinition <- {
         val cmdDefinition = cmd.output.specimenDefinition
 
-        ProcessedSpecimenDefinition.create(
-          name                    = cmdDefinition.name,
-          description             = cmdDefinition.description,
-          units                   = cmdDefinition.units,
-          anatomicalSourceType    = cmdDefinition.anatomicalSourceType,
-          preservationType        = cmdDefinition.preservationType,
-          preservationTemperature = cmdDefinition.preservationTemperature,
-          specimenType            = cmdDefinition.specimenType)
+        ProcessedSpecimenDefinition.create(name                    = cmdDefinition.name,
+                                           description             = cmdDefinition.description,
+                                           units                   = cmdDefinition.units,
+                                           anatomicalSourceType    = cmdDefinition.anatomicalSourceType,
+                                           preservationType        = cmdDefinition.preservationType,
+                                           preservationTemperature = cmdDefinition.preservationTemperature,
+                                           specimenType            = cmdDefinition.specimenType)
       }
 
-      output <- studies.OutputSpecimenProcessing.create(
-        expectedChange     = cmd.output.expectedChange,
-        count              = cmd.output.count,
-        containerTypeId    = cmd.output.containerTypeId.map(ContainerTypeId.apply),
-        specimenDefinition = specimenDefinition)
+      output <- studies.OutputSpecimenProcessing.create(expectedChange = cmd.output.expectedChange,
+                                                        count = cmd.output.count,
+                                                        containerTypeId = cmd.output.containerTypeId
+                                                          .map(ContainerTypeId.apply),
+                                                        specimenDefinition = specimenDefinition)
 
       newItem <- {
         ProcessingType.create(studyId         = StudyId(cmd.studyId),
@@ -208,27 +204,28 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
       }
     } yield {
       val timeStr = OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-      val inputEvent = ProcessingTypeEvent.InputSpecimenProcessing().update(
-          _.expectedChange          := newItem.input.expectedChange.toDouble,
-          _.count                   := newItem.input.count,
-          _.optionalContainerTypeId := cmd.input.containerTypeId,
-          _.entityId                := cmd.input.entityId,
-          _.specimenDefinitionId    := cmd.input.specimenDefinitionId)
+      val inputEvent = ProcessingTypeEvent
+        .InputSpecimenProcessing().update(_.expectedChange          := newItem.input.expectedChange.toDouble,
+                                          _.count                   := newItem.input.count,
+                                          _.optionalContainerTypeId := cmd.input.containerTypeId,
+                                          _.entityId                := cmd.input.entityId,
+                                          _.specimenDefinitionId    := cmd.input.specimenDefinitionId)
 
-      val outputEvent = ProcessingTypeEvent.OutputSpecimenProcessing().update(
-          _.expectedChange          := newItem.output.expectedChange.toDouble,
-          _.count                   := newItem.output.count,
-          _.optionalContainerTypeId := cmd.output.containerTypeId,
-          _.specimenDefinition      := specimenDefinitionToEvent(newItem.output.specimenDefinition))
+      val outputEvent = ProcessingTypeEvent
+        .OutputSpecimenProcessing().update(_.expectedChange          := newItem.output.expectedChange.toDouble,
+                                           _.count                   := newItem.output.count,
+                                           _.optionalContainerTypeId := cmd.output.containerTypeId,
+                                           _.specimenDefinition := specimenDefinitionToEvent(
+                                             newItem.output.specimenDefinition
+                                           ))
 
-      val event = ProcessingTypeEvent(ptId.id).update(
-          _.studyId                        := studyId.id,
-          _.sessionUserId                  := cmd.sessionUserId,
-          _.time                           := timeStr,
-          _.added.name                     := newItem.name,
-          _.added.optionalDescription      := newItem.description,
-          _.added.enabled                  := newItem.enabled,
-          _.added.outputSpecimenProcessing := outputEvent)
+      val event = ProcessingTypeEvent(ptId.id).update(_.studyId := studyId.id,
+                                                      _.sessionUserId                  := cmd.sessionUserId,
+                                                      _.time                           := timeStr,
+                                                      _.added.name                     := newItem.name,
+                                                      _.added.optionalDescription      := newItem.description,
+                                                      _.added.enabled                  := newItem.enabled,
+                                                      _.added.outputSpecimenProcessing := outputEvent)
 
       if (input.definitionType == collectedDefinition) {
         event.update(_.added.collected := inputEvent)
@@ -239,73 +236,80 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
 
   }
 
-  private def updateNameCmdToEvent(cmd: UpdateNameCmd, processingType: ProcessingType)
-      : ServiceValidation[ProcessingTypeEvent] = {
+  private def updateNameCmdToEvent(
+      cmd:            UpdateNameCmd,
+      processingType: ProcessingType
+    ): ServiceValidation[ProcessingTypeEvent] =
     for {
       nameValid <- nameAvailable(cmd.name, processingType.studyId)
       updated   <- processingType.withName(cmd.name)
-    } yield ProcessingTypeEvent(processingType.id.id).update(
-      _.studyId             := processingType.studyId.id,
-      _.sessionUserId       := cmd.sessionUserId,
-      _.time                := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-      _.nameUpdated.version := cmd.expectedVersion,
-      _.nameUpdated.name    := cmd.name)
-  }
+    } yield ProcessingTypeEvent(processingType.id.id).update(_.studyId       := processingType.studyId.id,
+                                                             _.sessionUserId := cmd.sessionUserId,
+                                                             _.time := OffsetDateTime.now.format(
+                                                               DateTimeFormatter.ISO_OFFSET_DATE_TIME
+                                                             ),
+                                                             _.nameUpdated.version := cmd.expectedVersion,
+                                                             _.nameUpdated.name    := cmd.name)
 
-  private def updateDescriptionCmdToEvent(cmd: UpdateDescriptionCmd, processingType: ProcessingType)
-      : ServiceValidation[ProcessingTypeEvent] = {
-    processingType.withDescription(cmd.description)
+  private def updateDescriptionCmdToEvent(
+      cmd:            UpdateDescriptionCmd,
+      processingType: ProcessingType
+    ): ServiceValidation[ProcessingTypeEvent] =
+    processingType
+      .withDescription(cmd.description)
       .map { _ =>
         val time = OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-        ProcessingTypeEvent(processingType.id.id).update(
-          _.studyId                                := processingType.studyId.id,
-          _.sessionUserId                          := cmd.sessionUserId,
-          _.time                                   := time,
-          _.descriptionUpdated.version             := cmd.expectedVersion,
-          _.descriptionUpdated.optionalDescription := cmd.description)
+        ProcessingTypeEvent(processingType.id.id).update(_.studyId                                := processingType.studyId.id,
+                                                         _.sessionUserId                          := cmd.sessionUserId,
+                                                         _.time                                   := time,
+                                                         _.descriptionUpdated.version             := cmd.expectedVersion,
+                                                         _.descriptionUpdated.optionalDescription := cmd.description)
       }
-  }
 
-  private def updateEnabledCmdToEvent(cmd: UpdateEnabledCmd, processingType: ProcessingType)
-      : ServiceValidation[ProcessingTypeEvent] = {
+  private def updateEnabledCmdToEvent(
+      cmd:            UpdateEnabledCmd,
+      processingType: ProcessingType
+    ): ServiceValidation[ProcessingTypeEvent] = {
     val time = OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-    ProcessingTypeEvent(processingType.id.id).update(
-      _.studyId                := processingType.studyId.id,
-      _.sessionUserId          := cmd.sessionUserId,
-      _.time                   := time,
-      _.enabledUpdated.version := cmd.expectedVersion,
-      _.enabledUpdated.enabled := cmd.enabled).successNel[String]
+    ProcessingTypeEvent(processingType.id.id)
+      .update(_.studyId                := processingType.studyId.id,
+              _.sessionUserId          := cmd.sessionUserId,
+              _.time                   := time,
+              _.enabledUpdated.version := cmd.expectedVersion,
+              _.enabledUpdated.enabled := cmd.enabled).successNel[String]
   }
 
-  private def updateInputSpecimenProcessingCmdToEvent(cmd: UpdateInputSpecimenProcessingCmd,
-                                                      processingType: ProcessingType)
-      : ServiceValidation[ProcessingTypeEvent] = {
+  private def updateInputSpecimenProcessingCmdToEvent(
+      cmd:            UpdateInputSpecimenProcessingCmd,
+      processingType: ProcessingType
+    ): ServiceValidation[ProcessingTypeEvent] =
     for {
-      input <- studies.InputSpecimenProcessing.create(
-        expectedChange       = cmd.expectedChange,
-        count                = cmd.count,
-        containerTypeId      = cmd.containerTypeId.map(ContainerTypeId.apply),
-        definitionType       = cmd.definitionType,
-        entityId             = cmd.entityId,
-        specimenDefinitionId = cmd.specimenDefinitionId)
+      input <- studies.InputSpecimenProcessing.create(expectedChange = cmd.expectedChange,
+                                                      count = cmd.count,
+                                                      containerTypeId =
+                                                        cmd.containerTypeId.map(ContainerTypeId.apply),
+                                                      definitionType       = cmd.definitionType,
+                                                      entityId             = cmd.entityId,
+                                                      specimenDefinitionId = cmd.specimenDefinitionId)
       valid   <- validateInputSpecimenProcessing(input)
       updated <- processingType.withInputSpecimenProcessing(input)
     } yield {
       val time = OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 
-      val inputEvent = ProcessingTypeEvent.InputSpecimenProcessing().update(
-          _.expectedChange          := cmd.expectedChange.toDouble,
-          _.count                   := cmd.count,
-          _.optionalContainerTypeId := cmd.containerTypeId,
-          _.definitionType          := cmd.definitionType,
-          _.entityId                := cmd.entityId,
-          _.specimenDefinitionId    := cmd.specimenDefinitionId)
+      val inputEvent = ProcessingTypeEvent
+        .InputSpecimenProcessing().update(_.expectedChange          := cmd.expectedChange.toDouble,
+                                          _.count                   := cmd.count,
+                                          _.optionalContainerTypeId := cmd.containerTypeId,
+                                          _.definitionType          := cmd.definitionType,
+                                          _.entityId                := cmd.entityId,
+                                          _.specimenDefinitionId    := cmd.specimenDefinitionId)
 
       val event = ProcessingTypeEvent(processingType.id.id).update(
-          _.studyId                                := processingType.studyId.id,
-          _.sessionUserId                          := cmd.sessionUserId,
-          _.time                                   := time,
-          _.inputSpecimenProcessingUpdated.version := cmd.expectedVersion)
+        _.studyId                                := processingType.studyId.id,
+        _.sessionUserId                          := cmd.sessionUserId,
+        _.time                                   := time,
+        _.inputSpecimenProcessingUpdated.version := cmd.expectedVersion
+      )
 
       if (input.definitionType == collectedDefinition) {
         event.update(_.inputSpecimenProcessingUpdated.collected := inputEvent)
@@ -313,117 +317,121 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
         event.update(_.inputSpecimenProcessingUpdated.processed := inputEvent)
       }
     }
-  }
 
-  private def updateOutputSpecimenProcessingCmdToEvent(cmd: UpdateOutputSpecimenProcessingCmd,
-                                                       processingType: ProcessingType)
-      : ServiceValidation[ProcessingTypeEvent] = {
+  private def updateOutputSpecimenProcessingCmdToEvent(
+      cmd:            UpdateOutputSpecimenProcessingCmd,
+      processingType: ProcessingType
+    ): ServiceValidation[ProcessingTypeEvent] =
     for {
-      validSpecimenDefinition <- ProcessedSpecimenDefinition.create(
-        name                    = cmd.specimenDefinition.name,
-        description             = cmd.specimenDefinition.description,
-        units                   = cmd.specimenDefinition.units,
-        anatomicalSourceType    = cmd.specimenDefinition.anatomicalSourceType,
-        preservationType        = cmd.specimenDefinition.preservationType,
-        preservationTemperature = cmd.specimenDefinition.preservationTemperature,
-        specimenType            = cmd.specimenDefinition.specimenType)
+      validSpecimenDefinition <- ProcessedSpecimenDefinition.create(name = cmd.specimenDefinition.name,
+                                                                    description =
+                                                                      cmd.specimenDefinition.description,
+                                                                    units = cmd.specimenDefinition.units,
+                                                                    anatomicalSourceType =
+                                                                      cmd.specimenDefinition.anatomicalSourceType,
+                                                                    preservationType =
+                                                                      cmd.specimenDefinition.preservationType,
+                                                                    preservationTemperature =
+                                                                      cmd.specimenDefinition.preservationTemperature,
+                                                                    specimenType =
+                                                                      cmd.specimenDefinition.specimenType)
       specimenDefinition = validSpecimenDefinition.copy(id = processingType.output.specimenDefinition.id)
-      output <- studies.OutputSpecimenProcessing.create(
-        expectedChange     = cmd.expectedChange,
-        count              = cmd.count,
-        containerTypeId    = cmd.containerTypeId.map(ContainerTypeId.apply),
-        specimenDefinition = specimenDefinition)
+      output <- studies.OutputSpecimenProcessing.create(expectedChange = cmd.expectedChange,
+                                                        count = cmd.count,
+                                                        containerTypeId =
+                                                          cmd.containerTypeId.map(ContainerTypeId.apply),
+                                                        specimenDefinition = specimenDefinition)
       updatedProcessingType <- processingType.withOutputSpecimenProcessing(output)
     } yield {
       val time = OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 
       // MAKE SURE THE SPECIMEN DESCRIPTION ID IS UNCHANGED
-      val outputEvent = ProcessingTypeEvent.OutputSpecimenProcessing().update(
-          _.expectedChange          := cmd.expectedChange.toDouble,
-          _.count                   := cmd.count,
-          _.optionalContainerTypeId := cmd.containerTypeId,
-          _.specimenDefinition      := specimenDefinitionToEvent(specimenDefinition))
+      val outputEvent = ProcessingTypeEvent
+        .OutputSpecimenProcessing().update(_.expectedChange          := cmd.expectedChange.toDouble,
+                                           _.count                   := cmd.count,
+                                           _.optionalContainerTypeId := cmd.containerTypeId,
+                                           _.specimenDefinition := specimenDefinitionToEvent(
+                                             specimenDefinition
+                                           ))
 
-      ProcessingTypeEvent(processingType.id.id).update(
-        _.studyId                                                  := processingType.studyId.id,
-        _.sessionUserId                                            := cmd.sessionUserId,
-        _.time                                                     := time,
-        _.outputSpecimenProcessingUpdated.version                  := cmd.expectedVersion,
-        _.outputSpecimenProcessingUpdated.outputSpecimenProcessing := outputEvent)
+      ProcessingTypeEvent(processingType.id.id).update(_.studyId                                                  := processingType.studyId.id,
+                                                       _.sessionUserId                                            := cmd.sessionUserId,
+                                                       _.time                                                     := time,
+                                                       _.outputSpecimenProcessingUpdated.version                  := cmd.expectedVersion,
+                                                       _.outputSpecimenProcessingUpdated.outputSpecimenProcessing := outputEvent)
     }
-  }
 
-  private def addAnnotationTypeCmdToEvent(cmd: AddProcessingTypeAnnotationTypeCmd,
-                                          processingType: ProcessingType)
-      : ServiceValidation[ProcessingTypeEvent] = {
+  private def addAnnotationTypeCmdToEvent(
+      cmd:            AddProcessingTypeAnnotationTypeCmd,
+      processingType: ProcessingType
+    ): ServiceValidation[ProcessingTypeEvent] =
     for {
       annotationType <- {
         // need to call AnnotationType.create so that a new Id is generated
-        AnnotationType.create(cmd.name,
-                              cmd.description,
-                              cmd.valueType,
-                              cmd.maxValueCount,
-                              cmd.options,
-                              cmd.required)
+        AnnotationType
+          .create(cmd.name, cmd.description, cmd.valueType, cmd.maxValueCount, cmd.options, cmd.required)
       }
       updatedPt <- processingType.withAnnotationType(annotationType)
-    } yield ProcessingTypeEvent(processingType.id.id).update(
-      _.studyId                            := processingType.studyId.id,
-      _.sessionUserId                      := cmd.sessionUserId,
-      _.time                               := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-      _.annotationTypeAdded.version        := cmd.expectedVersion,
-      _.annotationTypeAdded.annotationType := EventUtils.annotationTypeToEvent(annotationType))
-  }
+    } yield ProcessingTypeEvent(processingType.id.id).update(_.studyId       := processingType.studyId.id,
+                                                             _.sessionUserId := cmd.sessionUserId,
+                                                             _.time := OffsetDateTime.now.format(
+                                                               DateTimeFormatter.ISO_OFFSET_DATE_TIME
+                                                             ),
+                                                             _.annotationTypeAdded.version := cmd.expectedVersion,
+                                                             _.annotationTypeAdded.annotationType := EventUtils
+                                                               .annotationTypeToEvent(annotationType))
 
-  private def updateAnnotationTypeCmdToEvent(cmd: UpdateProcessingTypeAnnotationTypeCmd,
-                                             processingType: ProcessingType)
-      : ServiceValidation[ProcessingTypeEvent] = {
+  private def updateAnnotationTypeCmdToEvent(
+      cmd:            UpdateProcessingTypeAnnotationTypeCmd,
+      processingType: ProcessingType
+    ): ServiceValidation[ProcessingTypeEvent] =
     for {
-      valid          <- AnnotationType.create(cmd.name,
-                                              cmd.description,
-                                              cmd.valueType,
-                                              cmd.maxValueCount,
-                                              cmd.options,
-                                              cmd.required)
+      valid <- AnnotationType.create(cmd.name,
+                                     cmd.description,
+                                     cmd.valueType,
+                                     cmd.maxValueCount,
+                                     cmd.options,
+                                     cmd.required)
       annotationType <- valid.copy(id = AnnotationTypeId(cmd.annotationTypeId)).successNel[String]
       updatedPt      <- processingType.withAnnotationType(annotationType)
     } yield {
-      ProcessingTypeEvent(processingType.id.id).update(
-        _.studyId                              := processingType.studyId.id,
-        _.sessionUserId                        := cmd.sessionUserId,
-        _.time                                 := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-        _.annotationTypeUpdated.version        := cmd.expectedVersion,
-        _.annotationTypeUpdated.annotationType := EventUtils.annotationTypeToEvent(annotationType))
+      ProcessingTypeEvent(processingType.id.id).update(_.studyId       := processingType.studyId.id,
+                                                       _.sessionUserId := cmd.sessionUserId,
+                                                       _.time := OffsetDateTime.now
+                                                         .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                                                       _.annotationTypeUpdated.version := cmd.expectedVersion,
+                                                       _.annotationTypeUpdated.annotationType := EventUtils
+                                                         .annotationTypeToEvent(annotationType))
     }
-  }
 
-  private def removeAnnotationTypeCmdToEvent(cmd: RemoveProcessingTypeAnnotationTypeCmd,
-                                             processingType: ProcessingType)
-      : ServiceValidation[ProcessingTypeEvent] = {
+  private def removeAnnotationTypeCmdToEvent(
+      cmd:            RemoveProcessingTypeAnnotationTypeCmd,
+      processingType: ProcessingType
+    ): ServiceValidation[ProcessingTypeEvent] =
     processingType.removeAnnotationType(AnnotationTypeId(cmd.annotationTypeId)) map { c =>
-      ProcessingTypeEvent(processingType.id.id).update(
-        _.studyId                        := processingType.studyId.id,
-        _.sessionUserId                  := cmd.sessionUserId,
-        _.time                           := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-        _.annotationTypeRemoved.version  := cmd.expectedVersion,
-        _.annotationTypeRemoved.id       := cmd.annotationTypeId)
+      ProcessingTypeEvent(processingType.id.id).update(_.studyId       := processingType.studyId.id,
+                                                       _.sessionUserId := cmd.sessionUserId,
+                                                       _.time := OffsetDateTime.now
+                                                         .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                                                       _.annotationTypeRemoved.version := cmd.expectedVersion,
+                                                       _.annotationTypeRemoved.id      := cmd.annotationTypeId)
     }
-  }
 
-  private def removeCmdToEvent(cmd: RemoveProcessingTypeCmd, processingType: ProcessingType)
-      : ServiceValidation[ProcessingTypeEvent] = {
+  private def removeCmdToEvent(
+      cmd:            RemoveProcessingTypeCmd,
+      processingType: ProcessingType
+    ): ServiceValidation[ProcessingTypeEvent] =
     if (processingType.inUse) {
       EntityInUse(s"processing type in use: ${processingType.id}").failureNel[ProcessingTypeEvent]
     } else {
-      ProcessingTypeEvent(processingType.id.id).update(
-        _.studyId               := processingType.studyId.id,
-        _.sessionUserId         := cmd.sessionUserId,
-        _.time                  := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-        _.removed.version       := cmd.expectedVersion).successNel[String]
+      ProcessingTypeEvent(processingType.id.id)
+        .update(_.studyId         := processingType.studyId.id,
+                _.sessionUserId   := cmd.sessionUserId,
+                _.time            := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                _.removed.version := cmd.expectedVersion).successNel[String]
     }
-  }
 
-  private def applyAddedEvent(event: ProcessingTypeEvent): Unit = {
+  private def applyAddedEvent(event: ProcessingTypeEvent): Unit =
     if (!event.eventType.isAdded) {
       log.error(s"invalid event type: $event")
     } else {
@@ -432,41 +440,44 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
       val input =
         if (addedEvent.specimenDefinitionType.isCollected) {
           val collectedEvent = addedEvent.getCollected
-          studies.InputSpecimenProcessing(
-            expectedChange       = collectedEvent.getExpectedChange,
-            count                = collectedEvent.getCount,
-            containerTypeId      = collectedEvent.containerTypeId.map(ContainerTypeId.apply),
-            definitionType       = collectedDefinition,
-            entityId             = collectedEvent.getEntityId,
-            specimenDefinitionId = SpecimenDefinitionId(collectedEvent.getSpecimenDefinitionId))
+          studies.InputSpecimenProcessing(expectedChange = collectedEvent.getExpectedChange,
+                                          count          = collectedEvent.getCount,
+                                          containerTypeId =
+                                            collectedEvent.containerTypeId.map(ContainerTypeId.apply),
+                                          definitionType = collectedDefinition,
+                                          entityId       = collectedEvent.getEntityId,
+                                          specimenDefinitionId =
+                                            SpecimenDefinitionId(collectedEvent.getSpecimenDefinitionId))
         } else {
           val processedEvent = addedEvent.getProcessed
-          studies.InputSpecimenProcessing(
-            expectedChange       = processedEvent.getExpectedChange,
-            count                = processedEvent.getCount,
-            containerTypeId      = processedEvent.containerTypeId.map(ContainerTypeId.apply),
-            definitionType       = processedDefinition,
-            entityId             = processedEvent.getEntityId,
-            specimenDefinitionId = SpecimenDefinitionId(processedEvent.getSpecimenDefinitionId))
+          studies.InputSpecimenProcessing(expectedChange = processedEvent.getExpectedChange,
+                                          count          = processedEvent.getCount,
+                                          containerTypeId =
+                                            processedEvent.containerTypeId.map(ContainerTypeId.apply),
+                                          definitionType = processedDefinition,
+                                          entityId       = processedEvent.getEntityId,
+                                          specimenDefinitionId =
+                                            SpecimenDefinitionId(processedEvent.getSpecimenDefinitionId))
         }
 
       val outputEvent = addedEvent.getOutputSpecimenProcessing
-      val output = studies.OutputSpecimenProcessing(
-          expectedChange     = outputEvent.getExpectedChange,
-          count              = outputEvent.getCount,
-          containerTypeId    = outputEvent.containerTypeId.map(ContainerTypeId.apply),
-          specimenDefinition = specimenDefinitionFromEvent(outputEvent.getSpecimenDefinition))
+      val output = studies.OutputSpecimenProcessing(expectedChange = outputEvent.getExpectedChange,
+                                                    count = outputEvent.getCount,
+                                                    containerTypeId =
+                                                      outputEvent.containerTypeId.map(ContainerTypeId.apply),
+                                                    specimenDefinition = specimenDefinitionFromEvent(
+                                                      outputEvent.getSpecimenDefinition
+                                                    ))
 
-      val v = ProcessingType.create(
-          studyId         = StudyId(event.getStudyId),
-          id              = ProcessingTypeId(event.id),
-          version         = 0L,
-          name            = addedEvent.getName,
-          description     = addedEvent.description,
-          enabled         = addedEvent.getEnabled,
-          input           = input,
-          output          = output,
-          annotationTypes = Set.empty)
+      val v = ProcessingType.create(studyId = StudyId(event.getStudyId),
+                                    id              = ProcessingTypeId(event.id),
+                                    version         = 0L,
+                                    name            = addedEvent.getName,
+                                    description     = addedEvent.description,
+                                    enabled         = addedEvent.getEnabled,
+                                    input           = input,
+                                    output          = output,
+                                    annotationTypes = Set.empty)
 
       if (v.isFailure) {
         log.error(s"could not add processing type from event: $v")
@@ -474,7 +485,7 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
 
       v.foreach { pt =>
         val timeAdded = OffsetDateTime.parse(event.getTime)
-        val slug = processingTypeRepository.uniqueSlugFromStr(pt.name)
+        val slug      = processingTypeRepository.uniqueSlugFromStr(pt.name)
         processingTypeRepository.put(pt.copy(slug = slug, timeAdded = timeAdded))
 
         if (pt.input.definitionType == ProcessingType.processedDefinition) {
@@ -486,23 +497,20 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
         }
       }
     }
-  }
 
-  private def applyNameUpdatedEvent(event: ProcessingTypeEvent): Unit = {
-    onValidEventAndVersion(event,
-                           event.eventType.isNameUpdated,
-                           event.getNameUpdated.getVersion) { (processingType, eventTime) =>
-      val v = processingType.withName(event.getNameUpdated.getName)
-      v.foreach { pt =>
-        val updated = pt.copy(slug         = processingTypeRepository.uniqueSlugFromStr(pt.name),
-                              timeModified = Some(eventTime))
-        processingTypeRepository.put(updated)
-      }
-      v.map(_ => ())
+  private def applyNameUpdatedEvent(event: ProcessingTypeEvent): Unit =
+    onValidEventAndVersion(event, event.eventType.isNameUpdated, event.getNameUpdated.getVersion) {
+      (processingType, eventTime) =>
+        val v = processingType.withName(event.getNameUpdated.getName)
+        v.foreach { pt =>
+          val updated = pt.copy(slug = processingTypeRepository.uniqueSlugFromStr(pt.name),
+                                timeModified = Some(eventTime))
+          processingTypeRepository.put(updated)
+        }
+        v.map(_ => ())
     }
-  }
 
-  private def applyDescriptionUpdatedEvent(event: ProcessingTypeEvent): Unit = {
+  private def applyDescriptionUpdatedEvent(event: ProcessingTypeEvent): Unit =
     onValidEventAndVersion(event,
                            event.eventType.isDescriptionUpdated,
                            event.getDescriptionUpdated.getVersion) { (processingType, eventTime) =>
@@ -512,91 +520,88 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
       }
       v.map(_ => ())
     }
-  }
 
-  private def applyEnabledUpdatedEvent(event: ProcessingTypeEvent): Unit = {
-    onValidEventAndVersion(event,
-                           event.eventType.isEnabledUpdated,
-                           event.getEnabledUpdated.getVersion) { (processingType, eventTime) =>
-      val updated = if (event.getEnabledUpdated.getEnabled) processingType.enable()
-                    else processingType.disable()
+  private def applyEnabledUpdatedEvent(event: ProcessingTypeEvent): Unit =
+    onValidEventAndVersion(event, event.eventType.isEnabledUpdated, event.getEnabledUpdated.getVersion) {
+      (processingType, eventTime) =>
+        val updated =
+          if (event.getEnabledUpdated.getEnabled) processingType.enable()
+          else processingType.disable()
 
-      processingTypeRepository.put(updated.copy(timeModified = Some(eventTime)))
-      ().successNel[String]
+        processingTypeRepository.put(updated.copy(timeModified = Some(eventTime)))
+        ().successNel[String]
     }
-  }
 
-  private def applyInputSpecimenProcessingUpdatedEvent(event: ProcessingTypeEvent): Unit = {
-    onValidEventAndVersion(
-      event,
-      event.eventType.isInputSpecimenProcessingUpdated,
-      event.getInputSpecimenProcessingUpdated.getVersion
-    ) { (processingType, eventTime) =>
-
-      val inputEvent = event.getInputSpecimenProcessingUpdated
-      val v = for {
+  private def applyInputSpecimenProcessingUpdatedEvent(event: ProcessingTypeEvent): Unit =
+    onValidEventAndVersion(event,
+                           event.eventType.isInputSpecimenProcessingUpdated,
+                           event.getInputSpecimenProcessingUpdated.getVersion) {
+      (processingType, eventTime) =>
+        val inputEvent = event.getInputSpecimenProcessingUpdated
+        val v = for {
           input <- {
             if (inputEvent.specimenDefinitionType.isCollected) {
               val collectedEvent = event.getInputSpecimenProcessingUpdated.getCollected
-              studies.InputSpecimenProcessing.create(
-                expectedChange       = collectedEvent.getExpectedChange,
-                count                = collectedEvent.getCount,
-                containerTypeId      = collectedEvent.containerTypeId.map(ContainerTypeId.apply),
-                definitionType       = collectedEvent.getDefinitionType,
-                entityId             = collectedEvent.getEntityId,
-                specimenDefinitionId = collectedEvent.getSpecimenDefinitionId)
+              studies.InputSpecimenProcessing.create(expectedChange = collectedEvent.getExpectedChange,
+                                                     count          = collectedEvent.getCount,
+                                                     containerTypeId = collectedEvent.containerTypeId
+                                                       .map(ContainerTypeId.apply),
+                                                     definitionType = collectedEvent.getDefinitionType,
+                                                     entityId       = collectedEvent.getEntityId,
+                                                     specimenDefinitionId =
+                                                       collectedEvent.getSpecimenDefinitionId)
             } else {
               val processedEvent = event.getInputSpecimenProcessingUpdated.getProcessed
-              studies.InputSpecimenProcessing.create(
-                expectedChange       = processedEvent.getExpectedChange,
-                count                = processedEvent.getCount,
-                containerTypeId      = processedEvent.containerTypeId.map(ContainerTypeId.apply),
-                definitionType       = processedEvent.getDefinitionType,
-                entityId             = processedEvent.getEntityId,
-                specimenDefinitionId = processedEvent.getSpecimenDefinitionId)
+              studies.InputSpecimenProcessing.create(expectedChange = processedEvent.getExpectedChange,
+                                                     count          = processedEvent.getCount,
+                                                     containerTypeId = processedEvent.containerTypeId
+                                                       .map(ContainerTypeId.apply),
+                                                     definitionType = processedEvent.getDefinitionType,
+                                                     entityId       = processedEvent.getEntityId,
+                                                     specimenDefinitionId =
+                                                       processedEvent.getSpecimenDefinitionId)
             }
           }
           updated <- processingType.withInputSpecimenProcessing(input)
         } yield updated
-      v.foreach { pt =>
-        processingTypeRepository.put(pt.copy(timeModified = Some(eventTime)))
-      }
-      v.map(_ => ())
+        v.foreach { pt =>
+          processingTypeRepository.put(pt.copy(timeModified = Some(eventTime)))
+        }
+        v.map(_ => ())
     }
-  }
 
-  private def applyOutputSpecimenProcessingUpdatedEvent(event: ProcessingTypeEvent): Unit = {
-    onValidEventAndVersion(
-      event,
-      event.eventType.isOutputSpecimenProcessingUpdated,
-      event.getOutputSpecimenProcessingUpdated.getVersion
-    ) { (processingType, eventTime) =>
-      val outputEvent = event.getOutputSpecimenProcessingUpdated.getOutputSpecimenProcessing
+  private def applyOutputSpecimenProcessingUpdatedEvent(event: ProcessingTypeEvent): Unit =
+    onValidEventAndVersion(event,
+                           event.eventType.isOutputSpecimenProcessingUpdated,
+                           event.getOutputSpecimenProcessingUpdated.getVersion) {
+      (processingType, eventTime) =>
+        val outputEvent = event.getOutputSpecimenProcessingUpdated.getOutputSpecimenProcessing
 
-      val output = studies.OutputSpecimenProcessing(
-        expectedChange       = outputEvent.getExpectedChange,
-        count                = outputEvent.getCount,
-        containerTypeId      = outputEvent.containerTypeId.map(ContainerTypeId.apply),
-        specimenDefinition   = specimenDefinitionFromEvent(outputEvent.getSpecimenDefinition))
+        val output = studies.OutputSpecimenProcessing(expectedChange = outputEvent.getExpectedChange,
+                                                      count = outputEvent.getCount,
+                                                      containerTypeId = outputEvent.containerTypeId
+                                                        .map(ContainerTypeId.apply),
+                                                      specimenDefinition = specimenDefinitionFromEvent(
+                                                        outputEvent.getSpecimenDefinition
+                                                      ))
 
-      val v = processingType.withOutputSpecimenProcessing(output)
-      v.foreach { pt =>
-        processingTypeRepository.put(pt.copy(timeModified = Some(eventTime)))
-      }
-      v.map(_ => ())
+        val v = processingType.withOutputSpecimenProcessing(output)
+        v.foreach { pt =>
+          processingTypeRepository.put(pt.copy(timeModified = Some(eventTime)))
+        }
+        v.map(_ => ())
     }
-  }
 
-  private def applyAnnotationTypeAddedEvent(event: ProcessingTypeEvent): Unit = {
+  private def applyAnnotationTypeAddedEvent(event: ProcessingTypeEvent): Unit =
     onValidEventAndVersion(event,
                            event.eventType.isAnnotationTypeAdded,
                            event.getAnnotationTypeAdded.getVersion) { (processingType, eventTime) =>
       val eventAnnotationType = event.getAnnotationTypeAdded.getAnnotationType
-      storeIfValid(processingType.withAnnotationType(EventUtils.annotationTypeFromEvent(eventAnnotationType)), eventTime)
+      storeIfValid(processingType.withAnnotationType(EventUtils.annotationTypeFromEvent(eventAnnotationType)),
+                   eventTime)
     }
-  }
 
-  private def applyAnnotationTypeUpdatedEvent(event: ProcessingTypeEvent) : Unit = {
+  private def applyAnnotationTypeUpdatedEvent(event: ProcessingTypeEvent): Unit =
     onValidEventAndVersion(event,
                            event.eventType.isAnnotationTypeUpdated,
                            event.getAnnotationTypeUpdated.getVersion) { (processingType, eventTime) =>
@@ -611,64 +616,60 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
                                           eventAnnotationType.getRequired)
       storeIfValid(processingType.withAnnotationType(annotationType), eventTime)
     }
-  }
 
-  private def applyAnnotationTypeRemovedEvent(event: ProcessingTypeEvent): Unit = {
+  private def applyAnnotationTypeRemovedEvent(event: ProcessingTypeEvent): Unit =
     onValidEventAndVersion(event,
                            event.eventType.isAnnotationTypeRemoved,
                            event.getAnnotationTypeRemoved.getVersion) { (processingType, eventTime) =>
       storeIfValid(
         processingType.removeAnnotationType(AnnotationTypeId(event.getAnnotationTypeRemoved.getId)),
-        eventTime)
+        eventTime
+      )
     }
-  }
 
   private def onValidEventAndVersion(
-    event:        ProcessingTypeEvent,
-    eventType:    Boolean,
-    eventVersion: Long
-  ) (
-    applyEvent: (ProcessingType, OffsetDateTime) => ServiceValidation[Unit]
-  ): Unit = {
+      event:        ProcessingTypeEvent,
+      eventType:    Boolean,
+      eventVersion: Long
+    )(applyEvent:   (ProcessingType, OffsetDateTime) => ServiceValidation[Unit]
+    ): Unit =
     if (!eventType) {
       log.error(s"invalid event type: $event")
     } else {
-      processingTypeRepository.getByKey(ProcessingTypeId(event.id)).fold(
-        err => log.error(s"processing type from event does not exist: $err"),
-        pt => {
-          if (pt.version != eventVersion) {
-            log.error(s"event version check failed: pt version: ${pt.version}, event: $event")
-          } else {
-            val eventTime = OffsetDateTime.parse(event.getTime)
-            val update = applyEvent(pt, eventTime)
+      processingTypeRepository
+        .getByKey(ProcessingTypeId(event.id)).fold(
+          err => log.error(s"processing type from event does not exist: $err"),
+          pt => {
+            if (pt.version != eventVersion) {
+              log.error(s"event version check failed: pt version: ${pt.version}, event: $event")
+            } else {
+              val eventTime = OffsetDateTime.parse(event.getTime)
+              val update    = applyEvent(pt, eventTime)
 
-            if (update.isFailure) {
-              log.error(s"processing type update from event failed: $update")
+              if (update.isFailure) {
+                log.error(s"processing type update from event failed: $update")
+              }
             }
           }
-        }
-      )
+        )
     }
-  }
 
   private def processModifyCmd[T <: ProcessingTypeModifyCommand](
-    cmd:           T,
-    validateCmd:   (T, ProcessingType) => ServiceValidation[ProcessingTypeEvent],
-    applyEvent:    ProcessingTypeEvent => Unit
-  ): Unit = {
+      cmd:         T,
+      validateCmd: (T, ProcessingType) => ServiceValidation[ProcessingTypeEvent],
+      applyEvent:  ProcessingTypeEvent => Unit
+    ): Unit = {
     val event = for {
-        processingType <- processingTypeRepository.getByKey(ProcessingTypeId(cmd.id))
-        validVersion   <- processingType.requireVersion(cmd.expectedVersion)
-        event          <- validateCmd(cmd, processingType)
-      } yield event
+      processingType <- processingTypeRepository.getByKey(ProcessingTypeId(cmd.id))
+      validVersion   <- processingType.requireVersion(cmd.expectedVersion)
+      event          <- validateCmd(cmd, processingType)
+    } yield event
 
     process(event)(applyEvent)
   }
 
-  private def applyRemovedEvent(event: ProcessingTypeEvent): Unit = {
-    onValidEventAndVersion(event,
-                           event.eventType.isRemoved,
-                           event.getRemoved.getVersion) { (pt, _) =>
+  private def applyRemovedEvent(event: ProcessingTypeEvent): Unit =
+    onValidEventAndVersion(event, event.eventType.isRemoved, event.getRemoved.getVersion) { (pt, _) =>
       val v = processingTypeRepository.getByKey(pt.id)
       v.foreach(processingTypeRepository.remove)
 
@@ -677,7 +678,6 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
         val inUseId = ProcessingTypeId(pt.input.entityId.toString)
         if (!processingTypeRepository.processingTypeInUse(inUseId)) {
           processingTypeRepository.getByKey(inUseId).foreach { inputPt =>
-
             if (inputPt.inUse) {
               val timeModified = Some(OffsetDateTime.parse(event.getTime))
               processingTypeRepository.put(inputPt.copy(inUse = false, timeModified = timeModified))
@@ -688,51 +688,51 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
 
       v.map(_ => ())
     }
-  }
 
   val ErrMsgNameExists: String = "processing type with name already exists"
 
-  private def nameAvailable(name: String, studyId: StudyId): ServiceValidation[Unit] = {
+  private def nameAvailable(name: String, studyId: StudyId): ServiceValidation[Unit] =
     nameAvailableMatcher(name, processingTypeRepository, ErrMsgNameExists) { item =>
       (item.name == name) && (item.studyId == studyId)
     }
-  }
 
-  private def specimenDefinitionToEvent(specimenDefinition: ProcessedSpecimenDefinition):
-      ProcessingTypeEvent.SpecimenDefinition = {
-    ProcessingTypeEvent.SpecimenDefinition().update(
-      _.id                      := specimenDefinition.id.id,
-      _.name                    := specimenDefinition.name,
-      _.optionalDescription     := specimenDefinition.description,
-      _.units                   := specimenDefinition.units,
-      _.anatomicalSourceType    := specimenDefinition.anatomicalSourceType.toString,
-      _.preservationType        := specimenDefinition.preservationType.toString,
-      _.preservationTemperature := specimenDefinition.preservationTemperature.toString,
-      _.specimenType            := specimenDefinition.specimenType.toString
-    )
-  }
+  private def specimenDefinitionToEvent(
+      specimenDefinition: ProcessedSpecimenDefinition
+    ): ProcessingTypeEvent.SpecimenDefinition =
+    ProcessingTypeEvent
+      .SpecimenDefinition().update(_.id                      := specimenDefinition.id.id,
+                                   _.name                    := specimenDefinition.name,
+                                   _.optionalDescription     := specimenDefinition.description,
+                                   _.units                   := specimenDefinition.units,
+                                   _.anatomicalSourceType    := specimenDefinition.anatomicalSourceType.toString,
+                                   _.preservationType        := specimenDefinition.preservationType.toString,
+                                   _.preservationTemperature := specimenDefinition.preservationTemperature.toString,
+                                   _.specimenType            := specimenDefinition.specimenType.toString)
 
-  private def specimenDefinitionFromEvent(event: ProcessingTypeEvent.SpecimenDefinition)
-      : ProcessedSpecimenDefinition = {
-    ProcessedSpecimenDefinition(
-      id                      = SpecimenDefinitionId(event.getId),
-      slug                    = Slug(event.getName),
-      name                    = event.getName,
-      description             = event.description,
-      units                   = event.getUnits,
-      anatomicalSourceType    = AnatomicalSourceType.withName(event.getAnatomicalSourceType),
-      preservationType        = PreservationType.withName(event.getPreservationType),
-      preservationTemperature = PreservationTemperature.withName(event.getPreservationTemperature),
-      specimenType            = SpecimenType.withName(event.getSpecimenType)
-    )
-  }
+  private def specimenDefinitionFromEvent(
+      event: ProcessingTypeEvent.SpecimenDefinition
+    ): ProcessedSpecimenDefinition =
+    ProcessedSpecimenDefinition(id          = SpecimenDefinitionId(event.getId),
+                                slug        = Slug(event.getName),
+                                name        = event.getName,
+                                description = event.description,
+                                units       = event.getUnits,
+                                anatomicalSourceType =
+                                  AnatomicalSourceType.withName(event.getAnatomicalSourceType),
+                                preservationType = PreservationType.withName(event.getPreservationType),
+                                preservationTemperature =
+                                  PreservationTemperature.withName(event.getPreservationTemperature),
+                                specimenType = SpecimenType.withName(event.getSpecimenType))
 
-  private def validateInputSpecimenProcessing(input: studies.InputSpecimenProcessing)
-      : ServiceValidation[Unit] = {
+  private def validateInputSpecimenProcessing(
+      input: studies.InputSpecimenProcessing
+    ): ServiceValidation[Unit] = {
     val entityIdString = input.entityId.toString
     if (input.definitionType == collectedDefinition) {
       collectionEventTypeRepository.getByKey(CollectionEventTypeId(entityIdString)).flatMap { eventType =>
-        eventType.specimenDefinition(input.specimenDefinitionId).map { _ => () }
+        eventType.specimenDefinition(input.specimenDefinitionId).map { _ =>
+          ()
+        }
       }
     } else {
       processingTypeRepository.getByKey(ProcessingTypeId(entityIdString)).flatMap { processingType =>
@@ -746,17 +746,18 @@ class ProcessingTypeProcessor @javax.inject.Inject() (
     }
   }
 
-  private def storeIfValid(validation: ServiceValidation[ProcessingType],
-                           eventTime: OffsetDateTime): ServiceValidation[Unit] = {
+  private def storeIfValid(
+      validation: ServiceValidation[ProcessingType],
+      eventTime:  OffsetDateTime
+    ): ServiceValidation[Unit] = {
     validation.foreach { c =>
       processingTypeRepository.put(c.copy(timeModified = Some(eventTime)))
     }
     validation.map(_ => ())
   }
 
-  private def init(): Unit = {
+  private def init(): Unit =
     processingTypeRepository.init
-  }
 
   init
 }

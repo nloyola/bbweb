@@ -25,10 +25,7 @@ import scala.concurrent.Future
  * Tests for [[Role]]s and [[Permissions]] in AccessControllerSpec.scala.
  */
 class AccessControllerMembershipSpec
-    extends AccessControllerSpecCommon
-    with UserFixtures
-    with Inside
-    with PagedResultsSharedSpec
+    extends AccessControllerSpecCommon with UserFixtures with Inside with PagedResultsSharedSpec
     with PagedResultsMatchers {
 
   import org.biobank.matchers.DtoMatchers._
@@ -41,36 +38,32 @@ class AccessControllerMembershipSpec
     val centre = factory.createEnabledCentre
 
     private val _membership = factory.createMembership
-    private val studyData  = _membership.studyData.addEntity(study.id)
-    private val centreData = _membership.centreData.addEntity(centre.id)
+    private val studyData   = _membership.studyData.addEntity(study.id)
+    private val centreData  = _membership.centreData.addEntity(centre.id)
 
-    val membership = _membership.copy(userIds    = Set(user.id),
-                                      studyData  = studyData,
-                                      centreData = centreData)
+    val membership = _membership.copy(userIds = Set(user.id), studyData = studyData, centreData = centreData)
 
     Set(user, study, centre, membership).foreach(addToRepository)
   }
 
   private class MembershipFixtureAllStudies {
-    val user       = factory.createActiveUser
+    val user = factory.createActiveUser
 
     private val _membership = factory.createMembership
-    private val studyData  = _membership.studyData.hasAllEntities
+    private val studyData   = _membership.studyData.hasAllEntities
 
-    val membership = _membership.copy(userIds   = Set(user.id),
-                                      studyData = studyData)
+    val membership = _membership.copy(userIds = Set(user.id), studyData = studyData)
 
     Set(user, membership).foreach(addToRepository)
   }
 
   private class MembershipFixtureAllCentres {
-    val user       = factory.createActiveUser
+    val user = factory.createActiveUser
 
     private val _membership = factory.createMembership
     private val centreData  = _membership.centreData.hasAllEntities
 
-    val membership = _membership.copy(userIds    = Set(user.id),
-                                      centreData = centreData)
+    val membership = _membership.copy(userIds = Set(user.id), centreData = centreData)
 
     Set(user, membership).foreach(addToRepository)
   }
@@ -84,14 +77,14 @@ class AccessControllerMembershipSpec
       describe("lists the default membership") {
         listSingleMembership() { () =>
           val defaultMembership = membershipRepository.getByKey(DefaultMembershipId).toOption.value
-            (uri("memberships"), defaultMembership)
+          (uri("memberships"), defaultMembership)
         }
       }
 
       describe("list multiple memberships") {
         listMultipleMemberships() { () =>
           val defaultMembership = membershipRepository.getByKey(DefaultMembershipId).toOption.value
-          val memberships = (0 until 2).map(_ => factory.createMembership).toList
+          val memberships       = (0 until 2).map(_ => factory.createMembership).toList
           memberships.foreach(membershipRepository.put)
           (uri("memberships"), (defaultMembership :: memberships.sortBy(_.name)).sortBy(_.name))
         }
@@ -144,7 +137,9 @@ class AccessControllerMembershipSpec
       }
 
       describe("fail when using an invalid query parameters") {
-        pagedQueryShouldFailSharedBehaviour { () => uri("memberships") }
+        pagedQueryShouldFailSharedBehaviour { () =>
+          uri("memberships")
+        }
       }
 
     }
@@ -152,12 +147,12 @@ class AccessControllerMembershipSpec
     describe("GET /api/access/membership/:slug") {
 
       it("returns a membership") {
-        val f = new MembershipFixture
+        val f     = new MembershipFixture
         val reply = makeAuthRequest(GET, uri("memberships", f.membership.slug.id)).value
         reply must beOkResponseWithJsonReply
 
         val dto = (contentAsJson(reply) \ "data").validate[MembershipDto]
-        dto must be (jsSuccess)
+        dto must be(jsSuccess)
         dto.get must matchDtoToMembership(f.membership)
       }
 
@@ -181,10 +176,9 @@ class AccessControllerMembershipSpec
         reply must beOkResponseWithJsonReply
 
         val jsonId = (contentAsJson(reply) \ "data" \ "id").validate[MembershipId]
-        jsonId must be (jsSuccess)
+        jsonId must be(jsSuccess)
 
-        val updatedMembership = f.membership.copy(id        = jsonId.get,
-                                                  timeAdded = OffsetDateTime.now)
+        val updatedMembership = f.membership.copy(id = jsonId.get, timeAdded = OffsetDateTime.now)
         reply must matchUpdatedMembership(updatedMembership)
       }
 
@@ -192,22 +186,22 @@ class AccessControllerMembershipSpec
         val f = new MembershipFixture
         membershipRepository.remove(f.membership)
         val membership = f.membership.copy(userIds = Set.empty[UserId])
-        val reqJson = membershipToAddJson(membership)
+        val reqJson    = membershipToAddJson(membership)
 
         val reply = makeAuthRequest(POST, uri("memberships"), reqJson).value
         reply must beOkResponseWithJsonReply
 
         val jsonId = (contentAsJson(reply) \ "data" \ "id").validate[MembershipId]
-        jsonId must be (jsSuccess)
+        jsonId must be(jsSuccess)
 
         val updatedMembership = membership.copy(id = jsonId.get, timeAdded = OffsetDateTime.now)
         reply must matchUpdatedMembership(updatedMembership)
       }
 
       it("fails when adding a second membership with a name that already exists") {
-        val f = new MembershipFixture
+        val f       = new MembershipFixture
         val reqJson = membershipToAddJson(f.membership)
-        val reply = makeAuthRequest(POST, uri("memberships"), reqJson).value
+        val reply   = makeAuthRequest(POST, uri("memberships"), reqJson).value
         reply must beBadRequestWithMessage("EntityCriteriaError: name already used:")
       }
 
@@ -215,7 +209,7 @@ class AccessControllerMembershipSpec
         val f = new MembershipFixture
         userRepository.remove(f.user)
         val reqJson = membershipToAddJson(f.membership)
-        val reply = makeAuthRequest(POST, uri("memberships"), reqJson).value
+        val reply   = makeAuthRequest(POST, uri("memberships"), reqJson).value
         reply must beNotFoundWithMessage("IdNotFound: user id")
       }
 
@@ -223,7 +217,7 @@ class AccessControllerMembershipSpec
         val f = new MembershipFixture
         studyRepository.remove(f.study)
         val reqJson = membershipToAddJson(f.membership)
-        val reply = makeAuthRequest(POST, uri("memberships"), reqJson).value
+        val reply   = makeAuthRequest(POST, uri("memberships"), reqJson).value
         reply must beNotFoundWithMessage("IdNotFound: study id")
       }
 
@@ -231,7 +225,7 @@ class AccessControllerMembershipSpec
         val f = new MembershipFixture
         centreRepository.remove(f.centre)
         val reqJson = membershipToAddJson(f.membership)
-        val reply = makeAuthRequest(POST, uri("memberships"), reqJson).value
+        val reply   = makeAuthRequest(POST, uri("memberships"), reqJson).value
         reply must beNotFoundWithMessage("IdNotFound: centre id")
       }
 
@@ -239,49 +233,49 @@ class AccessControllerMembershipSpec
 
     describe("GET /api/access/memberships/names") {
       val createEntity = (name: String) => factory.createMembership.copy(name = name)
-      val baseUrl = uri("memberships", "names")
+      val baseUrl      = uri("memberships", "names")
 
       it should behave like accessEntityNameSharedBehaviour(createEntity, baseUrl) {
         (dtos: List[EntityInfoDto], memberships: List[Membership]) =>
-        (dtos zip memberships).foreach { case (dto, membership) =>
-          dto must matchEntityInfoDtoToMembership(membership)
-        }
+          (dtos zip memberships).foreach {
+            case (dto, membership) =>
+              dto must matchEntityInfoDtoToMembership(membership)
+          }
       }
     }
 
     describe("POST /api/access/memberships/name/:membershipId") {
 
-      def updateNameJson(membership: Membership, name: String) = {
+      def updateNameJson(membership: Membership, name: String) =
         Json.obj("expectedVersion" -> membership.version, "name" -> name)
-      }
 
       it("can update the name") {
-        val f = new MembershipFixture
+        val f       = new MembershipFixture
         val newName = nameGenerator.next[String]
-        val json = updateNameJson(f.membership, newName)
-        val reply = makeAuthRequest(POST, uri("memberships/name", f.membership.id.id), json).value
+        val json    = updateNameJson(f.membership, newName)
+        val reply   = makeAuthRequest(POST, uri("memberships/name", f.membership.id.id), json).value
         reply must beOkResponseWithJsonReply
 
-        val updatedMembership = f.membership.copy(version      = f.membership.version + 1,
+        val updatedMembership = f.membership.copy(version = f.membership.version + 1,
                                                   slug         = Slug(newName),
-                                                  name         = newName ,
+                                                  name         = newName,
                                                   timeModified = Some(OffsetDateTime.now))
         reply must matchUpdatedMembership(updatedMembership)
       }
 
       it("fails when updating to name already used by another membership") {
-        val f = new MembershipFixture
+        val f          = new MembershipFixture
         val membership = factory.createMembership
         membershipRepository.put(membership)
         val reqJson = updateNameJson(f.membership, membership.name)
-        val reply = makeAuthRequest(POST, uri("memberships/name", f.membership.id.id), reqJson).value
+        val reply   = makeAuthRequest(POST, uri("memberships/name", f.membership.id.id), reqJson).value
         reply must beBadRequestWithMessage("EntityCriteriaError: name already used:")
       }
 
       it("fail when updating to something with less than 2 characters") {
-        val f = new MembershipFixture
+        val f       = new MembershipFixture
         val reqJson = updateNameJson(f.membership, "a")
-        val reply = makeAuthRequest(POST, uri("memberships/name", f.membership.id.id), reqJson).value
+        val reply   = makeAuthRequest(POST, uri("memberships/name", f.membership.id.id), reqJson).value
         reply must beBadRequestWithMessage("InvalidName")
       }
 
@@ -297,7 +291,7 @@ class AccessControllerMembershipSpec
       it("fail when updating with invalid version") {
         val f = new MembershipFixture
         val reqJson = updateNameJson(f.membership, nameGenerator.next[Membership]) ++
-        Json.obj("expectedVersion" -> (f.membership.version + 10L))
+          Json.obj("expectedVersion" -> (f.membership.version + 10L))
 
         val reply = makeAuthRequest(POST, uri("memberships/name", f.membership.id.id), reqJson).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
@@ -307,23 +301,23 @@ class AccessControllerMembershipSpec
 
     describe("POST /api/access/memberships/description/:membershipId") {
 
-      def updateDescriptionJson(membership: Membership, description: Option[String]) = {
+      def updateDescriptionJson(membership: Membership, description: Option[String]) =
         Json.obj("expectedVersion" -> membership.version) ++
-        JsObject(
-          Seq[(String, JsValue)]() ++
-            description.map("description" -> Json.toJson(_)))
-      }
+          JsObject(
+            Seq[(String, JsValue)]() ++
+              description.map("description" -> Json.toJson(_))
+          )
 
       it("update a description") {
         val descriptionValues = Table("descriptions", Some(nameGenerator.next[String]), None)
         forAll(descriptionValues) { newDescription =>
-          val f = new MembershipFixture
+          val f       = new MembershipFixture
           val reqJson = updateDescriptionJson(f.membership, newDescription)
-          val url = uri("memberships/description", f.membership.id.id)
-          val reply = makeAuthRequest(POST, url, reqJson).value
+          val url     = uri("memberships/description", f.membership.id.id)
+          val reply   = makeAuthRequest(POST, url, reqJson).value
           reply must beOkResponseWithJsonReply
 
-          val updatedMembership = f.membership.copy(version      = f.membership.version + 1,
+          val updatedMembership = f.membership.copy(version = f.membership.version + 1,
                                                     description  = newDescription,
                                                     timeModified = Some(OffsetDateTime.now))
           reply must matchUpdatedMembership(updatedMembership)
@@ -335,16 +329,15 @@ class AccessControllerMembershipSpec
         membershipRepository.remove(f.membership)
         val reply = makeAuthRequest(POST,
                                     uri("memberships/description", f.membership.id.id),
-                                    updateDescriptionJson(f.membership,
-                                                          Some(nameGenerator.next[Membership])))
+                                    updateDescriptionJson(f.membership, Some(nameGenerator.next[Membership])))
         reply.value must beNotFoundWithMessage("IdNotFound.*membership")
       }
 
       it("fail when updating with invalid version") {
         val f = new MembershipFixture
         val reqJson = updateDescriptionJson(f.membership, Some(nameGenerator.next[Membership])) ++
-        Json.obj("expectedVersion" -> Some(f.membership.version + 10L))
-        val url = uri("memberships/description", f.membership.id.id)
+          Json.obj("expectedVersion" -> Some(f.membership.version + 10L))
+        val url   = uri("memberships/description", f.membership.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
       }
@@ -353,61 +346,58 @@ class AccessControllerMembershipSpec
 
     describe("POST /api/access/memberships/user/:membershipId") {
 
-      def addUserJson(membership: Membership, user: User) = {
+      def addUserJson(membership: Membership, user: User) =
         Json.obj("userId" -> user.id.id, "expectedVersion" -> membership.version)
-      }
 
       it("can add a user") {
-        val f = new MembershipFixture
-        val user = factory.createRegisteredUser
+        val f       = new MembershipFixture
+        val user    = factory.createRegisteredUser
         val reqJson = addUserJson(f.membership, user)
 
         userRepository.put(user)
-        val url = uri("memberships/user", f.membership.id.id)
+        val url   = uri("memberships/user", f.membership.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beOkResponseWithJsonReply
 
-        val updatedMembership = f.membership.copy(version      = f.membership.version + 1,
+        val updatedMembership = f.membership.copy(version = f.membership.version + 1,
                                                   userIds      = f.membership.userIds + user.id,
                                                   timeModified = Some(OffsetDateTime.now))
         reply must matchUpdatedMembership(updatedMembership)
       }
 
       it("cannot add the same user more than once") {
-        val f = new MembershipFixture
+        val f       = new MembershipFixture
         val reqJson = addUserJson(f.membership, f.user)
-        val url = uri("memberships/user", f.membership.id.id)
-        val reply = makeAuthRequest(POST, url, reqJson).value
+        val url     = uri("memberships/user", f.membership.id.id)
+        val reply   = makeAuthRequest(POST, url, reqJson).value
         reply must beBadRequestWithMessage("user ID is already in membership")
       }
 
       it("cannot add a user that does not exist") {
-        val f = new MembershipFixture
-        val user = factory.createRegisteredUser
+        val f       = new MembershipFixture
+        val user    = factory.createRegisteredUser
         val reqJson = addUserJson(f.membership, user)
-        val url = uri("memberships/user", f.membership.id.id)
-        val reply = makeAuthRequest(POST, url, reqJson).value
+        val url     = uri("memberships/user", f.membership.id.id)
+        val reply   = makeAuthRequest(POST, url, reqJson).value
         reply must beNotFoundWithMessage("IdNotFound: user id")
       }
 
       it("fail when updating and membership ID does not exist") {
-        val f = new MembershipFixture
-        val user = factory.createRegisteredUser
+        val f       = new MembershipFixture
+        val user    = factory.createRegisteredUser
         val reqJson = addUserJson(f.membership, user)
         userRepository.put(user)
         membershipRepository.remove(f.membership)
 
-        val reply = makeAuthRequest(POST,
-                                    uri("memberships/user", f.membership.id.id),
-                                    reqJson)
+        val reply = makeAuthRequest(POST, uri("memberships/user", f.membership.id.id), reqJson)
         reply.value must beNotFoundWithMessage("IdNotFound.*membership")
       }
 
       it("fail when updating with invalid version") {
-        val f = new MembershipFixture
+        val f    = new MembershipFixture
         val user = factory.createRegisteredUser
         val reqJson = addUserJson(f.membership, user) ++
-        Json.obj("expectedVersion" -> Some(f.membership.version + 10L))
+          Json.obj("expectedVersion" -> Some(f.membership.version + 10L))
         userRepository.put(user)
 
         val reply = makeAuthRequest(POST, uri("memberships/user", f.membership.id.id), reqJson).value
@@ -419,14 +409,14 @@ class AccessControllerMembershipSpec
     describe("POST /api/access/memberships/studyData/:membershipId") {
 
       it("can assign a membership to be for all studies") {
-        val f = new MembershipFixture
+        val f          = new MembershipFixture
         val allStudies = true
-        val studies = Set.empty[StudyId]
+        val studies    = Set.empty[StudyId]
         val reqJson = Json.obj("expectedVersion" -> f.membership.version,
-                               "allStudies"      -> allStudies,
-                               "studyIds"        -> studies)
+                               "allStudies" -> allStudies,
+                               "studyIds"   -> studies)
 
-        val url = uri("memberships",  "studyData", f.membership.id.id)
+        val url   = uri("memberships", "studyData", f.membership.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beOkResponseWithJsonReply
 
@@ -438,18 +428,18 @@ class AccessControllerMembershipSpec
       }
 
       it("can assign a membership to be for a single study") {
-        val f = new MembershipFixture
-        val study  = factory.createEnabledStudy
+        val f     = new MembershipFixture
+        val study = factory.createEnabledStudy
 
         addToRepository(study)
 
         val allStudies = false
-        val studies = Set(study.id)
+        val studies    = Set(study.id)
         val reqJson = Json.obj("expectedVersion" -> f.membership.version,
-                               "allStudies"      -> allStudies,
-                               "studyIds"        -> studies)
+                               "allStudies" -> allStudies,
+                               "studyIds"   -> studies)
 
-        val url = uri("memberships",  "studyData", f.membership.id.id)
+        val url   = uri("memberships", "studyData", f.membership.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beOkResponseWithJsonReply
 
@@ -461,42 +451,43 @@ class AccessControllerMembershipSpec
       }
 
       it("cannot assign a membership to be for all studies and also have study IDs") {
-        val f = new MembershipFixture
+        val f          = new MembershipFixture
         val allStudies = true
-        val studies = f.membership.studyData.ids
+        val studies    = f.membership.studyData.ids
         val reqJson = Json.obj("expectedVersion" -> f.membership.version,
-                               "allStudies"      -> allStudies,
-                               "studyIds"        -> studies)
+                               "allStudies" -> allStudies,
+                               "studyIds"   -> studies)
 
-        val url = uri("memberships",  "studyData", f.membership.id.id)
+        val url   = uri("memberships", "studyData", f.membership.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beBadRequestWithMessage(
-          "EntityCriteriaError: membership cannot be for all studies and also individual studies")
+          "EntityCriteriaError: membership cannot be for all studies and also individual studies"
+        )
       }
 
       it("cannot assign a membership to NOT be for all studies and also have EMPTY study IDs") {
-        val f = new MembershipFixture
+        val f          = new MembershipFixture
         val allStudies = false
-        val studies = Set.empty[StudyId]
+        val studies    = Set.empty[StudyId]
         val reqJson = Json.obj("expectedVersion" -> f.membership.version,
-                               "allStudies"      -> allStudies,
-                               "studyIds"        -> studies)
+                               "allStudies" -> allStudies,
+                               "studyIds"   -> studies)
 
-        val url = uri("memberships",  "studyData", f.membership.id.id)
+        val url   = uri("memberships", "studyData", f.membership.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beBadRequestWithMessage("EntityCriteriaError: membership must contain studies")
       }
 
       it("cannot assign a membership to be for a study that does not exist") {
-        val f = new MembershipFixture
-        val study  = factory.createEnabledStudy
+        val f          = new MembershipFixture
+        val study      = factory.createEnabledStudy
         val allStudies = false
-        val studies = Set(study.id)
+        val studies    = Set(study.id)
         val reqJson = Json.obj("expectedVersion" -> f.membership.version,
-                               "allStudies"      -> allStudies,
-                               "studyIds"        -> studies)
+                               "allStudies" -> allStudies,
+                               "studyIds"   -> studies)
 
-        val url = uri("memberships",  "studyData", f.membership.id.id)
+        val url   = uri("memberships", "studyData", f.membership.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beNotFoundWithMessage("IdNotFound: study id")
       }
@@ -508,15 +499,15 @@ class AccessControllerMembershipSpec
       it("can assign a membership, for a single study, to be for all studies") {
         val f = new MembershipFixture
 
-        f.membership.studyData.allEntities must be (false)
-        f.membership.studyData.ids must not have size (0L)
+        f.membership.studyData.allEntities must be(false)
+        f.membership.studyData.ids must not have size(0L)
 
         val reqJson = Json.obj("expectedVersion" -> f.membership.version)
-        val url = uri("memberships/allStudies", f.membership.id.id)
-        val reply = makeAuthRequest(POST, url, reqJson).value
+        val url     = uri("memberships/allStudies", f.membership.id.id)
+        val reply   = makeAuthRequest(POST, url, reqJson).value
         reply must beOkResponseWithJsonReply
 
-        val updatedMembership = f.membership.copy(version      = f.membership.version + 1,
+        val updatedMembership = f.membership.copy(version = f.membership.version + 1,
                                                   studyData    = MembershipEntitySet(true, Set.empty[StudyId]),
                                                   timeModified = Some(OffsetDateTime.now))
         reply must matchUpdatedMembership(updatedMembership)
@@ -526,31 +517,28 @@ class AccessControllerMembershipSpec
 
     describe("POST /api/access/memberships/study/:membershipId") {
 
-      def addStudyJson(membership: Membership, study: Study) = {
+      def addStudyJson(membership: Membership, study: Study) =
         Json.obj("studyId" -> study.id.id, "expectedVersion" -> membership.version)
-      }
 
       it("can add a study") {
-        val f = new MembershipFixture
-        val study = factory.createEnabledStudy
+        val f       = new MembershipFixture
+        val study   = factory.createEnabledStudy
         val reqJson = addStudyJson(f.membership, study)
 
         studyRepository.put(study)
-        val reply = makeAuthRequest(POST,
-                                    uri("memberships/study", f.membership.id.id),
-                                    reqJson).value
+        val reply = makeAuthRequest(POST, uri("memberships/study", f.membership.id.id), reqJson).value
         reply must beOkResponseWithJsonReply
 
         val newStudyData = f.membership.studyData.copy(ids = f.membership.studyData.ids + study.id)
-        val updatedMembership = f.membership.copy(version      = f.membership.version + 1,
+        val updatedMembership = f.membership.copy(version = f.membership.version + 1,
                                                   studyData    = newStudyData,
                                                   timeModified = Some(OffsetDateTime.now))
         reply must matchUpdatedMembership(updatedMembership)
       }
 
       it("an all studies membership can be modified to be for a single study") {
-        val f = new MembershipFixtureAllStudies
-        val study = factory.createEnabledStudy
+        val f       = new MembershipFixtureAllStudies
+        val study   = factory.createEnabledStudy
         val reqJson = addStudyJson(f.membership, study)
 
         studyRepository.put(study)
@@ -558,44 +546,42 @@ class AccessControllerMembershipSpec
         reply must beOkResponseWithJsonReply
 
         val newStudyData = f.membership.studyData.copy(allEntities = false, ids = Set(study.id))
-        val updatedMembership = f.membership.copy(version      = f.membership.version + 1,
+        val updatedMembership = f.membership.copy(version = f.membership.version + 1,
                                                   studyData    = newStudyData,
                                                   timeModified = Some(OffsetDateTime.now))
         reply must matchUpdatedMembership(updatedMembership)
       }
 
       it("cannot add the same study more than once") {
-        val f = new MembershipFixture
+        val f       = new MembershipFixture
         val reqJson = addStudyJson(f.membership, f.study)
-        val reply = makeAuthRequest(POST, uri("memberships/study", f.membership.id.id), reqJson).value
+        val reply   = makeAuthRequest(POST, uri("memberships/study", f.membership.id.id), reqJson).value
         reply must beBadRequestWithMessage("study ID is already in membership")
       }
 
       it("cannot add a study that does not exist") {
-        val f = new MembershipFixture
-        val study = factory.createEnabledStudy
+        val f       = new MembershipFixture
+        val study   = factory.createEnabledStudy
         val reqJson = addStudyJson(f.membership, study)
-        val reply = makeAuthRequest(POST, uri("memberships/study", f.membership.id.id), reqJson).value
+        val reply   = makeAuthRequest(POST, uri("memberships/study", f.membership.id.id), reqJson).value
         reply must beNotFoundWithMessage("IdNotFound: study id")
       }
 
       it("fail when updating and membership ID does not exist") {
-        val f = new MembershipFixture
-        val study = factory.createEnabledStudy
+        val f       = new MembershipFixture
+        val study   = factory.createEnabledStudy
         val reqJson = addStudyJson(f.membership, study)
         studyRepository.put(study)
         membershipRepository.remove(f.membership)
-        val reply = makeAuthRequest(POST,
-                                    uri("memberships/study", f.membership.id.id),
-                                    reqJson)
+        val reply = makeAuthRequest(POST, uri("memberships/study", f.membership.id.id), reqJson)
         reply.value must beNotFoundWithMessage("IdNotFound.*membership")
       }
 
       it("fail when updating with invalid version") {
-        val f = new MembershipFixture
+        val f     = new MembershipFixture
         val study = factory.createEnabledStudy
         val reqJson = addStudyJson(f.membership, study) ++
-        Json.obj("expectedVersion" -> Some(f.membership.version + 10L))
+          Json.obj("expectedVersion" -> Some(f.membership.version + 10L))
         studyRepository.put(study)
         val reply = makeAuthRequest(POST, uri("memberships/study", f.membership.id.id), reqJson).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
@@ -606,84 +592,85 @@ class AccessControllerMembershipSpec
     describe("POST /api/access/memberships/centreData/:membershipId") {
 
       it("can assign a membership to be for all centres") {
-        val f = new MembershipFixture
+        val f          = new MembershipFixture
         val allCentres = true
-        val centres = Set.empty[CentreId]
+        val centres    = Set.empty[CentreId]
         val reqJson = Json.obj("expectedVersion" -> f.membership.version,
-                               "allCentres"      -> allCentres,
-                               "centreIds"        -> centres)
+                               "allCentres" -> allCentres,
+                               "centreIds"  -> centres)
 
-        val url = uri("memberships",  "centreData", f.membership.id.id)
+        val url   = uri("memberships", "centreData", f.membership.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beOkResponseWithJsonReply
 
         val updatedMembership = f.membership
           .copy(version      = f.membership.version + 1,
-                centreData    = MembershipEntitySet(allCentres, centres),
+                centreData   = MembershipEntitySet(allCentres, centres),
                 timeModified = Some(OffsetDateTime.now))
         reply must matchUpdatedMembership(updatedMembership)
       }
 
       it("can assign a membership to be for a single centre") {
-        val f = new MembershipFixture
-        val centre  = factory.createEnabledCentre
+        val f      = new MembershipFixture
+        val centre = factory.createEnabledCentre
 
         addToRepository(centre)
 
         val allCentres = false
-        val centres = Set(centre.id)
+        val centres    = Set(centre.id)
         val reqJson = Json.obj("expectedVersion" -> f.membership.version,
-                               "allCentres"      -> allCentres,
-                               "centreIds"        -> centres)
+                               "allCentres" -> allCentres,
+                               "centreIds"  -> centres)
 
-        val url = uri("memberships",  "centreData", f.membership.id.id)
+        val url   = uri("memberships", "centreData", f.membership.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beOkResponseWithJsonReply
 
         val updatedMembership = f.membership
           .copy(version      = f.membership.version + 1,
-                centreData    = MembershipEntitySet(allCentres, centres),
+                centreData   = MembershipEntitySet(allCentres, centres),
                 timeModified = Some(OffsetDateTime.now))
         reply must matchUpdatedMembership(updatedMembership)
       }
 
       it("cannot assign a membership to be for all centres and also have centre IDs") {
-        val f = new MembershipFixture
+        val f          = new MembershipFixture
         val allCentres = true
-        val centres = f.membership.centreData.ids
+        val centres    = f.membership.centreData.ids
         val reqJson = Json.obj("expectedVersion" -> f.membership.version,
-                               "allCentres"      -> allCentres,
-                               "centreIds"        -> centres)
+                               "allCentres" -> allCentres,
+                               "centreIds"  -> centres)
 
-        val url = uri("memberships",  "centreData", f.membership.id.id)
+        val url   = uri("memberships", "centreData", f.membership.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beBadRequestWithMessage(
-          "EntityCriteriaError: membership cannot be for all centres and also individual centres")
+          "EntityCriteriaError: membership cannot be for all centres and also individual centres"
+        )
       }
 
       it("cannot assign a membership to NOT be for all centres and also have EMPTY centre IDs") {
-        val f = new MembershipFixture
+        val f          = new MembershipFixture
         val allCentres = false
-        val centres = Set.empty[CentreId]
+        val centres    = Set.empty[CentreId]
         val reqJson = Json.obj("expectedVersion" -> f.membership.version,
-                               "allCentres"      -> allCentres,
-                               "centreIds"        -> centres)
+                               "allCentres" -> allCentres,
+                               "centreIds"  -> centres)
 
-        val url = uri("memberships",  "centreData", f.membership.id.id)
+        val url   = uri("memberships", "centreData", f.membership.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beBadRequestWithMessage("EntityCriteriaError: membership must contain centres")
       }
 
       it("cannot assign a membership to be for a centre that does not exist") {
-        val f = new MembershipFixture
-        val centre  = factory.createEnabledCentre
+        val f          = new MembershipFixture
+        val centre     = factory.createEnabledCentre
         val allCentres = false
-        val centres = Set(centre.id)
+        val centres    = Set(centre.id)
         val reqJson = Json.obj("expectedVersion" -> f.membership.version,
-                               "allCentres"      -> allCentres,
-                               "centreIds"        -> centres)
+                               "allCentres" -> allCentres,
+                               "centreIds"  -> centres)
 
-        val url = uri("memberships",  "centreData", f.membership.id.id)
+        val url   = uri("memberships", "centreData", f.membership.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
         reply must beNotFoundWithMessage("IdNotFound: centre id")
       }
@@ -695,16 +682,14 @@ class AccessControllerMembershipSpec
       it("can assign a membership, for a single centre, to be for all centres") {
         val f = new MembershipFixture
 
-        f.membership.centreData.allEntities must be (false)
-        f.membership.centreData.ids must not have size (0L)
+        f.membership.centreData.allEntities must be(false)
+        f.membership.centreData.ids must not have size(0L)
 
         val reqJson = Json.obj("expectedVersion" -> f.membership.version)
-        val reply = makeAuthRequest(POST,
-                                    uri("memberships/allCentres", f.membership.id.id),
-                                    reqJson).value
+        val reply   = makeAuthRequest(POST, uri("memberships/allCentres", f.membership.id.id), reqJson).value
         reply must beOkResponseWithJsonReply
 
-        val updatedMembership = f.membership.copy(version      = f.membership.version + 1,
+        val updatedMembership = f.membership.copy(version = f.membership.version + 1,
                                                   centreData   = MembershipEntitySet(true, Set.empty[CentreId]),
                                                   timeModified = Some(OffsetDateTime.now))
         reply must matchUpdatedMembership(updatedMembership)
@@ -714,87 +699,74 @@ class AccessControllerMembershipSpec
 
     describe("POST /api/access/memberships/centre/:membershipId") {
 
-      def addCentreJson(membership: Membership, centre: Centre) = {
+      def addCentreJson(membership: Membership, centre: Centre) =
         Json.obj("centreId" -> centre.id.id, "expectedVersion" -> membership.version)
-      }
 
       it("can add a centre") {
-        val f = new MembershipFixture
-        val centre = factory.createEnabledCentre
+        val f       = new MembershipFixture
+        val centre  = factory.createEnabledCentre
         val reqJson = addCentreJson(f.membership, centre)
 
         centreRepository.put(centre)
-        val reply = makeAuthRequest(POST,
-                                    uri("memberships/centre", f.membership.id.id),
-                                    reqJson).value
+        val reply = makeAuthRequest(POST, uri("memberships/centre", f.membership.id.id), reqJson).value
         reply must beOkResponseWithJsonReply
 
         val newCentreData = f.membership.centreData.copy(ids = f.membership.centreData.ids + centre.id)
-        val updatedMembership = f.membership.copy(version      = f.membership.version + 1,
+        val updatedMembership = f.membership.copy(version = f.membership.version + 1,
                                                   centreData   = newCentreData,
                                                   timeModified = Some(OffsetDateTime.now))
         reply must matchUpdatedMembership(updatedMembership)
       }
 
       it("an all centres membership can be modified to be for a single centre") {
-        val f = new MembershipFixtureAllCentres
-        val centre = factory.createEnabledCentre
+        val f       = new MembershipFixtureAllCentres
+        val centre  = factory.createEnabledCentre
         val reqJson = addCentreJson(f.membership, centre)
 
         centreRepository.put(centre)
-        val reply = makeAuthRequest(POST,
-                                    uri("memberships/centre", f.membership.id.id),
-                                    reqJson).value
+        val reply = makeAuthRequest(POST, uri("memberships/centre", f.membership.id.id), reqJson).value
         reply must beOkResponseWithJsonReply
 
         val newCentreData = f.membership.centreData.copy(allEntities = false, ids = Set(centre.id))
-        val updatedMembership = f.membership.copy(version      = f.membership.version + 1,
+        val updatedMembership = f.membership.copy(version = f.membership.version + 1,
                                                   centreData   = newCentreData,
                                                   timeModified = Some(OffsetDateTime.now))
         reply must matchUpdatedMembership(updatedMembership)
       }
 
       it("cannot add the same centre more than once") {
-        val f = new MembershipFixture
+        val f       = new MembershipFixture
         val reqJson = addCentreJson(f.membership, f.centre)
-        val reply = makeAuthRequest(POST,
-                                    uri("memberships/centre", f.membership.id.id),
-                                    reqJson).value
+        val reply   = makeAuthRequest(POST, uri("memberships/centre", f.membership.id.id), reqJson).value
         reply must beBadRequestWithMessage("centre ID is already in membership")
       }
 
       it("cannot add a centre that does not exist") {
-        val f = new MembershipFixture
-        val centre = factory.createEnabledCentre
+        val f       = new MembershipFixture
+        val centre  = factory.createEnabledCentre
         val reqJson = addCentreJson(f.membership, centre)
-        val reply = makeAuthRequest(POST,
-                                    uri("memberships/centre", f.membership.id.id),
-                                    reqJson).value
+        val reply   = makeAuthRequest(POST, uri("memberships/centre", f.membership.id.id), reqJson).value
         reply must beNotFoundWithMessage("IdNotFound: centre id")
       }
 
       it("fail when updating and membership ID does not exist") {
-        val f = new MembershipFixture
-        val centre = factory.createEnabledCentre
+        val f       = new MembershipFixture
+        val centre  = factory.createEnabledCentre
         val reqJson = addCentreJson(f.membership, centre)
         centreRepository.put(centre)
         membershipRepository.remove(f.membership)
 
-        val reply = makeAuthRequest(POST,
-                                    uri("memberships/centre", f.membership.id.id),
-                                    reqJson)
+        val reply = makeAuthRequest(POST, uri("memberships/centre", f.membership.id.id), reqJson)
         reply.value must beNotFoundWithMessage("IdNotFound.*membership")
       }
 
       it("fail when updating with invalid version") {
-        val f = new MembershipFixture
+        val f      = new MembershipFixture
         val centre = factory.createEnabledCentre
         val reqJson = addCentreJson(f.membership, centre) ++
-        Json.obj("expectedVersion" -> Some(f.membership.version + 10L))
+          Json.obj("expectedVersion" -> Some(f.membership.version + 10L))
         centreRepository.put(centre)
-        val reply = makeAuthRequest(POST,
-                                    uri("memberships/centre", f.membership.id.id),
-                                    reqJson).value
+        val reply = makeAuthRequest(POST, uri("memberships/centre", f.membership.id.id), reqJson).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
       }
 
@@ -803,38 +775,38 @@ class AccessControllerMembershipSpec
     describe("DELETE /api/access/memberships/user/:membershipId/:version/:userId") {
 
       it("can remove a user") {
-        val f = new MembershipFixture
-        val url = uri("memberships/user", f.membership.id.id, f.membership.version.toString, f.user.id.id)
+        val f     = new MembershipFixture
+        val url   = uri("memberships/user", f.membership.id.id, f.membership.version.toString, f.user.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beOkResponseWithJsonReply
 
-        val updatedMembership = f.membership.copy(version      = f.membership.version + 1,
+        val updatedMembership = f.membership.copy(version = f.membership.version + 1,
                                                   userIds      = f.membership.userIds - f.user.id,
                                                   timeModified = Some(OffsetDateTime.now))
         reply must matchUpdatedMembership(updatedMembership)
       }
 
       it("cannot remove a user not in the membership") {
-        val f = new MembershipFixture
+        val f    = new MembershipFixture
         val user = factory.createRegisteredUser
         userRepository.put(user)
-        val url = uri("memberships/user", f.membership.id.id, f.membership.version.toString, user.id.id)
+        val url   = uri("memberships/user", f.membership.id.id, f.membership.version.toString, user.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("user ID is not in membership")
       }
 
       it("cannot remove a user that does not exist") {
-        val f = new MembershipFixture
-        val user = factory.createRegisteredUser
-        val url = uri("memberships/user", f.membership.id.id, f.membership.version.toString, user.id.id)
+        val f     = new MembershipFixture
+        val user  = factory.createRegisteredUser
+        val url   = uri("memberships/user", f.membership.id.id, f.membership.version.toString, user.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beNotFoundWithMessage("IdNotFound: user id")
       }
 
       it("fail when removing and membership ID does not exist") {
-        val f = new MembershipFixture
+        val f    = new MembershipFixture
         val user = factory.createRegisteredUser
-        val url = uri("memberships/user", f.membership.id.id, f.membership.version.toString, user.id.id)
+        val url  = uri("memberships/user", f.membership.id.id, f.membership.version.toString, user.id.id)
         userRepository.put(user)
         membershipRepository.remove(f.membership)
 
@@ -843,12 +815,10 @@ class AccessControllerMembershipSpec
       }
 
       it("fail when removing with invalid version") {
-        val f = new MembershipFixture
+        val f    = new MembershipFixture
         val user = factory.createRegisteredUser
-        val url = uri("memberships/user",
-                      f.membership.id.id,
-                      (f.membership.version + 10L).toString,
-                      user.id.id)
+        val url =
+          uri("memberships/user", f.membership.id.id, (f.membership.version + 10L).toString, user.id.id)
         userRepository.put(user)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
@@ -859,48 +829,48 @@ class AccessControllerMembershipSpec
     describe("DELETE /api/access/memberships/study/:membershipId/:version/:studyId") {
 
       it("can remove a study") {
-        val f = new MembershipFixture
-        val url = uri("memberships/study", f.membership.id.id, f.membership.version.toString, f.study.id.id)
+        val f     = new MembershipFixture
+        val url   = uri("memberships/study", f.membership.id.id, f.membership.version.toString, f.study.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beOkResponseWithJsonReply
 
         val newStudyData = f.membership.studyData.copy(ids = f.membership.studyData.ids - f.study.id)
-        val updatedMembership = f.membership.copy(version      = f.membership.version + 1,
+        val updatedMembership = f.membership.copy(version = f.membership.version + 1,
                                                   studyData    = newStudyData,
                                                   timeModified = Some(OffsetDateTime.now))
         reply must matchUpdatedMembership(updatedMembership)
       }
 
       it("cannot remove a study not in the membership") {
-        val f = new MembershipFixture
+        val f     = new MembershipFixture
         val study = factory.createEnabledStudy
         studyRepository.put(study)
-        val url = uri("memberships/study", f.membership.id.id, f.membership.version.toString, study.id.id)
+        val url   = uri("memberships/study", f.membership.id.id, f.membership.version.toString, study.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("study ID is not in membership")
       }
 
       it("cannot remove a study in an all studies membership") {
-        val f = new MembershipFixtureAllStudies
+        val f     = new MembershipFixtureAllStudies
         val study = factory.createEnabledStudy
         studyRepository.put(study)
-        val url = uri("memberships/study", f.membership.id.id, f.membership.version.toString, study.id.id)
+        val url   = uri("memberships/study", f.membership.id.id, f.membership.version.toString, study.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("membership is for all studies, cannot remove:")
       }
 
       it("cannot add a study that does not exist") {
-        val f = new MembershipFixture
+        val f     = new MembershipFixture
         val study = factory.createEnabledStudy
-        val url = uri("memberships/study", f.membership.id.id, f.membership.version.toString, study.id.id)
+        val url   = uri("memberships/study", f.membership.id.id, f.membership.version.toString, study.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beNotFoundWithMessage("IdNotFound: study id")
       }
 
       it("fail when removing and membership ID does not exist") {
-        val f = new MembershipFixture
+        val f     = new MembershipFixture
         val study = factory.createEnabledStudy
-        val url = uri("memberships/study", f.membership.id.id, f.membership.version.toString, study.id.id)
+        val url   = uri("memberships/study", f.membership.id.id, f.membership.version.toString, study.id.id)
         studyRepository.put(study)
         membershipRepository.remove(f.membership)
         val reply = makeAuthRequest(DELETE, url)
@@ -908,12 +878,10 @@ class AccessControllerMembershipSpec
       }
 
       it("fail when removing with invalid version") {
-        val f = new MembershipFixture
+        val f     = new MembershipFixture
         val study = factory.createEnabledStudy
-        val url = uri("memberships/study",
-                      f.membership.id.id,
-                      (f.membership.version + 10L).toString,
-                      study.id.id)
+        val url =
+          uri("memberships/study", f.membership.id.id, (f.membership.version + 10L).toString, study.id.id)
 
         studyRepository.put(study)
         val reply = makeAuthRequest(DELETE, url).value
@@ -926,48 +894,48 @@ class AccessControllerMembershipSpec
     describe("DELETE /api/access/memberships/centre/:membershipId/:version/:centreId") {
 
       it("can remove a centre") {
-        val f = new MembershipFixture
-        val url = uri("memberships/centre", f.membership.id.id, f.membership.version.toString, f.centre.id.id)
+        val f     = new MembershipFixture
+        val url   = uri("memberships/centre", f.membership.id.id, f.membership.version.toString, f.centre.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beOkResponseWithJsonReply
 
         val newCentreData = f.membership.centreData.copy(ids = f.membership.centreData.ids - f.centre.id)
-        val updatedMembership = f.membership.copy(version      = f.membership.version + 1,
+        val updatedMembership = f.membership.copy(version = f.membership.version + 1,
                                                   centreData   = newCentreData,
                                                   timeModified = Some(OffsetDateTime.now))
         reply must matchUpdatedMembership(updatedMembership)
       }
 
       it("cannot remove a centre not in the membership") {
-        val f = new MembershipFixture
+        val f      = new MembershipFixture
         val centre = factory.createEnabledCentre
         centreRepository.put(centre)
-        val url = uri("memberships/centre", f.membership.id.id, f.membership.version.toString, centre.id.id)
+        val url   = uri("memberships/centre", f.membership.id.id, f.membership.version.toString, centre.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("centre ID is not in membership")
       }
 
       it("cannot remove a centre in an all centres membership") {
-        val f = new MembershipFixtureAllCentres
+        val f      = new MembershipFixtureAllCentres
         val centre = factory.createEnabledCentre
         centreRepository.put(centre)
-        val url = uri("memberships/centre", f.membership.id.id, f.membership.version.toString, centre.id.id)
+        val url   = uri("memberships/centre", f.membership.id.id, f.membership.version.toString, centre.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("membership is for all centres, cannot remove:")
       }
 
       it("cannot add a centre that does not exist") {
-        val f = new MembershipFixture
+        val f      = new MembershipFixture
         val centre = factory.createEnabledCentre
-        val url = uri("memberships/centre", f.membership.id.id, f.membership.version.toString, centre.id.id)
-        val reply = makeAuthRequest(DELETE, url).value
+        val url    = uri("memberships/centre", f.membership.id.id, f.membership.version.toString, centre.id.id)
+        val reply  = makeAuthRequest(DELETE, url).value
         reply must beNotFoundWithMessage("IdNotFound: centre id")
       }
 
       it("fail when removing and membership ID does not exist") {
-        val f = new MembershipFixture
+        val f      = new MembershipFixture
         val centre = factory.createEnabledCentre
-        val url = uri("memberships/centre", f.membership.id.id, f.membership.version.toString, centre.id.id)
+        val url    = uri("memberships/centre", f.membership.id.id, f.membership.version.toString, centre.id.id)
         centreRepository.put(centre)
         membershipRepository.remove(f.membership)
         val reply = makeAuthRequest(DELETE, url)
@@ -975,12 +943,10 @@ class AccessControllerMembershipSpec
       }
 
       it("fail when removing with invalid version") {
-        val f = new MembershipFixture
+        val f      = new MembershipFixture
         val centre = factory.createEnabledCentre
-        val url = uri("memberships/centre",
-                      f.membership.id.id,
-                      (f.membership.version + 10L).toString,
-                      centre.id.id)
+        val url =
+          uri("memberships/centre", f.membership.id.id, (f.membership.version + 10L).toString, centre.id.id)
         centreRepository.put(centre)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
@@ -991,18 +957,18 @@ class AccessControllerMembershipSpec
     describe("DELETE /api/access/memberships/:membershipId/:version") {
 
       it("can remove a membership") {
-        val f = new MembershipFixture
-        val url = uri("memberships", f.membership.id.id, f.membership.version.toString)
+        val f     = new MembershipFixture
+        val url   = uri("memberships", f.membership.id.id, f.membership.version.toString)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beOkResponseWithJsonReply
 
         val result = (contentAsJson(reply) \ "data").validate[Boolean]
-        result must be (jsSuccess)
-        result.get must be (true)
+        result must be(jsSuccess)
+        result.get must be(true)
       }
 
       it("cannot remove a membership that does not exist") {
-        val f = new MembershipFixture
+        val f   = new MembershipFixture
         val url = uri("memberships", f.membership.id.id, f.membership.version.toString)
         membershipRepository.remove(f.membership)
         val reply = makeAuthRequest(DELETE, url)
@@ -1010,8 +976,8 @@ class AccessControllerMembershipSpec
       }
 
       it("fail when removing with invalid version") {
-        val f = new MembershipFixture
-        val url = uri("memberships", f.membership.id.id, (f.membership.version + 10L).toString)
+        val f     = new MembershipFixture
+        val url   = uri("memberships", f.membership.id.id, (f.membership.version + 10L).toString)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beBadRequestWithMessage("expected version doesn't match current version")
       }
@@ -1020,30 +986,31 @@ class AccessControllerMembershipSpec
 
   }
 
-  private def listSingleMembership(offset:    Long = 0,
-                                   maybeNext: Option[Int] = None,
-                                   maybePrev: Option[Int] = None)
-                                  (setupFunc: () => (Url, Membership)) = {
-
+  private def listSingleMembership(
+      offset:    Long = 0,
+      maybeNext: Option[Int] = None,
+      maybePrev: Option[Int] = None
+    )(setupFunc: () => (Url, Membership)
+    ) =
     it("list single membership") {
       val (url, expectedMembership) = setupFunc()
-      val reply = makeAuthRequest(GET, url).value
+      val reply                     = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val reqJson = contentAsJson(reply)
       reqJson must beSingleItemResults(offset, maybeNext, maybePrev)
 
       val replyMemberships = (reqJson \ "data" \ "items").validate[List[MembershipDto]]
-      replyMemberships must be (jsSuccess)
+      replyMemberships must be(jsSuccess)
       replyMemberships.get.foreach { _ must matchDtoToMembership(expectedMembership) }
     }
-  }
 
-  private def listMultipleMemberships(offset:    Long = 0,
-                                      maybeNext: Option[Int] = None,
-                                      maybePrev: Option[Int] = None)
-                                     (setupFunc: () => (Url, List[Membership])) = {
-
+  private def listMultipleMemberships(
+      offset:    Long = 0,
+      maybeNext: Option[Int] = None,
+      maybePrev: Option[Int] = None
+    )(setupFunc: () => (Url, List[Membership])
+    ) =
     it("list multiple memberships") {
       val (url, expectedMemberships) = setupFunc()
 
@@ -1051,25 +1018,25 @@ class AccessControllerMembershipSpec
       reply must beOkResponseWithJsonReply
 
       val reqJson = contentAsJson(reply)
-      reqJson must beMultipleItemResults(offset = offset,
-                                         total = expectedMemberships.size.toLong,
+      reqJson must beMultipleItemResults(offset    = offset,
+                                         total     = expectedMemberships.size.toLong,
                                          maybeNext = maybeNext,
                                          maybePrev = maybePrev)
 
       val replyMemberships = (reqJson \ "data" \ "items").validate[List[MembershipDto]]
-      replyMemberships must be (jsSuccess)
+      replyMemberships must be(jsSuccess)
 
-      (replyMemberships.get zip expectedMemberships).foreach { case (replyMembership, membership) =>
-        replyMembership must matchDtoToMembership(membership)
+      (replyMemberships.get zip expectedMemberships).foreach {
+        case (replyMembership, membership) =>
+          replyMembership must matchDtoToMembership(membership)
       }
     }
 
-  }
-
   private def matchUpdatedMembership(membership: Membership) =
     new Matcher[Future[Result]] {
-      def apply (left: Future[Result]) = {
-        val replyMembership = (contentAsJson(left) \ "data").validate[MembershipDto]
+
+      def apply(left: Future[Result]) = {
+        val replyMembership  = (contentAsJson(left) \ "data").validate[MembershipDto]
         val jsSuccessMatcher = jsSuccess(replyMembership)
 
         if (!jsSuccessMatcher.matches) {
@@ -1090,33 +1057,33 @@ class AccessControllerMembershipSpec
 
   private def matchRepositoryMembership =
     new Matcher[Membership] {
-      def apply (left: Membership) = {
-        membershipRepository.getByKey(left.id).fold(
-          err => {
-            MatchResult(false, s"not found in repository: ${err.head}", "")
 
-          },
-          repoCet => {
-            val repoMatcher = matchMembership(left)(repoCet)
-            MatchResult(repoMatcher.matches,
-                        s"repository membership does not match expected: ${repoMatcher.failureMessage}",
-                        s"repository membership matches expected: ${repoMatcher.failureMessage}")
-          }
-        )
-      }
+      def apply(left: Membership) =
+        membershipRepository
+          .getByKey(left.id).fold(
+            err => {
+              MatchResult(false, s"not found in repository: ${err.head}", "")
+
+            },
+            repoCet => {
+              val repoMatcher = matchMembership(left)(repoCet)
+              MatchResult(repoMatcher.matches,
+                          s"repository membership does not match expected: ${repoMatcher.failureMessage}",
+                          s"repository membership matches expected: ${repoMatcher.failureMessage}")
+            }
+          )
     }
 
-  private def membershipToAddJson(membership: Membership) = {
-    Json.obj("name"        -> membership.name,
-             "userIds"     -> membership.userIds.map(_.toString),
-             "allStudies"  -> membership.studyData.allEntities,
-             "studyIds"    -> membership.studyData.ids.map(_.toString),
-             "allCentres"  -> membership.centreData.allEntities,
-             "centreIds"   -> membership.centreData.ids.map(_.toString)) ++
-    JsObject(
-          Seq[(String, JsValue)]() ++
-            membership.description.map("description" -> Json.toJson(_)))
-
-  }
+  private def membershipToAddJson(membership: Membership) =
+    Json.obj("name"       -> membership.name,
+             "userIds"    -> membership.userIds.map(_.toString),
+             "allStudies" -> membership.studyData.allEntities,
+             "studyIds"   -> membership.studyData.ids.map(_.toString),
+             "allCentres" -> membership.centreData.allEntities,
+             "centreIds"  -> membership.centreData.ids.map(_.toString)) ++
+      JsObject(
+        Seq[(String, JsValue)]() ++
+          membership.description.map("description" -> Json.toJson(_))
+      )
 
 }

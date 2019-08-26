@@ -16,14 +16,14 @@ class CollectionEventSpec extends DomainSpec {
   val nameGenerator = new NameGenerator(this.getClass)
 
   def createFrom(collectionEvent: CollectionEvent): DomainValidation[CollectionEvent] =
-    CollectionEvent.create(id                     = collectionEvent.id,
-                           participantId          = collectionEvent.participantId,
-                           collectionEventTypeId  = collectionEvent.collectionEventTypeId,
-                           version                = collectionEvent.version,
-                           timeAdded              = OffsetDateTime.now,
-                           timeCompleted          = collectionEvent.timeCompleted,
-                           visitNumber            = collectionEvent.visitNumber,
-                           annotations            = collectionEvent.annotations)
+    CollectionEvent.create(id                    = collectionEvent.id,
+                           participantId         = collectionEvent.participantId,
+                           collectionEventTypeId = collectionEvent.collectionEventTypeId,
+                           version               = collectionEvent.version,
+                           timeAdded             = OffsetDateTime.now,
+                           timeCompleted         = collectionEvent.timeCompleted,
+                           visitNumber           = collectionEvent.visitNumber,
+                           annotations           = collectionEvent.annotations)
 
   describe("A collection event") {
 
@@ -32,14 +32,12 @@ class CollectionEventSpec extends DomainSpec {
       it("when valid arguments are used and with no annotations") {
         val cevent = factory.createCollectionEvent.copy(version = 0L)
         createFrom(cevent) mustSucceed { ce =>
-          ce must have (
-            'id                     (cevent.id),
-            'participantId          (cevent.participantId),
-            'collectionEventTypeId  (cevent.collectionEventTypeId),
-            'version                (0),
-            'visitNumber            (cevent.visitNumber),
-            'annotations            (cevent.annotations)
-          )
+          ce must have('id (cevent.id),
+                       'participantId (cevent.participantId),
+                       'collectionEventTypeId (cevent.collectionEventTypeId),
+                       'version (0),
+                       'visitNumber (cevent.visitNumber),
+                       'annotations (cevent.annotations))
 
           ce must beEntityWithTimeStamps(OffsetDateTime.now, None, 5L)
 
@@ -49,17 +47,14 @@ class CollectionEventSpec extends DomainSpec {
 
       it("when valid arguments are used and annotations") {
         val annotation = factory.createAnnotation
-        val cevent = factory.createCollectionEvent.copy(annotations = Set(annotation),
-                                                        version     = 0L)
+        val cevent     = factory.createCollectionEvent.copy(annotations = Set(annotation), version = 0L)
         createFrom(cevent) mustSucceed { ce =>
-          ce must have (
-            'id                     (cevent.id),
-            'participantId          (cevent.participantId),
-            'collectionEventTypeId  (cevent.collectionEventTypeId),
-            'version                (0),
-            'visitNumber            (cevent.visitNumber),
-            'annotations            (cevent.annotations)
-          )
+          ce must have('id (cevent.id),
+                       'participantId (cevent.participantId),
+                       'collectionEventTypeId (cevent.collectionEventTypeId),
+                       'version (0),
+                       'visitNumber (cevent.visitNumber),
+                       'annotations (cevent.annotations))
 
           ce must beEntityWithTimeStamps(OffsetDateTime.now, None, 5L)
 
@@ -100,23 +95,23 @@ class CollectionEventSpec extends DomainSpec {
     describe("can be updated") {
 
       it("with a new visit number") {
-        val cevent = factory.createCollectionEvent
+        val cevent         = factory.createCollectionEvent
         val newVisitNumber = cevent.visitNumber + 10
 
         cevent.withVisitNumber(newVisitNumber) mustSucceed { s =>
-          s.visitNumber must be (newVisitNumber)
-          s.version must be (cevent.version + 1)
+          s.visitNumber must be(newVisitNumber)
+          s.version must be(cevent.version + 1)
           s must beEntityWithTimeStamps(cevent.timeAdded, Some(OffsetDateTime.now), 5L)
         }
       }
 
       it("with a new time completed") {
-        val cevent = factory.createCollectionEvent
+        val cevent           = factory.createCollectionEvent
         val newTimeCompleted = cevent.timeCompleted.minusDays(10)
 
         cevent.withTimeCompleted(newTimeCompleted) mustSucceed { s =>
-          s.timeCompleted must be (newTimeCompleted)
-          s.version must be (cevent.version + 1)
+          s.timeCompleted must be(newTimeCompleted)
+          s.version must be(cevent.version + 1)
           s must beEntityWithTimeStamps(cevent.timeAdded, Some(OffsetDateTime.now), 5L)
         }
       }

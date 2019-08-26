@@ -27,8 +27,8 @@ trait ContainersService extends BbwebService {
   /** All Top [[domain.containers.Container Containers]] for a [domain.centres.Centre Centre]. */
   def getContainers(
       requestUserId: UserId,
-      centreId: CentreId,
-      query: PagedQuery
+      centreId:      CentreId,
+      query:         PagedQuery
     ): Future[ServiceValidation[PagedResults[ContainerDto]]]
 
   def processCommand(cmd: ContainerCommand): Future[ServiceValidation[ContainerDto]]
@@ -36,33 +36,30 @@ trait ContainersService extends BbwebService {
 
 class ContainersServiceImpl @Inject()(
     @Named("containersProcessor") val processor: ActorRef,
-    val accessService: AccessService,
-    val centresService: CentresService,
-    val centreRepository: CentreRepository,
-    val containerTypeRepository: ContainerTypeRepository,
-    val containerRepository: ContainerRepository)
-    extends ContainersService
-    with AccessChecksSerivce
-    with ServicePermissionChecks {
+    val accessService:                           AccessService,
+    val centresService:                          CentresService,
+    val centreRepository:                        CentreRepository,
+    val containerTypeRepository:                 ContainerTypeRepository,
+    val containerRepository:                     ContainerRepository)
+    extends ContainersService with AccessChecksSerivce with ServicePermissionChecks {
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
   def getContainers(
       requestUserId: UserId,
-      centreId: CentreId,
-      query: PagedQuery
-    ): Future[ServiceValidation[PagedResults[ContainerDto]]] = {
+      centreId:      CentreId,
+      query:         PagedQuery
+    ): Future[ServiceValidation[PagedResults[ContainerDto]]] =
     Future {
       for {
         centre <- centresService.getCentre(requestUserId, centreId)
         rootContainers = containerRepository.rootContainers(centreId).toSeq
         containers <- filterContainersInternal(rootContainers, query.filter, query.sort)
-        validPage <- query.validPage(containers.size)
-        dtos <- containers.map(containerToDto(requestUserId, _)).toList.sequenceU.map(_.toSeq)
-        result <- PagedResults.create(dtos, query.page, query.limit)
+        validPage  <- query.validPage(containers.size)
+        dtos       <- containers.map(containerToDto(requestUserId, _)).toList.sequenceU.map(_.toSeq)
+        result     <- PagedResults.create(dtos, query.page, query.limit)
       } yield result
     }
-  }
 
   def processCommand(cmd: ContainerCommand): Future[ServiceValidation[ContainerDto]] = {
     val validCentreId = cmd match {
@@ -76,7 +73,7 @@ class ContainersServiceImpl @Inject()(
 
     val permission = cmd match {
       case c: AddContainerCommand => PermissionId.ContainerCreate
-      case c                      => PermissionId.ContainerUpdate
+      case c => PermissionId.ContainerUpdate
     }
 
     val requestUserId = UserId(cmd.sessionUserId)
@@ -87,9 +84,9 @@ class ContainersServiceImpl @Inject()(
                            () =>
                              ask(processor, cmd).mapTo[ServiceValidation[ContainerEvent]].map { validation =>
                                for {
-                                 event <- validation
+                                 event     <- validation
                                  container <- containerRepository.getByKey(ContainerId(event.id))
-                                 dto <- containerToDto(requestUserId, container)
+                                 dto       <- containerToDto(requestUserId, container)
                                } yield dto
                              }
                          })
@@ -97,8 +94,8 @@ class ContainersServiceImpl @Inject()(
 
   private def filterContainersInternal(
       unfiltered: Seq[Container],
-      filter: FilterString,
-      sort: SortString
+      filter:     FilterString,
+      sort:       SortString
     ): ServiceValidation[Seq[Container]] = {
     val sortStr =
       if (sort.expression.isEmpty) new SortString("name")
@@ -121,7 +118,7 @@ class ContainersServiceImpl @Inject()(
     }
   }
 
-  private def containerToDto(requestUserId: UserId, container: Container): ServiceValidation[ContainerDto] = {
+  private def containerToDto(requestUserId: UserId, container: Container): ServiceValidation[ContainerDto] =
     container match {
       case c: StorageContainer =>
         for {
@@ -135,24 +132,23 @@ class ContainersServiceImpl @Inject()(
               .toOption
           }
           val containerTypeInfo = EntityInfoDto(containerType.id.id, containerType.slug, containerType.name)
-          StorageContainerDto(id = c.id.id,
-                              version = c.version,
+          StorageContainerDto(id        = c.id.id,
+                              version   = c.version,
                               timeAdded = c.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
                               timeModified =
                                 c.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                              slug = c.slug,
-                              inventoryId = c.inventoryId,
-                              label = c.label,
-                              enabled = c.enabled,
+                              slug             = c.slug,
+                              inventoryId      = c.inventoryId,
+                              label            = c.label,
+                              enabled          = c.enabled,
                               sharedProperties = c.sharedProperties,
-                              containerType = containerTypeInfo,
-                              parent = parentInfo,
-                              position = c.position,
-                              constraints = None)
+                              containerType    = containerTypeInfo,
+                              parent           = parentInfo,
+                              position         = c.position,
+                              constraints      = None)
         }
       case c: SpecimenContainer =>
         ServiceError("not implemented yet").failureNel[ContainerDto]
     }
-  }
 
 }

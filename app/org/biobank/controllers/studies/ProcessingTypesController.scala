@@ -3,7 +3,7 @@ package org.biobank.controllers.studies
 import javax.inject.{Inject, Singleton}
 import org.biobank.controllers._
 import org.biobank.domain.Slug
-import org.biobank.domain.studies.{StudyId, ProcessingType, ProcessingTypeId}
+import org.biobank.domain.studies.{ProcessingType, ProcessingTypeId, StudyId}
 import org.biobank.infrastructure.commands.ProcessingTypeCommands._
 import org.biobank.services.PagedResults
 import org.biobank.services.studies.ProcessingTypeService
@@ -15,22 +15,23 @@ import scalaz.Scalaz._
 
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
 @Singleton
-class ProcessingTypesController @Inject() (
-  controllerComponents: ControllerComponents,
-  val action:           BbwebAction,
-  val env:              Environment,
-  val service:          ProcessingTypeService
-) (
-  implicit val ec: ExecutionContext
-)
+class ProcessingTypesController @Inject()(
+    controllerComponents: ControllerComponents,
+    val action:           BbwebAction,
+    val env:              Environment,
+    val service:          ProcessingTypeService
+  )(
+    implicit
+    val ec: ExecutionContext)
     extends CommandController(controllerComponents) {
 
-  case class UpdateJson(sessionUserId:   String,
-                        studyId:         String,
-                        id:              String,
-                        expectedVersion: Long,
-                        property:        String,
-                        newValue:        JsValue)
+  case class UpdateJson(
+      sessionUserId:   String,
+      studyId:         String,
+      id:              String,
+      expectedVersion: Long,
+      property:        String,
+      newValue:        JsValue)
 
   implicit val updateJsonReads: Reads[UpdateJson] = Json.reads[UpdateJson]
 
@@ -48,18 +49,14 @@ class ProcessingTypesController @Inject() (
       validationReply(processingType)
     }
 
-  def list(studySlug: Slug): Action[Unit] = {
+  def list(studySlug: Slug): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(
-        err => {
-          validationReply(Future.successful(err.failure[PagedResults[ProcessingType]]))
-        },
-        pagedQuery => {
-          validationReply(service.processingTypesForStudy(request.identity.user.id, studySlug, pagedQuery))
-        }
-      )
+      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(err => {
+        validationReply(Future.successful(err.failure[PagedResults[ProcessingType]]))
+      }, pagedQuery => {
+        validationReply(service.processingTypesForStudy(request.identity.user.id, studySlug, pagedQuery))
+      })
     }
-  }
 
   def inUse(slug: Slug): Action[Unit] =
     action(parse.empty) { implicit request =>
@@ -73,7 +70,9 @@ class ProcessingTypesController @Inject() (
 
   def snapshot: Action[Unit] =
     action(parse.empty) { implicit request =>
-      val reply = service.snapshotRequest(request.identity.user.id).map { _ => true }
+      val reply = service.snapshotRequest(request.identity.user.id).map { _ =>
+        true
+      }
       validationReply(reply)
     }
 
@@ -82,29 +81,26 @@ class ProcessingTypesController @Inject() (
 
   def update(studyId: StudyId, id: ProcessingTypeId): Action[JsValue] =
     action.async(parse.json) { request =>
-      val reqJson = request.body.as[JsObject] ++ Json.obj("studyId"      -> studyId,
-                                                         "id"            -> id,
-                                                         "sessionUserId" -> request.identity.user.id.id)
-      reqJson.validate[UpdateJson].fold(
-        errors => {
-          Future.successful(BadRequest(Json.obj("status" -> "error",
-                                                "message" -> "invalid json values")))
-        },
-        updateEntity => {
-          updateEntityJsonToCommand(updateEntity).fold(
-            errors => {
+      val reqJson = request.body.as[JsObject] ++ Json.obj("studyId" -> studyId,
+                                                          "id"            -> id,
+                                                          "sessionUserId" -> request.identity.user.id.id)
+      reqJson
+        .validate[UpdateJson].fold(
+          errors => {
+            Future.successful(BadRequest(Json.obj("status" -> "error", "message" -> "invalid json values")))
+          },
+          updateEntity => {
+            updateEntityJsonToCommand(updateEntity).fold(errors => {
               val message = (JsError.toJson(errors) \ "obj" \ 0 \ "msg" \ 0).as[String]
               Future.successful(BadRequest(Json.obj("status" -> "error", "message" -> message)))
-            },
-            command => validationReply(service.processCommand(command))
-          )
-        }
-      )
+            }, command => validationReply(service.processCommand(command)))
+          }
+        )
     }
 
   def removeProcessingType(studyId: StudyId, id: ProcessingTypeId, ver: Long): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = RemoveProcessingTypeCmd(request.identity.user.id.id, studyId.id, id.id, ver)
+      val cmd    = RemoveProcessingTypeCmd(request.identity.user.id.id, studyId.id, id.id, ver)
       val future = service.processRemoveCommand(cmd)
       validationReply(future)
     }
@@ -114,7 +110,7 @@ class ProcessingTypesController @Inject() (
     validationReply(future)
   }
 
-  private def updateEntityJsonToCommand(json: UpdateJson): JsResult[ProcessingTypeCommand] = {
+  private def updateEntityJsonToCommand(json: UpdateJson): JsResult[ProcessingTypeCommand] =
     json.property match {
       case "name" =>
         json.newValue.validate[String].map { newName =>
@@ -167,26 +163,29 @@ class ProcessingTypesController @Inject() (
         }
       case _ =>
         JsError(JsonValidationError(s"processing type does not support updates to property ${json.property}"))
-      }
-  }
+    }
 
   def addAnnotationType(id: ProcessingTypeId): Action[JsValue] =
     commandAction[AddProcessingTypeAnnotationTypeCmd](Json.obj("id" -> id))(processCommand)
 
   def updateAnnotationType(id: ProcessingTypeId, annotationTypeId: String): Action[JsValue] =
     commandAction[UpdateProcessingTypeAnnotationTypeCmd](
-      Json.obj("id" -> id, "annotationTypeId" -> annotationTypeId))(processCommand)
+      Json.obj("id" -> id, "annotationTypeId" -> annotationTypeId)
+    )(processCommand)
 
-  def removeAnnotationType(studyId: StudyId, id: ProcessingTypeId, ver: Long, annotationTypeId: String)
-      : Action[Unit]=
+  def removeAnnotationType(
+      studyId:          StudyId,
+      id:               ProcessingTypeId,
+      ver:              Long,
+      annotationTypeId: String
+    ): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = RemoveProcessingTypeAnnotationTypeCmd(
-          sessionUserId         = request.identity.user.id.id,
-          studyId               = studyId.id,
-          id                    = id.id,
-          expectedVersion       = ver,
-          annotationTypeId      = annotationTypeId)
+      val cmd = RemoveProcessingTypeAnnotationTypeCmd(sessionUserId = request.identity.user.id.id,
+                                                      studyId          = studyId.id,
+                                                      id               = id.id,
+                                                      expectedVersion  = ver,
+                                                      annotationTypeId = annotationTypeId)
       processCommand(cmd)
     }
 
- }
+}

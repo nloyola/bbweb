@@ -1,7 +1,7 @@
 package org.biobank.domain.studies
 
 import com.google.inject.ImplementedBy
-import javax.inject.{Inject , Singleton}
+import javax.inject.{Inject, Singleton}
 import org.biobank.TestData
 import org.biobank.domain._
 import scalaz.Validation.FlatMap._
@@ -21,9 +21,8 @@ trait StudyRepository extends ReadWriteRepositoryWithSlug[StudyId, Study] {
 }
 
 @Singleton
-class StudyRepositoryImpl @Inject() (val testData: TestData)
-    extends ReadWriteRepositoryRefImplWithSlug[StudyId, Study](v => v.id)
-    with StudyRepository {
+class StudyRepositoryImpl @Inject()(val testData: TestData)
+    extends ReadWriteRepositoryRefImplWithSlug[StudyId, Study](v => v.id) with StudyRepository {
   import org.biobank.CommonValidations._
 
   override def init(): Unit = {
@@ -35,11 +34,12 @@ class StudyRepositoryImpl @Inject() (val testData: TestData)
 
   protected def notFound(id: StudyId): IdNotFound = IdNotFound(s"study id: $id")
 
-  protected def slugNotFound(slug: Slug): EntityCriteriaNotFound = EntityCriteriaNotFound(s"study slug: $slug")
+  protected def slugNotFound(slug: Slug): EntityCriteriaNotFound =
+    EntityCriteriaNotFound(s"study slug: $slug")
 
   def allStudies(): Set[Study] = getValues.toSet
 
-  def getDisabled(id: StudyId): DomainValidation[DisabledStudy] = {
+  def getDisabled(id: StudyId): DomainValidation[DisabledStudy] =
     for {
       study <- getByKey(id)
       disabled <- {
@@ -49,9 +49,8 @@ class StudyRepositoryImpl @Inject() (val testData: TestData)
         }
       }
     } yield disabled
-  }
 
-  def getEnabled(id: StudyId): DomainValidation[EnabledStudy] = {
+  def getEnabled(id: StudyId): DomainValidation[EnabledStudy] =
     for {
       study <- getByKey(id)
       enabled <- {
@@ -61,9 +60,8 @@ class StudyRepositoryImpl @Inject() (val testData: TestData)
         }
       }
     } yield enabled
-  }
 
-  def getRetired(id: StudyId): DomainValidation[RetiredStudy] = {
+  def getRetired(id: StudyId): DomainValidation[RetiredStudy] =
     for {
       study <- getByKey(id)
       retired <- {
@@ -73,6 +71,5 @@ class StudyRepositoryImpl @Inject() (val testData: TestData)
         }
       }
     } yield retired
-  }
 
 }

@@ -2,7 +2,7 @@ package org.biobank.fixtures
 
 import akka.actor._
 import akka.testkit.{TestKit, TestProbe}
-import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, InMemorySnapshotStorage, StorageExtension }
+import akka.persistence.inmemory.extension.{InMemoryJournalStorage, InMemorySnapshotStorage, StorageExtension}
 import org.biobank.controllers.CacheForTesting
 import org.biobank.services.SnapshotWriter
 import org.scalatest._
@@ -15,11 +15,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.DefaultAwaitTimeout
 
 trait ProcessorTestFixture
-    extends TestFixture
-    with ScalaFutures
-    with BeforeAndAfterAll
-    with MockitoSugar
-    with DefaultAwaitTimeout {
+    extends TestFixture with ScalaFutures with BeforeAndAfterAll with MockitoSugar with DefaultAwaitTimeout {
 
   val snapshotWriterMock = mock[SnapshotWriter]
 
@@ -38,9 +34,8 @@ trait ProcessorTestFixture
   /**
    * Shuts down the actor system.
    */
-  override def afterAll: Unit = {
+  override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
-  }
 
 }
 

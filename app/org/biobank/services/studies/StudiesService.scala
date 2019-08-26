@@ -16,7 +16,7 @@ import org.biobank.infrastructure.commands.StudyCommands._
 import org.biobank.infrastructure.events.StudyEvents._
 import org.biobank.services._
 import org.biobank.services.access.AccessService
-import org.biobank.services.centres.{CentreServicePermissionChecks, CentreLocation}
+import org.biobank.services.centres.{CentreLocation, CentreServicePermissionChecks}
 import org.slf4j.{Logger, LoggerFactory}
 import scala.concurrent._
 import scalaz.Scalaz._
@@ -34,8 +34,10 @@ trait StudiesService extends BbwebService {
    *
    * @param sort the string representation of the sort expression to use when sorting the studies.
    */
-  def collectionStudies(requestUserId: UserId, query: FilterAndSortQuery)
-      : Future[ServiceValidation[Seq[EntityInfoAndStateDto]]]
+  def collectionStudies(
+      requestUserId: UserId,
+      query:         FilterAndSortQuery
+    ): Future[ServiceValidation[Seq[EntityInfoAndStateDto]]]
 
   def getStudyCount(requestUserId: UserId): ServiceValidation[Long]
 
@@ -48,8 +50,7 @@ trait StudiesService extends BbwebService {
    *
    * @param sort the string representation of the sort expression to use when sorting the studies.
    */
-  def getStudies(requestUserId: UserId, query: PagedQuery)
-      : Future[ServiceValidation[PagedResults[Study]]]
+  def getStudies(requestUserId: UserId, query: PagedQuery): Future[ServiceValidation[PagedResults[Study]]]
 
   def getStudy(requestUserId: UserId, studyId: StudyId): ServiceValidation[Study]
 
@@ -57,8 +58,10 @@ trait StudiesService extends BbwebService {
 
   def getStudyBySlug(requestUserId: UserId, slug: Slug): ServiceValidation[Study]
 
-  def getStudyNames(requestUserId: UserId, query: FilterAndSortQuery)
-      : Future[ServiceValidation[Seq[EntityInfoAndStateDto]]]
+  def getStudyNames(
+      requestUserId: UserId,
+      query:         FilterAndSortQuery
+    ): Future[ServiceValidation[Seq[EntityInfoAndStateDto]]]
 
   def getCentresForStudy(requestUserId: UserId, studyId: StudyId): ServiceValidation[Set[CentreLocation]]
 
@@ -81,17 +84,17 @@ trait StudiesService extends BbwebService {
  */
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
 class StudiesServiceImpl @Inject()(
-  @Named("studiesProcessor") val processor: ActorRef,
-  val accessService:                        AccessService,
-  val studyRepository:                      StudyRepository,
-  val centreRepository:                     CentreRepository,
-  val processingTypeRepository:             ProcessingTypeRepository,
-  val collectionEventTypeRepository:        CollectionEventTypeRepository,
-  val collectionEventRepository:            CollectionEventRepository)
-                                (implicit executionContext: BbwebExecutionContext)
-    extends StudiesService
-    with AccessChecksSerivce
-    with StudyServicePermissionChecks
+    @Named("studiesProcessor") val processor: ActorRef,
+    val accessService:                        AccessService,
+    val studyRepository:                      StudyRepository,
+    val centreRepository:                     CentreRepository,
+    val processingTypeRepository:             ProcessingTypeRepository,
+    val collectionEventTypeRepository:        CollectionEventTypeRepository,
+    val collectionEventRepository:            CollectionEventRepository
+  )(
+    implicit
+    executionContext: BbwebExecutionContext)
+    extends StudiesService with AccessChecksSerivce with StudyServicePermissionChecks
     with CentreServicePermissionChecks {
 
   import org.biobank.CommonValidations._
@@ -99,61 +102,62 @@ class StudiesServiceImpl @Inject()(
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
-  def collectionStudies(requestUserId: UserId, query: FilterAndSortQuery)
-      : Future[ServiceValidation[Seq[EntityInfoAndStateDto]]] = {
+  def collectionStudies(
+      requestUserId: UserId,
+      query:         FilterAndSortQuery
+    ): Future[ServiceValidation[Seq[EntityInfoAndStateDto]]] =
     Future {
       val v: ServiceValidation[Seq[Study]] =
         for {
           membershipStudies <- getMembershipStudies(requestUserId)
           membershipCentres <- getMembershipCentres(requestUserId)
         } yield {
-          val enabledStudies = membershipStudies.filter { s => s.state == Study.enabledState }
-          val enabledCentres = membershipCentres.filter { c => c.state == Centre.enabledState }
-          val centreStudies  = enabledCentres
+          val enabledStudies = membershipStudies.filter { s =>
+            s.state == Study.enabledState
+          }
+          val enabledCentres = membershipCentres.filter { c =>
+            c.state == Centre.enabledState
+          }
+          val centreStudies = enabledCentres
             .flatMap { centre =>
               centre.studyIds.map(studyRepository.getByKey)
             }
             .toList.sequenceU
             .map { s =>
-              s.filter { s => s.state == Study.enabledState }.toSet
+              s.filter { s =>
+                s.state == Study.enabledState
+              }.toSet
             }
 
           // centreStudies should never be an error because its value is based on enabled centres
-          centreStudies.fold(
-            err => Seq.empty[EnabledStudy],
-            cs  => (enabledStudies & cs).toSeq
-          )
+          centreStudies.fold(err => Seq.empty[EnabledStudy], cs => (enabledStudies & cs).toSeq)
         }
 
       for {
-        studies <- v
+        studies  <- v
         filtered <- filterStudiesInternal(studies.toSet, query.filter, query.sort)
       } yield {
-        filtered.map { s => EntityInfoAndStateDto(s.id.id, s.slug, s.name, s.state.id) }
+        filtered.map { s =>
+          EntityInfoAndStateDto(s.id.id, s.slug, s.name, s.state.id)
+        }
       }
     }
-  }
 
-  def getStudyCount(requestUserId: UserId): ServiceValidation[Long] = {
+  def getStudyCount(requestUserId: UserId): ServiceValidation[Long] =
     withPermittedStudies(requestUserId) { studies =>
       studies.size.toLong.successNel[String]
     }
-  }
 
-
-  def getCountsByStatus(requestUserId: UserId): ServiceValidation[StudyCountsByStatus] = {
+  def getCountsByStatus(requestUserId: UserId): ServiceValidation[StudyCountsByStatus] =
     withPermittedStudies(requestUserId) { studies =>
-      StudyCountsByStatus(
-        total         = studies.size.toLong,
-        disabledCount = studies.collect { case s: DisabledStudy => s }.size.toLong,
-        enabledCount  = studies.collect { case s: EnabledStudy => s }.size.toLong,
-        retiredCount  = studies.collect { case s: RetiredStudy => s }.size.toLong
-      ).successNel[String]
+      StudyCountsByStatus(total         = studies.size.toLong,
+                          disabledCount = studies.collect { case s: DisabledStudy => s }.size.toLong,
+                          enabledCount  = studies.collect { case s: EnabledStudy => s }.size.toLong,
+                          retiredCount  = studies.collect { case s: RetiredStudy => s }.size.toLong)
+        .successNel[String]
     }
-  }
 
-  def getStudies(requestUserId: UserId, query: PagedQuery)
-      : Future[ServiceValidation[PagedResults[Study]]] = {
+  def getStudies(requestUserId: UserId, query: PagedQuery): Future[ServiceValidation[PagedResults[Study]]] =
     Future {
       withPermittedStudies(requestUserId) { studies =>
         for {
@@ -163,83 +167,69 @@ class StudiesServiceImpl @Inject()(
         } yield results
       }
     }
-  }
 
-  def getStudyNames(requestUserId: UserId, query: FilterAndSortQuery)
-      : Future[ServiceValidation[Seq[EntityInfoAndStateDto]]] = {
+  def getStudyNames(
+      requestUserId: UserId,
+      query:         FilterAndSortQuery
+    ): Future[ServiceValidation[Seq[EntityInfoAndStateDto]]] =
     Future {
       withPermittedStudies(requestUserId) { studies =>
         filterStudiesInternal(studies, query.filter, query.sort).map {
-          _.map { s => EntityInfoAndStateDto(s.id.id, s.slug, s.name, s.state.id) }
+          _.map { s =>
+            EntityInfoAndStateDto(s.id.id, s.slug, s.name, s.state.id)
+          }
         }
       }
     }
-  }
 
-  def getStudy(requestUserId: UserId, studyId: StudyId) : ServiceValidation[Study] = {
-    whenPermittedAndIsMember(requestUserId,
-                             PermissionId.StudyRead,
-                             Some(studyId),
-                             None) { () =>
+  def getStudy(requestUserId: UserId, studyId: StudyId): ServiceValidation[Study] =
+    whenPermittedAndIsMember(requestUserId, PermissionId.StudyRead, Some(studyId), None) { () =>
       studyRepository.getByKey(studyId)
     }
-  }
 
-  def getDisabledStudy(requestUserId: UserId, studyId: StudyId): ServiceValidation[DisabledStudy] = {
+  def getDisabledStudy(requestUserId: UserId, studyId: StudyId): ServiceValidation[DisabledStudy] =
     getStudy(requestUserId, studyId).flatMap { study =>
       study match {
         case s: DisabledStudy => s.successNel[String]
         case s => InvalidStatus(s"study not disabled: $id").failureNel[DisabledStudy]
       }
     }
-  }
 
-  def getStudyBySlug(requestUserId: UserId, slug: Slug): ServiceValidation[Study] = {
+  def getStudyBySlug(requestUserId: UserId, slug: Slug): ServiceValidation[Study] =
     for {
-      study      <- studyRepository.getBySlug(slug)
-      permission <- accessService.hasPermissionAndIsMember(requestUserId,
-                                                           PermissionId.StudyRead,
-                                                           Some(study.id),
-                                                           None)
-      result     <- if (permission) study.successNel[String] else Unauthorized.failureNel[Study]
+      study <- studyRepository.getBySlug(slug)
+      permission <- accessService
+                     .hasPermissionAndIsMember(requestUserId, PermissionId.StudyRead, Some(study.id), None)
+      result <- if (permission) study.successNel[String] else Unauthorized.failureNel[Study]
     } yield result
-  }
 
-  def getCentresForStudy(requestUserId: UserId,
-                         studyId:       StudyId): ServiceValidation[Set[CentreLocation]] = {
-    whenPermittedAndIsMember(requestUserId,
-                             PermissionId.StudyRead,
-                             Some(studyId),
-                             None) { () =>
-      centreRepository.withStudy(studyId).flatMap { centre =>
-        centre.locations.map { location =>
-          CentreLocation(centre.id.id, location.id.id, centre.name, location.name)
-        }
-      }.successNel[String]
+  def getCentresForStudy(requestUserId: UserId, studyId: StudyId): ServiceValidation[Set[CentreLocation]] =
+    whenPermittedAndIsMember(requestUserId, PermissionId.StudyRead, Some(studyId), None) { () =>
+      centreRepository
+        .withStudy(studyId).flatMap { centre =>
+          centre.locations.map { location =>
+            CentreLocation(centre.id.id, location.id.id, centre.name, location.name)
+          }
+        }.successNel[String]
     }
-  }
 
-  def enableAllowed(requestUserId: UserId, studyId: StudyId): ServiceValidation[Boolean] = {
-    whenPermittedAndIsMember(requestUserId,
-                             PermissionId.StudyRead,
-                             Some(studyId),
-                             None) { () =>
+  def enableAllowed(requestUserId: UserId, studyId: StudyId): ServiceValidation[Boolean] =
+    whenPermittedAndIsMember(requestUserId, PermissionId.StudyRead, Some(studyId), None) { () =>
       val specimenDefinitions = collectionEventTypeRepository.allForStudy(studyId).map { ceTypes =>
-          ceTypes.specimenDefinitions
-        }
-        (specimenDefinitions.size > 0).successNel[String]
+        ceTypes.specimenDefinitions
+      }
+      (specimenDefinitions.size > 0).successNel[String]
     }
-  }
 
-  def processCommand(cmd: StudyCommand): Future[ServiceValidation[Study]] = {
+  def processCommand(cmd: StudyCommand): Future[ServiceValidation[Study]] =
     cmd.sessionUserId match {
       case None => Future.successful(Unauthorized.failureNel[Study])
       case Some(sessionUserId) =>
         val (permissionId, studyId) = cmd match {
-            case c: StudyStateChangeCommand => (PermissionId.StudyChangeState, Some(StudyId(c.id)))
-            case c: StudyModifyCommand      => (PermissionId.StudyUpdate, Some(StudyId(c.id)))
-            case c: AddStudyCmd             => (PermissionId.StudyCreate, None)
-          }
+          case c: StudyStateChangeCommand => (PermissionId.StudyChangeState, Some(StudyId(c.id)))
+          case c: StudyModifyCommand      => (PermissionId.StudyUpdate, Some(StudyId(c.id)))
+          case c: AddStudyCmd             => (PermissionId.StudyCreate, None)
+        }
 
         whenPermittedAndIsMemberAsync(UserId(sessionUserId), permissionId, studyId, None) { () =>
           ask(processor, cmd).mapTo[ServiceValidation[StudyEvent]].map { validation =>
@@ -250,12 +240,15 @@ class StudiesServiceImpl @Inject()(
           }
         }
     }
-  }
 
-  private def filterStudiesInternal(unfilteredStudies: Set[Study], filter: FilterString, sort: SortString):
-      ServiceValidation[Seq[Study]] = {
-    val sortStr = if (sort.expression.isEmpty) new SortString("name")
-                  else sort
+  private def filterStudiesInternal(
+      unfilteredStudies: Set[Study],
+      filter:            FilterString,
+      sort:              SortString
+    ): ServiceValidation[Seq[Study]] = {
+    val sortStr =
+      if (sort.expression.isEmpty) new SortString("name")
+      else sort
 
     for {
       studies <- StudyFilter.filterStudies(unfilteredStudies, filter)
@@ -263,7 +256,8 @@ class StudiesServiceImpl @Inject()(
         QuerySortParser(sortStr).toSuccessNel(ServiceError(s"could not parse sort expression: $sort"))
       }
       sortFunc <- {
-        Study.sort2Compare.get(sortExpressions(0).name)
+        Study.sort2Compare
+          .get(sortExpressions(0).name)
           .toSuccessNel(ServiceError(s"invalid sort field: ${sortExpressions(0).name}"))
       }
     } yield {

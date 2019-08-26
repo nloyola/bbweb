@@ -13,91 +13,96 @@ object MembershipCommands {
     val membershipId: String
   }
 
-  final case class AddMembershipCmd(sessionUserId: String,
-                                    name:          String,
-                                    description:   Option[String],
-                                    userIds:       List[String],
-                                    allStudies:    Boolean,
-                                    studyIds:      List[String],
-                                    allCentres:    Boolean,
-                                    centreIds:     List[String])
+  final case class AddMembershipCmd(
+      sessionUserId: String,
+      name:          String,
+      description:   Option[String],
+      userIds:       List[String],
+      allStudies:    Boolean,
+      studyIds:      List[String],
+      allCentres:    Boolean,
+      centreIds:     List[String])
       extends MembershipCommand
 
-  final case class MembershipUpdateNameCmd(sessionUserId:   String,
-                                           expectedVersion: Long,
-                                           membershipId:    String,
-                                           name:            String)
+  final case class MembershipUpdateNameCmd(
+      sessionUserId:   String,
+      expectedVersion: Long,
+      membershipId:    String,
+      name:            String)
       extends MembershipModifyCommand
 
-  final case class MembershipUpdateDescriptionCmd(sessionUserId:   String,
-                                                  expectedVersion: Long,
-                                                  membershipId:    String,
-                                                  description:     Option[String])
+  final case class MembershipUpdateDescriptionCmd(
+      sessionUserId:   String,
+      expectedVersion: Long,
+      membershipId:    String,
+      description:     Option[String])
       extends MembershipModifyCommand
 
-  final case class MembershipAddUserCmd(sessionUserId:   String,
-                                        expectedVersion: Long,
-                                        membershipId:    String,
-                                        userId:          String)
+  final case class MembershipAddUserCmd(
+      sessionUserId:   String,
+      expectedVersion: Long,
+      membershipId:    String,
+      userId:          String)
       extends MembershipModifyCommand
 
-  final case class MembershipUpdateStudyDataCmd(sessionUserId:   String,
-                                                expectedVersion: Long,
-                                                membershipId:    String,
-                                                allStudies:      Boolean,
-                                                studyIds:        List[String])
+  final case class MembershipUpdateStudyDataCmd(
+      sessionUserId:   String,
+      expectedVersion: Long,
+      membershipId:    String,
+      allStudies:      Boolean,
+      studyIds:        List[String])
       extends MembershipModifyCommand
 
-  final case class MembershipAllStudiesCmd(sessionUserId:   String,
-                                           expectedVersion: Long,
-                                           membershipId:    String)
+  final case class MembershipAllStudiesCmd(sessionUserId: String, expectedVersion: Long, membershipId: String)
       extends MembershipModifyCommand
 
-  final case class MembershipAddStudyCmd(sessionUserId:   String,
-                                         expectedVersion: Long,
-                                         membershipId:    String,
-                                         studyId:         String)
+  final case class MembershipAddStudyCmd(
+      sessionUserId:   String,
+      expectedVersion: Long,
+      membershipId:    String,
+      studyId:         String)
       extends MembershipModifyCommand
 
-  final case class MembershipUpdateCentreDataCmd(sessionUserId:   String,
-                                                 expectedVersion: Long,
-                                                 membershipId:    String,
-                                                 allCentres:      Boolean,
-                                                 centreIds:       List[String])
+  final case class MembershipUpdateCentreDataCmd(
+      sessionUserId:   String,
+      expectedVersion: Long,
+      membershipId:    String,
+      allCentres:      Boolean,
+      centreIds:       List[String])
       extends MembershipModifyCommand
 
-  final case class MembershipAllCentresCmd(sessionUserId:   String,
-                                           expectedVersion: Long,
-                                           membershipId:    String)
+  final case class MembershipAllCentresCmd(sessionUserId: String, expectedVersion: Long, membershipId: String)
       extends MembershipModifyCommand
 
-  final case class MembershipAddCentreCmd(sessionUserId:   String,
-                                          expectedVersion: Long,
-                                          membershipId:    String,
-                                          centreId:          String)
+  final case class MembershipAddCentreCmd(
+      sessionUserId:   String,
+      expectedVersion: Long,
+      membershipId:    String,
+      centreId:        String)
       extends MembershipModifyCommand
 
-  final case class MembershipRemoveUserCmd(sessionUserId:   String,
-                                           expectedVersion: Long,
-                                           membershipId:    String,
-                                           userId:          String)
+  final case class MembershipRemoveUserCmd(
+      sessionUserId:   String,
+      expectedVersion: Long,
+      membershipId:    String,
+      userId:          String)
       extends MembershipModifyCommand
 
-  final case class MembershipRemoveStudyCmd(sessionUserId:   String,
-                                            expectedVersion: Long,
-                                            membershipId:    String,
-                                            studyId:         String)
+  final case class MembershipRemoveStudyCmd(
+      sessionUserId:   String,
+      expectedVersion: Long,
+      membershipId:    String,
+      studyId:         String)
       extends MembershipModifyCommand
 
-  final case class MembershipRemoveCentreCmd(sessionUserId:   String,
-                                             expectedVersion: Long,
-                                             membershipId:    String,
-                                             centreId:        String)
+  final case class MembershipRemoveCentreCmd(
+      sessionUserId:   String,
+      expectedVersion: Long,
+      membershipId:    String,
+      centreId:        String)
       extends MembershipModifyCommand
 
-  final case class RemoveMembershipCmd(sessionUserId:   String,
-                                       expectedVersion: Long,
-                                       membershipId:    String)
+  final case class RemoveMembershipCmd(sessionUserId: String, expectedVersion: Long, membershipId: String)
       extends MembershipModifyCommand
 
   implicit val addMembershipCmdReads: Reads[AddMembershipCmd] =

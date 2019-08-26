@@ -4,7 +4,7 @@ import com.google.inject.ImplementedBy
 import javax.inject.Inject
 import org.biobank.services._
 import org.biobank.services.Comparator._
-import org.biobank.services.{ServiceValidation, ServiceError}
+import org.biobank.services.{ServiceError, ServiceValidation}
 import org.biobank.domain.PredicateHelper
 import org.biobank.domain.centres._
 import org.slf4j.{Logger, LoggerFactory}
@@ -14,7 +14,7 @@ import scalaz.Validation.FlatMap._
 @ImplementedBy(classOf[ShipmentFilterImpl])
 trait ShipmentFilter {
 
-  def filterShipments(shipments: Set[Shipment], filter: FilterString):ServiceValidation[Set[Shipment]]
+  def filterShipments(shipments: Set[Shipment], filter: FilterString): ServiceValidation[Set[Shipment]]
 
 }
 
@@ -22,21 +22,21 @@ trait ShipmentFilter {
  * Functions that filter a set of shipments from an expression contained in a filter string.
  *
  */
-class ShipmentFilterImpl @Inject() (val shipmentRepository: ShipmentRepository,
-                                    val centreRepository:   CentreRepository)
-    extends ShipmentFilter
-    with EntityFilter[Shipment]
-    with PredicateHelper
-    with ShipmentPredicates {
+class ShipmentFilterImpl @Inject()(
+    val shipmentRepository: ShipmentRepository,
+    val centreRepository:   CentreRepository)
+    extends ShipmentFilter with EntityFilter[Shipment] with PredicateHelper with ShipmentPredicates {
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
-  def filterShipments(shipments: Set[Shipment], filter: FilterString): ServiceValidation[Set[Shipment]] = {
+  def filterShipments(shipments: Set[Shipment], filter: FilterString): ServiceValidation[Set[Shipment]] =
     filterEntities(shipments, filter, shipments.filter)
-  }
 
-  protected def predicateFromSelector(selector: String, comparator: Comparator, args: List[String])
-      : ServiceValidation[Shipment => Boolean] = {
+  protected def predicateFromSelector(
+      selector:   String,
+      comparator: Comparator,
+      args:       List[String]
+    ): ServiceValidation[Shipment => Boolean] =
     selector match {
       case "fromCentre"     => fromCentreFilter(comparator, args)
       case "toCentre"       => toCentreFilter(comparator, args)
@@ -47,33 +47,31 @@ class ShipmentFilterImpl @Inject() (val shipmentRepository: ShipmentRepository,
       case _ =>
         ServiceError(s"invalid filter selector: $selector").failureNel[ShipmentFilter]
     }
-  }
 
-  private def fromCentreFilter(comparator: Comparator, names: List[String]) = {
+  private def fromCentreFilter(comparator: Comparator, names: List[String]) =
     centreIdsFilter(comparator,
                     fromCentreIdIsOneOf,
                     names,
                     ServiceError(s"invalid filter on 'from centre' name: $comparator"))
-  }
 
-  private def toCentreFilter(comparator: Comparator, names: List[String]) = {
+  private def toCentreFilter(comparator: Comparator, names: List[String]) =
     centreIdsFilter(comparator,
                     toCentreIdIsOneOf,
                     names,
                     ServiceError(s"invalid filter on 'to centre' name: $comparator"))
-  }
 
-  private def withCentreFilter(comparator: Comparator, names: List[String]) = {
+  private def withCentreFilter(comparator: Comparator, names: List[String]) =
     centreIdsFilter(comparator,
                     withCentreIdIsOneOf,
                     names,
                     ServiceError(s"invalid filter on 'with centre' name: $comparator"))
-  }
 
-  private def centreIdsFilter(comparator:     Comparator,
-                              shipmentFilter: Set[CentreId] => ShipmentFilter,
-                              names:          List[String],
-                              error:          ServiceError) = {
+  private def centreIdsFilter(
+      comparator:     Comparator,
+      shipmentFilter: Set[CentreId] => ShipmentFilter,
+      names:          List[String],
+      error:          ServiceError
+    ) = {
     val centreIds = centreRepository.getByNames(names.toSet).map(_.id)
 
     comparator match {
@@ -114,14 +112,11 @@ class ShipmentFilterImpl @Inject() (val shipmentRepository: ShipmentRepository,
     }
   }
 
-  private def stateFilter(comparator: Comparator, stateNames: List[String]) = {
-    stateNames.
-      map { str =>
+  private def stateFilter(comparator: Comparator, stateNames: List[String]) =
+    stateNames
+      .map { str =>
         Shipment.shipmentStates.find(_.id == str).toSuccessNel(s"shipment state does not exist: $str")
-      }.
-      toList.
-      sequenceU.
-      flatMap { states =>
+      }.toList.sequenceU.flatMap { states =>
         val stateSet = states.toSet
 
         comparator match {
@@ -130,8 +125,7 @@ class ShipmentFilterImpl @Inject() (val shipmentRepository: ShipmentRepository,
           case NotEqualTo | NotIn =>
             complement(stateIsOneOf(stateSet)).successNel[String]
           case _ =>
-          ServiceError(s"invalid filter on state: $comparator").failureNel[ShipmentFilter]
+            ServiceError(s"invalid filter on state: $comparator").failureNel[ShipmentFilter]
         }
       }
-  }
 }

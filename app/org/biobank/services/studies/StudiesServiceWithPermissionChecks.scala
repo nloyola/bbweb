@@ -12,17 +12,18 @@ trait StudyServicePermissionChecks extends ServicePermissionChecks {
 
   protected val studyRepository: StudyRepository
 
-  protected def withPermittedStudies[T](requestUserId: UserId)(block: Set[Study] => ServiceValidation[T])
-      : ServiceValidation[T] = {
+  protected def withPermittedStudies[T](
+      requestUserId: UserId
+    )(block:         Set[Study] => ServiceValidation[T]
+    ): ServiceValidation[T] =
     whenPermitted(requestUserId, PermissionId.StudyRead) { () =>
       for {
         studies <- getMembershipStudies(requestUserId)
         result  <- block(studies)
       } yield result
     }
-  }
 
-  protected def getMembershipStudies(userId: UserId): ServiceValidation[Set[Study]] = {
+  protected def getMembershipStudies(userId: UserId): ServiceValidation[Set[Study]] =
     accessService.getUserMembership(userId).flatMap { membership =>
       if (membership.studyData.allEntities) {
         studyRepository.getValues.toSet.successNel[String]
@@ -33,6 +34,5 @@ trait StudyServicePermissionChecks extends ServicePermissionChecks {
           .map(studies => studies.toSet)
       }
     }
-  }
 
 }

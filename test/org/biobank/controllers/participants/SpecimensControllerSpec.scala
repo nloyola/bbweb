@@ -4,7 +4,11 @@ import java.time.OffsetDateTime
 import org.biobank.controllers._
 import org.biobank.domain.Slug
 import org.biobank.domain.participants._
-import org.biobank.domain.processing.{ProcessingEventId, ProcessingEventInputSpecimen, ProcessingEventInputSpecimenId }
+import org.biobank.domain.processing.{
+  ProcessingEventId,
+  ProcessingEventInputSpecimen,
+  ProcessingEventInputSpecimenId
+}
 import org.biobank.fixtures.Url
 import org.biobank.dto.SpecimenDto
 import org.biobank.fixtures.ControllerFixture
@@ -15,9 +19,7 @@ import play.api.test.Helpers._
 import scala.language.reflectiveCalls
 
 class SpecimensControllerSpec
-    extends ControllerFixture
-    with PagedResultsMatchers
-    with PagedResultsSharedSpec
+    extends ControllerFixture with PagedResultsMatchers with PagedResultsSharedSpec
     with SpecimenSpecFixtures {
 
   import org.biobank.matchers.DtoMatchers._
@@ -51,42 +53,38 @@ class SpecimensControllerSpec
     f
   }
 
-  private def storeSpecimens(cevent: CollectionEvent, specimens: List[Specimen]) = {
+  private def storeSpecimens(cevent: CollectionEvent, specimens: List[Specimen]) =
     specimens.foreach { specimen =>
       specimenRepository.put(specimen)
       ceventSpecimenRepository.put(CeventSpecimen(cevent.id, specimen.id))
     }
-  }
 
-  private def specimensToAddJson(specimens: List[Specimen]) = {
+  private def specimensToAddJson(specimens: List[Specimen]) =
     Json.obj("specimenData" -> specimens.map { specimen =>
-               Json.obj(
-                 "inventoryId"          -> specimen.inventoryId,
-                 "specimenDefinitionId" -> specimen.specimenDefinitionId,
-                 "timeCreated"          -> specimen.timeCreated,
-                 "locationId"           -> specimen.locationId.id,
-                 "amount"               -> specimen.amount)
-             }
-    )
-  }
+      Json.obj("inventoryId"          -> specimen.inventoryId,
+               "specimenDefinitionId" -> specimen.specimenDefinitionId,
+               "timeCreated"          -> specimen.timeCreated,
+               "locationId"           -> specimen.locationId.id,
+               "amount"               -> specimen.amount)
+    })
 
   describe("Specimens REST API") {
 
     describe("GET /api/participants/cevents/spcs/get/:slug") {
 
       it("return a specimen") {
-        val f = createEntitiesAndSpecimens
+        val f        = createEntitiesAndSpecimens
         val specimen = f.specimens.head
-        val reply = makeAuthRequest(GET, uri(specimen)).value
+        val reply    = makeAuthRequest(GET, uri(specimen)).value
         reply must beOkResponseWithJsonReply
 
         val dto = (contentAsJson(reply) \ "data").validate[SpecimenDto]
-        dto must be (jsSuccess)
+        dto must be(jsSuccess)
         dto.get must matchDtoToSpecimen(specimen)
       }
 
       it("fails for an invalid specimen ID") {
-        val f = createEntitiesAndSpecimens
+        val f        = createEntitiesAndSpecimens
         val specimen = f.specimens.head.copy(slug = Slug(nameGenerator.next[Specimen]))
 
         val reply = makeAuthRequest(GET, uri(specimen)).value
@@ -114,8 +112,8 @@ class SpecimensControllerSpec
         def commonSetup = {
           val e = createEntities
           val specimens = List("id1", "id2").map { id =>
-              factory.createUsableSpecimen.copy(id = SpecimenId(id))
-            }
+            factory.createUsableSpecimen.copy(id = SpecimenId(id))
+          }
           storeSpecimens(e.cevent, specimens)
           (e.cevent, specimens)
         }
@@ -141,8 +139,8 @@ class SpecimensControllerSpec
         def commonSetup = {
           val e = createEntities
           val specimens = List(1, 2).map { hour =>
-              factory.createUsableSpecimen.copy(timeCreated = OffsetDateTime.now.withHour(hour))
-            }
+            factory.createUsableSpecimen.copy(timeCreated = OffsetDateTime.now.withHour(hour))
+          }
           storeSpecimens(e.cevent, specimens)
           (e.cevent, specimens)
         }
@@ -163,11 +161,10 @@ class SpecimensControllerSpec
 
       }
 
-
       describe("list specimens sorted by state") {
 
         def commonSetup = {
-          val e = createEntities
+          val e         = createEntities
           val specimens = List(factory.createUsableSpecimen, factory.createUnusableSpecimen)
           storeSpecimens(e.cevent, specimens)
           (e.cevent, specimens)
@@ -193,8 +190,8 @@ class SpecimensControllerSpec
         listSingleSpecimen(maybeNext = Some(2)) { () =>
           val e = createEntities
           val specimens = List("id1", "id2").map { id =>
-              factory.createUsableSpecimen.copy(id = SpecimenId(id))
-            }
+            factory.createUsableSpecimen.copy(id = SpecimenId(id))
+          }
           storeSpecimens(e.cevent, specimens)
           (new Url(uriSlug(e.cevent) + "?sort=inventoryId&limit=1"), specimens(0))
         }
@@ -204,8 +201,8 @@ class SpecimensControllerSpec
         listSingleSpecimen(offset = 1, maybePrev = Some(1)) { () =>
           val e = createEntities
           val specimens = List("id1", "id2").map { id =>
-              factory.createUsableSpecimen.copy(id = SpecimenId(id))
-            }
+            factory.createUsableSpecimen.copy(id = SpecimenId(id))
+          }
           storeSpecimens(e.cevent, specimens)
           (new Url(uriSlug(e.cevent) + "?sort=inventoryId&page=2&limit=1"), specimens(1))
         }
@@ -218,10 +215,9 @@ class SpecimensControllerSpec
         }
       }
 
-
       it("fail for invalid collection event id") {
         val cevent = factory.createCollectionEvent
-        val reply = makeAuthRequest(GET, uriSlug(cevent)).value
+        val reply  = makeAuthRequest(GET, uriSlug(cevent)).value
         reply must beNotFoundWithMessage("EntityCriteriaNotFound: collection event slug")
       }
 
@@ -230,45 +226,44 @@ class SpecimensControllerSpec
     describe("POST /api/participants/cevents/spcs/:ceventId") {
 
       it("add a specimen to a collection event") {
-        val e = createEntities
+        val e        = createEntities
         val specimen = factory.createUsableSpecimen
-        val reply = makeAuthRequest(POST, uri(e.cevent), specimensToAddJson(List(specimen))).value
+        val reply    = makeAuthRequest(POST, uri(e.cevent), specimensToAddJson(List(specimen))).value
         reply must beOkResponseWithJsonReply
 
         val replyCevent = (contentAsJson(reply) \ "data").validate[CollectionEvent]
-        replyCevent must be (jsSuccess)
+        replyCevent must be(jsSuccess)
         replyCevent.get must matchCollectionEvent(e.cevent)
 
         val repoSpecimens = ceventSpecimenRepository.withCeventId(e.cevent.id)
         repoSpecimens must have size 1
         val repoSpecimen = repoSpecimens.head
-        repoSpecimen.ceventId must be (e.cevent.id)
+        repoSpecimen.ceventId must be(e.cevent.id)
 
-        val updatedSpecimen = specimen.copy(id = repoSpecimen.specimenId,
-                                            timeAdded = OffsetDateTime.now)
+        val updatedSpecimen = specimen.copy(id = repoSpecimen.specimenId, timeAdded = OffsetDateTime.now)
         updatedSpecimen must matchRepositorySpecimen
       }
 
       it("add more than one specimen to a collection event") {
-        val e = createEntities
+        val e         = createEntities
         val specimens = (1 to 2).map(_ => factory.createUsableSpecimen).toList
 
         val reply = makeAuthRequest(POST, uri(e.cevent), specimensToAddJson(specimens)).value
         reply must beOkResponseWithJsonReply
 
         val replyCevent = (contentAsJson(reply) \ "data").validate[CollectionEvent]
-        replyCevent must be (jsSuccess)
+        replyCevent must be(jsSuccess)
         replyCevent.get must matchCollectionEvent(e.cevent)
 
         val repoSpecimens = ceventSpecimenRepository.withCeventId(e.cevent.id)
         repoSpecimens must have size specimens.size.toLong
       }
-     }
+    }
 
     describe("DELETE  /participants/cevents/spcs/:ceventId/:spcId/:ver") {
 
       it("remove a specimen from a collection event") {
-        val e = createEntities
+        val e        = createEntities
         val specimen = factory.createUsableSpecimen
         specimenRepository.put(specimen)
         ceventSpecimenRepository.put(CeventSpecimen(e.cevent.id, specimen.id))
@@ -281,7 +276,7 @@ class SpecimensControllerSpec
       }
 
       it("not remove a specimen which has been processed") {
-        val e = createEntities
+        val e        = createEntities
         val specimen = factory.createUsableSpecimen
         specimenRepository.put(specimen)
         ceventSpecimenRepository.put(CeventSpecimen(e.cevent.id, specimen.id))
@@ -293,35 +288,36 @@ class SpecimensControllerSpec
 
         val reply = makeAuthRequest(DELETE, uri(e.cevent, specimen, specimen.version)).value
         reply must beBadRequestWithMessage("specimen has child specimens.*")
-        }
+      }
     }
 
   }
 
-  private def listSingleSpecimen(offset:    Long = 0,
-                                 maybeNext: Option[Int] = None,
-                                 maybePrev: Option[Int] = None)
-                                (setupFunc: () => (Url, Specimen)) = {
-
+  private def listSingleSpecimen(
+      offset:    Long = 0,
+      maybeNext: Option[Int] = None,
+      maybePrev: Option[Int] = None
+    )(setupFunc: () => (Url, Specimen)
+    ) =
     it("list single specimen") {
       val (url, expectedSpecimen) = setupFunc()
-      val reply = makeAuthRequest(GET, url).value
+      val reply                   = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)
       json must beSingleItemResults(offset, maybeNext, maybePrev)
 
       val dto = (json \ "data" \ "items").validate[List[SpecimenDto]]
-      dto must be (jsSuccess)
+      dto must be(jsSuccess)
       dto.get.foreach { _ must matchDtoToSpecimen(expectedSpecimen) }
     }
-  }
 
-  private def listMultipleSpecimens(offset:    Long = 0,
-                                    maybeNext: Option[Int] = None,
-                                    maybePrev: Option[Int] = None)
-                                   (setupFunc: () => (Url, List[Specimen])) = {
-
+  private def listMultipleSpecimens(
+      offset:    Long = 0,
+      maybeNext: Option[Int] = None,
+      maybePrev: Option[Int] = None
+    )(setupFunc: () => (Url, List[Specimen])
+    ) =
     it("list multiple specimens") {
       val (url, expectedSpecimens) = setupFunc()
 
@@ -329,36 +325,36 @@ class SpecimensControllerSpec
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)
-      json must beMultipleItemResults(offset = offset,
-                                      total = expectedSpecimens.size.toLong,
+      json must beMultipleItemResults(offset    = offset,
+                                      total     = expectedSpecimens.size.toLong,
                                       maybeNext = maybeNext,
                                       maybePrev = maybePrev)
 
       val dtos = (json \ "data" \ "items").validate[List[SpecimenDto]]
-      dtos must be (jsSuccess)
+      dtos must be(jsSuccess)
 
-      (dtos.get zip expectedSpecimens).foreach { case (dto, specimen) =>
-        dto must matchDtoToSpecimen(specimen)
+      (dtos.get zip expectedSpecimens).foreach {
+        case (dto, specimen) =>
+          dto must matchDtoToSpecimen(specimen)
       }
     }
 
-  }
-
   private def matchRepositorySpecimen =
     new Matcher[Specimen] {
-      def apply (left: Specimen) = {
-        specimenRepository.getByKey(left.id).fold(
-          err => {
-            MatchResult(false, s"not found in repository: ${err.head}", "")
 
-          },
-          repoCet => {
-            val repoMatcher = matchSpecimen(repoCet)(left)
-            MatchResult(repoMatcher.matches,
-                        s"repository specimen does not match expected: ${repoMatcher.failureMessage}",
-                        s"repository specimen matches expected: ${repoMatcher.failureMessage}")
-          }
-        )
-      }
+      def apply(left: Specimen) =
+        specimenRepository
+          .getByKey(left.id).fold(
+            err => {
+              MatchResult(false, s"not found in repository: ${err.head}", "")
+
+            },
+            repoCet => {
+              val repoMatcher = matchSpecimen(repoCet)(left)
+              MatchResult(repoMatcher.matches,
+                          s"repository specimen does not match expected: ${repoMatcher.failureMessage}",
+                          s"repository specimen matches expected: ${repoMatcher.failureMessage}")
+            }
+          )
     }
 }

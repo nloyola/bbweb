@@ -24,9 +24,11 @@ import scalaz.Validation.FlatMap._
 @ImplementedBy(classOf[ParticipantsServiceImpl])
 trait ParticipantsService extends BbwebService {
 
-  def get(requestUserId: UserId,
-          studyId:       StudyId,
-          participantId: ParticipantId): ServiceValidation[ParticipantDto]
+  def get(
+      requestUserId: UserId,
+      studyId:       StudyId,
+      participantId: ParticipantId
+    ): ServiceValidation[ParticipantDto]
 
   def getBySlug(requestUserId: UserId, slug: Slug): ServiceValidation[ParticipantDto]
 
@@ -40,107 +42,97 @@ trait ParticipantsService extends BbwebService {
 
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
 @Singleton
-class ParticipantsServiceImpl @Inject() (
-  @Named("participantsProcessor") val processor: ActorRef,
-  val accessService:                             AccessService,
-  val studiesService:                            StudiesService,
-  val participantRepository:                     ParticipantRepository
-) (
-  implicit executionContext: BbwebExecutionContext
-)
-    extends ParticipantsService
-    with AccessChecksSerivce
-    with ServicePermissionChecks {
+class ParticipantsServiceImpl @Inject()(
+    @Named("participantsProcessor") val processor: ActorRef,
+    val accessService:                             AccessService,
+    val studiesService:                            StudiesService,
+    val participantRepository:                     ParticipantRepository
+  )(
+    implicit
+    executionContext: BbwebExecutionContext)
+    extends ParticipantsService with AccessChecksSerivce with ServicePermissionChecks {
 
   import org.biobank.CommonValidations._
   import org.biobank.domain.access.AccessItem._
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
-  def get(requestUserId: UserId,
-          studyId:       StudyId,
-          participantId: ParticipantId): ServiceValidation[ParticipantDto] = {
-    whenPermittedAndIsMember(requestUserId,
-                             PermissionId.ParticipantRead,
-                             Some(studyId),
-                             None) { () =>
+  def get(
+      requestUserId: UserId,
+      studyId:       StudyId,
+      participantId: ParticipantId
+    ): ServiceValidation[ParticipantDto] =
+    whenPermittedAndIsMember(requestUserId, PermissionId.ParticipantRead, Some(studyId), None) { () =>
       for {
         participant <- participantRepository.withId(studyId, participantId)
         study       <- studiesService.getStudy(requestUserId, studyId)
       } yield participantToDto(participant, study)
     }
-  }
 
-  def getBySlug(requestUserId: UserId, slug: Slug): ServiceValidation[ParticipantDto] = {
+  def getBySlug(requestUserId: UserId, slug: Slug): ServiceValidation[ParticipantDto] =
     for {
       participant <- participantRepository.getBySlug(slug)
       study       <- studiesService.getStudy(requestUserId, participant.studyId)
-      permission  <- accessService.hasPermissionAndIsMember(requestUserId,
-                                                            PermissionId.ParticipantRead,
-                                                            Some(study.id),
-                                                            None)
+      permission <- accessService.hasPermissionAndIsMember(requestUserId,
+                                                           PermissionId.ParticipantRead,
+                                                           Some(study.id),
+                                                           None)
       result <- {
         if (permission) participant.successNel[String]
         else Unauthorized.failureNel[Participant]
       }
     } yield participantToDto(participant, study)
-  }
 
-  def getByUniqueId(requestUserId: UserId, uniqueId: String): ServiceValidation[ParticipantDto] = {
+  def getByUniqueId(requestUserId: UserId, uniqueId: String): ServiceValidation[ParticipantDto] =
     for {
       participant <- participantRepository.withUniqueId(uniqueId)
       study       <- studiesService.getStudy(requestUserId, participant.studyId)
-      permission  <- accessService.hasPermissionAndIsMember(requestUserId,
-                                                            PermissionId.ParticipantRead,
-                                                            Some(study.id),
-                                                            None)
+      permission <- accessService.hasPermissionAndIsMember(requestUserId,
+                                                           PermissionId.ParticipantRead,
+                                                           Some(study.id),
+                                                           None)
       result <- {
         if (permission) participant.successNel[String]
         else Unauthorized.failureNel[Participant]
       }
     } yield participantToDto(participant, study)
-  }
 
   def processCommand(cmd: ParticipantCommand): Future[ServiceValidation[ParticipantDto]] = {
     val validStudyId = cmd match {
-        case c: AddParticipantCmd => StudyId(c.studyId).successNel[String]
-        case c: ParticipantModifyCommand =>
-          participantRepository.getByKey(ParticipantId(c.id)).map(p => p.studyId)
-      }
+      case c: AddParticipantCmd => StudyId(c.studyId).successNel[String]
+      case c: ParticipantModifyCommand =>
+        participantRepository.getByKey(ParticipantId(c.id)).map(p => p.studyId)
+    }
 
     val permission = cmd match {
-        case c: AddParticipantCmd => PermissionId.ParticipantCreate
-        case c                    => PermissionId.ParticipantUpdate
-      }
+      case c: AddParticipantCmd => PermissionId.ParticipantCreate
+      case c => PermissionId.ParticipantUpdate
+    }
 
     val requestUserId = UserId(cmd.sessionUserId)
 
-    validStudyId.fold(
-      err => Future.successful(err.failure[ParticipantDto]),
-      studyId => whenPermittedAndIsMemberAsync(requestUserId,
-                                              permission,
-                                              Some(studyId),
-                                              None) { () =>
-        ask(processor, cmd).mapTo[ServiceValidation[ParticipantEvent]].map { validation =>
-          for {
-            event       <- validation
-            participant <- participantRepository.getByKey(ParticipantId(event.id))
-            study       <- studiesService.getStudy(requestUserId, studyId)
-          } yield participantToDto(participant, study)
-        }
-      }
-    )
+    validStudyId.fold(err => Future.successful(err.failure[ParticipantDto]),
+                      studyId =>
+                        whenPermittedAndIsMemberAsync(requestUserId, permission, Some(studyId), None) { () =>
+                          ask(processor, cmd).mapTo[ServiceValidation[ParticipantEvent]].map { validation =>
+                            for {
+                              event       <- validation
+                              participant <- participantRepository.getByKey(ParticipantId(event.id))
+                              study       <- studiesService.getStudy(requestUserId, studyId)
+                            } yield participantToDto(participant, study)
+                          }
+                        })
   }
 
-  private def participantToDto(participant: Participant, study: Study): ParticipantDto = {
-    ParticipantDto(id           = participant.id.id,
-                   slug         = participant.slug,
-                   study        = EntityInfoDto(study),
-                   version      = participant.version,
-                   timeAdded    = participant.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                   timeModified = participant.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                   uniqueId     = participant.uniqueId,
-                   annotations  = participant.annotations)
-  }
+  private def participantToDto(participant: Participant, study: Study): ParticipantDto =
+    ParticipantDto(id        = participant.id.id,
+                   slug      = participant.slug,
+                   study     = EntityInfoDto(study),
+                   version   = participant.version,
+                   timeAdded = participant.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                   timeModified =
+                     participant.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                   uniqueId    = participant.uniqueId,
+                   annotations = participant.annotations)
 
 }

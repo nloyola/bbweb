@@ -13,10 +13,11 @@ package centres {
     implicit val centreCountsByStatusFormat: Format[CentreCountsByStatus] = Json.format[CentreCountsByStatus]
   }
 
-  final case class CentreLocation(centreId:     String,
-                                  locationId:   String,
-                                  centreName:   String,
-                                  locationName: String)
+  final case class CentreLocation(
+      centreId:     String,
+      locationId:   String,
+      centreName:   String,
+      locationName: String)
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   object CentreLocation {
@@ -28,17 +29,17 @@ package centres {
 
   }
 
-  final case class CentreLocationInfo(centreId:   String,
-                                      locationId: String,
-                                      name:       String)
+  final case class CentreLocationInfo(centreId: String, locationId: String, name: String)
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   object CentreLocationInfo {
 
-    def apply(centreId: String,
-                       locationId: String,
-                       centreName: String,
-                       locationName: String): CentreLocationInfo =
+    def apply(
+        centreId:     String,
+        locationId:   String,
+        centreName:   String,
+        locationName: String
+      ): CentreLocationInfo =
       CentreLocationInfo(centreId, locationId, s"$centreName: $locationName")
 
     def apply(cl: CentreLocation): CentreLocationInfo =

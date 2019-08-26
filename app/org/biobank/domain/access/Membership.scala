@@ -20,9 +20,9 @@ trait MembershipPredicates extends HasNamePredicates[Membership] {
 }
 
 /** Identifies a unique [[Membership]] in the system.
-  *
-  * Used as a value object to maintain associations to with objects in the system.
-  */
+ *
+ * Used as a value object to maintain associations to with objects in the system.
+ */
 final case class MembershipId(id: String) extends IdentifiedValueObject[String]
 
 object MembershipId {
@@ -39,34 +39,31 @@ final case class MembershipEntitySet[T <: IdentifiedValueObject[_]](allEntities:
   def hasAllEntities(): MembershipEntitySet[T] =
     copy(allEntities = true, ids = Set.empty[T])
 
- def addEntity(id: T): MembershipEntitySet[T] =
+  def addEntity(id: T): MembershipEntitySet[T] =
     copy(allEntities = false, ids = ids + id)
 
- def removeEntity(id: T): MembershipEntitySet[T] =
-   copy(allEntities = false, ids = ids - id)
+  def removeEntity(id: T): MembershipEntitySet[T] =
+    copy(allEntities = false, ids = ids - id)
 
-  def isMemberOf(id: T): Boolean = {
+  def isMemberOf(id: T): Boolean =
     if (allEntities) true
     else ids.exists(_ == id)
-  }
 
 }
 
 object MembershipEntitySet {
 
-  implicit def format[T <: IdentifiedValueObject[_]](implicit fmt: Format[T])
-      : Format[MembershipEntitySet[T]] =
+  implicit def format[T <: IdentifiedValueObject[_]](
+      implicit
+      fmt: Format[T]
+    ): Format[MembershipEntitySet[T]] =
     ((__ \ "allEntities").format[Boolean] ~
-       (__ \ "ids").format[Set[T]]
-    )(MembershipEntitySet.apply, unlift(MembershipEntitySet.unapply))
+      (__ \ "ids").format[Set[T]])(MembershipEntitySet.apply, unlift(MembershipEntitySet.unapply))
 
 }
 
 sealed trait MembershipBase
-    extends ConcurrencySafeEntity[MembershipId]
-    with HasUniqueName
-    with HasSlug
-    with HasOptionalDescription {
+    extends ConcurrencySafeEntity[MembershipId] with HasUniqueName with HasSlug with HasOptionalDescription {
   val id:           MembershipId
   val version:      Long
   val timeAdded:    OffsetDateTime
@@ -77,28 +74,25 @@ sealed trait MembershipBase
   /**
    * If studyId is None, then don't bother checking for study membership.
    */
-  def isMemberOfStudy(id: StudyId): Boolean = {
+  def isMemberOfStudy(id: StudyId): Boolean =
     studyData.isMemberOf(id)
-  }
 
   /**
    * If centreId is None, then don't bother checking for study membership.
    */
-  def isMemberOfCentre(id: CentreId): Boolean = {
+  def isMemberOfCentre(id: CentreId): Boolean =
     centreData.isMemberOf(id)
-  }
 
   /**
    * If studyId and centreId are None, then don't bother checking for membership.
    */
-  def isMember(studyId: Option[StudyId], centreId: Option[CentreId]): Boolean = {
+  def isMember(studyId: Option[StudyId], centreId: Option[CentreId]): Boolean =
     (studyId, centreId) match {
       case (None, None)           => true
       case (Some(studyId), None)  => isMemberOfStudy(studyId)
       case (None, Some(centreId)) => isMemberOfCentre(centreId)
       case (Some(sId), Some(cId)) => isMemberOfStudy(sId) && isMemberOfCentre(cId)
     }
-  }
 }
 
 trait MembershipValidations {
@@ -107,86 +101,64 @@ trait MembershipValidations {
 
 }
 
-final case class Membership(id:           MembershipId,
-                            version:      Long,
-                            timeAdded:    OffsetDateTime,
-                            timeModified: Option[OffsetDateTime],
-                            slug:         Slug,
-                            name:         String,
-                            description:  Option[String],
-                            userIds:      Set[UserId],
-                            studyData:    MembershipEntitySet[StudyId],
-                            centreData:   MembershipEntitySet[CentreId])
-    extends MembershipBase
-    with MembershipValidations {
+final case class Membership(
+    id:           MembershipId,
+    version:      Long,
+    timeAdded:    OffsetDateTime,
+    timeModified: Option[OffsetDateTime],
+    slug:         Slug,
+    name:         String,
+    description:  Option[String],
+    userIds:      Set[UserId],
+    studyData:    MembershipEntitySet[StudyId],
+    centreData:   MembershipEntitySet[CentreId])
+    extends MembershipBase with MembershipValidations {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
   /** Used to change the name. */
-  def withName(name: String): DomainValidation[Membership] = {
+  def withName(name: String): DomainValidation[Membership] =
     validateString(name, NameMinLength, InvalidName) map { _ =>
-      copy(name         = name,
-           version      = version + 1,
-           timeModified = Some(OffsetDateTime.now))
+      copy(name = name, version = version + 1, timeModified = Some(OffsetDateTime.now))
     }
-  }
 
   /** Used to change the description. */
-  def withDescription(description: Option[String]): DomainValidation[Membership] = {
+  def withDescription(description: Option[String]): DomainValidation[Membership] =
     validateNonEmptyStringOption(description, InvalidDescription) map { _ =>
-      copy(description  = description,
-           version      = version + 1,
-           timeModified = Some(OffsetDateTime.now))
+      copy(description = description, version = version + 1, timeModified = Some(OffsetDateTime.now))
     }
-  }
 
-  def addUser(userId: UserId): Membership = {
-    copy(userIds      = userIds + userId,
-         version      = version + 1,
-         timeModified = Some(OffsetDateTime.now))
-  }
+  def addUser(userId: UserId): Membership =
+    copy(userIds = userIds + userId, version = version + 1, timeModified = Some(OffsetDateTime.now))
 
-  def removeUser(id: UserId): Membership = {
-    copy(userIds      = userIds - id,
-         version      = version + 1,
-         timeModified = Some(OffsetDateTime.now))
-  }
+  def removeUser(id: UserId): Membership =
+    copy(userIds = userIds - id, version = version + 1, timeModified = Some(OffsetDateTime.now))
 
-  def hasAllStudies(): Membership = {
-    copy(studyData    = studyData.hasAllEntities,
-         version      = version + 1,
-         timeModified = Some(OffsetDateTime.now))
-  }
+  def hasAllStudies(): Membership =
+    copy(studyData = studyData.hasAllEntities, version = version + 1, timeModified = Some(OffsetDateTime.now))
 
-  def addStudy(id: StudyId): Membership = {
-    copy(studyData    = studyData.addEntity(id),
-         version      = version + 1,
-         timeModified = Some(OffsetDateTime.now))
-  }
+  def addStudy(id: StudyId): Membership =
+    copy(studyData = studyData.addEntity(id), version = version + 1, timeModified = Some(OffsetDateTime.now))
 
-  def removeStudy(id: StudyId): Membership = {
+  def removeStudy(id: StudyId): Membership =
     copy(studyData    = studyData.removeEntity(id),
          version      = version + 1,
          timeModified = Some(OffsetDateTime.now))
-  }
 
-  def hasAllCentres(): Membership = {
+  def hasAllCentres(): Membership =
     copy(centreData   = centreData.hasAllEntities,
          version      = version + 1,
          timeModified = Some(OffsetDateTime.now))
-  }
 
-  def addCentre(id: CentreId): Membership = {
+  def addCentre(id: CentreId): Membership =
     copy(centreData   = centreData.addEntity(id),
          version      = version + 1,
          timeModified = Some(OffsetDateTime.now))
-  }
 
-  def removeCentre(id: CentreId): Membership = {
+  def removeCentre(id: CentreId): Membership =
     copy(centreData   = centreData.removeEntity(id),
          version      = version + 1,
          timeModified = Some(OffsetDateTime.now))
-  }
 
   override def toString: String =
     s"""|Membership:{
@@ -209,34 +181,37 @@ object Membership extends MembershipValidations {
 
   case object InvalidMembershipId extends org.biobank.ValidationKey
 
-  def create(id:           MembershipId,
-             version:      Long,
-             timeAdded:    OffsetDateTime,
-             timeModified: Option[OffsetDateTime],
-             name:         String,
-             description:  Option[String],
-             userIds:      Set[UserId],
-             allStudies:   Boolean,
-             allCentres:   Boolean,
-             studyIds:     Set[StudyId],
-             centreIds:    Set[CentreId]): DomainValidation[Membership] = {
+  def create(
+      id:           MembershipId,
+      version:      Long,
+      timeAdded:    OffsetDateTime,
+      timeModified: Option[OffsetDateTime],
+      name:         String,
+      description:  Option[String],
+      userIds:      Set[UserId],
+      allStudies:   Boolean,
+      allCentres:   Boolean,
+      studyIds:     Set[StudyId],
+      centreIds:    Set[CentreId]
+    ): DomainValidation[Membership] = {
 
     def checkAllStudies(): DomainValidation[Unit] =
-      if (allStudies && ! studyIds.isEmpty) DomainError("invalid studies for membership").failureNel[Unit]
+      if (allStudies && !studyIds.isEmpty) DomainError("invalid studies for membership").failureNel[Unit]
       else ().successNel[String]
 
     def checkAllCentres(): DomainValidation[Unit] =
-      if (allCentres && ! centreIds.isEmpty) DomainError("invalid centres for membership").failureNel[Unit]
+      if (allCentres && !centreIds.isEmpty) DomainError("invalid centres for membership").failureNel[Unit]
       else ().successNel[String]
 
     (validateId(id, InvalidMembershipId) |@|
-       validateString(name, NameMinLength, InvalidName) |@|
-       validateNonEmptyStringOption(description, InvalidDescription) |@|
-       userIds.map(validateId(_, InvalidUserId)).toList.sequenceU |@|
-       studyIds.map(validateId(_, InvalidStudyId)).toList.sequenceU |@|
-       centreIds.map(validateId(_, InvalidCentreId)).toList.sequenceU |@|
-       checkAllStudies  |@|
-       checkAllCentres) { case _ =>
+      validateString(name, NameMinLength, InvalidName) |@|
+      validateNonEmptyStringOption(description, InvalidDescription) |@|
+      userIds.map(validateId(_, InvalidUserId)).toList.sequenceU |@|
+      studyIds.map(validateId(_, InvalidStudyId)).toList.sequenceU |@|
+      centreIds.map(validateId(_, InvalidCentreId)).toList.sequenceU |@|
+      checkAllStudies |@|
+      checkAllCentres) {
+      case _ =>
         Membership(id           = id,
                    version      = version,
                    timeAdded    = timeAdded,
@@ -253,29 +228,29 @@ object Membership extends MembershipValidations {
   implicit val usersMembershipformat: Format[Membership] = Json.format[Membership]
 
   val sort2Compare: Map[String, (Membership, Membership) => Boolean] =
-    Map[String, (Membership, Membership) => Boolean]("name"  -> compareByName)
+    Map[String, (Membership, Membership) => Boolean]("name" -> compareByName)
 
-  def compareByName(a: Membership, b: Membership): Boolean = {
+  def compareByName(a: Membership, b: Membership): Boolean =
     (a.name compareToIgnoreCase b.name) < 0
-  }}
+}
 
 /**
  * The membership belonging to a single user.
  *
  * This class has no information as to what other users share this membership.
  */
-final case class UserMembership(id:           MembershipId,
-                                version:      Long,
-                                timeAdded:    OffsetDateTime,
-                                timeModified: Option[OffsetDateTime],
-                                slug: Slug,
-                                name:         String,
-                                description:  Option[String],
-                                userId:       UserId,
-                                studyData:    MembershipEntitySet[StudyId],
-                                centreData:   MembershipEntitySet[CentreId])
-    extends MembershipBase
-    with MembershipValidations {
+final case class UserMembership(
+    id:           MembershipId,
+    version:      Long,
+    timeAdded:    OffsetDateTime,
+    timeModified: Option[OffsetDateTime],
+    slug:         Slug,
+    name:         String,
+    description:  Option[String],
+    userId:       UserId,
+    studyData:    MembershipEntitySet[StudyId],
+    centreData:   MembershipEntitySet[CentreId])
+    extends MembershipBase with MembershipValidations {
 
   override def toString: String =
     s"""|UserMembership:{
@@ -295,7 +270,7 @@ final case class UserMembership(id:           MembershipId,
 
 object UserMembership {
 
-  def create(usersMembership: Membership, userId: UserId): UserMembership = {
+  def create(usersMembership: Membership, userId: UserId): UserMembership =
     UserMembership(id           = usersMembership.id,
                    version      = usersMembership.version,
                    timeAdded    = usersMembership.timeAdded,
@@ -306,7 +281,6 @@ object UserMembership {
                    userId       = userId,
                    studyData    = usersMembership.studyData,
                    centreData   = usersMembership.centreData)
-  }
 
   implicit val userMembershipformat: Format[UserMembership] = Json.format[UserMembership]
 

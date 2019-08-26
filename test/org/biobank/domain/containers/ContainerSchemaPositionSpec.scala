@@ -13,11 +13,9 @@ class ContainerSchemaPositionSpec extends DomainSpec {
 
   val nameGenerator = new NameGenerator(this.getClass)
 
-  def createFrom(schemaPosition: ContainerSchemaPosition): DomainValidation[ContainerSchemaPosition] = {
-    ContainerSchemaPosition.create(id       = schemaPosition.id,
-                                   schemaId = schemaPosition.schemaId,
-                                   label    = schemaPosition.label)
-  }
+  def createFrom(schemaPosition: ContainerSchemaPosition): DomainValidation[ContainerSchemaPosition] =
+    ContainerSchemaPosition
+      .create(id = schemaPosition.id, schemaId = schemaPosition.schemaId, label = schemaPosition.label)
 
   describe("A container position schema") {
 

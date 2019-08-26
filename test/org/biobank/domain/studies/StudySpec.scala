@@ -15,14 +15,8 @@ class StudySpec extends DomainSpec with AnnotationTypeSetSharedSpec[DisabledStud
 
   val nameGenerator = new NameGenerator(this.getClass)
 
-  def createFrom(study: Study): DomainValidation[DisabledStudy] = {
-    DisabledStudy.create(study.id,
-                         study.version,
-                         study.name,
-                         study.description,
-                         study.annotationTypes)
-  }
-
+  def createFrom(study: Study): DomainValidation[DisabledStudy] =
+    DisabledStudy.create(study.id, study.version, study.name, study.description, study.annotationTypes)
 
   describe("A study") {
 
@@ -30,12 +24,7 @@ class StudySpec extends DomainSpec with AnnotationTypeSetSharedSpec[DisabledStud
       val study = factory.createDisabledStudy
       createFrom(study).mustSucceed { s =>
         s mustBe a[DisabledStudy]
-        s must have (
-          'id          (study.id),
-          'version     (0L),
-          'name        (study.name),
-          'description (study.description)
-        )
+        s must have('id (study.id), 'version (0L), 'name (study.name), 'description (study.description))
 
         s.annotationTypes mustBe empty
         s must beEntityWithTimeStamps(OffsetDateTime.now, None, 5L)
@@ -44,31 +33,27 @@ class StudySpec extends DomainSpec with AnnotationTypeSetSharedSpec[DisabledStud
 
     it("have it's name updated") {
       val study = factory.createDisabledStudy
-      val name = nameGenerator.next[Study]
+      val name  = nameGenerator.next[Study]
 
       study.withName(name) mustSucceed { updatedStudy =>
-        updatedStudy must have (
-          'id          (study.id),
-          'version     (study.version + 1),
-          'name        (name),
-          'description (study.description)
-        )
+        updatedStudy must have('id (study.id),
+                               'version (study.version + 1),
+                               'name (name),
+                               'description (study.description))
 
         updatedStudy must beEntityWithTimeStamps(study.timeAdded, Some(OffsetDateTime.now), 5L)
       }
     }
 
     it("have it's description updated") {
-      val study = factory.createDisabledStudy
+      val study       = factory.createDisabledStudy
       val description = Some(nameGenerator.next[Study])
 
       study.withDescription(description) mustSucceed { updatedStudy =>
-        updatedStudy must have (
-          'id          (study.id),
-          'version     (study.version + 1),
-          'name        (study.name),
-          'description (description)
-        )
+        updatedStudy must have('id (study.id),
+                               'version (study.version + 1),
+                               'name (study.name),
+                               'description (description))
 
         updatedStudy must beEntityWithTimeStamps(study.timeAdded, Some(OffsetDateTime.now), 5L)
       }
@@ -142,29 +127,28 @@ class StudySpec extends DomainSpec with AnnotationTypeSetSharedSpec[DisabledStud
 
     it("have more than one validation fail") {
       val study = factory.createDisabledStudy.copy(version = -2L, name = "")
-      createFrom(study) mustFail ("InvalidVersion",  "InvalidName")
+      createFrom(study) mustFail ("InvalidVersion", "InvalidName")
     }
 
   }
 
-  override def createEntity(): DisabledStudy = {
+  override def createEntity(): DisabledStudy =
     factory.createDisabledStudy.copy(annotationTypes = Set.empty)
-  }
 
-  override def getAnnotationTypeSet(study: DisabledStudy): Set[AnnotationType] = {
+  override def getAnnotationTypeSet(study: DisabledStudy): Set[AnnotationType] =
     study.annotationTypes
-  }
 
-  override def addAnnotationType(study:          DisabledStudy,
-                                 annotationType: AnnotationType)
-      : DomainValidation[DisabledStudy] = {
+  override def addAnnotationType(
+      study:          DisabledStudy,
+      annotationType: AnnotationType
+    ): DomainValidation[DisabledStudy] =
     study.withParticipantAnnotationType(annotationType)
-  }
 
-  override def removeAnnotationType(study: DisabledStudy, id: AnnotationTypeId)
-      : DomainValidation[DisabledStudy] = {
+  override def removeAnnotationType(
+      study: DisabledStudy,
+      id:    AnnotationTypeId
+    ): DomainValidation[DisabledStudy] =
     study.removeParticipantAnnotationType(id)
-  }
 
   describe("A study's annotation type set") {
 

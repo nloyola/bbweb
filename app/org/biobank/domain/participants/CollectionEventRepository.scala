@@ -10,11 +10,12 @@ import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 
 @ImplementedBy(classOf[CollectionEventRepositoryImpl])
-trait CollectionEventRepository
-    extends ReadWriteRepositoryWithSlug[CollectionEventId, CollectionEvent] {
+trait CollectionEventRepository extends ReadWriteRepositoryWithSlug[CollectionEventId, CollectionEvent] {
 
-  def withId(participantId: ParticipantId, collectionEventId: CollectionEventId)
-      : DomainValidation[CollectionEvent]
+  def withId(
+      participantId:     ParticipantId,
+      collectionEventId: CollectionEventId
+    ): DomainValidation[CollectionEvent]
 
   def collectionEventTypeInUse(collectionEventTypeId: CollectionEventTypeId): Boolean
 
@@ -25,7 +26,7 @@ trait CollectionEventRepository
 }
 
 @Singleton
-class CollectionEventRepositoryImpl @Inject() (val testData: TestData)
+class CollectionEventRepositoryImpl @Inject()(val testData: TestData)
     extends ReadWriteRepositoryRefImplWithSlug[CollectionEventId, CollectionEvent](v => v.id)
     with CollectionEventRepository {
   import org.biobank.CommonValidations._
@@ -44,11 +45,13 @@ class CollectionEventRepositoryImpl @Inject() (val testData: TestData)
   protected def slugNotFound(slug: Slug): EntityCriteriaNotFound =
     EntityCriteriaNotFound(s"collection event slug: $slug")
 
-  def withId(participantId: ParticipantId, collectionEventId: CollectionEventId)
-      : DomainValidation[CollectionEvent] = {
+  def withId(
+      participantId:     ParticipantId,
+      collectionEventId: CollectionEventId
+    ): DomainValidation[CollectionEvent] =
     for {
       cevent <- getByKey(collectionEventId)
-      valid  <- {
+      valid <- {
         if (cevent.participantId != participantId) {
           EntityCriteriaError(
             s"collection event invalid for participant : { participantId: $participantId, collectionEventId: $collectionEventId }"
@@ -58,30 +61,27 @@ class CollectionEventRepositoryImpl @Inject() (val testData: TestData)
         }
       }
     } yield valid
-  }
 
-  def collectionEventTypeInUse(collectionEventTypeId: CollectionEventTypeId): Boolean = {
-    getValues.find { event => event.collectionEventTypeId == collectionEventTypeId } match {
+  def collectionEventTypeInUse(collectionEventTypeId: CollectionEventTypeId): Boolean =
+    getValues.find { event =>
+      event.collectionEventTypeId == collectionEventTypeId
+    } match {
       case Some(cevent) => true
-      case _ => false
+      case _            => false
     }
-  }
 
-  def withVisitNumber(participantId: ParticipantId,
-                      visitNumber:   Int): DomainValidation[CollectionEvent] = {
+  def withVisitNumber(participantId: ParticipantId, visitNumber: Int): DomainValidation[CollectionEvent] =
     internalMap.single.get
-      .find { case (id, cevent) =>
-        (cevent.visitNumber == visitNumber) && (cevent.participantId == participantId)
+      .find {
+        case (id, cevent) =>
+          (cevent.visitNumber == visitNumber) && (cevent.participantId == participantId)
       }
       .map { case (id, cevent) => cevent }
-      .toSuccessNel(
-        EntityCriteriaNotFound {
-          s"collection event does not exist: participantId/$participantId, visitNumber/$visitNumber }"
-        }.toString)
-  }
+      .toSuccessNel(EntityCriteriaNotFound {
+        s"collection event does not exist: participantId/$participantId, visitNumber/$visitNumber }"
+      }.toString)
 
-  def allForParticipant(participantId: ParticipantId): Set[CollectionEvent] = {
+  def allForParticipant(participantId: ParticipantId): Set[CollectionEvent] =
     getValues.filter { _.participantId == participantId }.toSet
-  }
 
 }

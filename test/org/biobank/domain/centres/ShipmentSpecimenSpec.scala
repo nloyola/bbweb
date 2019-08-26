@@ -1,7 +1,7 @@
 package org.biobank.domain.centres
 
 import java.time.OffsetDateTime
-import org.biobank.domain.{ DomainSpec, DomainValidation }
+import org.biobank.domain.{DomainSpec, DomainValidation}
 import org.biobank.domain.participants.SpecimenId
 import org.biobank.fixtures.NameGenerator
 import org.slf4j.LoggerFactory
@@ -31,14 +31,12 @@ class ShipmentSpecimenSpec extends DomainSpec {
       it("when valid arguments are used") {
         val shipmentSpecimen = factory.createShipmentSpecimen.copy(version = 0L)
         createFrom(shipmentSpecimen).mustSucceed { s =>
-          s must have (
-            'id                  (shipmentSpecimen.id),
-            'version             (0L),
-            'shipmentId          (shipmentSpecimen.shipmentId),
-            'specimenId          (shipmentSpecimen.specimenId),
-            'state               (shipmentSpecimen.state),
-            'shipmentContainerId (shipmentSpecimen.shipmentContainerId)
-          )
+          s must have('id (shipmentSpecimen.id),
+                      'version (0L),
+                      'shipmentId (shipmentSpecimen.shipmentId),
+                      'specimenId (shipmentSpecimen.specimenId),
+                      'state (shipmentSpecimen.state),
+                      'shipmentContainerId (shipmentSpecimen.shipmentContainerId))
 
           s must beEntityWithTimeStamps(OffsetDateTime.now, None, 5L)
         }
@@ -69,8 +67,8 @@ class ShipmentSpecimenSpec extends DomainSpec {
       }
 
       it("with an invalid shipment container ID") {
-        val shipmentSpecimen = factory.createShipmentSpecimen.copy(
-            shipmentContainerId = Some(ShipmentContainerId("")))
+        val shipmentSpecimen =
+          factory.createShipmentSpecimen.copy(shipmentContainerId = Some(ShipmentContainerId("")))
         createFrom(shipmentSpecimen) mustFail "ShipmentContainerIdInvalid"
       }
 

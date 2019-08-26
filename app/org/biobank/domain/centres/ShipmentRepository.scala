@@ -23,9 +23,8 @@ trait ShipmentRepository extends ReadWriteRepository[ShipmentId, Shipment] {
 }
 
 @Singleton
-class ShipmentRepositoryImpl @Inject() (val testData: TestData)
-    extends ReadWriteRepositoryRefImpl[ShipmentId, Shipment](v => v.id)
-    with ShipmentRepository {
+class ShipmentRepositoryImpl @Inject()(val testData: TestData)
+    extends ReadWriteRepositoryRefImpl[ShipmentId, Shipment](v => v.id) with ShipmentRepository {
   import org.biobank.CommonValidations._
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
@@ -39,22 +38,21 @@ class ShipmentRepositoryImpl @Inject() (val testData: TestData)
 
   protected def notFound(id: ShipmentId): IdNotFound = IdNotFound(s"shipment id: $id")
 
-  def withCentre(centreId: CentreId): Set[Shipment] = {
-    getValues.filter { s => (s.fromCentreId == centreId) || (s.toCentreId == centreId) }.toSet
-  }
+  def withCentre(centreId: CentreId): Set[Shipment] =
+    getValues.filter { s =>
+      (s.fromCentreId == centreId) || (s.toCentreId == centreId)
+    }.toSet
 
-  def getCreated(id: ShipmentId): DomainValidation[CreatedShipment] = {
+  def getCreated(id: ShipmentId): DomainValidation[CreatedShipment] =
     for {
       shipment <- getByKey(id)
       created  <- shipment.isCreated
     } yield created
-  }
 
-  def getUnpacked(id: ShipmentId): DomainValidation[UnpackedShipment] = {
+  def getUnpacked(id: ShipmentId): DomainValidation[UnpackedShipment] =
     for {
       shipment <- getByKey(id)
       unpacked <- shipment.isUnpacked
     } yield unpacked
-  }
 
 }

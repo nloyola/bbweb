@@ -40,7 +40,7 @@ class Factory {
 
   def createRegisteredUser(): RegisteredUser = {
     val name = faker.Name.name
-    val user = RegisteredUser(version      = 0L,
+    val user = RegisteredUser(version = 0L,
                               timeAdded    = OffsetDateTime.now,
                               timeModified = None,
                               slug         = Slug(name),
@@ -50,13 +50,13 @@ class Factory {
                               password     = nameGenerator.next[User],
                               salt         = nameGenerator.next[User],
                               avatarUrl    = Some(nameGenerator.nextUrl[User]))
-    domainObjects  = domainObjects + (classOf[RegisteredUser] -> user)
+    domainObjects = domainObjects + (classOf[RegisteredUser] -> user)
     user
   }
 
   def createActiveUser: ActiveUser = {
     val name = faker.Name.name
-    val user = ActiveUser(version      = 0L,
+    val user = ActiveUser(version = 0L,
                           timeAdded    = OffsetDateTime.now,
                           timeModified = None,
                           slug         = Slug(name),
@@ -72,7 +72,7 @@ class Factory {
 
   def createLockedUser(): LockedUser = {
     val name = faker.Name.name
-    val user = LockedUser(version      = 0L,
+    val user = LockedUser(version = 0L,
                           timeAdded    = OffsetDateTime.now,
                           timeModified = None,
                           slug         = Slug(name),
@@ -88,7 +88,7 @@ class Factory {
 
   def createRole(): Role = {
     val name = faker.Lorem.sentence(3)
-    val role = Role(id           = AccessItemId(nextIdentityAsString[AccessItem]),
+    val role = Role(id = AccessItemId(nextIdentityAsString[AccessItem]),
                     version      = 0L,
                     timeAdded    = OffsetDateTime.now,
                     timeModified = None,
@@ -104,7 +104,7 @@ class Factory {
 
   def createPermission(): Permission = {
     val name = faker.Lorem.sentence(3)
-    val permission = Permission(id           = AccessItemId(nextIdentityAsString[AccessItem]),
+    val permission = Permission(id = AccessItemId(nextIdentityAsString[AccessItem]),
                                 version      = 0L,
                                 timeAdded    = OffsetDateTime.now,
                                 timeModified = None,
@@ -119,7 +119,7 @@ class Factory {
 
   def createMembership(): Membership = {
     val name = faker.Lorem.sentence(3)
-    val membership = Membership(id           = MembershipId(nextIdentityAsString[MembershipId]),
+    val membership = Membership(id = MembershipId(nextIdentityAsString[MembershipId]),
                                 version      = 0L,
                                 timeAdded    = OffsetDateTime.now,
                                 timeModified = None,
@@ -135,7 +135,7 @@ class Factory {
 
   def createDisabledStudy(): DisabledStudy = {
     val name = faker.Lorem.sentence(3)
-    val study = DisabledStudy(version         = 0L,
+    val study = DisabledStudy(version = 0L,
                               timeAdded       = OffsetDateTime.now,
                               timeModified    = None,
                               id              = StudyId(nextIdentityAsString[Study]),
@@ -149,7 +149,7 @@ class Factory {
 
   def createEnabledStudy(): EnabledStudy = {
     val name = faker.Lorem.sentence(3)
-    val enabledStudy = EnabledStudy(id              = StudyId(nextIdentityAsString[Study]),
+    val enabledStudy = EnabledStudy(id = StudyId(nextIdentityAsString[Study]),
                                     version         = 0L,
                                     timeAdded       = OffsetDateTime.now,
                                     timeModified    = None,
@@ -163,7 +163,7 @@ class Factory {
 
   def createRetiredStudy(): RetiredStudy = {
     val name = faker.Lorem.sentence(3)
-    val retiredStudy = RetiredStudy(id              = StudyId(nextIdentityAsString[Study]),
+    val retiredStudy = RetiredStudy(id = StudyId(nextIdentityAsString[Study]),
                                     version         = 0L,
                                     timeAdded       = OffsetDateTime.now,
                                     timeModified    = None,
@@ -178,17 +178,18 @@ class Factory {
   def createCollectionSpecimenDefinition(): CollectionSpecimenDefinition = {
     val name = faker.Lorem.sentence(3)
     val specimenSpec = CollectionSpecimenDefinition(
-        id                      = SpecimenDefinitionId(nextIdentityAsString[CollectionSpecimenDefinition]),
-        slug                    = Slug(name),
-        name                    = name,
-        description             = Some(nameGenerator.next[CollectionSpecimenDefinition]),
-        units                   = nameGenerator.next[String],
-        anatomicalSourceType    = AnatomicalSourceType.Blood,
-        preservationType        = PreservationType.FreshSpecimen,
-        preservationTemperature = PreservationTemperature.Minus80celcius,
-        specimenType            = SpecimenType.FilteredUrine,
-        maxCount                = 1,
-        amount                  = BigDecimal(0.5))
+      id                      = SpecimenDefinitionId(nextIdentityAsString[CollectionSpecimenDefinition]),
+      slug                    = Slug(name),
+      name                    = name,
+      description             = Some(nameGenerator.next[CollectionSpecimenDefinition]),
+      units                   = nameGenerator.next[String],
+      anatomicalSourceType    = AnatomicalSourceType.Blood,
+      preservationType        = PreservationType.FreshSpecimen,
+      preservationTemperature = PreservationTemperature.Minus80celcius,
+      specimenType            = SpecimenType.FilteredUrine,
+      maxCount                = 1,
+      amount                  = BigDecimal(0.5)
+    )
     domainObjects = domainObjects + (classOf[CollectionSpecimenDefinition] -> specimenSpec)
     specimenSpec
   }
@@ -196,42 +197,46 @@ class Factory {
   def createProcessedSpecimenDefinition(): ProcessedSpecimenDefinition = {
     val name = faker.Lorem.sentence(3)
     val specimenSpec = ProcessedSpecimenDefinition(
-        id                      = SpecimenDefinitionId(nextIdentityAsString[ProcessedSpecimenDefinition]),
-        slug                    = Slug(name),
-        name                    = name,
-        description             = Some(nameGenerator.next[ProcessedSpecimenDefinition]),
-        units                   = nameGenerator.next[String],
-        anatomicalSourceType    = AnatomicalSourceType.Blood,
-        preservationType        = PreservationType.FreshSpecimen,
-        preservationTemperature = PreservationTemperature.Minus80celcius,
-        specimenType            = SpecimenType.FilteredUrine)
+      id                      = SpecimenDefinitionId(nextIdentityAsString[ProcessedSpecimenDefinition]),
+      slug                    = Slug(name),
+      name                    = name,
+      description             = Some(nameGenerator.next[ProcessedSpecimenDefinition]),
+      units                   = nameGenerator.next[String],
+      anatomicalSourceType    = AnatomicalSourceType.Blood,
+      preservationType        = PreservationType.FreshSpecimen,
+      preservationTemperature = PreservationTemperature.Minus80celcius,
+      specimenType            = SpecimenType.FilteredUrine
+    )
     domainObjects = domainObjects + (classOf[ProcessedSpecimenDefinition] -> specimenSpec)
     specimenSpec
   }
 
   def createCollectionEventType(): CollectionEventType = {
     val disabledStudy = defaultDisabledStudy
-    val name = faker.Lorem.sentence(3)
+    val name          = faker.Lorem.sentence(3)
     val ceventType = CollectionEventType(
-        id                   = CollectionEventTypeId(nextIdentityAsString[CollectionEventType]),
-        studyId              = disabledStudy.id,
-        version              = 0L,
-        timeAdded            = OffsetDateTime.now,
-        timeModified         = None,
-        slug                 = Slug(name),
-        name                 = name,
-        description          = Some(nameGenerator.next[CollectionEventType]),
-        recurring            = false,
-        specimenDefinitions  = Set.empty,
-        annotationTypes      = Set.empty)
+      id                  = CollectionEventTypeId(nextIdentityAsString[CollectionEventType]),
+      studyId             = disabledStudy.id,
+      version             = 0L,
+      timeAdded           = OffsetDateTime.now,
+      timeModified        = None,
+      slug                = Slug(name),
+      name                = name,
+      description         = Some(nameGenerator.next[CollectionEventType]),
+      recurring           = false,
+      specimenDefinitions = Set.empty,
+      annotationTypes     = Set.empty
+    )
 
     domainObjects = domainObjects + (classOf[CollectionEventType] -> ceventType)
     ceventType
   }
 
-  def createAnnotationType(valueType:     AnnotationValueType,
-                           maxValueCount: Option[Int],
-                           options:       Seq[String]): AnnotationType = {
+  def createAnnotationType(
+      valueType:     AnnotationValueType,
+      maxValueCount: Option[Int],
+      options:       Seq[String]
+    ): AnnotationType = {
     val name = faker.Lorem.sentence(3)
     val annotationType = AnnotationType(AnnotationTypeId(nameGenerator.next[AnnotationType]),
                                         Slug(name),
@@ -246,175 +251,164 @@ class Factory {
     annotationType
   }
 
-  def createAnnotationType(valueType: AnnotationValueType): AnnotationType = {
+  def createAnnotationType(valueType: AnnotationValueType): AnnotationType =
     createAnnotationType(valueType, None, Seq.empty)
-  }
 
-  def createAnnotationType(): AnnotationType = {
+  def createAnnotationType(): AnnotationType =
     createAnnotationType(AnnotationValueType.Text, None, Seq.empty)
-  }
 
   def createProcessingType(): ProcessingType = {
     val disabledStudy = defaultDisabledStudy
-    val name = faker.Lorem.sentence(2)
+    val name          = faker.Lorem.sentence(2)
 
-    val input = InputSpecimenProcessing(expectedChange       = BigDecimal(1.0),
+    val input = InputSpecimenProcessing(expectedChange = BigDecimal(1.0),
                                         count                = 1,
                                         containerTypeId      = None,
                                         definitionType       = ProcessingType.collectedDefinition,
                                         entityId             = "",
                                         specimenDefinitionId = SpecimenDefinitionId(""))
-    val output = OutputSpecimenProcessing(expectedChange     = BigDecimal(1.0),
+    val output = OutputSpecimenProcessing(expectedChange = BigDecimal(1.0),
                                           count              = 1,
                                           containerTypeId    = None,
                                           specimenDefinition = defaultProcessedSpecimenDefinition)
 
-    val processingType = ProcessingType(
-        id              = ProcessingTypeId(nextIdentityAsString[ProcessingType]),
-        studyId         = disabledStudy.id,
-        version         = 0L,
-        timeAdded       = OffsetDateTime.now,
-        timeModified    = None,
-        slug            = Slug(name),
-        name            = name,
-        description     = Some(faker.Lorem.sentence(4)),
-        enabled         = false,
-        input           = input,
-        output          = output,
-        annotationTypes = Set.empty,
-        inUse           = false)
+    val processingType = ProcessingType(id = ProcessingTypeId(nextIdentityAsString[ProcessingType]),
+                                        studyId         = disabledStudy.id,
+                                        version         = 0L,
+                                        timeAdded       = OffsetDateTime.now,
+                                        timeModified    = None,
+                                        slug            = Slug(name),
+                                        name            = name,
+                                        description     = Some(faker.Lorem.sentence(4)),
+                                        enabled         = false,
+                                        input           = input,
+                                        output          = output,
+                                        annotationTypes = Set.empty,
+                                        inUse           = false)
 
     domainObjects = domainObjects + (classOf[ProcessingType] -> processingType)
     processingType
   }
 
   def createParticipant(): Participant = {
-    val study = defaultEnabledStudy
+    val study    = defaultEnabledStudy
     val uniqueId = nextIdentityAsString[Participant]
-    val participant = Participant(
-        studyId      = study.id,
-        id           = ParticipantId(nextIdentityAsString[Participant]),
-        version      = 0L,
-        timeAdded    = OffsetDateTime.now,
-        timeModified = None,
-        slug         = Slug(uniqueId),
-        uniqueId     = uniqueId,
-        annotations  = Set.empty
-      )
+    val participant = Participant(studyId = study.id,
+                                  id           = ParticipantId(nextIdentityAsString[Participant]),
+                                  version      = 0L,
+                                  timeAdded    = OffsetDateTime.now,
+                                  timeModified = None,
+                                  slug         = Slug(uniqueId),
+                                  uniqueId     = uniqueId,
+                                  annotations  = Set.empty)
     domainObjects = domainObjects + (classOf[Participant] -> participant)
     participant
   }
 
-  def createAnnotationValues(annotationType: AnnotationType):
-      Tuple3[Option[String], Option[String], Set[String]] = {
+  def createAnnotationValues(
+      annotationType: AnnotationType
+    ): Tuple3[Option[String], Option[String], Set[String]] =
     annotationType.valueType match {
-      case Text     =>
+      case Text =>
         (Some(nameGenerator.next[Annotation]), None, Set.empty)
-      case Number   =>
+      case Number =>
         (None, Some(scala.util.Random.nextFloat.toString), Set.empty)
       case AnnotationValueType.DateTime =>
         (Some(OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)), None, Set.empty)
-      case Select   =>
+      case Select =>
         val options = annotationType.maxValueCount match {
-            case Some(1) => Set(annotationType.options(0))
-            case Some(2) => annotationType.options.toSet
-            case _       => Set.empty[String]
-          }
+          case Some(1) => Set(annotationType.options(0))
+          case Some(2) => annotationType.options.toSet
+          case _       => Set.empty[String]
+        }
         (None, None, options)
     }
-  }
 
   def createAnnotation(): Annotation = {
     val annot = Annotation(annotationTypeId = defaultAnnotationType.id,
-                           valueType        = defaultAnnotationType.valueType,
-                           stringValue      = None,
-                           numberValue      = None,
-                           selectedValues   = Set.empty[String])
+                           valueType      = defaultAnnotationType.valueType,
+                           stringValue    = None,
+                           numberValue    = None,
+                           selectedValues = Set.empty[String])
     domainObjects = domainObjects + (classOf[Annotation] -> annot)
     annot
   }
 
   def createAnnotationWithValues(annotationType: AnnotationType): Annotation = {
     val (stringValue, numberValue, selectedValues) = createAnnotationValues(annotationType)
-    val annot = createAnnotation.copy(stringValue      = stringValue,
-                                      numberValue      = numberValue,
-                                      selectedValues   = selectedValues)
+    val annot = createAnnotation
+      .copy(stringValue = stringValue, numberValue = numberValue, selectedValues = selectedValues)
     //log.info(s"----> id: ${annotationType.id}, ${annotationType.maxValueCount}, $stringValue, $numberValue, $selectedValues")
     domainObjects = domainObjects + (classOf[Annotation] -> annot)
     annot
   }
 
   def createCollectionEvent(): CollectionEvent = {
-    val participant = defaultParticipant
+    val participant         = defaultParticipant
     val collectionEventType = defaultCollectionEventType
 
     val id = CollectionEventId(nextIdentityAsString[CollectionEvent])
-    val cevent = CollectionEvent(
-        id                    = id,
-        participantId         = participant.id,
-        collectionEventTypeId = collectionEventType.id,
-        version               = 0,
-        timeAdded             = OffsetDateTime.now,
-        timeModified          = None,
-        slug                  = Slug(id.id),
-        timeCompleted         = OffsetDateTime.now,
-        visitNumber           = 1,
-        annotations           = Set.empty)
+    val cevent = CollectionEvent(id = id,
+                                 participantId         = participant.id,
+                                 collectionEventTypeId = collectionEventType.id,
+                                 version               = 0,
+                                 timeAdded             = OffsetDateTime.now,
+                                 timeModified          = None,
+                                 slug                  = Slug(id.id),
+                                 timeCompleted         = OffsetDateTime.now,
+                                 visitNumber           = 1,
+                                 annotations           = Set.empty)
     domainObjects = domainObjects + (classOf[CollectionEvent] -> cevent)
     cevent
   }
 
   def createUsableSpecimen(): UsableSpecimen = {
     val specimenDefinition = defaultCollectionSpecimenDefinition
-    val location            = defaultLocation
-    val inventoryId         = nextIdentityAsString[Specimen]
+    val location           = defaultLocation
+    val inventoryId        = nextIdentityAsString[Specimen]
 
-    val specimen = UsableSpecimen(
-        id                    = SpecimenId(nextIdentityAsString[Specimen]),
-        version               = 0,
-        timeAdded             = OffsetDateTime.now,
-        timeModified          = None,
-        slug                  = Slug(inventoryId),
-        inventoryId           = inventoryId,
-        specimenDefinitionId = specimenDefinition.id,
-        originLocationId      = location.id,
-        locationId            = location.id,
-        containerId           = None,
-        position              = None,
-        timeCreated           = OffsetDateTime.now,
-        amount                = BigDecimal(1.0)
-      )
+    val specimen = UsableSpecimen(id = SpecimenId(nextIdentityAsString[Specimen]),
+                                  version              = 0,
+                                  timeAdded            = OffsetDateTime.now,
+                                  timeModified         = None,
+                                  slug                 = Slug(inventoryId),
+                                  inventoryId          = inventoryId,
+                                  specimenDefinitionId = specimenDefinition.id,
+                                  originLocationId     = location.id,
+                                  locationId           = location.id,
+                                  containerId          = None,
+                                  position             = None,
+                                  timeCreated          = OffsetDateTime.now,
+                                  amount               = BigDecimal(1.0))
     domainObjects = domainObjects + (classOf[UsableSpecimen] -> specimen)
     specimen
   }
 
   def createUnusableSpecimen(): UnusableSpecimen = {
     val specimenDefinition = defaultCollectionSpecimenDefinition
-    val location            = defaultLocation
-    val inventoryId         = nextIdentityAsString[Specimen]
+    val location           = defaultLocation
+    val inventoryId        = nextIdentityAsString[Specimen]
 
-    val specimen = UnusableSpecimen(
-        id                    = SpecimenId(nextIdentityAsString[Specimen]),
-        version               = 0,
-        timeAdded             = OffsetDateTime.now,
-        timeModified          = None,
-        slug                  = Slug(inventoryId),
-        inventoryId           = inventoryId,
-        specimenDefinitionId = specimenDefinition.id,
-        originLocationId      = location.id,
-        locationId            = location.id,
-        containerId           = None,
-        position            = None,
-        timeCreated           = OffsetDateTime.now,
-        amount                = BigDecimal(1.0)
-      )
+    val specimen = UnusableSpecimen(id = SpecimenId(nextIdentityAsString[Specimen]),
+                                    version              = 0,
+                                    timeAdded            = OffsetDateTime.now,
+                                    timeModified         = None,
+                                    slug                 = Slug(inventoryId),
+                                    inventoryId          = inventoryId,
+                                    specimenDefinitionId = specimenDefinition.id,
+                                    originLocationId     = location.id,
+                                    locationId           = location.id,
+                                    containerId          = None,
+                                    position             = None,
+                                    timeCreated          = OffsetDateTime.now,
+                                    amount               = BigDecimal(1.0))
     domainObjects = domainObjects + (classOf[UnusableSpecimen] -> specimen)
     specimen
   }
 
   def createDisabledCentre(): DisabledCentre = {
     val name = faker.Lorem.sentence(3)
-    val centre = DisabledCentre(id           = CentreId(nextIdentityAsString[Centre]),
+    val centre = DisabledCentre(id = CentreId(nextIdentityAsString[Centre]),
                                 version      = 0L,
                                 timeAdded    = OffsetDateTime.now,
                                 timeModified = None,
@@ -430,7 +424,7 @@ class Factory {
 
   def createEnabledCentre(): EnabledCentre = {
     val name = faker.Lorem.sentence(3)
-    val centre = EnabledCentre(id           = CentreId(nextIdentityAsString[Centre]),
+    val centre = EnabledCentre(id = CentreId(nextIdentityAsString[Centre]),
                                version      = 0L,
                                timeAdded    = OffsetDateTime.now,
                                timeModified = None,
@@ -445,7 +439,7 @@ class Factory {
 
   def createLocation(): Location = {
     val name = faker.Lorem.sentence(3)
-    val location = Location(id             = LocationId(nextIdentityAsString[Location]),
+    val location = Location(id = LocationId(nextIdentityAsString[Location]),
                             slug           = Slug(name),
                             name           = name,
                             street         = nameGenerator.next[Location],
@@ -458,11 +452,13 @@ class Factory {
     location
   }
 
-  def createShipment(fromCentre:   Centre,
-                     fromLocation: Location,
-                     toCentre:     Centre,
-                     toLocation:   Location): CreatedShipment = {
-    val shipment = CreatedShipment(id             = ShipmentId(nextIdentityAsString[Shipment]),
+  def createShipment(
+      fromCentre:   Centre,
+      fromLocation: Location,
+      toCentre:     Centre,
+      toLocation:   Location
+    ): CreatedShipment = {
+    val shipment = CreatedShipment(id = ShipmentId(nextIdentityAsString[Shipment]),
                                    version        = 0L,
                                    timeAdded      = OffsetDateTime.now,
                                    timeModified   = None,
@@ -484,198 +480,189 @@ class Factory {
   /**
    * Assumes fromCentre and toCentre have at least one location and use the first locations.
    */
-  def createShipment(fromCentre: Centre, toCentre: Centre): CreatedShipment = {
+  def createShipment(fromCentre: Centre, toCentre: Centre): CreatedShipment =
     createShipment(fromCentre, fromCentre.locations.head, toCentre, toCentre.locations.head)
-  }
 
   def createShipment: CreatedShipment = {
-    val centre = defaultEnabledCentre
+    val centre   = defaultEnabledCentre
     val location = defaultLocation
     createShipment(centre, location, centre, location)
   }
 
-  def createPackedShipment(fromCentre: Centre, toCentre: Centre): PackedShipment = {
+  def createPackedShipment(fromCentre: Centre, toCentre: Centre): PackedShipment =
     createShipment(fromCentre, toCentre).pack(OffsetDateTime.now.minusDays(10))
-  }
 
   def createSentShipment(fromCentre: Centre, toCentre: Centre): SentShipment = {
     val shipment = createPackedShipment(fromCentre, toCentre)
-    shipment.send(shipment.timePacked.get.plusDays(1)).fold(
-      err => sys.error("failed to create a sent shipment"),
-      s   => s
-    )
+    shipment
+      .send(shipment.timePacked.get.plusDays(1)).fold(err => sys.error("failed to create a sent shipment"),
+                                                      s   => s)
   }
 
   def createReceivedShipment(fromCentre: Centre, toCentre: Centre): ReceivedShipment = {
     val shipment = createSentShipment(fromCentre, toCentre)
-    shipment.receive(shipment.timeSent.get.plusDays(1)).fold(
-      err => sys.error("failed to create a received shipment"),
-      s   => s
-    )
+    shipment
+      .receive(shipment.timeSent.get.plusDays(1)).fold(
+        err => sys.error("failed to create a received shipment"),
+        s   => s
+      )
   }
 
   def createUnpackedShipment(fromCentre: Centre, toCentre: Centre): UnpackedShipment = {
     val shipment = createReceivedShipment(fromCentre, toCentre)
-    shipment.unpack(shipment.timeReceived.get.plusDays(1)).fold(
-      err => sys.error("failed to create a unpacked shipment"),
-      s   => s
-    )
+    shipment
+      .unpack(shipment.timeReceived.get.plusDays(1)).fold(
+        err => sys.error("failed to create a unpacked shipment"),
+        s   => s
+      )
   }
 
   def createCompletedShipment(fromCentre: Centre, toCentre: Centre): CompletedShipment = {
     val shipment = createUnpackedShipment(fromCentre, toCentre)
-    shipment.complete(shipment.timeReceived.get.plusDays(1)).fold(
-      err => sys.error("failed to create a completed shipment"),
-      s   => s
-    )
+    shipment
+      .complete(shipment.timeReceived.get.plusDays(1)).fold(
+        err => sys.error("failed to create a completed shipment"),
+        s   => s
+      )
   }
 
-  def createLostShipment(fromCentre: Centre, toCentre: Centre): LostShipment = {
+  def createLostShipment(fromCentre: Centre, toCentre: Centre): LostShipment =
     createSentShipment(fromCentre, toCentre).lost
-  }
 
   def createShipmentSpecimen(): ShipmentSpecimen = {
     val specimen = defaultUsableSpecimen
     val shipment = defaultShipment
 
-    val shipmentSpecimen = ShipmentSpecimen(
-        id                  = ShipmentSpecimenId(nextIdentityAsString[ShipmentSpecimen]),
-        version             = 0L,
-        timeAdded           = OffsetDateTime.now,
-        timeModified        = None,
-        shipmentId          = shipment.id,
-        specimenId          = specimen.id,
-        state               = ShipmentItemState.Present,
-        shipmentContainerId = None)
+    val shipmentSpecimen = ShipmentSpecimen(id = ShipmentSpecimenId(nextIdentityAsString[ShipmentSpecimen]),
+                                            version             = 0L,
+                                            timeAdded           = OffsetDateTime.now,
+                                            timeModified        = None,
+                                            shipmentId          = shipment.id,
+                                            specimenId          = specimen.id,
+                                            state               = ShipmentItemState.Present,
+                                            shipmentContainerId = None)
     domainObjects = domainObjects + (classOf[ShipmentSpecimen] -> shipmentSpecimen)
     shipmentSpecimen
   }
 
-  def createShipmentContainer(): ShipmentContainer = {
+  def createShipmentContainer(): ShipmentContainer =
     ???
-    // val container = defaultContainer
-    // val shipment = defaultShipment
+  // val container = defaultContainer
+  // val shipment = defaultShipment
 
-    // val shipmentContainer = ShipmentContainer(
-    //     id                  = ShipmentContainerId(nextIdentityAsString[ShipmentContainer]),
-    //     version             = 0L,
-    //     timeAdded           = OffsetDateTime.now,
-    //     timeModified        = None,
-    //     shipmentId          = shipment.id,
-    //     containerId         = container.id,
-    //     state               = ShipmentItemState.Present)
-    // domainObjects = domainObjects + (classOf[ShipmentContainer] -> shipmentContainer)
-    // shipmentContainer
-  }
+  // val shipmentContainer = ShipmentContainer(
+  //     id                  = ShipmentContainerId(nextIdentityAsString[ShipmentContainer]),
+  //     version             = 0L,
+  //     timeAdded           = OffsetDateTime.now,
+  //     timeModified        = None,
+  //     shipmentId          = shipment.id,
+  //     containerId         = container.id,
+  //     state               = ShipmentItemState.Present)
+  // domainObjects = domainObjects + (classOf[ShipmentContainer] -> shipmentContainer)
+  // shipmentContainer
 
   def createStorageContainerType(): StorageContainerType = {
     val name = nameGenerator.next[ContainerType]
-    val containerType = StorageContainerType(
-        id           = ContainerTypeId(nextIdentityAsString[ContainerType]),
-        version      = 0L,
-        timeAdded    = OffsetDateTime.now,
-        timeModified = None,
-        slug         = Slug(name),
-        name         = name,
-        description  = Some(nameGenerator.next[ContainerType]),
-        centreId     = Some(defaultEnabledCentre.id),
-        schemaId     = defaultContainerSchema.id,
-        shared       = true,
-        enabled      = false)
+    val containerType = StorageContainerType(id = ContainerTypeId(nextIdentityAsString[ContainerType]),
+                                             version      = 0L,
+                                             timeAdded    = OffsetDateTime.now,
+                                             timeModified = None,
+                                             slug         = Slug(name),
+                                             name         = name,
+                                             description  = Some(nameGenerator.next[ContainerType]),
+                                             centreId     = Some(defaultEnabledCentre.id),
+                                             schemaId     = defaultContainerSchema.id,
+                                             shared       = true,
+                                             enabled      = false)
     domainObjects = domainObjects + (classOf[StorageContainerType] -> containerType)
     containerType
   }
 
   def createSpecimenContainerType(): SpecimenContainerType = {
     val name = nameGenerator.next[ContainerType]
-    val containerType = SpecimenContainerType(
-        id           = ContainerTypeId(nextIdentityAsString[ContainerType]),
-        version      = 0L,
-        timeAdded    = OffsetDateTime.now,
-        timeModified = None,
-        slug         = Slug(name),
-        name         = name,
-        description  = Some(nameGenerator.next[ContainerType]),
-        centreId     = Some(defaultEnabledCentre.id),
-        schemaId     = defaultContainerSchema.id,
-        shared       = true,
-        enabled      = false)
+    val containerType = SpecimenContainerType(id = ContainerTypeId(nextIdentityAsString[ContainerType]),
+                                              version      = 0L,
+                                              timeAdded    = OffsetDateTime.now,
+                                              timeModified = None,
+                                              slug         = Slug(name),
+                                              name         = name,
+                                              description  = Some(nameGenerator.next[ContainerType]),
+                                              centreId     = Some(defaultEnabledCentre.id),
+                                              schemaId     = defaultContainerSchema.id,
+                                              shared       = true,
+                                              enabled      = false)
     domainObjects = domainObjects + (classOf[SpecimenContainerType] -> containerType)
     containerType
   }
 
   def createContainerSchema(): ContainerSchema = {
     val name = faker.Lorem.sentence(3)
-    val containerSchema = ContainerSchema(
-        version      = 0L,
-        timeAdded    = OffsetDateTime.now,
-        timeModified = None,
-        id           = ContainerSchemaId(nextIdentityAsString[ContainerSchema]),
-        slug         = Slug(name),
-        name         = name,
-        description  = Some(nameGenerator.next[ContainerSchema]),
-        shared       = true,
-        centreId     = defaultDisabledCentre.id)
+    val containerSchema = ContainerSchema(version = 0L,
+                                          timeAdded    = OffsetDateTime.now,
+                                          timeModified = None,
+                                          id           = ContainerSchemaId(nextIdentityAsString[ContainerSchema]),
+                                          slug         = Slug(name),
+                                          name         = name,
+                                          description  = Some(nameGenerator.next[ContainerSchema]),
+                                          shared       = true,
+                                          centreId     = defaultDisabledCentre.id)
     domainObjects = domainObjects + (classOf[ContainerSchema] -> containerSchema)
     containerSchema
   }
 
-  def createContainerSchemaPosition(): ContainerSchemaPosition = {
-    ContainerSchemaPosition(
-      id       = ContainerSchemaPositionId(nextIdentityAsString[ContainerSchemaPosition]),
-      schemaId = defaultContainerSchema.id,
-      label    = nextIdentityAsString[ContainerSchemaPosition])
-  }
+  def createContainerSchemaPosition(): ContainerSchemaPosition =
+    ContainerSchemaPosition(id       = ContainerSchemaPositionId(nextIdentityAsString[ContainerSchemaPosition]),
+                            schemaId = defaultContainerSchema.id,
+                            label    = nextIdentityAsString[ContainerSchemaPosition])
 
   def createContainerConstraints(): ContainerConstraints = {
     val name = nameGenerator.next[ContainerConstraints]
     val containerConstraints = ContainerConstraints(
-        id                    = ContainerConstraintsId(nextIdentityAsString[ContainerConstraints]),
-        slug                  = Slug(name),
-        name                  = name,
-        description           = Some(nameGenerator.next[ContainerConstraints]),
-        centreId              = Some(defaultDisabledCentre.id),
-        anatomicalSourceTypes = Set.empty[AnatomicalSourceType],
-        preservationTypes     = Set.empty[PreservationType],
-        specimenTypes         = Set.empty[SpecimenType])
+      id                    = ContainerConstraintsId(nextIdentityAsString[ContainerConstraints]),
+      slug                  = Slug(name),
+      name                  = name,
+      description           = Some(nameGenerator.next[ContainerConstraints]),
+      centreId              = Some(defaultDisabledCentre.id),
+      anatomicalSourceTypes = Set.empty[AnatomicalSourceType],
+      preservationTypes     = Set.empty[PreservationType],
+      specimenTypes         = Set.empty[SpecimenType]
+    )
     domainObjects = domainObjects + (classOf[ContainerConstraints] -> containerConstraints)
     containerConstraints
   }
 
   def createStorageContainer(): StorageContainer = {
     val inventoryId = nameGenerator.next[Container]
-    val container = StorageContainer(
-        id               = ContainerId(nextIdentityAsString[Container]),
-        version          = 0L,
-        timeAdded        = OffsetDateTime.now,
-        timeModified     = None,
-        slug             = Slug(inventoryId),
-        inventoryId      = inventoryId,
-        label            = nameGenerator.next[Container],
-        enabled          = false,
-        containerTypeId  = defaultStorageContainerType.id,
-        sharedProperties = none,
-        parentId         = none,
-        position         = none,
-        constraints      = Some(createContainerConstraints))
+    val container = StorageContainer(id = ContainerId(nextIdentityAsString[Container]),
+                                     version          = 0L,
+                                     timeAdded        = OffsetDateTime.now,
+                                     timeModified     = None,
+                                     slug             = Slug(inventoryId),
+                                     inventoryId      = inventoryId,
+                                     label            = nameGenerator.next[Container],
+                                     enabled          = false,
+                                     containerTypeId  = defaultStorageContainerType.id,
+                                     sharedProperties = none,
+                                     parentId         = none,
+                                     position         = none,
+                                     constraints      = Some(createContainerConstraints))
     domainObjects = domainObjects + (classOf[StorageContainer] -> container)
     container
   }
 
   def createSpecimenContainer(): SpecimenContainer = {
     val inventoryId = nameGenerator.next[ContainerType]
-    val container = SpecimenContainer(
-        id               = ContainerId(nextIdentityAsString[Container]),
-        version          = 0L,
-        timeAdded        = OffsetDateTime.now,
-        timeModified     = None,
-        slug             = Slug(inventoryId),
-        inventoryId      = inventoryId,
-        label            = nameGenerator.next[Container],
-        containerTypeId  = defaultSpecimenContainerType.id,
-        sharedProperties = none,
-        parentId         = None,
-        position         = None)
+    val container = SpecimenContainer(id = ContainerId(nextIdentityAsString[Container]),
+                                      version          = 0L,
+                                      timeAdded        = OffsetDateTime.now,
+                                      timeModified     = None,
+                                      slug             = Slug(inventoryId),
+                                      inventoryId      = inventoryId,
+                                      label            = nameGenerator.next[Container],
+                                      containerTypeId  = defaultSpecimenContainerType.id,
+                                      sharedProperties = none,
+                                      parentId         = None,
+                                      position         = None)
     domainObjects = domainObjects + (classOf[SpecimenContainer] -> container)
     container
   }
@@ -684,101 +671,79 @@ class Factory {
   //   defaultObject(classOf[RegisteredUser], createRegisteredUser)
   // }
 
-  def defaultActiveUser: ActiveUser = {
+  def defaultActiveUser: ActiveUser =
     defaultObject(classOf[ActiveUser], createActiveUser)
-  }
 
-  def defaultLockedUser: LockedUser = {
+  def defaultLockedUser: LockedUser =
     defaultObject(classOf[LockedUser], createLockedUser)
-  }
 
-  def defaultDisabledStudy: DisabledStudy = {
+  def defaultDisabledStudy: DisabledStudy =
     defaultObject(classOf[DisabledStudy], createDisabledStudy)
-  }
 
-  def defaultEnabledStudy: EnabledStudy = {
+  def defaultEnabledStudy: EnabledStudy =
     defaultObject(classOf[EnabledStudy], createEnabledStudy)
-  }
 
-  def defaultCollectionEventType: CollectionEventType = {
+  def defaultCollectionEventType: CollectionEventType =
     defaultObject(classOf[CollectionEventType], createCollectionEventType)
-  }
 
-  def defaultCollectionSpecimenDefinition: CollectionSpecimenDefinition = {
+  def defaultCollectionSpecimenDefinition: CollectionSpecimenDefinition =
     defaultObject(classOf[CollectionSpecimenDefinition], createCollectionSpecimenDefinition)
-  }
 
-  def defaultProcessedSpecimenDefinition: ProcessedSpecimenDefinition = {
+  def defaultProcessedSpecimenDefinition: ProcessedSpecimenDefinition =
     defaultObject(classOf[ProcessedSpecimenDefinition], createProcessedSpecimenDefinition)
-  }
 
-  def defaultAnnotationType: AnnotationType = {
+  def defaultAnnotationType: AnnotationType =
     defaultObject(classOf[AnnotationType], createAnnotationType)
-  }
 
-  def defaultProcessingType: ProcessingType = {
+  def defaultProcessingType: ProcessingType =
     defaultObject(classOf[ProcessingType], createProcessingType)
-  }
 
-  def defaultParticipant: Participant = {
+  def defaultParticipant: Participant =
     defaultObject(classOf[Participant], createParticipant)
-  }
 
-  def defaultAnnotation: Annotation = {
+  def defaultAnnotation: Annotation =
     defaultObject(classOf[Annotation], createAnnotation)
-  }
 
-  def defaultCollectionEvent(): CollectionEvent = {
+  def defaultCollectionEvent(): CollectionEvent =
     defaultObject(classOf[CollectionEvent], createCollectionEvent)
-  }
 
-  def defaultUsableSpecimen: UsableSpecimen = {
+  def defaultUsableSpecimen: UsableSpecimen =
     defaultObject(classOf[UsableSpecimen], createUsableSpecimen)
-  }
 
-  def defaultUnusableSpecimen: UnusableSpecimen = {
+  def defaultUnusableSpecimen: UnusableSpecimen =
     defaultObject(classOf[UnusableSpecimen], createUnusableSpecimen)
-  }
 
-  def defaultDisabledCentre: DisabledCentre = {
+  def defaultDisabledCentre: DisabledCentre =
     defaultObject(classOf[DisabledCentre], createDisabledCentre)
-  }
 
-  def defaultEnabledCentre: EnabledCentre = {
+  def defaultEnabledCentre: EnabledCentre =
     defaultObject(classOf[EnabledCentre], createEnabledCentre)
-  }
 
-  def defaultLocation: Location = {
+  def defaultLocation: Location =
     defaultObject(classOf[Location], createLocation)
-  }
 
-  def defaultContainerSchema: ContainerSchema = {
+  def defaultContainerSchema: ContainerSchema =
     defaultObject(classOf[ContainerSchema], createContainerSchema)
-  }
 
-  def defaultShipment: Shipment = {
+  def defaultShipment: Shipment =
     defaultObject(classOf[Shipment], createShipment)
-  }
 
-  def defaultShipmentSpecimen: ShipmentSpecimen = {
+  def defaultShipmentSpecimen: ShipmentSpecimen =
     defaultObject(classOf[ShipmentSpecimen], createShipmentSpecimen)
-  }
 
-  def defaultShipmentContainer: ShipmentContainer = {
+  def defaultShipmentContainer: ShipmentContainer =
     defaultObject(classOf[ShipmentContainer], createShipmentContainer)
-  }
 
-  def defaultStorageContainerType: StorageContainerType = {
+  def defaultStorageContainerType: StorageContainerType =
     defaultObject(classOf[StorageContainerType], createStorageContainerType)
-  }
 
-  def defaultSpecimenContainerType: SpecimenContainerType = {
+  def defaultSpecimenContainerType: SpecimenContainerType =
     defaultObject(classOf[SpecimenContainerType], createSpecimenContainerType)
-  }
 
   /** Retrieves the class from the map, or calls 'create' if value does not exist
    */
-  private def defaultObject[T](key: Class[T], create: => T): T = {
-    domainObjects.get(key).fold { create } { obj => key.cast(obj) }
-  }
+  private def defaultObject[T](key: Class[T], create: => T): T =
+    domainObjects.get(key).fold { create } { obj =>
+      key.cast(obj)
+    }
 }

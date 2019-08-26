@@ -35,14 +35,13 @@ trait JsonMatchers {
 
   def containFieldThatMust[T <: JsValue: Manifest](expectedField: String, elemMatcher: Matcher[T]) =
     new Matcher[JsValue] {
-      def apply(js: JsValue) = {
+
+      def apply(js: JsValue) =
         (js \ expectedField).get match {
           case v: T => elemMatcher(v)
-          case _ => MatchResult(false,
-                               s"no such field $expectedField in $js",
-                               s"field $expectedField found in $js")
+          case _ =>
+            MatchResult(false, s"no such field $expectedField in $js", s"field $expectedField found in $js")
         }
-      }
     }
 
   def containFieldWithValue[T <: JsValue: Manifest](expectedField: String, expectedValue: T) =
@@ -51,15 +50,15 @@ trait JsonMatchers {
   def containField(expectedField: String) = containFieldThatMust(expectedField, not be JsUndefined)
 
   final private class BeJsSuccessMatcher[E](element: E) extends Matcher[JsResult[E]] {
-    def apply(jsResult: JsResult[E]): MatchResult = {
-      MatchResult(
-        jsResult.fold(_ => false, _ == element),
-        s"'$jsResult' did not contain an JsSuccess element matching '$element'.",
-        s"'$jsResult' contained an JsSuccess element matching '$element', but should not have.")
-    }
+
+    def apply(jsResult: JsResult[E]): MatchResult =
+      MatchResult(jsResult.fold(_ => false, _ == element),
+                  s"'$jsResult' did not contain an JsSuccess element matching '$element'.",
+                  s"'$jsResult' contained an JsSuccess element matching '$element', but should not have.")
   }
 
   final private class IsJsSuccessMatcher[E] extends BeMatcher[JsResult[E]] {
+
     def apply(jsResult: JsResult[E]): MatchResult =
       MatchResult(jsResult.isSuccess,
                   s"not a JsSuccess when it must have been: '$jsResult'",
@@ -68,36 +67,34 @@ trait JsonMatchers {
 
   final private class ContainsKeyMatcher(expectedKey: String) extends Matcher[JsValue] {
 
-    def apply(left: JsValue) = {
+    def apply(left: JsValue) =
       MatchResult((left \ expectedKey).toOption.isDefined,
                   s"""JSON $left does not contain key "$expectedKey"""",
                   s"""JSON $left contains key "$expectedKey"""")
-    }
   }
 
   final private class ContainsPathMatcher(expectedPath: JsPath) extends Matcher[JsValue] {
-    def apply(left: JsValue) = {
+
+    def apply(left: JsValue) =
       MatchResult(!(expectedPath(left) isEmpty),
                   s"""JSON $left does not contain path "$expectedPath"""",
                   s"""JSON $left contains path "$expectedPath"""")
-    }
   }
 
   final private class ContainsValueMatcher(expectedPath: JsPath, expectedValue: JsValue)
       extends Matcher[JsValue] {
+
     def apply(left: JsValue) = {
 
-      val matches = expectedPath(left).foldLeft(false) {
-        (matches, value) => {
+      val matches = expectedPath(left).foldLeft(false) { (matches, value) =>
+        {
           matches || value.equals(expectedValue)
         }
       }
       MatchResult(matches,
                   """JSON {0} does not contain value {1} in path "{2}"""",
                   """JSON {0} contains value "[1]" in path "{2}"""",
-                  IndexedSeq(Json.prettyPrint(left),
-                             Json.prettyPrint(expectedValue),
-                             expectedPath))
+                  IndexedSeq(Json.prettyPrint(left), Json.prettyPrint(expectedValue), expectedPath))
     }
   }
 }

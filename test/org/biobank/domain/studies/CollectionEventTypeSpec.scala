@@ -15,7 +15,7 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
 
   val nameGenerator = new NameGenerator(this.getClass)
 
-  def createFrom(ceventType: CollectionEventType): DomainValidation[CollectionEventType] = {
+  def createFrom(ceventType: CollectionEventType): DomainValidation[CollectionEventType] =
     CollectionEventType.create(ceventType.studyId,
                                ceventType.id,
                                ceventType.version,
@@ -24,7 +24,6 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
                                ceventType.recurring,
                                ceventType.specimenDefinitions,
                                ceventType.annotationTypes)
-  }
 
   describe("A collection event type can") {
 
@@ -33,14 +32,12 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
       createFrom(ceventType) mustSucceed { cet =>
         cet mustBe a[CollectionEventType]
 
-        cet must have (
-          'studyId     (ceventType.studyId),
-          'id          (ceventType.id),
-          'version     (ceventType.version),
-          'name        (ceventType.name),
-          'description (ceventType.description),
-          'recurring   (ceventType.recurring)
-        )
+        cet must have('studyId (ceventType.studyId),
+                      'id (ceventType.id),
+                      'version (ceventType.version),
+                      'name (ceventType.name),
+                      'description (ceventType.description),
+                      'recurring (ceventType.recurring))
 
         cet.specimenDefinitions must have size 0
         cet.annotationTypes must have size 0
@@ -50,20 +47,18 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
     }
 
     it("have it's name updated") {
-      val cet = factory.createCollectionEventType
+      val cet  = factory.createCollectionEventType
       val name = nameGenerator.next[CollectionEventType]
 
       cet.withName(name) mustSucceed { updatedCet =>
         updatedCet mustBe a[CollectionEventType]
 
-        updatedCet must have (
-          'studyId     (cet.studyId),
-          'id          (cet.id),
-          'version     (cet.version + 1),
-          'name        (name),
-          'description (cet.description),
-          'recurring   (cet.recurring)
-        )
+        updatedCet must have('studyId (cet.studyId),
+                             'id (cet.id),
+                             'version (cet.version + 1),
+                             'name (name),
+                             'description (cet.description),
+                             'recurring (cet.recurring))
 
         updatedCet.specimenDefinitions must have size 0
         updatedCet.annotationTypes must have size 0
@@ -72,20 +67,18 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
     }
 
     it("have it's description updated") {
-      val cet = factory.createCollectionEventType
+      val cet         = factory.createCollectionEventType
       val description = Some(nameGenerator.next[CollectionEventType])
 
       cet.withDescription(description) mustSucceed { updatedCet =>
         updatedCet mustBe a[CollectionEventType]
 
-        updatedCet must have (
-          'studyId     (cet.studyId),
-          'id          (cet.id),
-          'version     (cet.version + 1),
-          'name        (cet.name),
-          'description (description),
-          'recurring   (cet.recurring)
-        )
+        updatedCet must have('studyId (cet.studyId),
+                             'id (cet.id),
+                             'version (cet.version + 1),
+                             'name (cet.name),
+                             'description (description),
+                             'recurring (cet.recurring))
 
         updatedCet.specimenDefinitions must have size 0
         updatedCet.annotationTypes must have size 0
@@ -100,14 +93,12 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
         cet.withRecurring(recurring) mustSucceed { updatedCet =>
           updatedCet mustBe a[CollectionEventType]
 
-          updatedCet must have (
-            'studyId     (cet.studyId),
-            'id          (cet.id),
-            'version     (cet.version + 1),
-            'name        (cet.name),
-            'description (cet.description),
-            'recurring   (recurring)
-          )
+          updatedCet must have('studyId (cet.studyId),
+                               'id (cet.id),
+                               'version (cet.version + 1),
+                               'name (cet.name),
+                               'description (cet.description),
+                               'recurring (recurring))
 
           updatedCet.specimenDefinitions must have size 0
           updatedCet.annotationTypes must have size 0
@@ -161,20 +152,18 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
   describe("A collection event type's specimen spec set") {
 
     it("add a specimen spec") {
-      val cet = factory.createCollectionEventType.copy(specimenDefinitions = Set.empty)
+      val cet                = factory.createCollectionEventType.copy(specimenDefinitions = Set.empty)
       val specimenDefinition = factory.createCollectionSpecimenDefinition
 
       cet.withSpecimenDefinition(specimenDefinition) mustSucceed { updatedCet =>
         updatedCet mustBe a[CollectionEventType]
 
-        updatedCet must have (
-          'studyId     (cet.studyId),
-          'id          (cet.id),
-          'version     (cet.version + 1),
-          'name        (cet.name),
-          'description (cet.description),
-          'recurring   (cet.recurring)
-        )
+        updatedCet must have('studyId (cet.studyId),
+                             'id (cet.id),
+                             'version (cet.version + 1),
+                             'name (cet.name),
+                             'description (cet.description),
+                             'recurring (cet.recurring))
 
         updatedCet.specimenDefinitions must have size 1
         updatedCet.annotationTypes must have size 0
@@ -183,21 +172,19 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
     }
 
     it("replace a specimen spec") {
-      val specimenDefinition = factory.createCollectionSpecimenDefinition
+      val specimenDefinition  = factory.createCollectionSpecimenDefinition
       val specimenDefinition2 = factory.createCollectionSpecimenDefinition.copy(id = specimenDefinition.id)
-      val cet = factory.createCollectionEventType.copy(specimenDefinitions = Set(specimenDefinition))
+      val cet                 = factory.createCollectionEventType.copy(specimenDefinitions = Set(specimenDefinition))
 
       cet.withSpecimenDefinition(specimenDefinition2) mustSucceed { updatedCet =>
         updatedCet mustBe a[CollectionEventType]
 
-        updatedCet must have (
-          'studyId     (cet.studyId),
-          'id          (cet.id),
-          'version     (cet.version + 1),
-          'name        (cet.name),
-          'description (cet.description),
-          'recurring   (cet.recurring)
-        )
+        updatedCet must have('studyId (cet.studyId),
+                             'id (cet.id),
+                             'version (cet.version + 1),
+                             'name (cet.name),
+                             'description (cet.description),
+                             'recurring (cet.recurring))
 
         updatedCet.specimenDefinitions must have size 1
         updatedCet.annotationTypes must have size 0
@@ -207,19 +194,17 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
 
     it("remove a specimen spec") {
       val specimenDefinition = factory.createCollectionSpecimenDefinition
-      val cet = factory.createCollectionEventType.copy(specimenDefinitions = Set(specimenDefinition))
+      val cet                = factory.createCollectionEventType.copy(specimenDefinitions = Set(specimenDefinition))
 
       cet.removeSpecimenDefinition(specimenDefinition.id) mustSucceed { updatedCet =>
         updatedCet mustBe a[CollectionEventType]
 
-        updatedCet must have (
-          'studyId     (cet.studyId),
-          'id          (cet.id),
-          'version     (cet.version + 1),
-          'name        (cet.name),
-          'description (cet.description),
-          'recurring   (cet.recurring)
-        )
+        updatedCet must have('studyId (cet.studyId),
+                             'id (cet.id),
+                             'version (cet.version + 1),
+                             'name (cet.name),
+                             'description (cet.description),
+                             'recurring (cet.recurring))
 
         updatedCet.specimenDefinitions must have size 0
         updatedCet.annotationTypes must have size 0
@@ -229,32 +214,33 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
 
     it("not allow adding a specimen spec with a duplicate name") {
       val specimenDefinition = factory.createCollectionSpecimenDefinition
-      val specimenDefinition2 = factory.createCollectionSpecimenDefinition.copy(name = specimenDefinition.name)
+      val specimenDefinition2 =
+        factory.createCollectionSpecimenDefinition.copy(name = specimenDefinition.name)
       val cet = factory.createCollectionEventType.copy(specimenDefinitions = Set(specimenDefinition))
 
-      cet.withSpecimenDefinition(specimenDefinition2)
+      cet
+        .withSpecimenDefinition(specimenDefinition2)
         .mustFail("EntityCriteriaError: specimen definition name already used.*")
     }
   }
 
-  override def createEntity(): CollectionEventType = {
+  override def createEntity(): CollectionEventType =
     factory.createCollectionEventType.copy(annotationTypes = Set.empty)
-  }
 
-  override def getAnnotationTypeSet(entity: CollectionEventType): Set[AnnotationType] = {
+  override def getAnnotationTypeSet(entity: CollectionEventType): Set[AnnotationType] =
     entity.annotationTypes
-  }
 
-  override def addAnnotationType(entity:         CollectionEventType,
-                                 annotationType: AnnotationType)
-      : DomainValidation[CollectionEventType] = {
+  override def addAnnotationType(
+      entity:         CollectionEventType,
+      annotationType: AnnotationType
+    ): DomainValidation[CollectionEventType] =
     entity.withAnnotationType(annotationType)
-  }
 
-  override def removeAnnotationType(entity: CollectionEventType, id: AnnotationTypeId)
-      : DomainValidation[CollectionEventType] = {
+  override def removeAnnotationType(
+      entity: CollectionEventType,
+      id:     AnnotationTypeId
+    ): DomainValidation[CollectionEventType] =
     entity.removeAnnotationType(id)
-  }
 
   describe("A collection event type's annotation type set") {
 

@@ -13,127 +13,137 @@ object ProcessingTypeCommands {
 
   trait ProcessingTypeCommand extends Command with HasStudyIdentity with HasSessionUserId
 
-  trait ProcessingTypeModifyCommand
+  trait ProcessingTypeModifyCommand extends ProcessingTypeCommand with HasIdentity with HasExpectedVersion
+
+  final case class SpecimenDefinition(
+      name:                    String,
+      description:             Option[String],
+      units:                   String,
+      anatomicalSourceType:    AnatomicalSourceType,
+      preservationType:        PreservationType,
+      preservationTemperature: PreservationTemperature,
+      specimenType:            SpecimenType)
+
+  final case class InputSpecimenProcessing(
+      expectedChange:       BigDecimal,
+      count:                Int,
+      containerTypeId:      Option[String],
+      definitionType:       String,
+      entityId:             String,
+      specimenDefinitionId: String)
+
+  final case class OutputSpecimenProcessing(
+      expectedChange:     BigDecimal,
+      count:              Int,
+      containerTypeId:    Option[String],
+      specimenDefinition: SpecimenDefinition)
+
+  final case class AddProcessingTypeCmd(
+      sessionUserId: String,
+      studyId:       String,
+      name:          String,
+      description:   Option[String],
+      enabled:       Boolean,
+      input:         InputSpecimenProcessing,
+      output:        OutputSpecimenProcessing)
       extends ProcessingTypeCommand
-      with HasIdentity
-      with HasExpectedVersion
 
-  final case class SpecimenDefinition(name:                    String,
-                                      description:             Option[String],
-                                      units:                   String,
-                                      anatomicalSourceType:    AnatomicalSourceType,
-                                      preservationType:        PreservationType,
-                                      preservationTemperature: PreservationTemperature,
-                                      specimenType:            SpecimenType)
-
-  final case class InputSpecimenProcessing(expectedChange:       BigDecimal,
-                                           count:                Int,
-                                           containerTypeId:      Option[String],
-                                           definitionType:       String,
-                                           entityId:             String,
-                                           specimenDefinitionId: String)
-
-  final case class OutputSpecimenProcessing(expectedChange:     BigDecimal,
-                                            count:              Int,
-                                            containerTypeId:    Option[String],
-                                            specimenDefinition: SpecimenDefinition)
-
-  final case class AddProcessingTypeCmd(sessionUserId: String,
-                                        studyId:       String,
-                                        name:          String,
-                                        description:   Option[String],
-                                        enabled:       Boolean,
-                                        input:         InputSpecimenProcessing,
-                                        output:        OutputSpecimenProcessing)
-      extends ProcessingTypeCommand
-
-  final case class UpdateNameCmd(sessionUserId:   String,
-                                 studyId:         String,
-                                 id:              String,
-                                 expectedVersion: Long,
-                                 name:            String)
+  final case class UpdateNameCmd(
+      sessionUserId:   String,
+      studyId:         String,
+      id:              String,
+      expectedVersion: Long,
+      name:            String)
       extends ProcessingTypeModifyCommand
 
-  final case class UpdateDescriptionCmd(sessionUserId:   String,
-                                        studyId:         String,
-                                        id:              String,
-                                        expectedVersion: Long,
-                                        description:     Option[String])
+  final case class UpdateDescriptionCmd(
+      sessionUserId:   String,
+      studyId:         String,
+      id:              String,
+      expectedVersion: Long,
+      description:     Option[String])
       extends ProcessingTypeModifyCommand
 
-  final case class UpdateEnabledCmd(sessionUserId:   String,
-                                    studyId:         String,
-                                    id:              String,
-                                    expectedVersion: Long,
-                                    enabled:         Boolean)
+  final case class UpdateEnabledCmd(
+      sessionUserId:   String,
+      studyId:         String,
+      id:              String,
+      expectedVersion: Long,
+      enabled:         Boolean)
       extends ProcessingTypeModifyCommand
 
-  final case class UpdateInputSpecimenProcessingCmd(sessionUserId:        String,
-                                                    studyId:              String,
-                                                    id:                   String,
-                                                    expectedVersion:      Long,
-                                                    expectedChange:       BigDecimal,
-                                                    count:                Int,
-                                                    containerTypeId:      Option[String],
-                                                    definitionType:       String,
-                                                    entityId:             String,
-                                                    specimenDefinitionId: String)
+  final case class UpdateInputSpecimenProcessingCmd(
+      sessionUserId:        String,
+      studyId:              String,
+      id:                   String,
+      expectedVersion:      Long,
+      expectedChange:       BigDecimal,
+      count:                Int,
+      containerTypeId:      Option[String],
+      definitionType:       String,
+      entityId:             String,
+      specimenDefinitionId: String)
       extends ProcessingTypeModifyCommand
 
-  final case class UpdateOutputSpecimenProcessingCmd(sessionUserId:      String,
-                                                     studyId:            String,
-                                                     id:                 String,
-                                                     expectedVersion:    Long,
-                                                     expectedChange:     BigDecimal,
-                                                     count:              Int,
-                                                     containerTypeId:    Option[String],
-                                                     specimenDefinition: SpecimenDefinition)
+  final case class UpdateOutputSpecimenProcessingCmd(
+      sessionUserId:      String,
+      studyId:            String,
+      id:                 String,
+      expectedVersion:    Long,
+      expectedChange:     BigDecimal,
+      count:              Int,
+      containerTypeId:    Option[String],
+      specimenDefinition: SpecimenDefinition)
       extends ProcessingTypeModifyCommand
 
-  final case class AddProcessingTypeAnnotationTypeCmd(sessionUserId:   String,
-                                                      studyId:         String,
-                                                      id:              String,
-                                                      expectedVersion: Long,
-                                                      name:            String,
-                                                      description:     Option[String],
-                                                      valueType:       AnnotationValueType,
-                                                      maxValueCount:   Option[Int],
-                                                      options:         Seq[String],
-                                                      required:        Boolean)
+  final case class AddProcessingTypeAnnotationTypeCmd(
+      sessionUserId:   String,
+      studyId:         String,
+      id:              String,
+      expectedVersion: Long,
+      name:            String,
+      description:     Option[String],
+      valueType:       AnnotationValueType,
+      maxValueCount:   Option[Int],
+      options:         Seq[String],
+      required:        Boolean)
       extends ProcessingTypeModifyCommand
 
-  final case class UpdateProcessingTypeAnnotationTypeCmd(sessionUserId:   String,
-                                                         studyId:          String,
-                                                         id:               String,
-                                                         expectedVersion:  Long,
-                                                         annotationTypeId: String,
-                                                         name:             String,
-                                                         description:      Option[String],
-                                                         valueType:        AnnotationValueType,
-                                                         maxValueCount:    Option[Int],
-                                                         options:          Seq[String],
-                                                         required:         Boolean)
+  final case class UpdateProcessingTypeAnnotationTypeCmd(
+      sessionUserId:    String,
+      studyId:          String,
+      id:               String,
+      expectedVersion:  Long,
+      annotationTypeId: String,
+      name:             String,
+      description:      Option[String],
+      valueType:        AnnotationValueType,
+      maxValueCount:    Option[Int],
+      options:          Seq[String],
+      required:         Boolean)
       extends ProcessingTypeModifyCommand
 
-  final case class RemoveProcessingTypeAnnotationTypeCmd(sessionUserId:   String,
-                                                         studyId:          String,
-                                                         id:               String,
-                                                         expectedVersion:  Long,
-                                                         annotationTypeId: String)
+  final case class RemoveProcessingTypeAnnotationTypeCmd(
+      sessionUserId:    String,
+      studyId:          String,
+      id:               String,
+      expectedVersion:  Long,
+      annotationTypeId: String)
       extends ProcessingTypeModifyCommand
 
-  final case class RemoveProcessingTypeCmd(sessionUserId:   String,
-                                           studyId:         String,
-                                           id:              String,
-                                           expectedVersion: Long)
+  final case class RemoveProcessingTypeCmd(
+      sessionUserId:   String,
+      studyId:         String,
+      id:              String,
+      expectedVersion: Long)
       extends ProcessingTypeModifyCommand
 
   implicit val specimenDefinitionFormat: Format[SpecimenDefinition] = Json.format[SpecimenDefinition]
 
   implicit val inputSpecimenInfoFormat: Format[InputSpecimenProcessing] = Json.format[InputSpecimenProcessing]
 
-  implicit val outputSpecimenInfoFormat: Format[OutputSpecimenProcessing] = Json.format[OutputSpecimenProcessing]
-
+  implicit val outputSpecimenInfoFormat: Format[OutputSpecimenProcessing] =
+    Json.format[OutputSpecimenProcessing]
 
   implicit val addAddProcessingTypeCmdReads: Reads[AddProcessingTypeCmd] =
     Json.reads[AddProcessingTypeCmd]
@@ -151,6 +161,5 @@ object ProcessingTypeCommands {
 
   implicit val removeProcessingTypeAnnotationTypeCmdReads: Reads[RemoveProcessingTypeAnnotationTypeCmd] =
     Json.reads[RemoveProcessingTypeAnnotationTypeCmd]
-
 
 }

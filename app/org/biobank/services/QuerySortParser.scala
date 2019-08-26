@@ -30,7 +30,7 @@ object QuerySortParser extends RegexParsers {
     """[_a-zA-Z]+[_a-zA-Z0-9.]*""".r ^^ { case n => Selector(n) }
 
   def sortExpression: Parser[SortExpression] =
-    ("-"?) ~ selector ^^ {
+    ("-" ?) ~ selector ^^ {
       case Some(o) ~ e => SortExpression(e.name, DescendingOrder)
       case None ~ e    => SortExpression(e.name, AscendingOrder)
     }
@@ -38,14 +38,13 @@ object QuerySortParser extends RegexParsers {
   def sortExpressions: Parser[List[SortExpression]] =
     rep1sep(sortExpression, "|") ^^ { case e => e }
 
-  def apply(sort: org.biobank.services.SortString): Option[List[SortExpression]] = {
+  def apply(sort: org.biobank.services.SortString): Option[List[SortExpression]] =
     if (sort.expression.trim.isEmpty) {
       Some(List[SortExpression]())
     } else {
       parseAll(sortExpressions, sort.expression) match {
         case Success(result, _) => Some(result)
-        case NoSuccess(_, _) => None
+        case NoSuccess(_, _)    => None
       }
     }
-  }
 }

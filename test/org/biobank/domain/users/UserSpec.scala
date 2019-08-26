@@ -17,13 +17,13 @@ class UserSpec extends DomainSpec {
   val nameGenerator = new NameGenerator(this.getClass)
 
   def createFrom(user: RegisteredUser): DomainValidation[RegisteredUser] =
-    RegisteredUser.create(id          = user.id,
-                          version     = user.version,
-                          name        = user.name,
-                          email       = user.email,
-                          password    = user.password,
-                          salt        = user.salt,
-                          avatarUrl   = user.avatarUrl)
+    RegisteredUser.create(id        = user.id,
+                          version   = user.version,
+                          name      = user.name,
+                          email     = user.email,
+                          password  = user.password,
+                          salt      = user.salt,
+                          avatarUrl = user.avatarUrl)
 
   describe("A registered user") {
 
@@ -31,16 +31,14 @@ class UserSpec extends DomainSpec {
       val user = factory.createRegisteredUser
       createFrom(user) mustSucceed { u =>
         u mustBe a[RegisteredUser]
-        u must have (
-          'id        (user.id),
-          'version   (0),
-          'name      (user.name),
-          'email     (user.email),
-          'password  (user.password),
-          'salt      (user.salt),
-          'avatarUrl (user.avatarUrl),
-          'state     (User.registeredState.id)
-        )
+        u must have('id (user.id),
+                    'version (0),
+                    'name (user.name),
+                    'email (user.email),
+                    'password (user.password),
+                    'salt (user.salt),
+                    'avatarUrl (user.avatarUrl),
+                    'state (User.registeredState.id))
 
         u must beEntityWithTimeStamps(OffsetDateTime.now, None, 5L)
       }
@@ -52,29 +50,27 @@ class UserSpec extends DomainSpec {
       user.activate.mustSucceed { u =>
         u mustBe a[ActiveUser]
 
-        u must have (
-          'id        (user.id),
-          'version   (user.version + 1),
-          'name      (user.name),
-          'email     (user.email),
-          'password  (user.password),
-          'salt      (user.salt),
-          'avatarUrl (user.avatarUrl),
-          'state     (User.activeState.id)
-        )
+        u must have('id (user.id),
+                    'version (user.version + 1),
+                    'name (user.name),
+                    'email (user.email),
+                    'password (user.password),
+                    'salt (user.salt),
+                    'avatarUrl (user.avatarUrl),
+                    'state (User.activeState.id))
 
         u must beEntityWithTimeStamps(user.timeAdded, Some(OffsetDateTime.now), 5L)
       }
     }
 
     it("pass authentication") {
-      val email = nameGenerator.nextEmail[User]
+      val email    = nameGenerator.nextEmail[User]
       val password = nameGenerator.next[User]
 
       val user = factory.createRegisteredUser.copy(email = email, password = password)
       createFrom(user) mustSucceed { user =>
         user.authenticate(password) mustSucceed { authenticatedUser =>
-          authenticatedUser mustBe(user)
+          authenticatedUser mustBe (user)
           ()
         }
       }
@@ -85,89 +81,81 @@ class UserSpec extends DomainSpec {
   describe("An active user") {
 
     it("have it's name changed") {
-      val user = factory.createActiveUser
+      val user    = factory.createActiveUser
       val newName = faker.Name.name
 
       user.withName(newName) mustSucceed { u =>
         u mustBe a[ActiveUser]
 
-        u must have (
-          'id        (user.id),
-          'version   (user.version + 1),
-          'name      (newName),
-          'email     (user.email),
-          'password  (user.password),
-          'salt      (user.salt),
-          'avatarUrl (user.avatarUrl),
-          'state     (User.activeState.id)
-        )
+        u must have('id (user.id),
+                    'version (user.version + 1),
+                    'name (newName),
+                    'email (user.email),
+                    'password (user.password),
+                    'salt (user.salt),
+                    'avatarUrl (user.avatarUrl),
+                    'state (User.activeState.id))
 
         u must beEntityWithTimeStamps(user.timeAdded, Some(OffsetDateTime.now), 5L)
       }
     }
 
     it("have it's email changed") {
-      val user = factory.createActiveUser
+      val user     = factory.createActiveUser
       val newEmail = nameGenerator.nextEmail
 
       user.withEmail(newEmail) mustSucceed { u =>
         u mustBe a[ActiveUser]
 
-        u must have (
-          'id        (user.id),
-          'version   (user.version + 1),
-          'name      (user.name),
-          'email     (newEmail),
-          'password  (user.password),
-          'salt      (user.salt),
-          'avatarUrl (user.avatarUrl),
-          'state     (User.activeState.id)
-        )
+        u must have('id (user.id),
+                    'version (user.version + 1),
+                    'name (user.name),
+                    'email (newEmail),
+                    'password (user.password),
+                    'salt (user.salt),
+                    'avatarUrl (user.avatarUrl),
+                    'state (User.activeState.id))
 
         u must beEntityWithTimeStamps(user.timeAdded, Some(OffsetDateTime.now), 5L)
       }
     }
 
     it("have it's password changed") {
-      val user = factory.createActiveUser
+      val user        = factory.createActiveUser
       val newPassword = nameGenerator.next[String]
-      val newSalt = nameGenerator.next[String]
+      val newSalt     = nameGenerator.next[String]
 
       user.withPassword(newPassword, newSalt) mustSucceed { u =>
         u mustBe a[ActiveUser]
 
-        u must have (
-          'id        (user.id),
-          'version   (user.version + 1),
-          'name      (user.name),
-          'email     (user.email),
-          'password  (newPassword),
-          'salt      (newSalt),
-          'avatarUrl (user.avatarUrl),
-          'state     (User.activeState.id)
-        )
+        u must have('id (user.id),
+                    'version (user.version + 1),
+                    'name (user.name),
+                    'email (user.email),
+                    'password (newPassword),
+                    'salt (newSalt),
+                    'avatarUrl (user.avatarUrl),
+                    'state (User.activeState.id))
 
         u must beEntityWithTimeStamps(user.timeAdded, Some(OffsetDateTime.now), 5L)
       }
     }
 
     it("have it's avatar URL changed") {
-      val user = factory.createActiveUser
+      val user   = factory.createActiveUser
       val newUrl = Some(nameGenerator.nextUrl[ActiveUser])
 
       user.withAvatarUrl(newUrl) mustSucceed { u =>
         u mustBe a[ActiveUser]
 
-        u must have (
-          'id        (user.id),
-          'version   (user.version + 1),
-          'name      (user.name),
-          'email     (user.email),
-          'password  (user.password),
-          'salt      (user.salt),
-          'avatarUrl (newUrl),
-          'state     (User.activeState.id)
-        )
+        u must have('id (user.id),
+                    'version (user.version + 1),
+                    'name (user.name),
+                    'email (user.email),
+                    'password (user.password),
+                    'salt (user.salt),
+                    'avatarUrl (newUrl),
+                    'state (User.activeState.id))
 
         u must beEntityWithTimeStamps(user.timeAdded, Some(OffsetDateTime.now), 5L)
       }
@@ -179,16 +167,14 @@ class UserSpec extends DomainSpec {
       user.lock.mustSucceed { u =>
         u mustBe a[LockedUser]
 
-        u must have (
-          'id        (user.id),
-          'version   (user.version + 1),
-          'name      (user.name),
-          'email     (user.email),
-          'password  (user.password),
-          'salt      (user.salt),
-          'avatarUrl (user.avatarUrl),
-          'state     (User.lockedState.id)
-        )
+        u must have('id (user.id),
+                    'version (user.version + 1),
+                    'name (user.name),
+                    'email (user.email),
+                    'password (user.password),
+                    'salt (user.salt),
+                    'avatarUrl (user.avatarUrl),
+                    'state (User.lockedState.id))
 
         u must beEntityWithTimeStamps(user.timeAdded, Some(OffsetDateTime.now), 5L)
       }
@@ -203,16 +189,14 @@ class UserSpec extends DomainSpec {
       user.unlock.mustSucceed { u =>
         u mustBe a[ActiveUser]
 
-        u must have (
-          'id        (user.id),
-          'version   (user.version + 1),
-          'name      (user.name),
-          'email     (user.email),
-          'password  (user.password),
-          'salt      (user.salt),
-          'avatarUrl (user.avatarUrl),
-          'state     (User.activeState.id)
-        )
+        u must have('id (user.id),
+                    'version (user.version + 1),
+                    'name (user.name),
+                    'email (user.email),
+                    'password (user.password),
+                    'salt (user.salt),
+                    'avatarUrl (user.avatarUrl),
+                    'state (User.activeState.id))
 
         u must beEntityWithTimeStamps(user.timeAdded, Some(OffsetDateTime.now), 5L)
       }
@@ -262,8 +246,8 @@ class UserSpec extends DomainSpec {
     }
 
     it("fail authentication for bad password") {
-      val email = nameGenerator.nextEmail[User]
-      val password = nameGenerator.next[User]
+      val email       = nameGenerator.nextEmail[User]
+      val password    = nameGenerator.next[User]
       val badPassword = nameGenerator.next[User]
 
       val user = factory.createRegisteredUser.copy(email = email, password = password)

@@ -14,15 +14,15 @@ import scalaz.Scalaz._
 object Comparator extends Enumeration {
   type Comparator = Value
 
-  val LessThan: Value             = Value(":lt:")
-  val GreaterThan: Value          = Value(":gt:")
-  val LessThanOrEqualTo: Value    = Value(":le:")
+  val LessThan:             Value = Value(":lt:")
+  val GreaterThan:          Value = Value(":gt:")
+  val LessThanOrEqualTo:    Value = Value(":le:")
   val GreaterThanOrEqualTo: Value = Value(":ge:")
-  val In: Value                   = Value(":in:")
-  val NotIn: Value                = Value(":out:")
-  val NotEqualTo: Value           = Value(":ne:")
-  val Equal: Value                = Value("::")
-  val Like: Value                 = Value(":like:")
+  val In:                   Value = Value(":in:")
+  val NotIn:                Value = Value(":out:")
+  val NotEqualTo:           Value = Value(":ne:")
+  val Equal:                Value = Value("::")
+  val Like:                 Value = Value(":like:")
 }
 
 import Comparator._
@@ -47,10 +47,8 @@ object QueryFilterParserGrammar {
     override def toString: String = name
   }
 
-  final case class
-    Comparison(selector:   String,
-                              comparator: Comparator,
-                              arguments:  List[String]) extends Expression {
+  final case class Comparison(selector: String, comparator: Comparator, arguments: List[String])
+      extends Expression {
     override def toString: String =
       s"""Comparison: ($selector $comparator ${arguments.mkString(", ")})"""
   }
@@ -78,20 +76,20 @@ object QueryFilterParser extends RegexParsers {
 
   def comparisonOp: Parser[Comparator.Value] =
     (Comparator.LessThan.toString ^^^ Comparator.LessThan
-       | Comparator.GreaterThan.toString ^^^ Comparator.GreaterThan
-       | Comparator.LessThanOrEqualTo.toString ^^^ Comparator.LessThanOrEqualTo
-       | Comparator.GreaterThanOrEqualTo.toString ^^^ Comparator.GreaterThanOrEqualTo
-       | Comparator.In.toString ^^^ Comparator.In
-       | Comparator.NotIn.toString ^^^ Comparator.NotIn
-       | Comparator.NotEqualTo.toString ^^^ Comparator.NotEqualTo
-       | Comparator.Equal.toString ^^^ Comparator.Equal
-       | Comparator.Like.toString ^^^ Comparator.Like)
+      | Comparator.GreaterThan.toString ^^^ Comparator.GreaterThan
+      | Comparator.LessThanOrEqualTo.toString ^^^ Comparator.LessThanOrEqualTo
+      | Comparator.GreaterThanOrEqualTo.toString ^^^ Comparator.GreaterThanOrEqualTo
+      | Comparator.In.toString ^^^ Comparator.In
+      | Comparator.NotIn.toString ^^^ Comparator.NotIn
+      | Comparator.NotEqualTo.toString ^^^ Comparator.NotEqualTo
+      | Comparator.Equal.toString ^^^ Comparator.Equal
+      | Comparator.Like.toString ^^^ Comparator.Like)
 
   def singleQuotedValue: Parser[Value] =
-    """'[^\"\(\);,=!~<>]*'""".r ^^ { case v => Value(v.substring(1, v.size - 1))}
+    """'[^\"\(\);,=!~<>]*'""".r ^^ { case v => Value(v.substring(1, v.size - 1)) }
 
   def doubleQuotedValue: Parser[Value] =
-    """\"[^'\(\);,=!~<>]*\"""".r ^^ { case v => Value(v.substring(1, v.size - 1))}
+    """\"[^'\(\);,=!~<>]*\"""".r ^^ { case v => Value(v.substring(1, v.size - 1)) }
 
   def unquotedValue: Parser[Value] =
     """[^\(\);,=!~<>]+""".r ^^ { case v => Value(v) }
@@ -100,7 +98,7 @@ object QueryFilterParser extends RegexParsers {
     (unquotedValue | singleQuotedValue | doubleQuotedValue) ^^ { case v => v }
 
   def argumentList: Parser[Argument] =
-    "(" ~> repsep(value, ",") <~ ")" ^^ { case l => Arguments(l.map {_.name}) }
+    "(" ~> repsep(value, ",") <~ ")" ^^ { case l => Arguments(l.map { _.name }) }
 
   def arguments: Parser[Argument] =
     (argumentList | value) ^^ { case a => a }
@@ -124,25 +122,27 @@ object QueryFilterParser extends RegexParsers {
     (group | comparison) ^^ { case c => Constraint(c) }
 
   def and: Parser[Expression] =
-    rep1sep(constraint, ";") ^^ { case l =>
-      if (l.size == 1) l(0).expression
-      else AndExpression(l.map { _.expression })
+    rep1sep(constraint, ";") ^^ {
+      case l =>
+        if (l.size == 1) l(0).expression
+        else AndExpression(l.map { _.expression })
     }
 
   def or: Parser[Expression] =
-    rep1sep(and, ",") ^^ { case l =>
-      if (l.size == 1) l(0)
-      else OrExpression(l)
+    rep1sep(and, ",") ^^ {
+      case l =>
+        if (l.size == 1) l(0)
+        else OrExpression(l)
     }
 
   def apply(filter: FilterString): Option[Expression] = parseAll(or, filter.expression) match {
-      case Success(result, _) => Some(result)
-      case NoSuccess(_, _) => None
-    }
+    case Success(result, _) => Some(result)
+    case NoSuccess(_, _)    => None
+  }
 
-  def expressions(filter: FilterString):ServiceValidation[Option[Expression]] = {
+  def expressions(filter: FilterString): ServiceValidation[Option[Expression]] =
     if (filter.expression.trim.isEmpty) {
-        None.successNel[String]
+      None.successNel[String]
     } else {
       val parseResult = QueryFilterParser(filter)
       if (parseResult.isEmpty) {
@@ -151,5 +151,4 @@ object QueryFilterParser extends RegexParsers {
         parseResult.successNel[String]
       }
     }
-  }
 }

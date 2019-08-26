@@ -31,88 +31,95 @@ trait SpecimensService extends BbwebService {
 
   def getByInventoryId(requestUserId: UserId, inventoryId: String): ServiceValidation[Specimen]
 
-  def list(requestUserId: UserId, collectionEventId: CollectionEventId, query: PagedQuery)
-      : Future[ServiceValidation[PagedResults[SpecimenDto]]]
+  def list(
+      requestUserId:     UserId,
+      collectionEventId: CollectionEventId,
+      query:             PagedQuery
+    ): Future[ServiceValidation[PagedResults[SpecimenDto]]]
 
-  def listBySlug(requestUserId: UserId, eventSlug: Slug, query: PagedQuery)
-      : Future[ServiceValidation[PagedResults[SpecimenDto]]]
+  def listBySlug(
+      requestUserId: UserId,
+      eventSlug:     Slug,
+      query:         PagedQuery
+    ): Future[ServiceValidation[PagedResults[SpecimenDto]]]
 
   def processCommand(cmd: SpecimenCommand): Future[ServiceValidation[CollectionEventDto]]
 
   def processRemoveCommand(cmd: SpecimenCommand): Future[ServiceValidation[Boolean]]
-
 
   def snapshotRequest(requestUserId: UserId): ServiceValidation[Unit]
 
 }
 
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
-class SpecimensServiceImpl @Inject() (
-  @Named("specimensProcessor") val processor: ActorRef,
-  val accessService:                          AccessService,
-  val eventsService:                          CollectionEventsService,
-  val studyRepository:                        StudyRepository,
-  val collectionEventRepository:              CollectionEventRepository,
-  val collectionEventTypeRepository:          CollectionEventTypeRepository,
-  val ceventSpecimenRepository:               CeventSpecimenRepository,
-  val specimenRepository:                     SpecimenRepository,
-  val centreRepository:                       CentreRepository)
-                                  (implicit executionContext: BbwebExecutionContext)
-    extends SpecimensService
-    with AccessChecksSerivce
-    with ServicePermissionChecks {
+class SpecimensServiceImpl @Inject()(
+    @Named("specimensProcessor") val processor: ActorRef,
+    val accessService:                          AccessService,
+    val eventsService:                          CollectionEventsService,
+    val studyRepository:                        StudyRepository,
+    val collectionEventRepository:              CollectionEventRepository,
+    val collectionEventTypeRepository:          CollectionEventTypeRepository,
+    val ceventSpecimenRepository:               CeventSpecimenRepository,
+    val specimenRepository:                     SpecimenRepository,
+    val centreRepository:                       CentreRepository
+  )(
+    implicit
+    executionContext: BbwebExecutionContext)
+    extends SpecimensService with AccessChecksSerivce with ServicePermissionChecks {
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
-  def get(requestUserId: UserId, id: SpecimenId): ServiceValidation[SpecimenDto] = {
+  def get(requestUserId: UserId, id: SpecimenId): ServiceValidation[SpecimenDto] =
     for {
       ceventSpecimen <- ceventSpecimenRepository.withSpecimenId(id)
-      permitted      <- whenSpecimenPermitted(requestUserId,
-                                              ceventSpecimen.ceventId)(_ => ().successNel[String])
+      permitted      <- whenSpecimenPermitted(requestUserId, ceventSpecimen.ceventId)(_ => ().successNel[String])
       specimen       <- specimenRepository.getByKey(id)
       dto            <- specimenToDto(specimen)
     } yield dto
-  }
 
-  def getBySlug(requestUserId: UserId, slug: Slug): ServiceValidation[SpecimenDto] = {
+  def getBySlug(requestUserId: UserId, slug: Slug): ServiceValidation[SpecimenDto] =
     for {
       specimen       <- specimenRepository.getBySlug(slug)
       ceventSpecimen <- ceventSpecimenRepository.withSpecimenId(specimen.id)
-      permitted      <- whenSpecimenPermitted(requestUserId,
-                                              ceventSpecimen.ceventId)(_ => ().successNel[String])
+      permitted      <- whenSpecimenPermitted(requestUserId, ceventSpecimen.ceventId)(_ => ().successNel[String])
       dto            <- specimenToDto(specimen)
     } yield dto
-  }
 
-  def getByInventoryId(requestUserId: UserId, inventoryId: String): ServiceValidation[Specimen] = {
+  def getByInventoryId(requestUserId: UserId, inventoryId: String): ServiceValidation[Specimen] =
     for {
       specimen       <- specimenRepository.getByInventoryId(inventoryId)
       ceventSpecimen <- ceventSpecimenRepository.withSpecimenId(specimen.id)
-      permitted      <- {
+      permitted <- {
         whenSpecimenPermitted(requestUserId, ceventSpecimen.ceventId)(_ => ().successNel[String])
       }
     } yield specimen
-  }
 
-  def list(requestUserId: UserId, collectionEventId: CollectionEventId, query: PagedQuery)
-      : Future[ServiceValidation[PagedResults[SpecimenDto]]] = {
+  def list(
+      requestUserId:     UserId,
+      collectionEventId: CollectionEventId,
+      query:             PagedQuery
+    ): Future[ServiceValidation[PagedResults[SpecimenDto]]] =
     Future {
       filterSpecimens(requestUserId, collectionEventId, query);
     }
-  }
 
-  def listBySlug(requestUserId: UserId, eventSlug: Slug, query: PagedQuery)
-      : Future[ServiceValidation[PagedResults[SpecimenDto]]] = {
+  def listBySlug(
+      requestUserId: UserId,
+      eventSlug:     Slug,
+      query:         PagedQuery
+    ): Future[ServiceValidation[PagedResults[SpecimenDto]]] =
     Future {
       for {
         event     <- collectionEventRepository.getBySlug(eventSlug)
         specimens <- filterSpecimens(requestUserId, event.id, query)
       } yield specimens
     }
-  }
 
-  private def filterSpecimens(requestUserId: UserId, eventId: CollectionEventId, query: PagedQuery)
-      : ServiceValidation[PagedResults[SpecimenDto]] = {
+  private def filterSpecimens(
+      requestUserId: UserId,
+      eventId:       CollectionEventId,
+      query:         PagedQuery
+    ): ServiceValidation[PagedResults[SpecimenDto]] =
     for {
       permitted <- whenSpecimenPermitted(requestUserId, eventId)(_ => ().successNel[String])
       specimens <- sortSpecimens(eventId, query.sort)
@@ -120,28 +127,33 @@ class SpecimensServiceImpl @Inject() (
       dtos      <- specimens.map(specimenToDto).toList.sequenceU
       results   <- PagedResults.create(dtos, query.page, query.limit)
     } yield results
-  }
 
-
-  private def sortSpecimens(ceventId: CollectionEventId, sort: SortString)
-      : ServiceValidation[List[Specimen]] = {
-    val sortStr = if (sort.expression.isEmpty) new SortString("inventoryId")
-                  else sort
+  private def sortSpecimens(
+      ceventId: CollectionEventId,
+      sort:     SortString
+    ): ServiceValidation[List[Specimen]] = {
+    val sortStr =
+      if (sort.expression.isEmpty) new SortString("inventoryId")
+      else sort
 
     for {
       specimens <- {
-        ceventSpecimenRepository.withCeventId(ceventId)
-          .map { cs => specimenRepository.getByKey(cs.specimenId) }
+        ceventSpecimenRepository
+          .withCeventId(ceventId)
+          .map { cs =>
+            specimenRepository.getByKey(cs.specimenId)
+          }
           .toList
           .sequenceU
       }
       sortExpressions <- {
-        QuerySortParser(sortStr).
-          toSuccessNel(ServiceError(s"could not parse sort expression: ${sort}"))
+        QuerySortParser(sortStr).toSuccessNel(ServiceError(s"could not parse sort expression: ${sort}"))
       }
-      sortFunc        <- {
-        Specimen.sort2Compare.get(sortExpressions(0).name).
-          toSuccessNel(ServiceError(s"invalid sort field: ${sortExpressions(0).name}"))
+      sortFunc <- {
+        Specimen.sort2Compare
+          .get(sortExpressions(0).name).toSuccessNel(
+            ServiceError(s"invalid sort field: ${sortExpressions(0).name}")
+          )
       }
     } yield {
       val result = specimens.sortWith(sortFunc)
@@ -152,27 +164,26 @@ class SpecimensServiceImpl @Inject() (
 
   def processCommand(cmd: SpecimenCommand): Future[ServiceValidation[CollectionEventDto]] = {
     val validCommand = cmd match {
-        case c: RemoveSpecimenCmd =>
-          ServiceError(s"invalid service call: $cmd, use processRemoveCommand").failureNel[CollectionEvent]
-        case c => c.successNel[String]
-      }
+      case c: RemoveSpecimenCmd =>
+        ServiceError(s"invalid service call: $cmd, use processRemoveCommand").failureNel[CollectionEvent]
+      case c => c.successNel[String]
+    }
 
-    validCommand.fold(
-      err => Future.successful(err.failure[CollectionEventDto]),
-      _   => whenSpecimenPermittedAsync(cmd) { () =>
-        ask(processor, cmd).mapTo[ServiceValidation[SpecimenEvent]].map { validation =>
-          for {
-            event  <- validation
-            cevent <- collectionEventRepository.getByKey(
-              CollectionEventId(event.getAdded.getCollectionEventId))
-            dto    <- eventsService.collectionEventToDto(UserId(cmd.sessionUserId), cevent)
-          } yield dto
-        }
-      }
-    )
+    validCommand.fold(err => Future.successful(err.failure[CollectionEventDto]),
+                      _ =>
+                        whenSpecimenPermittedAsync(cmd) { () =>
+                          ask(processor, cmd).mapTo[ServiceValidation[SpecimenEvent]].map { validation =>
+                            for {
+                              event <- validation
+                              cevent <- collectionEventRepository
+                                         .getByKey(CollectionEventId(event.getAdded.getCollectionEventId))
+                              dto <- eventsService.collectionEventToDto(UserId(cmd.sessionUserId), cevent)
+                            } yield dto
+                          }
+                        })
   }
 
-  def processRemoveCommand(cmd: SpecimenCommand): Future[ServiceValidation[Boolean]] = {
+  def processRemoveCommand(cmd: SpecimenCommand): Future[ServiceValidation[Boolean]] =
     whenSpecimenPermittedAsync(cmd) { () =>
       ask(processor, cmd).mapTo[ServiceValidation[SpecimenEvent]].map { validation =>
         for {
@@ -181,80 +192,76 @@ class SpecimensServiceImpl @Inject() (
         } yield result
       }
     }
-  }
 
   //
   // Invokes function "block" if user that invoked this service has the permission and membership
   // to do so.
   //
-  private def whenSpecimenPermitted[T](requestUserId: UserId, ceventId: CollectionEventId)
-                                   (block: CollectionEvent => ServiceValidation[T]): ServiceValidation[T] = {
+  private def whenSpecimenPermitted[T](
+      requestUserId: UserId,
+      ceventId:      CollectionEventId
+    )(block:         CollectionEvent => ServiceValidation[T]
+    ): ServiceValidation[T] =
     for {
       cevent     <- collectionEventRepository.getByKey(ceventId)
       ceventType <- collectionEventTypeRepository.getByKey(cevent.collectionEventTypeId)
       study      <- studyRepository.getByKey(ceventType.studyId)
-      result     <- whenPermittedAndIsMember(requestUserId,
-                                             PermissionId.CollectionEventRead,
-                                             Some(study.id),
-                                             None)(() => block(cevent))
+      result <- whenPermittedAndIsMember(requestUserId,
+                                         PermissionId.CollectionEventRead,
+                                         Some(study.id),
+                                         None)(() => block(cevent))
     } yield result
-  }
 
   //
   // Invokes function "block" if user that issued the command has the permission and membership
   // to do so.
   //
-  private def whenSpecimenPermittedAsync[T](cmd: SpecimenCommand)
-                                        (block: () => Future[ServiceValidation[T]])
-      : Future[ServiceValidation[T]] = {
+  private def whenSpecimenPermittedAsync[T](
+      cmd:   SpecimenCommand
+    )(block: () => Future[ServiceValidation[T]]
+    ): Future[ServiceValidation[T]] = {
 
     val validCeventId = cmd match {
-        case c: SpecimenModifyCommand =>
-          collectionEventRepository.getByKey(CollectionEventId(c.collectionEventId)).map(c => c.id)
-        case c: SpecimenCommand => CollectionEventId(c.collectionEventId).successNel[String]
-      }
+      case c: SpecimenModifyCommand =>
+        collectionEventRepository.getByKey(CollectionEventId(c.collectionEventId)).map(c => c.id)
+      case c: SpecimenCommand => CollectionEventId(c.collectionEventId).successNel[String]
+    }
 
     val permission = cmd match {
-        case c: AddSpecimensCmd   => PermissionId.SpecimenCreate
-        case c: RemoveSpecimenCmd => PermissionId.SpecimenDelete
-        case c                    => PermissionId.SpecimenUpdate
-      }
+      case c: AddSpecimensCmd   => PermissionId.SpecimenCreate
+      case c: RemoveSpecimenCmd => PermissionId.SpecimenDelete
+      case c => PermissionId.SpecimenUpdate
+    }
 
     val validStudy = for {
-        ceventId   <- validCeventId
-        cevent     <- collectionEventRepository.getByKey(ceventId)
-        ceventType <- collectionEventTypeRepository.getByKey(cevent.collectionEventTypeId)
-        study      <- studyRepository.getByKey(ceventType.studyId)
-      } yield study
+      ceventId   <- validCeventId
+      cevent     <- collectionEventRepository.getByKey(ceventId)
+      ceventType <- collectionEventTypeRepository.getByKey(cevent.collectionEventTypeId)
+      study      <- studyRepository.getByKey(ceventType.studyId)
+    } yield study
 
     validStudy.fold(
       err => Future.successful(err.failure[T]),
-      study => whenPermittedAndIsMemberAsync(UserId(cmd.sessionUserId),
-                                             permission,
-                                             Some(study.id),
-                                             None)(block)
+      study =>
+        whenPermittedAndIsMemberAsync(UserId(cmd.sessionUserId), permission, Some(study.id), None)(block)
     )
   }
 
-  private def specimenToDto(specimen: Specimen): ServiceValidation[SpecimenDto] = {
+  private def specimenToDto(specimen: Specimen): ServiceValidation[SpecimenDto] =
     for {
       ceventSpecimen     <- ceventSpecimenRepository.withSpecimenId(specimen.id)
       cevent             <- collectionEventRepository.getByKey(ceventSpecimen.ceventId)
       ceventType         <- collectionEventTypeRepository.getByKey(cevent.collectionEventTypeId)
-      specimenDefinition       <- ceventType.specimenDefinition(specimen.specimenDefinitionId)
+      specimenDefinition <- ceventType.specimenDefinition(specimen.specimenDefinitionId)
       originCentre       <- centreRepository.getByLocationId(specimen.originLocationId)
       originLocationName <- originCentre.locationName(specimen.originLocationId)
       centre             <- centreRepository.getByLocationId(specimen.locationId)
       locationName       <- centre.locationName(specimen.locationId)
     } yield {
-      val originLocationInfo = CentreLocationInfo(originCentre.id.id,
-                                                  specimen.originLocationId.id,
-                                                  originLocationName)
-      val locationInfo = CentreLocationInfo(centre.id.id,
-                                            specimen.locationId.id,
-                                            locationName)
+      val originLocationInfo =
+        CentreLocationInfo(originCentre.id.id, specimen.originLocationId.id, originLocationName)
+      val locationInfo = CentreLocationInfo(centre.id.id, specimen.locationId.id, locationName)
       specimen.createDto(cevent, ceventType.name, specimenDefinition, originLocationInfo, locationInfo)
     }
-  }
 
 }

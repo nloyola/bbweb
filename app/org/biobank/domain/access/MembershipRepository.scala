@@ -18,7 +18,7 @@ trait MembershipRepository extends ReadWriteRepositoryWithSlug[MembershipId, Mem
 }
 
 @Singleton
-class MembershipRepositoryImpl @Inject() (val testData: TestData)
+class MembershipRepositoryImpl @Inject()(val testData: TestData)
     extends ReadWriteRepositoryRefImplWithSlug[MembershipId, Membership](v => v.id)
     with MembershipRepository {
 
@@ -29,16 +29,18 @@ class MembershipRepositoryImpl @Inject() (val testData: TestData)
   override def init(): Unit = {
     super.init()
     val name = "All studies and all centres"
-    put(Membership(id           = MembershipId(Slug(name).id),
-                   version      = 0L,
-                   timeAdded    = Global.StartOfTime,
-                   timeModified = None,
-                   slug         = Slug(name),
-                   name         = name,
-                   description  = None,
-                   userIds      = Set(Global.DefaultUserId),
-                   studyData    = MembershipEntitySet(true, Set.empty[StudyId]),
-                   centreData   = MembershipEntitySet(true, Set.empty[CentreId])))
+    put(
+      Membership(id           = MembershipId(Slug(name).id),
+                 version      = 0L,
+                 timeAdded    = Global.StartOfTime,
+                 timeModified = None,
+                 slug         = Slug(name),
+                 name         = name,
+                 description  = None,
+                 userIds      = Set(Global.DefaultUserId),
+                 studyData    = MembershipEntitySet(true, Set.empty[StudyId]),
+                 centreData   = MembershipEntitySet(true, Set.empty[CentreId]))
+    )
 
     testData.testMemberships.foreach(put)
   }
@@ -50,10 +52,13 @@ class MembershipRepositoryImpl @Inject() (val testData: TestData)
   protected def slugNotFound(slug: Slug): EntityCriteriaNotFound =
     EntityCriteriaNotFound(s"membership slug: $slug")
 
-  def getUserMembership(userId: UserId): DomainValidation[UserMembership] = {
+  def getUserMembership(userId: UserId): DomainValidation[UserMembership] =
     getValues
-      .find { m => m.userIds.exists(_ == userId) }
-      .map { m => UserMembership.create(m, userId) }
+      .find { m =>
+        m.userIds.exists(_ == userId)
+      }
+      .map { m =>
+        UserMembership.create(m, userId)
+      }
       .toSuccessNel(s"membership for user not found: $userId")
-  }
 }

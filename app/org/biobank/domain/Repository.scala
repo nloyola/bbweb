@@ -6,8 +6,8 @@ import scala.concurrent.stm.Ref
 import scalaz.Scalaz._
 
 /**
-  * A read-only repository.
-  */
+ * A read-only repository.
+ */
 trait ReadRepository[K, A] {
 
   def isEmpty: Boolean
@@ -21,7 +21,7 @@ trait ReadRepository[K, A] {
 }
 
 /** A read/write repository.
-  */
+ */
 trait ReadWriteRepository[K, A] extends ReadRepository[K, A] {
 
   def nextIdentity(): K
@@ -52,8 +52,8 @@ trait ReadWriteRepositoryWithSlug[K, A] extends ReadWriteRepository[K, A] {
 }
 
 /**
-  * A read-only wrapper around an STM Ref of a Map.
-  */
+ * A read-only wrapper around an STM Ref of a Map.
+ */
 @silent abstract class ReadRepositoryRefImpl[K, A](keyGetter: (A) => K) extends ReadRepository[K, A] {
   import org.biobank.CommonValidations._
 
@@ -65,9 +65,8 @@ trait ReadWriteRepositoryWithSlug[K, A] extends ReadWriteRepository[K, A] {
 
   protected def notFound(id: K): IdNotFound
 
-  def getByKey(key: K): DomainValidation[A] = {
+  def getByKey(key: K): DomainValidation[A] =
     internalMap.single.get.get(key).toSuccessNel(notFound(key).toString)
-  }
 
   def getValues: Iterable[A] = getMap.values
 
@@ -76,62 +75,55 @@ trait ReadWriteRepositoryWithSlug[K, A] extends ReadWriteRepository[K, A] {
 }
 
 /** A read/write wrapper around an STM Ref of a map.
-  *
-  * Used by processor actors.
-  */
-private [domain] abstract class ReadWriteRepositoryRefImpl[K, A](keyGetter: (A) => K)
-    extends ReadRepositoryRefImpl[K, A](keyGetter)
-    with ReadWriteRepository[K, A] {
+ *
+ * Used by processor actors.
+ */
+abstract private[domain] class ReadWriteRepositoryRefImpl[K, A](keyGetter: (A) => K)
+    extends ReadRepositoryRefImpl[K, A](keyGetter) with ReadWriteRepository[K, A] {
 
-  def init(): Unit = {
+  def init(): Unit =
     removeAll
-  }
 
   protected def nextIdentityAsString: String =
     // ensure all IDs can be used in URLs
     Slug.slugify(
-      play.api.libs.Codecs.sha1(
-        ReadWriteRepositoryRefImpl.md.digest(
-          java.util.UUID.randomUUID.toString.getBytes)))
+      play.api.libs.Codecs
+        .sha1(ReadWriteRepositoryRefImpl.md.digest(java.util.UUID.randomUUID.toString.getBytes))
+    )
 
-  def put(value: A): Unit = {
+  def put(value: A): Unit =
     internalMap.single.transform(map => map + (keyGetter(value) -> value))
-  }
 
-  def remove(value: A): Unit = {
+  def remove(value: A): Unit =
     internalMap.single.transform(map => map - keyGetter(value))
-  }
 
-  def removeAll(): Unit = {
+  def removeAll(): Unit =
     internalMap.single.transform(map => map.empty)
-  }
 
 }
 
-private [domain] abstract
-class ReadWriteRepositoryRefImplWithSlug
-  [K, A <: ConcurrencySafeEntity[K] with HasSlug](keyGetter: (A) => K)
+abstract private[domain] class ReadWriteRepositoryRefImplWithSlug[
+    K,
+    A <: ConcurrencySafeEntity[K] with HasSlug
+  ](keyGetter: (A) => K)
     extends ReadWriteRepositoryRefImpl[K, A](keyGetter) {
 
   protected def slugNotFound(slug: Slug): EntityCriteriaNotFound
 
   def uniqueSlug(origSlug: Slug): Slug = {
     val slugRegex = s"^${origSlug}(-[0-9]+)?$$".r
-    val count = internalMap.single.get.values
-      .filter { v =>
-        slugRegex.findFirstIn(v.slug.id) != None
-      }.size
+    val count = internalMap.single.get.values.filter { v =>
+      slugRegex.findFirstIn(v.slug.id) != None
+    }.size
     if (count <= 0) origSlug
     else Slug(s"${origSlug.id}-$count")
   }
 
-  def uniqueSlugFromStr(strSlug: String): Slug = {
+  def uniqueSlugFromStr(strSlug: String): Slug =
     uniqueSlug(Slug(strSlug))
-  }
 
-  def getBySlug(slug: Slug): DomainValidation[A] = {
+  def getBySlug(slug: Slug): DomainValidation[A] =
     internalMap.single.get.find(_._2.slug == slug).map(_._2).toSuccessNel(slugNotFound(slug).toString)
-  }
 
 }
 

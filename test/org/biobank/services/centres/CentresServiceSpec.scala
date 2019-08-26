@@ -6,28 +6,28 @@ import org.biobank.domain.access._
 import org.biobank.domain.centres._
 import org.biobank.domain.studies._
 import org.biobank.domain.users._
-import org.biobank.services.{FilterString, SortString, PagedQuery}
+import org.biobank.services.{FilterString, PagedQuery, SortString}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
 /**
  * Primarily these are tests that exercise the User Access aspect of CentresService.
  */
-class CentresServiceSpec
-    extends CentresServiceFixtures
-    with ScalaFutures {
+class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
 
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.CentreCommands._
 
   class CentresOfAllStatesFixure extends UsersWithCentreAccessFixture {
     val disabledCentre = centre
-    val enabledCentre = factory.createEnabledCentre
+    val enabledCentre  = factory.createEnabledCentre
 
     Set(disabledCentre, enabledCentre).foreach(addToRepository)
-    addToRepository(centreOnlyMembership.copy(
-                      centreData = centreOnlyMembership.centreData.copy(
-                          ids = Set(disabledCentre.id, enabledCentre.id))))
+    addToRepository(
+      centreOnlyMembership.copy(
+        centreData = centreOnlyMembership.centreData.copy(ids = Set(disabledCentre.id, enabledCentre.id))
+      )
+    )
 
   }
 
@@ -45,71 +45,51 @@ class CentresServiceSpec
 
   protected val centresService = app.injector.instanceOf[CentresService]
 
-  private def updateCommandsTable(sessionUserId: UserId,
-                                  centre:        Centre,
-                                  location:      Location,
-                                  study:         Study) = {
+  private def updateCommandsTable(sessionUserId: UserId, centre: Centre, location: Location, study: Study) =
     Table("centre update commands",
-          UpdateCentreNameCmd(
-            sessionUserId   = sessionUserId.id,
-            id              = centre.id.id,
-            expectedVersion = centre.version,
-            name            = nameGenerator.next[String]
-          ),
-          UpdateCentreDescriptionCmd(
-            sessionUserId   = sessionUserId.id,
-            id              = centre.id.id,
-            expectedVersion = centre.version,
-            description     = Some(nameGenerator.next[String])
-          ),
-          AddCentreLocationCmd(
-            sessionUserId   = sessionUserId.id,
-            id              = centre.id.id,
-            expectedVersion = centre.version,
-            name            = location.name,
-            street          = location.street,
-            city            = location.city,
-            province        = location.province,
-            postalCode      = location.postalCode,
-            poBoxNumber     = location.poBoxNumber,
-            countryIsoCode  = location.countryIsoCode
-          ),
-          RemoveCentreLocationCmd(
-            sessionUserId   = sessionUserId.id,
-            id              = centre.id.id,
-            expectedVersion = centre.version,
-            locationId      = location.id.id
-          ),
-          AddStudyToCentreCmd(
-            sessionUserId   = sessionUserId.id,
-            id              = centre.id.id,
-            expectedVersion = centre.version,
-            studyId         = study.id.id
-          ),
-          RemoveStudyFromCentreCmd(
-            sessionUserId   = sessionUserId.id,
-            id              = centre.id.id,
-            expectedVersion = centre.version,
-            studyId         = study.id.id
-          )
-    )
-  }
+          UpdateCentreNameCmd(sessionUserId          = sessionUserId.id,
+                              id                     = centre.id.id,
+                              expectedVersion        = centre.version,
+                              name                   = nameGenerator.next[String]),
+          UpdateCentreDescriptionCmd(sessionUserId   = sessionUserId.id,
+                                     id              = centre.id.id,
+                                     expectedVersion = centre.version,
+                                     description     = Some(nameGenerator.next[String])),
+          AddCentreLocationCmd(sessionUserId         = sessionUserId.id,
+                               id                    = centre.id.id,
+                               expectedVersion       = centre.version,
+                               name                  = location.name,
+                               street                = location.street,
+                               city                  = location.city,
+                               province              = location.province,
+                               postalCode            = location.postalCode,
+                               poBoxNumber           = location.poBoxNumber,
+                               countryIsoCode        = location.countryIsoCode),
+          RemoveCentreLocationCmd(sessionUserId      = sessionUserId.id,
+                                  id                 = centre.id.id,
+                                  expectedVersion    = centre.version,
+                                  locationId         = location.id.id),
+          AddStudyToCentreCmd(sessionUserId          = sessionUserId.id,
+                              id                     = centre.id.id,
+                              expectedVersion        = centre.version,
+                              studyId                = study.id.id),
+          RemoveStudyFromCentreCmd(sessionUserId     = sessionUserId.id,
+                                   id                = centre.id.id,
+                                   expectedVersion   = centre.version,
+                                   studyId           = study.id.id))
 
-  private def stateChangeCommandsTable(sessionUserId:  UserId,
-                                       disabledCentre:  DisabledCentre,
-                                       enabledCentre:   EnabledCentre) =
+  private def stateChangeCommandsTable(
+      sessionUserId:  UserId,
+      disabledCentre: DisabledCentre,
+      enabledCentre:  EnabledCentre
+    ) =
     Table("user sate change commands",
-          EnableCentreCmd(
-            sessionUserId   = sessionUserId.id,
-            id              = disabledCentre.id.id,
-            expectedVersion = disabledCentre.version
-          ),
-          DisableCentreCmd(
-            sessionUserId   = sessionUserId.id,
-            id              = enabledCentre.id.id,
-            expectedVersion = enabledCentre.version
-          )
-    )
+          EnableCentreCmd(sessionUserId    = sessionUserId.id,
+                          id               = disabledCentre.id.id,
+                          expectedVersion  = disabledCentre.version),
+          DisableCentreCmd(sessionUserId   = sessionUserId.id,
+                           id              = enabledCentre.id.id,
+                           expectedVersion = enabledCentre.version))
 
   override def beforeEach() {
     super.beforeEach()
@@ -124,10 +104,10 @@ class CentresServiceSpec
 
       it("users can access") {
         val f = new UsersWithCentreAccessFixture
-        forAll (f.usersCanReadTable) { (user, label) =>
+        forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
           centresService.getCentresCount(user.id) mustSucceed { count =>
-            count must be (1)
+            count must be(1)
           }
         }
       }
@@ -137,7 +117,7 @@ class CentresServiceSpec
 
         info("no membership user")
         centresService.getCentresCount(f.noMembershipUser.id) mustSucceed { count =>
-          count must be (0)
+          count must be(0)
         }
 
         info("no permission user")
@@ -150,10 +130,10 @@ class CentresServiceSpec
 
       it("users can access") {
         val f = new UsersWithCentreAccessFixture
-        forAll (f.usersCanReadTable) { (user, label) =>
+        forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
           centresService.getCountsByStatus(user.id) mustSucceed { counts =>
-            counts.total must be (1)
+            counts.total must be(1)
           }
         }
       }
@@ -162,7 +142,7 @@ class CentresServiceSpec
         val f = new UsersWithCentreAccessFixture
         info("no membership user")
         centresService.getCountsByStatus(f.noMembershipUser.id) mustSucceed { counts =>
-          counts.total must be (0)
+          counts.total must be(0)
         }
 
         info("no permission user")
@@ -174,23 +154,23 @@ class CentresServiceSpec
     describe("when getting centres") {
 
       it("users can access") {
-        val f = new UsersWithCentreAccessFixture
-        val query = PagedQuery(new FilterString(""), new SortString(""), 0 , 1)
-        forAll (f.usersCanReadTable) { (user, label) =>
+        val f     = new UsersWithCentreAccessFixture
+        val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
+        forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
           centresService.getCentres(user.id, query).futureValue.mustSucceed { pagedResults =>
-              pagedResults.items must have length (1)
-            }
+            pagedResults.items must have length (1)
+          }
         }
       }
 
       it("users cannot access") {
-        val f = new UsersWithCentreAccessFixture
-        val query = PagedQuery(new FilterString(""), new SortString(""), 0 , 1)
+        val f     = new UsersWithCentreAccessFixture
+        val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
         info("no membership user")
         centresService.getCentres(f.noMembershipUser.id, query).futureValue.mustSucceed { pagedResults =>
-            pagedResults.items must have length (0)
-          }
+          pagedResults.items must have length (0)
+        }
 
         info("no permission user")
         centresService.getCentres(f.noCentrePermissionUser.id, query).futureValue.mustFail("Unauthorized")
@@ -202,10 +182,10 @@ class CentresServiceSpec
 
       it("users can access") {
         val f = new UsersWithCentreAccessFixture
-        forAll (f.usersCanReadTable) { (user, label) =>
+        forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
           centresService.getCentre(user.id, f.centre.id) mustSucceed { result =>
-            result.id must be (f.centre.id)
+            result.id must be(f.centre.id)
           }
         }
       }
@@ -226,11 +206,9 @@ class CentresServiceSpec
 
       it("users can access") {
         val f = new UsersWithCentreAccessFixture
-        forAll (f.usersCanReadTable) { (user, label) =>
+        forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
-          val cmd = SearchCentreLocationsCmd(sessionUserId = user.id.id,
-                                             filter        = "",
-                                             limit         = 10)
+          val cmd = SearchCentreLocationsCmd(sessionUserId = user.id.id, filter = "", limit = 10)
           centresService.searchLocations(cmd).mustSucceed { centres =>
             centres must have size (1)
           }
@@ -238,19 +216,16 @@ class CentresServiceSpec
       }
 
       it("users cannot access") {
-        val f = new UsersWithCentreAccessFixture
-        var cmd = SearchCentreLocationsCmd(sessionUserId = f.noMembershipUser.id.id,
-                                           filter        = "",
-                                           limit         = 10)
+        val f   = new UsersWithCentreAccessFixture
+        var cmd = SearchCentreLocationsCmd(sessionUserId = f.noMembershipUser.id.id, filter = "", limit = 10)
 
         info("no membership user")
         centresService.searchLocations(cmd).mustSucceed { centres =>
           centres must have size (0)
         }
 
-        cmd = SearchCentreLocationsCmd(sessionUserId = f.noCentrePermissionUser.id.id,
-                                       filter        = "",
-                                       limit         = 10)
+        cmd =
+          SearchCentreLocationsCmd(sessionUserId = f.noCentrePermissionUser.id.id, filter = "", limit = 10)
         info("no permission user")
         centresService.searchLocations(cmd) mustFail "Unauthorized"
       }
@@ -262,13 +237,12 @@ class CentresServiceSpec
       it("users can access") {
         val f = new UsersWithCentreAccessFixture
 
-        forAll (f.usersCanAddOrUpdateTable) { (user, label) =>
-          val cmd = AddCentreCmd(sessionUserId = user.id.id,
-                                name           = f.centre.name,
-                                description    = f.centre.description)
+        forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
+          val cmd =
+            AddCentreCmd(sessionUserId = user.id.id, name = f.centre.name, description = f.centre.description)
           centreRepository.removeAll
           centresService.processCommand(cmd).futureValue mustSucceed { s =>
-            s.name must be (f.centre.name)
+            s.name must be(f.centre.name)
           }
         }
       }
@@ -276,10 +250,9 @@ class CentresServiceSpec
       it("users cannot access") {
         val f = new UsersWithCentreAccessFixture
 
-        forAll (f.usersCannotAddOrUpdateTable) { (user, label) =>
-          val cmd = AddCentreCmd(sessionUserId = user.id.id,
-                                name           = f.centre.name,
-                                description    = f.centre.description)
+        forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
+          val cmd =
+            AddCentreCmd(sessionUserId = user.id.id, name = f.centre.name, description = f.centre.description)
           centresService.processCommand(cmd).futureValue mustFail "Unauthorized"
         }
       }
@@ -289,36 +262,36 @@ class CentresServiceSpec
     describe("update a centre") {
 
       it("users can access") {
-        val f = new UsersWithCentreAccessFixture
+        val f     = new UsersWithCentreAccessFixture
         val study = factory.createDisabledStudy
         studyRepository.put(study)
 
-        forAll (f.usersCanAddOrUpdateTable) { (user, label) =>
+        forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           info(label)
           forAll(updateCommandsTable(user.id, f.centre, f.location, study)) { cmd =>
             val centre = cmd match {
-                case _: AddCentreLocationCmd =>
-                  f.centre.copy(locations = Set.empty[Location])
-                case _: RemoveStudyFromCentreCmd =>
-                  f.centre.copy(studyIds = Set(study.id))
-                case _ =>
-                  f.centre
-              }
+              case _: AddCentreLocationCmd =>
+                f.centre.copy(locations = Set.empty[Location])
+              case _: RemoveStudyFromCentreCmd =>
+                f.centre.copy(studyIds = Set(study.id))
+              case _ =>
+                f.centre
+            }
 
             centreRepository.put(centre) // restore the centre to it's previous state
             centresService.processCommand(cmd).futureValue mustSucceed { c =>
-              c.id must be (centre.id.id)
+              c.id must be(centre.id.id)
             }
           }
         }
       }
 
       it("users cannot update") {
-        val f = new UsersWithCentreAccessFixture
+        val f     = new UsersWithCentreAccessFixture
         val study = factory.createDisabledStudy
         studyRepository.put(study)
 
-        forAll (f.usersCannotAddOrUpdateTable) { (user, label) =>
+        forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           forAll(updateCommandsTable(user.id, f.centre, f.location, study)) { cmd =>
             centresService.processCommand(cmd).futureValue mustFail "Unauthorized"
           }
@@ -331,14 +304,12 @@ class CentresServiceSpec
 
       it("users can access") {
         val f = new CentresOfAllStatesFixure
-        forAll (f.usersCanAddOrUpdateTable) { (user, label) =>
+        forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           info(label)
-          forAll(stateChangeCommandsTable(user.id,
-                                          f.disabledCentre,
-                                          f.enabledCentre)) { cmd =>
+          forAll(stateChangeCommandsTable(user.id, f.disabledCentre, f.enabledCentre)) { cmd =>
             Set(f.disabledCentre, f.enabledCentre).foreach(addToRepository)
             centresService.processCommand(cmd).futureValue mustSucceed { c =>
-              c.id must be (cmd.id)
+              c.id must be(cmd.id)
             }
           }
         }
@@ -346,11 +317,9 @@ class CentresServiceSpec
 
       it("users cannot update") {
         val f = new CentresOfAllStatesFixure
-        forAll (f.usersCannotAddOrUpdateTable) { (user, label) =>
+        forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           info(label)
-          forAll(stateChangeCommandsTable(user.id,
-                                          f.disabledCentre,
-                                          f.enabledCentre)) { cmd =>
+          forAll(stateChangeCommandsTable(user.id, f.disabledCentre, f.enabledCentre)) { cmd =>
             centresService.processCommand(cmd).futureValue mustFail "Unauthorized"
           }
         }
@@ -360,37 +329,38 @@ class CentresServiceSpec
     describe("centres membership") {
 
       it("user has access to all centres corresponding his membership") {
-        val secondCentre = factory.createDisabledCentre  // should show up in results
-        val query = PagedQuery(new FilterString(""), new SortString(""), 0 , 10)
+        val secondCentre = factory.createDisabledCentre // should show up in results
+        val query        = PagedQuery(new FilterString(""), new SortString(""), 0, 10)
         addToRepository(secondCentre)
 
         val f = new UsersWithCentreAccessFixture
         centresService.getCentres(f.allCentresAdminUser.id, query).futureValue.mustSucceed { reply =>
           reply.items must have size (2)
           val centreIds = reply.items.map(c => c.id).sorted
-          centreIds must equal (List(f.centre.id.id, secondCentre.id.id).sorted)
+          centreIds must equal(List(f.centre.id.id, secondCentre.id.id).sorted)
         }
       }
 
       it("user has access only to centres corresponding his membership") {
-        val secondCentre = factory.createDisabledCentre  // should show up in results
-        val query = PagedQuery(new FilterString(""), new SortString(""), 0 , 1)
+        val secondCentre = factory.createDisabledCentre // should show up in results
+        val query        = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
         addToRepository(secondCentre)
 
         val f = new UsersWithCentreAccessFixture
         centresService.getCentres(f.centreOnlyAdminUser.id, query).futureValue.mustSucceed { reply =>
-            reply.items must have size (1)
-            reply.items.map(c => c.id) must contain (f.centre.id.id)
-          }
+          reply.items must have size (1)
+          reply.items.map(c => c.id) must contain(f.centre.id.id)
+        }
       }
 
       it("user does not have access to centre if not in membership") {
-        val query = PagedQuery(new FilterString(""), new SortString(""), 0 , 1)
-        val f = new UsersWithCentreAccessFixture
+        val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
+        val f     = new UsersWithCentreAccessFixture
 
         // remove all studies from membership
         val noCentresMembership = f.centreOnlyMembership.copy(
-            centreData = f.centreOnlyMembership.centreData.copy(ids = Set.empty[CentreId]))
+          centreData = f.centreOnlyMembership.centreData.copy(ids = Set.empty[CentreId])
+        )
         addToRepository(noCentresMembership)
 
         // should not show up in results
@@ -398,8 +368,8 @@ class CentresServiceSpec
         addToRepository(secondStudy)
 
         centresService.getCentres(f.centreUser.id, query).futureValue.mustSucceed { reply =>
-            reply.items must have size (0)
-          }
+          reply.items must have size (0)
+        }
       }
 
     }

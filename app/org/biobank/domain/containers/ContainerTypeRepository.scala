@@ -1,7 +1,7 @@
 package org.biobank.domain.containers
 
 import com.google.inject.ImplementedBy
-import javax.inject.{Inject , Singleton}
+import javax.inject.{Inject, Singleton}
 import org.biobank.TestData
 import org.biobank.domain._
 import org.biobank.domain.centres.CentreId
@@ -20,7 +20,7 @@ trait ContainerTypeRepository extends ReadWriteRepositoryWithSlug[ContainerTypeI
 }
 
 @Singleton
-class ContainerTypeRepositoryImpl @Inject() (val testData: TestData)
+class ContainerTypeRepositoryImpl @Inject()(val testData: TestData)
     extends ReadWriteRepositoryRefImplWithSlug[ContainerTypeId, ContainerType](v => v.id)
     with ContainerTypeRepository {
   import org.biobank.CommonValidations._
@@ -37,28 +37,29 @@ class ContainerTypeRepositoryImpl @Inject() (val testData: TestData)
   protected def slugNotFound(slug: Slug): EntityCriteriaNotFound =
     EntityCriteriaNotFound(s"containerType slug: $slug")
 
-  def getStorageContainerType(id: ContainerTypeId): DomainValidation[StorageContainerType] = {
+  def getStorageContainerType(id: ContainerTypeId): DomainValidation[StorageContainerType] =
     for {
       ct <- getByKey(id)
       storageCt <- ct match {
-        case s: StorageContainerType => s.successNel[String]
-        case _ => InvalidStatus(s"not a storage container type: $id").failureNel[StorageContainerType]
-      }
+                    case s: StorageContainerType => s.successNel[String]
+                    case _ =>
+                      InvalidStatus(s"not a storage container type: $id").failureNel[StorageContainerType]
+                  }
     } yield storageCt
-  }
 
-  def getSpecimenContainerType(id: ContainerTypeId): DomainValidation[SpecimenContainerType] = {
+  def getSpecimenContainerType(id: ContainerTypeId): DomainValidation[SpecimenContainerType] =
     for {
       ct <- getByKey(id)
       specimenCt <- ct match {
-        case s: SpecimenContainerType => s.successNel[String]
-        case _ => InvalidStatus(s"not a specimen container type: $id").failureNel[SpecimenContainerType]
-      }
+                     case s: SpecimenContainerType => s.successNel[String]
+                     case _ =>
+                       InvalidStatus(s"not a specimen container type: $id").failureNel[SpecimenContainerType]
+                   }
     } yield specimenCt
-  }
 
-  def withCentre(centreId: CentreId): Set[ContainerType] = {
-    getValues.filter { ct => (ct.centreId == centreId) || ct.shared }.toSet
-  }
+  def withCentre(centreId: CentreId): Set[ContainerType] =
+    getValues.filter { ct =>
+      (ct.centreId == centreId) || ct.shared
+    }.toSet
 
 }

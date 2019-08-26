@@ -11,7 +11,7 @@ import org.biobank.services.studies.StudiesService
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc.{Action, ControllerComponents, Result}
-import play.api.{ Environment, Logger }
+import play.api.{Environment, Logger}
 import scala.concurrent.{ExecutionContext, Future}
 import scalaz.Scalaz._
 
@@ -20,11 +20,14 @@ import scalaz.Scalaz._
  */
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
 @Singleton
-class StudiesController @Inject() (controllerComponents: ControllerComponents,
-                                   val action:  BbwebAction,
-                                   val env:     Environment,
-                                   val service: StudiesService)
-                               (implicit val ec: ExecutionContext)
+class StudiesController @Inject()(
+    controllerComponents: ControllerComponents,
+    val action:           BbwebAction,
+    val env:              Environment,
+    val service:          StudiesService
+  )(
+    implicit
+    val ec: ExecutionContext)
     extends CommandController(controllerComponents) {
 
   val log: Logger = Logger(this.getClass)
@@ -33,14 +36,11 @@ class StudiesController @Inject() (controllerComponents: ControllerComponents,
 
   def collectionStudies(): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      FilterAndSortQueryHelper(request.rawQueryString).fold(
-        err => {
-          validationReply(Future.successful(err.failure[PagedResults[Study]]))
-        },
-        query => {
-          validationReply(service.collectionStudies(request.identity.user.id, query))
-        }
-      )
+      FilterAndSortQueryHelper(request.rawQueryString).fold(err => {
+        validationReply(Future.successful(err.failure[PagedResults[Study]]))
+      }, query => {
+        validationReply(service.collectionStudies(request.identity.user.id, query))
+      })
     }
 
   def studyCounts(): Action[Unit] =
@@ -50,26 +50,20 @@ class StudiesController @Inject() (controllerComponents: ControllerComponents,
 
   def list: Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(
-        err => {
-          validationReply(Future.successful(err.failure[PagedResults[Study]]))
-        },
-        pagedQuery => {
-          validationReply(service.getStudies(request.identity.user.id, pagedQuery))
-        }
-      )
+      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(err => {
+        validationReply(Future.successful(err.failure[PagedResults[Study]]))
+      }, pagedQuery => {
+        validationReply(service.getStudies(request.identity.user.id, pagedQuery))
+      })
     }
 
   def listNames: Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      FilterAndSortQueryHelper(request.rawQueryString).fold(
-        err => {
-          validationReply(Future.successful(err.failure[PagedResults[CollectionEventType]]))
-        },
-        query => {
-          validationReply(service.getStudyNames(request.identity.user.id, query))
-        }
-      )
+      FilterAndSortQueryHelper(request.rawQueryString).fold(err => {
+        validationReply(Future.successful(err.failure[PagedResults[CollectionEventType]]))
+      }, query => {
+        validationReply(service.getStudyNames(request.identity.user.id, query))
+      })
     }
 
   def getBySlug(slug: Slug): Action[Unit] =
@@ -89,7 +83,9 @@ class StudiesController @Inject() (controllerComponents: ControllerComponents,
 
   def snapshot: Action[Unit] =
     action(parse.empty) { implicit request =>
-      validationReply(service.snapshotRequest(request.identity.user.id).map { _ => true })
+      validationReply(service.snapshotRequest(request.identity.user.id).map { _ =>
+        true
+      })
     }
 
   def add: Action[JsValue] = commandAction[AddStudyCmd](JsNull)(processCommand)
@@ -130,37 +126,37 @@ class StudiesController @Inject() (controllerComponents: ControllerComponents,
     commandAction[UnretireStudyCmd](Json.obj("id" -> id))(processCommand)
 
   def valueTypes: Action[Unit] = Action(parse.empty) { request =>
-      Ok(AnnotationValueType.values.map(x => x))
-    }
+    Ok(AnnotationValueType.values.map(x => x))
+  }
 
   def anatomicalSourceTypes: Action[Unit] = Action(parse.empty) { request =>
-      Ok(AnatomicalSourceType.values.map(x => x))
-    }
+    Ok(AnatomicalSourceType.values.map(x => x))
+  }
 
   def specimenTypes: Action[Unit] = Action(parse.empty) { request =>
-      Ok(SpecimenType.values.map(x => x))
-    }
+    Ok(SpecimenType.values.map(x => x))
+  }
 
   def preservTypes: Action[Unit] = Action(parse.empty) { request =>
-      Ok(PreservationType.values.map(x => x))
-    }
+    Ok(PreservationType.values.map(x => x))
+  }
 
   def preservTempTypes: Action[Unit] = Action(parse.empty) { request =>
-      Ok(PreservationTemperature.values.map(x => x))
-    }
+    Ok(PreservationTemperature.values.map(x => x))
+  }
 
   /** Value types used by Specimen groups.
    *
    */
   def specimenDefinitionValueTypes: Action[Unit] = Action(parse.empty) { request =>
-      // FIXME add container types to this response
-      Ok(Map(
-           "anatomicalSourceType"    -> AnatomicalSourceType.values.map(x => x),
-           "preservationType"        -> PreservationType.values.map(x => x),
-           "preservationTemperature" -> PreservationTemperature.values.map(x => x),
-           "specimenType"            -> SpecimenType.values.map(x => x)
-         ))
-    }
+    // FIXME add container types to this response
+    Ok(
+      Map("anatomicalSourceType"    -> AnatomicalSourceType.values.map(x    => x),
+          "preservationType"        -> PreservationType.values.map(x        => x),
+          "preservationTemperature" -> PreservationTemperature.values.map(x => x),
+          "specimenType"            -> SpecimenType.values.map(x            => x))
+    )
+  }
 
   private def processCommand(cmd: StudyCommand): Future[Result] = {
     val future = service.processCommand(cmd)

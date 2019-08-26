@@ -1,7 +1,7 @@
 package org.biobank.domain.containers
 
 import com.google.inject.ImplementedBy
-import javax.inject.{Inject , Singleton}
+import javax.inject.{Inject, Singleton}
 import org.biobank.TestData
 import org.biobank.domain._
 import org.biobank.domain.centres.CentreId
@@ -24,9 +24,8 @@ trait ContainerRepository extends ReadWriteRepositoryWithSlug[ContainerId, Conta
 }
 
 @Singleton
-class ContainerRepositoryImpl @Inject() (val testData: TestData)
-    extends ReadWriteRepositoryRefImplWithSlug[ContainerId, Container](v => v.id)
-    with ContainerRepository {
+class ContainerRepositoryImpl @Inject()(val testData: TestData)
+    extends ReadWriteRepositoryRefImplWithSlug[ContainerId, Container](v => v.id) with ContainerRepository {
   import org.biobank.CommonValidations._
 
   override def init(): Unit = {
@@ -41,35 +40,30 @@ class ContainerRepositoryImpl @Inject() (val testData: TestData)
   protected def slugNotFound(slug: Slug): EntityCriteriaNotFound =
     EntityCriteriaNotFound(s"container slug: $slug")
 
-  def getStorageContainer(id: ContainerId): DomainValidation[StorageContainer] = {
-   for {
+  def getStorageContainer(id: ContainerId): DomainValidation[StorageContainer] =
+    for {
       container <- getByKey(id)
       storage <- container match {
-        case c: StorageContainer => c.successNel[String]
-        case _ => InvalidStatus(s"not a storage container: $id").failureNel[StorageContainer]
-      }
+                  case c: StorageContainer => c.successNel[String]
+                  case _ => InvalidStatus(s"not a storage container: $id").failureNel[StorageContainer]
+                }
     } yield storage
-   }
 
-  def getSpecimenContainer(id: ContainerId): DomainValidation[SpecimenContainer] = {
-   for {
+  def getSpecimenContainer(id: ContainerId): DomainValidation[SpecimenContainer] =
+    for {
       container <- getByKey(id)
       sc <- container match {
-        case c: SpecimenContainer => c.successNel[String]
-        case _ => InvalidStatus(s"not a specimen container: $id").failureNel[SpecimenContainer]
-      }
+             case c: SpecimenContainer => c.successNel[String]
+             case _ => InvalidStatus(s"not a specimen container: $id").failureNel[SpecimenContainer]
+           }
     } yield sc
-  }
 
-  def containerSharedProperties(ids: ContainerId): ContainerSharedProperties = {
+  def containerSharedProperties(ids: ContainerId): ContainerSharedProperties =
     ???
-  }
 
-  def rootContainers(centreId: CentreId): Set[StorageContainer] = {
+  def rootContainers(centreId: CentreId): Set[StorageContainer] =
     ???
-  }
 
-  def getSubContainerCentre(id: ContainerId): DomainValidation[CentreId] = {
+  def getSubContainerCentre(id: ContainerId): DomainValidation[CentreId] =
     ???
-  }
 }

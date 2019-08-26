@@ -9,29 +9,31 @@ trait HasAnnotationTypes extends AnnotationTypeValidations {
 
   val annotationTypes: Set[AnnotationType]
 
-  protected def checkAddAnnotationType(annotationType: AnnotationType): DomainValidation[Unit] = {
+  protected def checkAddAnnotationType(annotationType: AnnotationType): DomainValidation[Unit] =
     (validate(annotationType) |@| nameNotUsed(annotationType)) {
       case _ => ()
     }
-  }
 
-  protected def checkRemoveAnnotationType(annotationTypeId: AnnotationTypeId)
-      : DomainValidation[AnnotationType] = {
+  protected def checkRemoveAnnotationType(
+      annotationTypeId: AnnotationTypeId
+    ): DomainValidation[AnnotationType] =
     annotationTypes
-      .find { x => x.id == annotationTypeId }
+      .find { x =>
+        x.id == annotationTypeId
+      }
       .toSuccessNel(s"annotation type does not exist: $annotationTypeId")
-  }
 
   protected def nameNotUsed(annotationType: AnnotationType): DomainValidation[Unit] = {
     val nameLowerCase = annotationType.name.toLowerCase
     annotationTypes
-      .find { x => (x.name.toLowerCase == nameLowerCase) && (x.id != annotationType.id)  }
-      match {
-        case Some(_) =>
-          EntityCriteriaError(s"annotation type name already used: ${annotationType.name}").failureNel[Unit]
-        case None =>
-          ().successNel[DomainError]
-      }
+      .find { x =>
+        (x.name.toLowerCase == nameLowerCase) && (x.id != annotationType.id)
+      } match {
+      case Some(_) =>
+        EntityCriteriaError(s"annotation type name already used: ${annotationType.name}").failureNel[Unit]
+      case None =>
+        ().successNel[DomainError]
+    }
   }
 
 }

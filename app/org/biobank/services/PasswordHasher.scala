@@ -10,20 +10,18 @@ trait PasswordHasher {
 
   def generateSalt: String
 
-  def valid(encryptedPwd: String,  salt: String, enteredPwd: String): Boolean
+  def valid(encryptedPwd: String, salt: String, enteredPwd: String): Boolean
 }
 
 class PasswordHasherImpl extends PasswordHasher {
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
-  def encrypt(password: String, salt: String): String = {
+  def encrypt(password: String, salt: String): String =
     password.bcrypt(salt)
-  }
 
-  def generateSalt: String = {
+  def generateSalt: String =
     com.github.t3hnar.bcrypt.generateSalt
-  }
 
   def valid(encryptedPwd: String, salt: String, enteredPwd: String): Boolean = {
     val encryptedEnteredPwd = enteredPwd.bcrypt(salt)

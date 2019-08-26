@@ -31,31 +31,25 @@ object DomainValidations {
     if (v < 0) InvalidVersion.failureNel[Long] else v.successNel[String]
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validateId[T <: IdentifiedValueObject[_]](id: T, err: ValidationKey): DomainValidation[T] = {
+  def validateId[T <: IdentifiedValueObject[_]](id: T, err: ValidationKey): DomainValidation[T] =
     validateNonEmptyString(id.toString, err).map(_ => id)
-  }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validateId[T <: IdentifiedValueObject[_]](id: T): DomainValidation[T] = {
+  def validateId[T <: IdentifiedValueObject[_]](id: T): DomainValidation[T] =
     validateId(id, IdRequired)
-  }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validateIdOption[T <: IdentifiedValueObject[_]](id: Option[T], err: ValidationKey)
-      : DomainValidation[Option[T]] = {
+  def validateIdOption[T <: IdentifiedValueObject[_]](
+      id:  Option[T],
+      err: ValidationKey
+    ): DomainValidation[Option[T]] =
     id match {
-      case Some(i) => validateId(i, err).fold(
-        err => err.failure[Option[T]],
-        _   => id.successNel[String]
-      )
+      case Some(i) => validateId(i, err).fold(err => err.failure[Option[T]], _ => id.successNel[String])
       case None    => id.successNel[String]
     }
-  }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validateIdOption[T <: IdentifiedValueObject[_]](id: Option[T])
-      : DomainValidation[Option[T]] = {
+  def validateIdOption[T <: IdentifiedValueObject[_]](id: Option[T]): DomainValidation[Option[T]] =
     validateIdOption(id, IdRequired)
-  }
 
 }

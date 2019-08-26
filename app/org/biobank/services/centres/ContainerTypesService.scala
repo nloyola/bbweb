@@ -17,15 +17,13 @@ import org.slf4j.{Logger, LoggerFactory}
 //import scalaz.Validation.FlatMap._
 
 @ImplementedBy(classOf[ContainerTypesServiceImpl])
-trait ContainerTypesService extends BbwebService {
+trait ContainerTypesService extends BbwebService {}
 
-}
-
-class ContainerTypesServiceImpl @Inject() (
-  @Named("containerTypesProcessor") val processor: ActorRef,
-  val accessService:                               AccessService,
-  val containerTypeRepository:                     ContainerTypeRepository
-) extends ContainerTypesService {
+class ContainerTypesServiceImpl @Inject()(
+    @Named("containerTypesProcessor") val processor: ActorRef,
+    val accessService:                               AccessService,
+    val containerTypeRepository:                     ContainerTypeRepository)
+    extends ContainerTypesService {
 
   //import org.biobank.CommonValidations._
   //import org.biobank.domain.access.AccessItem._

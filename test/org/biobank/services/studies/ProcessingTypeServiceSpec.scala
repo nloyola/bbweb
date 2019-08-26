@@ -14,10 +14,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks._
  * Primarily these are tests that exercise the User Access aspect of ProcessingTypeService.
  */
 class ProcessingTypeServiceSpec
-    extends ProcessorTestFixture
-    with ProcessingTypeFixtures
-    with StudiesServiceFixtures
-    with ScalaFutures {
+    extends ProcessorTestFixture with ProcessingTypeFixtures with StudiesServiceFixtures with ScalaFutures {
 
   import org.biobank.TestUtils._
   //import org.biobank.infrastructure.commands.ProcessingTypeCommands._
@@ -127,12 +124,13 @@ class ProcessingTypeServiceSpec
 
       it("users can access") {
         val f = new UsersProcessingTypeFixture
-        forAll (f.usersCanReadTable) { (user, label) =>
+        forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
-          processingTypeService.processingTypeBySlug(user.id, f.study.slug, f.inputProcessingType.slug)
+          processingTypeService
+            .processingTypeBySlug(user.id, f.study.slug, f.inputProcessingType.slug)
             .futureValue
             .mustSucceed { result =>
-              result.id must be (f.inputProcessingType.id)
+              result.id must be(f.inputProcessingType.id)
             }
         }
       }
@@ -140,16 +138,14 @@ class ProcessingTypeServiceSpec
       it("users cannot access") {
         val f = new UsersProcessingTypeFixture
         info("no membership user")
-        processingTypeService.processingTypeBySlug(f.noMembershipUser.id,
-                                                   f.study.slug,
-                                                   f.inputProcessingType.slug)
+        processingTypeService
+          .processingTypeBySlug(f.noMembershipUser.id, f.study.slug, f.inputProcessingType.slug)
           .futureValue
           .mustFail("Unauthorized")
 
         info("no permission user")
-        processingTypeService.processingTypeBySlug(f.nonStudyPermissionUser.id,
-                                                   f.study.slug,
-                                                   f.inputProcessingType.slug)
+        processingTypeService
+          .processingTypeBySlug(f.nonStudyPermissionUser.id, f.study.slug, f.inputProcessingType.slug)
           .futureValue
           .mustFail("Unauthorized")
 
@@ -160,12 +156,13 @@ class ProcessingTypeServiceSpec
     describe("when getting processing types for a study") {
 
       it("users can access") {
-        val f = new UsersProcessingTypeFixture
-        val query = PagedQuery(new FilterString(""), new SortString(""), 0 , 10)
+        val f     = new UsersProcessingTypeFixture
+        val query = PagedQuery(new FilterString(""), new SortString(""), 0, 10)
 
-        forAll (f.usersCanReadTable) { (user, label) =>
+        forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
-          processingTypeService.processingTypesForStudy(user.id, f.study.slug, query).futureValue
+          processingTypeService
+            .processingTypesForStudy(user.id, f.study.slug, query).futureValue
             .mustSucceed { result =>
               result.items must have size 1
             }
@@ -173,134 +170,132 @@ class ProcessingTypeServiceSpec
       }
 
       it("users cannot access") {
-        val f = new UsersProcessingTypeFixture
-        val query = PagedQuery(new FilterString(""), new SortString(""), 0 , 1)
+        val f     = new UsersProcessingTypeFixture
+        val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
 
         info("no membership user")
-        processingTypeService.processingTypesForStudy(f.noMembershipUser.id,
-                                                      f.study.slug,
-                                                      query)
+        processingTypeService
+          .processingTypesForStudy(f.noMembershipUser.id, f.study.slug, query)
           .futureValue.mustFail("Unauthorized")
 
         info("no permission user")
-        processingTypeService.processingTypesForStudy(f.nonStudyPermissionUser.id,
-                                                      f.study.slug,
-                                                      query)
+        processingTypeService
+          .processingTypesForStudy(f.nonStudyPermissionUser.id, f.study.slug, query)
           .futureValue.mustFail("Unauthorized")
       }
 
     }
 
-  //   describe("when adding a processing type") {
+    //   describe("when adding a processing type") {
 
-  //     it("users can access") {
-  //       val f = new UsersProcessingTypeFixture
-  //       forAll (f.usersCanAddOrUpdateTable) { (user, label) =>
-  //         val cmd = AddProcessingTypeCmd(sessionUserId   = user.id.id,
-  //                                             studyId         = f.study.id.id,
-  //                                             name            = nameGenerator.next[String],
-  //                                             description     = None,
-  //                                             recurring       = true)
-  //         processingTypeRepository.removeAll
-  //         processingTypeService.processCommand(cmd).futureValue mustSucceed { reply =>
-  //           reply.studyId must be (f.study.id)
-  //         }
-  //       }
-  //     }
+    //     it("users can access") {
+    //       val f = new UsersProcessingTypeFixture
+    //       forAll (f.usersCanAddOrUpdateTable) { (user, label) =>
+    //         val cmd = AddProcessingTypeCmd(sessionUserId   = user.id.id,
+    //                                             studyId         = f.study.id.id,
+    //                                             name            = nameGenerator.next[String],
+    //                                             description     = None,
+    //                                             recurring       = true)
+    //         processingTypeRepository.removeAll
+    //         processingTypeService.processCommand(cmd).futureValue mustSucceed { reply =>
+    //           reply.studyId must be (f.study.id)
+    //         }
+    //       }
+    //     }
 
-  //     it("users cannot access") {
-  //       val f = new UsersProcessingTypeFixture
-  //       forAll (f.usersCannotAddOrUpdateTable) { (user, label) =>
-  //         val cmd = AddProcessingTypeCmd(sessionUserId   = user.id.id,
-  //                                             studyId         = f.study.id.id,
-  //                                             name            = nameGenerator.next[String],
-  //                                             description     = None,
-  //                                             recurring       = true)
-  //         processingTypeRepository.removeAll
-  //         processingTypeService.processCommand(cmd).futureValue mustFail "Unauthorized"
-  //       }
-  //     }
+    //     it("users cannot access") {
+    //       val f = new UsersProcessingTypeFixture
+    //       forAll (f.usersCannotAddOrUpdateTable) { (user, label) =>
+    //         val cmd = AddProcessingTypeCmd(sessionUserId   = user.id.id,
+    //                                             studyId         = f.study.id.id,
+    //                                             name            = nameGenerator.next[String],
+    //                                             description     = None,
+    //                                             recurring       = true)
+    //         processingTypeRepository.removeAll
+    //         processingTypeService.processCommand(cmd).futureValue mustFail "Unauthorized"
+    //       }
+    //     }
 
-  //   }
+    //   }
 
-  //   describe("when updating a processing type") {
+    //   describe("when updating a processing type") {
 
-  //     it("users with access") {
-  //       val f = new UsersProcessingTypeFixture
-  //       forAll (f.usersCanAddOrUpdateTable) { (user, label) =>
-  //         info(label)
-  //         forAll(updateCommandsTable(user.id,
-  //                                    f.study,
-  //                                    f.processingType,
-  //                                    f.specimenDefinition,
-  //                                    f.annotationType)) { cmd =>
-  //           val processingType = cmd match {
-  //               case _: ProcessingTypeAddAnnotationTypeCmd =>
-  //                 f.processingType.copy(annotationTypes = Set.empty[AnnotationType])
-  //               case _: AddCollectionSpecimenDefinitionCmd =>
-  //                 f.processingType.copy(specimenDefinitions = Set.empty[CollectionSpecimenDefinition])
-  //               case _ =>
-  //                 f.processingType
-  //             }
+    //     it("users with access") {
+    //       val f = new UsersProcessingTypeFixture
+    //       forAll (f.usersCanAddOrUpdateTable) { (user, label) =>
+    //         info(label)
+    //         forAll(updateCommandsTable(user.id,
+    //                                    f.study,
+    //                                    f.processingType,
+    //                                    f.specimenDefinition,
+    //                                    f.annotationType)) { cmd =>
+    //           val processingType = cmd match {
+    //               case _: ProcessingTypeAddAnnotationTypeCmd =>
+    //                 f.processingType.copy(annotationTypes = Set.empty[AnnotationType])
+    //               case _: AddCollectionSpecimenDefinitionCmd =>
+    //                 f.processingType.copy(specimenDefinitions = Set.empty[CollectionSpecimenDefinition])
+    //               case _ =>
+    //                 f.processingType
+    //             }
 
-  //           processingTypeRepository.put(processingType) // restore it to it's previous state
-  //           processingTypeService.processCommand(cmd).futureValue mustSucceed { reply =>
-  //             reply.studyId.id must be (cmd.studyId)
-  //           }
-  //         }
-  //       }
-  //     }
+    //           processingTypeRepository.put(processingType) // restore it to it's previous state
+    //           processingTypeService.processCommand(cmd).futureValue mustSucceed { reply =>
+    //             reply.studyId.id must be (cmd.studyId)
+    //           }
+    //         }
+    //       }
+    //     }
 
-  //     it("users without access") {
-  //       val f = new UsersProcessingTypeFixture
-  //       forAll (f.usersCannotAddOrUpdateTable) { (user, label) =>
-  //         forAll(updateCommandsTable(user.id,
-  //                                    f.study,
-  //                                    f.processingType,
-  //                                    f.specimenDefinition,
-  //                                    f.annotationType)) { cmd =>
-  //           processingTypeService.processCommand(cmd).futureValue mustFail "Unauthorized"
-  //         }
-  //       }
-  //     }
+    //     it("users without access") {
+    //       val f = new UsersProcessingTypeFixture
+    //       forAll (f.usersCannotAddOrUpdateTable) { (user, label) =>
+    //         forAll(updateCommandsTable(user.id,
+    //                                    f.study,
+    //                                    f.processingType,
+    //                                    f.specimenDefinition,
+    //                                    f.annotationType)) { cmd =>
+    //           processingTypeService.processCommand(cmd).futureValue mustFail "Unauthorized"
+    //         }
+    //       }
+    //     }
 
-  //   }
+    //   }
 
-  //   describe("when removing a processing type") {
+    //   describe("when removing a processing type") {
 
-  //     it("users with access") {
-  //       val f = new UsersProcessingTypeFixture
-  //       forAll (f.usersCanAddOrUpdateTable) { (user, label) =>
-  //         info(label)
-  //         val cmd = RemoveProcessingTypeCmd(
-  //             sessionUserId    = user.id.id,
-  //             studyId          = f.study.id.id,
-  //             id               = f.processingType.id.id,
-  //             expectedVersion  = f.processingType.version
-  //           )
+    //     it("users with access") {
+    //       val f = new UsersProcessingTypeFixture
+    //       forAll (f.usersCanAddOrUpdateTable) { (user, label) =>
+    //         info(label)
+    //         val cmd = RemoveProcessingTypeCmd(
+    //             sessionUserId    = user.id.id,
+    //             studyId          = f.study.id.id,
+    //             id               = f.processingType.id.id,
+    //             expectedVersion  = f.processingType.version
+    //           )
 
-  //         processingTypeRepository.put(f.processingType) // restore it to it's previous state
-  //         processingTypeService.processRemoveCommand(cmd).futureValue mustSucceed { reply =>
-  //           reply must be (true)
-  //         }
-  //       }
-  //     }
+    //         processingTypeRepository.put(f.processingType) // restore it to it's previous state
+    //         processingTypeService.processRemoveCommand(cmd).futureValue mustSucceed { reply =>
+    //           reply must be (true)
+    //         }
+    //       }
+    //     }
 
-  //     it("users without access") {
-  //       val f = new UsersProcessingTypeFixture
-  //       forAll (f.usersCannotAddOrUpdateTable) { (user, label) =>
-  //         info(label)
-  //         val cmd = RemoveProcessingTypeCmd(
-  //             sessionUserId    = user.id.id,
-  //             studyId          = f.study.id.id,
-  //             id               = f.processingType.id.id,
-  //             expectedVersion  = f.processingType.version
-  //           )
+    //     it("users without access") {
+    //       val f = new UsersProcessingTypeFixture
+    //       forAll (f.usersCannotAddOrUpdateTable) { (user, label) =>
+    //         info(label)
+    //         val cmd = RemoveProcessingTypeCmd(
+    //             sessionUserId    = user.id.id,
+    //             studyId          = f.study.id.id,
+    //             id               = f.processingType.id.id,
+    //             expectedVersion  = f.processingType.version
+    //           )
 
-  //         processingTypeService.processRemoveCommand(cmd).futureValue mustFail "Unauthorized"
-  //       }
-  //     }
-  //   }
+    //         processingTypeService.processRemoveCommand(cmd).futureValue mustFail "Unauthorized"
+    //       }
+    //     }
+    //   }
 
   }
 

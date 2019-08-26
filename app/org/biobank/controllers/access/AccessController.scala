@@ -22,14 +22,17 @@ import scalaz.Scalaz._
 
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
 @Singleton
-class AccessController @Inject() (controllerComponents: ControllerComponents,
-                                  val action:           BbwebAction,
-                                  val env:              Environment,
-                                  val accessService:    AccessService,
-                                  val studiesService:   StudiesService,
-                                  val centresService:   CentresService,
-                                  val usersService:     UsersService)
-                              (implicit val ec: ExecutionContext)
+class AccessController @Inject()(
+    controllerComponents: ControllerComponents,
+    val action:           BbwebAction,
+    val env:              Environment,
+    val accessService:    AccessService,
+    val studiesService:   StudiesService,
+    val centresService:   CentresService,
+    val usersService:     UsersService
+  )(
+    implicit
+    val ec: ExecutionContext)
     extends CommandController(controllerComponents) {
 
   import org.biobank.infrastructure.commands.AccessCommands._
@@ -42,38 +45,29 @@ class AccessController @Inject() (controllerComponents: ControllerComponents,
 
   def listItemNames: Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      FilterAndSortQueryHelper(request.rawQueryString).fold(
-        err => {
-          validationReply(Future.successful(err.failure[Seq[AccessItemNameDto]]))
-        },
-        query => {
-          validationReply(accessService.getAccessItems(request.identity.user.id, query.filter, query.sort))
-        }
-      )
+      FilterAndSortQueryHelper(request.rawQueryString).fold(err => {
+        validationReply(Future.successful(err.failure[Seq[AccessItemNameDto]]))
+      }, query => {
+        validationReply(accessService.getAccessItems(request.identity.user.id, query.filter, query.sort))
+      })
     }
 
   def listRoles: Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(
-        err => {
-          validationReply(Future.successful(err.failure[PagedResults[RoleDto]]))
-        },
-        pagedQuery => {
-          validationReply(accessService.getRoles(request.identity.user.id, pagedQuery))
-        }
-      )
+      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(err => {
+        validationReply(Future.successful(err.failure[PagedResults[RoleDto]]))
+      }, pagedQuery => {
+        validationReply(accessService.getRoles(request.identity.user.id, pagedQuery))
+      })
     }
 
   def listRoleNames: Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      FilterAndSortQueryHelper(request.rawQueryString).fold(
-        err => {
-          validationReply(Future.successful(err.failure[Seq[AccessItemNameDto]]))
-        },
-        query => {
-          validationReply(accessService.getRoleNames(request.identity.user.id, query))
-        }
-      )
+      FilterAndSortQueryHelper(request.rawQueryString).fold(err => {
+        validationReply(Future.successful(err.failure[Seq[AccessItemNameDto]]))
+      }, query => {
+        validationReply(accessService.getRoleNames(request.identity.user.id, query))
+      })
     }
 
   def getRoleBySlug(slug: Slug): Action[Unit] =
@@ -90,26 +84,20 @@ class AccessController @Inject() (controllerComponents: ControllerComponents,
 
   def listMemberships(): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(
-        err => {
-          validationReply(Future.successful(err.failure[PagedResults[MembershipDto]]))
-        },
-        pagedQuery => {
-          validationReply(accessService.getMemberships(request.identity.user.id, pagedQuery))
-        }
-      )
+      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(err => {
+        validationReply(Future.successful(err.failure[PagedResults[MembershipDto]]))
+      }, pagedQuery => {
+        validationReply(accessService.getMemberships(request.identity.user.id, pagedQuery))
+      })
     }
 
   def listMembershipNames: Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      FilterAndSortQueryHelper(request.rawQueryString).fold(
-        err => {
-          validationReply(Future.successful(err.failure[Seq[AccessItemNameDto]]))
-        },
-        query => {
-          validationReply(accessService.getMembershipNames(request.identity.user.id, query))
-        }
-      )
+      FilterAndSortQueryHelper(request.rawQueryString).fold(err => {
+        validationReply(Future.successful(err.failure[Seq[AccessItemNameDto]]))
+      }, query => {
+        validationReply(accessService.getMembershipNames(request.identity.user.id, query))
+      })
     }
 
   def roleAdd(): Action[JsValue] =
@@ -134,7 +122,7 @@ class AccessController @Inject() (controllerComponents: ControllerComponents,
 
   def roleRemoveUser(roleId: AccessItemId, version: Long, userId: UserId): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = RoleRemoveUserCmd(sessionUserId   = request.identity.user.id.id,
+      val cmd = RoleRemoveUserCmd(sessionUserId = request.identity.user.id.id,
                                   expectedVersion = version,
                                   roleId          = roleId.id,
                                   userId          = userId.id)
@@ -143,7 +131,7 @@ class AccessController @Inject() (controllerComponents: ControllerComponents,
 
   def roleRemoveParent(roleId: AccessItemId, version: Long, parentId: AccessItemId): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = RoleRemoveParentCmd(sessionUserId   = request.identity.user.id.id,
+      val cmd = RoleRemoveParentCmd(sessionUserId = request.identity.user.id.id,
                                     expectedVersion = version,
                                     roleId          = roleId.id,
                                     parentRoleId    = parentId.id)
@@ -152,16 +140,16 @@ class AccessController @Inject() (controllerComponents: ControllerComponents,
 
   def roleRemoveChild(roleId: AccessItemId, version: Long, childId: AccessItemId): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = RoleRemoveChildCmd(sessionUserId   = request.identity.user.id.id,
+      val cmd = RoleRemoveChildCmd(sessionUserId = request.identity.user.id.id,
                                    expectedVersion = version,
                                    roleId          = roleId.id,
                                    childRoleId     = childId.id)
       processRoleCommand(cmd)
     }
 
-  def roleRemove(roleId: AccessItemId, version: Long) : Action[Unit] =
+  def roleRemove(roleId: AccessItemId, version: Long): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = RemoveRoleCmd(request.identity.user.id.id, version, roleId.id)
+      val cmd    = RemoveRoleCmd(request.identity.user.id.id, version, roleId.id)
       val future = accessService.processRemoveRoleCommand(cmd)
       validationReply(future)
     }
@@ -181,7 +169,9 @@ class AccessController @Inject() (controllerComponents: ControllerComponents,
     commandAction[MembershipAddUserCmd](Json.obj("membershipId" -> membershipId))(processMembershipCommand)
 
   def membershipUpdateStudyData(membershipId: MembershipId): Action[JsValue] =
-    commandAction[MembershipUpdateStudyDataCmd](Json.obj("membershipId" -> membershipId))(processMembershipCommand)
+    commandAction[MembershipUpdateStudyDataCmd](Json.obj("membershipId" -> membershipId))(
+      processMembershipCommand
+    )
 
   def membershipAllStudies(membershipId: MembershipId): Action[JsValue] =
     commandAction[MembershipAllStudiesCmd](Json.obj("membershipId" -> membershipId))(processMembershipCommand)
@@ -190,7 +180,9 @@ class AccessController @Inject() (controllerComponents: ControllerComponents,
     commandAction[MembershipAddStudyCmd](Json.obj("membershipId" -> membershipId))(processMembershipCommand)
 
   def membershipUpdateCentreData(membershipId: MembershipId): Action[JsValue] =
-    commandAction[MembershipUpdateCentreDataCmd](Json.obj("membershipId" -> membershipId))(processMembershipCommand)
+    commandAction[MembershipUpdateCentreDataCmd](Json.obj("membershipId" -> membershipId))(
+      processMembershipCommand
+    )
 
   def membershipAllCentres(membershipId: MembershipId): Action[JsValue] =
     commandAction[MembershipAllCentresCmd](Json.obj("membershipId" -> membershipId))(processMembershipCommand)
@@ -198,16 +190,16 @@ class AccessController @Inject() (controllerComponents: ControllerComponents,
   def membershipAddCentre(membershipId: MembershipId): Action[JsValue] =
     commandAction[MembershipAddCentreCmd](Json.obj("membershipId" -> membershipId))(processMembershipCommand)
 
-  def membershipRemove(membershipId: MembershipId, version: Long) : Action[Unit] =
+  def membershipRemove(membershipId: MembershipId, version: Long): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = RemoveMembershipCmd(request.identity.user.id.id, version, membershipId.id)
+      val cmd    = RemoveMembershipCmd(request.identity.user.id.id, version, membershipId.id)
       val future = accessService.processRemoveMembershipCommand(cmd)
       validationReply(future)
     }
 
   def membershipRemoveUser(membershipId: MembershipId, version: Long, userId: UserId): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = MembershipRemoveUserCmd(sessionUserId   = request.identity.user.id.id,
+      val cmd = MembershipRemoveUserCmd(sessionUserId = request.identity.user.id.id,
                                         expectedVersion = version,
                                         membershipId    = membershipId.id,
                                         userId          = userId.id)
@@ -216,7 +208,7 @@ class AccessController @Inject() (controllerComponents: ControllerComponents,
 
   def membershipRemoveStudy(membershipId: MembershipId, version: Long, studyId: StudyId): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = MembershipRemoveStudyCmd(sessionUserId   = request.identity.user.id.id,
+      val cmd = MembershipRemoveStudyCmd(sessionUserId = request.identity.user.id.id,
                                          expectedVersion = version,
                                          membershipId    = membershipId.id,
                                          studyId         = studyId.id)
@@ -225,7 +217,7 @@ class AccessController @Inject() (controllerComponents: ControllerComponents,
 
   def membershipRemoveCentre(membershipId: MembershipId, version: Long, centreId: CentreId): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = MembershipRemoveCentreCmd(sessionUserId   = request.identity.user.id.id,
+      val cmd = MembershipRemoveCentreCmd(sessionUserId = request.identity.user.id.id,
                                           expectedVersion = version,
                                           membershipId    = membershipId.id,
                                           centreId        = centreId.id)
@@ -234,7 +226,9 @@ class AccessController @Inject() (controllerComponents: ControllerComponents,
 
   def snapshot: Action[Unit] =
     action(parse.empty) { implicit request =>
-      validationReply(accessService.snapshotRequest(request.identity.user.id).map { _ => true })
+      validationReply(accessService.snapshotRequest(request.identity.user.id).map { _ =>
+        true
+      })
     }
 
   private def processRoleCommand(cmd: AccessCommand): Future[Result] = {

@@ -3,27 +3,27 @@ package org.biobank.controllers.studies
 import javax.inject.{Inject, Singleton}
 import org.biobank.controllers._
 import org.biobank.domain.Slug
-import org.biobank.domain.studies.{StudyId, CollectionEventType, CollectionEventTypeId}
+import org.biobank.domain.studies.{CollectionEventType, CollectionEventTypeId, StudyId}
 import org.biobank.dto.CollectionSpecimenDefinitionNames
 import org.biobank.infrastructure.commands.CollectionEventTypeCommands._
 import org.biobank.services.PagedResults
 import org.biobank.services.studies.CollectionEventTypeService
 import play.api.libs.json._
-import play.api.{ Environment, Logger }
+import play.api.{Environment, Logger}
 import play.api.mvc.{Action, ControllerComponents, Result}
 import scala.concurrent.{ExecutionContext, Future}
 import scalaz.Scalaz._
 
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
 @Singleton
-class CeventTypesController @Inject() (
-  controllerComponents: ControllerComponents,
-  val action:  BbwebAction,
-  val env:     Environment,
-  val service: CollectionEventTypeService
-) (
-  implicit val ec: ExecutionContext
-)
+class CeventTypesController @Inject()(
+    controllerComponents: ControllerComponents,
+    val action:           BbwebAction,
+    val env:              Environment,
+    val service:          CollectionEventTypeService
+  )(
+    implicit
+    val ec: ExecutionContext)
     extends CommandController(controllerComponents) {
 
   val log: Logger = Logger(this.getClass)
@@ -42,46 +42,32 @@ class CeventTypesController @Inject() (
       validationReply(ceventType)
     }
 
-  def list(studySlug: Slug): Action[Unit] = {
+  def list(studySlug: Slug): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(
-        err => {
-          validationReply(Future.successful(err.failure[PagedResults[CollectionEventType]]))
-        },
-        pagedQuery => {
-          validationReply(service.listByStudySlug(request.identity.user.id,
-                                                  studySlug,
-                                                  pagedQuery))
-        }
-      )
+      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(err => {
+        validationReply(Future.successful(err.failure[PagedResults[CollectionEventType]]))
+      }, pagedQuery => {
+        validationReply(service.listByStudySlug(request.identity.user.id, studySlug, pagedQuery))
+      })
     }
-  }
 
-  def listNames(studyId: StudyId): Action[Unit] = {
+  def listNames(studyId: StudyId): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      FilterAndSortQueryHelper(request.rawQueryString).fold(
-        err => {
-          validationReply(Future.successful(err.failure[PagedResults[CollectionEventType]]))
-        },
-        query => {
-          validationReply(service.listNamesByStudyId(request.identity.user.id, studyId, query))
-        }
-      )
+      FilterAndSortQueryHelper(request.rawQueryString).fold(err => {
+        validationReply(Future.successful(err.failure[PagedResults[CollectionEventType]]))
+      }, query => {
+        validationReply(service.listNamesByStudyId(request.identity.user.id, studyId, query))
+      })
     }
-  }
 
-  def specimenDefinitions(studySlug: Slug): Action[Unit] = {
+  def specimenDefinitions(studySlug: Slug): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(
-        err => {
-          validationReply(Future.successful(err.failure[Set[CollectionSpecimenDefinitionNames]]))
-        },
-        pagedQuery => {
-          validationReply(service.specimenDefinitionsForStudy(request.identity.user.id, studySlug))
-        }
-      )
+      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(err => {
+        validationReply(Future.successful(err.failure[Set[CollectionSpecimenDefinitionNames]]))
+      }, pagedQuery => {
+        validationReply(service.specimenDefinitionsForStudy(request.identity.user.id, studySlug))
+      })
     }
-  }
 
   def inUse(slug: Slug): Action[Unit] =
     action(parse.empty) { implicit request =>
@@ -90,7 +76,9 @@ class CeventTypesController @Inject() (
 
   def snapshot: Action[Unit] =
     action(parse.empty) { implicit request =>
-      validationReply(service.snapshotRequest(request.identity.user.id).map { _ => true })
+      validationReply(service.snapshotRequest(request.identity.user.id).map { _ =>
+        true
+      })
     }
 
   def add(studyId: StudyId): Action[JsValue] =
@@ -98,7 +86,7 @@ class CeventTypesController @Inject() (
 
   def remove(studyId: StudyId, id: CollectionEventTypeId, ver: Long): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = RemoveCollectionEventTypeCmd(request.identity.user.id.id, studyId.id, id.id, ver)
+      val cmd    = RemoveCollectionEventTypeCmd(request.identity.user.id.id, studyId.id, id.id, ver)
       val future = service.processRemoveCommand(cmd)
       validationReply(future)
     }
@@ -117,17 +105,21 @@ class CeventTypesController @Inject() (
 
   def updateAnnotationType(id: CollectionEventTypeId, annotationTypeId: String): Action[JsValue] =
     commandAction[CollectionEventTypeUpdateAnnotationTypeCmd](
-      Json.obj("id" -> id, "annotationTypeId" -> annotationTypeId))(processCommand)
+      Json.obj("id" -> id, "annotationTypeId" -> annotationTypeId)
+    )(processCommand)
 
-  def removeAnnotationType(studyId: StudyId, id: CollectionEventTypeId, ver: Long, annotationTypeId: String)
-      : Action[Unit]=
+  def removeAnnotationType(
+      studyId:          StudyId,
+      id:               CollectionEventTypeId,
+      ver:              Long,
+      annotationTypeId: String
+    ): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = RemoveCollectionEventTypeAnnotationTypeCmd(
-          sessionUserId         = request.identity.user.id.id,
-          studyId               = studyId.id,
-          id                    = id.id,
-          expectedVersion       = ver,
-          annotationTypeId      = annotationTypeId)
+      val cmd = RemoveCollectionEventTypeAnnotationTypeCmd(sessionUserId = request.identity.user.id.id,
+                                                           studyId          = studyId.id,
+                                                           id               = id.id,
+                                                           expectedVersion  = ver,
+                                                           annotationTypeId = annotationTypeId)
       processCommand(cmd)
     }
 
@@ -136,17 +128,21 @@ class CeventTypesController @Inject() (
 
   def updateSpecimenDefinition(id: CollectionEventTypeId, sdId: String): Action[JsValue] =
     commandAction[UpdateCollectionSpecimenDefinitionCmd](
-      Json.obj("id" -> id,"specimenDefinitionId" -> sdId))(processCommand)
+      Json.obj("id" -> id, "specimenDefinitionId" -> sdId)
+    )(processCommand)
 
-  def removeSpecimenDefinition(studyId: StudyId, id: CollectionEventTypeId, ver: Long, sdId: String)
-      : Action[Unit]=
+  def removeSpecimenDefinition(
+      studyId: StudyId,
+      id:      CollectionEventTypeId,
+      ver:     Long,
+      sdId:    String
+    ): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = RemoveCollectionSpecimenDefinitionCmd(
-          sessionUserId         = request.identity.user.id.id,
-          studyId               = studyId.id,
-          id                    = id.id,
-          expectedVersion       = ver,
-          specimenDefinitionId = sdId)
+      val cmd = RemoveCollectionSpecimenDefinitionCmd(sessionUserId = request.identity.user.id.id,
+                                                      studyId              = studyId.id,
+                                                      id                   = id.id,
+                                                      expectedVersion      = ver,
+                                                      specimenDefinitionId = sdId)
       processCommand(cmd)
     }
 

@@ -8,7 +8,7 @@ import play.api.mvc._
 import org.biobank.controllers._
 import org.biobank.domain.centres.{CentreId, ShipmentId, ShipmentSpecimenId}
 import org.biobank.dto.ShipmentDto
-import org.biobank.services.{FilterString, ServiceValidation, SortString, PagedResults}
+import org.biobank.services.{FilterString, PagedResults, ServiceValidation, SortString}
 import org.biobank.services.centres.{CentresService, ShipmentsService}
 import org.biobank.services.participants.SpecimensService
 import scala.concurrent.{ExecutionContext, Future}
@@ -19,13 +19,16 @@ import scalaz.Scalaz._
  */
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
 @Singleton
-class ShipmentsController @Inject() (controllerComponents: ControllerComponents,
-                                     val action:           BbwebAction,
-                                     val env:              Environment,
-                                     val centresService:   CentresService,
-                                     val shipmentsService: ShipmentsService,
-                                     val specimensService: SpecimensService)
-                                 (implicit val ec: ExecutionContext)
+class ShipmentsController @Inject()(
+    controllerComponents: ControllerComponents,
+    val action:           BbwebAction,
+    val env:              Environment,
+    val centresService:   CentresService,
+    val shipmentsService: ShipmentsService,
+    val specimensService: SpecimensService
+  )(
+    implicit
+    val ec: ExecutionContext)
     extends CommandController(controllerComponents) {
 
   import org.biobank.infrastructure.commands.ShipmentCommands._
@@ -44,56 +47,54 @@ class ShipmentsController @Inject() (controllerComponents: ControllerComponents,
 
   def list: Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(
-        err => {
-          validationReply(Future.successful(err.failure[PagedResults[ShipmentDto]]))
-        },
-        pagedQuery => {
-          validationReply(shipmentsService.getShipments(request.identity.user.id, pagedQuery))
-        }
-      )
+      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(err => {
+        validationReply(Future.successful(err.failure[PagedResults[ShipmentDto]]))
+      }, pagedQuery => {
+        validationReply(shipmentsService.getShipments(request.identity.user.id, pagedQuery))
+      })
     }
 
   def listSpecimens(shipmentId: ShipmentId): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(
-        err => {
-          validationReply(Future.successful(err.failure[PagedResults[ShipmentDto]]))
-        },
-        pagedQuery => {
-          validationReply(shipmentsService.getShipmentSpecimens(request.identity.user.id,
-                                                                shipmentId,
-                                                                pagedQuery))
-        }
-      )
+      PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(err => {
+        validationReply(Future.successful(err.failure[PagedResults[ShipmentDto]]))
+      }, pagedQuery => {
+        validationReply(
+          shipmentsService.getShipmentSpecimens(request.identity.user.id, shipmentId, pagedQuery)
+        )
+      })
     }
 
   def canAddSpecimens(shipmentId: ShipmentId, specimenInventoryId: String): Action[Unit] =
     action(parse.empty) { request =>
-      val v = shipmentsService.shipmentCanAddSpecimen(request.identity.user.id,
-                                                      shipmentId,
-                                                      specimenInventoryId)
-        .map { specimen => true }
+      val v = shipmentsService
+        .shipmentCanAddSpecimen(request.identity.user.id, shipmentId, specimenInventoryId)
+        .map { specimen =>
+          true
+        }
       validationReply(v)
     }
 
   def getSpecimen(shipmentId: ShipmentId, shipmentSpecimenId: String): Action[Unit] =
     action(parse.empty) { implicit request =>
-      validationReply(shipmentsService.getShipmentSpecimen(request.identity.user.id,
-                                                           shipmentId,
-                                                           ShipmentSpecimenId(shipmentSpecimenId)))
+      validationReply(
+        shipmentsService
+          .getShipmentSpecimen(request.identity.user.id, shipmentId, ShipmentSpecimenId(shipmentSpecimenId))
+      )
     }
 
   def snapshot: Action[Unit] =
     action(parse.empty) { implicit request =>
-      validationReply(shipmentsService.snapshotRequest(request.identity.user.id).map { _ => true })
+      validationReply(shipmentsService.snapshotRequest(request.identity.user.id).map { _ =>
+        true
+      })
     }
 
   def add(): Action[JsValue] = commandAction[AddShipmentCmd](JsNull)(processCommand)
 
   def remove(shipmentId: ShipmentId, version: Long): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = ShipmentRemoveCmd(sessionUserId   = request.identity.user.id.id,
+      val cmd = ShipmentRemoveCmd(sessionUserId = request.identity.user.id.id,
                                   id              = shipmentId.id,
                                   expectedVersion = version)
       val future = shipmentsService.removeShipment(cmd)
@@ -150,7 +151,7 @@ class ShipmentsController @Inject() (controllerComponents: ControllerComponents,
 
   def removeSpecimen(shipmentId: ShipmentId, shipmentSpecimenId: String, version: Long): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = ShipmentSpecimenRemoveCmd(sessionUserId      = request.identity.user.id.id,
+      val cmd = ShipmentSpecimenRemoveCmd(sessionUserId = request.identity.user.id.id,
                                           shipmentId         = shipmentId.id,
                                           expectedVersion    = version,
                                           shipmentSpecimenId = shipmentSpecimenId)
@@ -158,7 +159,9 @@ class ShipmentsController @Inject() (controllerComponents: ControllerComponents,
     }
 
   def specimenContainer(shipmentId: ShipmentId): Action[JsValue] =
-    commandAction[ShipmentSpecimenUpdateContainerCmd](Json.obj("shipmentId" -> shipmentId))(processSpecimenCommand)
+    commandAction[ShipmentSpecimenUpdateContainerCmd](Json.obj("shipmentId" -> shipmentId))(
+      processSpecimenCommand
+    )
 
   def specimenPresent(shipmentId: ShipmentId): Action[JsValue] =
     commandAction[ShipmentSpecimensPresentCmd](Json.obj("shipmentId" -> shipmentId))(processSpecimenCommand)

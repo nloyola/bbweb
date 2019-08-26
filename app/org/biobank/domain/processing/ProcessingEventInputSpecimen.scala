@@ -13,9 +13,10 @@ object ProcessingEventInputSpecimenId {
 
 }
 
-final case class ProcessingEventInputSpecimen(id:                ProcessingEventInputSpecimenId,
-                                              processingEventId: ProcessingEventId,
-                                              specimenId:        SpecimenId)
+final case class ProcessingEventInputSpecimen(
+    id:                ProcessingEventInputSpecimenId,
+    processingEventId: ProcessingEventId,
+    specimenId:        SpecimenId)
 
 object ProcessingEventInputSpecimen {
 

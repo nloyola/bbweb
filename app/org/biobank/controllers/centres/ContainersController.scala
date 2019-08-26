@@ -9,7 +9,7 @@ import org.biobank.domain.containers.ContainerId
 import org.biobank.services.centres.ContainersService
 import play.api.libs.json._
 import play.api.mvc._
-import play.api.{ Environment, Logger }
+import play.api.{Environment, Logger}
 import scala.concurrent.{ExecutionContext, Future}
 //import scalaz.Scalaz._
 
@@ -19,13 +19,13 @@ import scala.concurrent.{ExecutionContext, Future}
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
 @Singleton
 class ContainersController @Inject()(
-  controllerComponents: ControllerComponents,
-  val action:           BbwebAction,
-  val env:              Environment,
-  val service:          ContainersService
-) (
-  implicit val ec: ExecutionContext
-)
+    controllerComponents: ControllerComponents,
+    val action:           BbwebAction,
+    val env:              Environment,
+    val service:          ContainersService
+  )(
+    implicit
+    val ec: ExecutionContext)
     extends CommandController(controllerComponents) {
 
   import org.biobank.infrastructure.commands.ContainerCommands._
@@ -53,6 +53,5 @@ class ContainersController @Inject()(
     val future = service.processCommand(cmd)
     validationReply(future)
   }
-
 
 }

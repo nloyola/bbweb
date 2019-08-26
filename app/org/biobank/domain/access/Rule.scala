@@ -8,5 +8,4 @@ trait Rule {
 
   def execute(user: User, item: AccessItem): Boolean
 
-
 }

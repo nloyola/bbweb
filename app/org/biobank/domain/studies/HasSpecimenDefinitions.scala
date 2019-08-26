@@ -9,31 +9,35 @@ trait HasSpecimenDefinitions[T <: SpecimenDefinition] {
 
   val specimenDefinitions: Set[T]
 
-  def specimenDefinition(id: SpecimenDefinitionId): DomainValidation[T] = {
+  def specimenDefinition(id: SpecimenDefinitionId): DomainValidation[T] =
     specimenDefinitions.find(_.id == id).toSuccessNel(s"IdNotFound: specimen definition not found: $id")
-  }
 
-  protected def checkAddSpecimenDefinition(specimenDefinition: T): DomainValidation[Unit] = {
-    nameNotUsed(specimenDefinition).map { _ => () }
-  }
+  protected def checkAddSpecimenDefinition(specimenDefinition: T): DomainValidation[Unit] =
+    nameNotUsed(specimenDefinition).map { _ =>
+      ()
+    }
 
-  protected def checkRemoveSpecimenDefinition(specimenDefinitionId: SpecimenDefinitionId)
-      : DomainValidation[T] = {
+  protected def checkRemoveSpecimenDefinition(
+      specimenDefinitionId: SpecimenDefinitionId
+    ): DomainValidation[T] =
     specimenDefinitions
-      .find { x => x.id == specimenDefinitionId }
+      .find { x =>
+        x.id == specimenDefinitionId
+      }
       .toSuccessNel(s"specimen definition does not exist: $specimenDefinitionId")
-  }
 
   protected def nameNotUsed(specimenDefinition: SpecimenDefinition): DomainValidation[Unit] = {
     val nameLowerCase = specimenDefinition.name.toLowerCase
     specimenDefinitions
-      .find { x => (x.name.toLowerCase == nameLowerCase) && (x.id != specimenDefinition.id)  }
-      match {
-        case Some(_) =>
-          EntityCriteriaError(s"specimen definition name already used: ${specimenDefinition.name}").failureNel[Unit]
-        case None =>
-          ().successNel[DomainError]
-      }
+      .find { x =>
+        (x.name.toLowerCase == nameLowerCase) && (x.id != specimenDefinition.id)
+      } match {
+      case Some(_) =>
+        EntityCriteriaError(s"specimen definition name already used: ${specimenDefinition.name}")
+          .failureNel[Unit]
+      case None =>
+        ().successNel[DomainError]
+    }
   }
 
 }

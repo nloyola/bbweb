@@ -71,11 +71,10 @@ class UsersRouter @Inject()(controller: UsersController) extends SimpleRouter {
 
 object UsersRouting {
 
-  implicit object bindableUserId extends Parsing[UserId](
-    UserId.apply,
-    _.id,
-    (key: String, e: Exception) => s"$key is not a valid user Id"
-  )
+  implicit object bindableUserId
+      extends Parsing[UserId](UserId.apply,
+                              _.id,
+                              (key: String, e: Exception) => s"$key is not a valid user Id")
 
   val userId: PathBindableExtractor[UserId] = new PathBindableExtractor[UserId]
 

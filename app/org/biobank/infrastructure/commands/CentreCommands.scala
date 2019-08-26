@@ -15,82 +15,76 @@ object CentreCommands {
 
   trait CentreCommandWithCentreId extends CentreCommand with HasCentreIdentity
 
-  final case class AddCentreCmd(sessionUserId: String,
-                                name:          String,
-                                description:   Option[String])
+  final case class AddCentreCmd(sessionUserId: String, name: String, description: Option[String])
       extends CentreCommand
 
-  final case class UpdateCentreNameCmd(sessionUserId:   String,
-                                       id:              String,
-                                       expectedVersion: Long,
-                                       name:            String)
+  final case class UpdateCentreNameCmd(sessionUserId: String, id: String, expectedVersion: Long, name: String)
       extends CentreModifyCommand
 
-  final case class UpdateCentreDescriptionCmd(sessionUserId:   String,
-                                              id:              String,
-                                              expectedVersion: Long,
-                                              description:     Option[String])
+  final case class UpdateCentreDescriptionCmd(
+      sessionUserId:   String,
+      id:              String,
+      expectedVersion: Long,
+      description:     Option[String])
       extends CentreModifyCommand
 
-  final case class AddCentreLocationCmd(sessionUserId:   String,
-                                        id:              String,
-                                        expectedVersion: Long,
-                                        name:            String,
-                                        street:          String,
-                                        city:            String,
-                                        province:        String,
-                                        postalCode:      String,
-                                        poBoxNumber:     Option[String],
-                                        countryIsoCode:  String)
+  final case class AddCentreLocationCmd(
+      sessionUserId:   String,
+      id:              String,
+      expectedVersion: Long,
+      name:            String,
+      street:          String,
+      city:            String,
+      province:        String,
+      postalCode:      String,
+      poBoxNumber:     Option[String],
+      countryIsoCode:  String)
       extends CentreModifyCommand
 
-  final case class UpdateCentreLocationCmd(sessionUserId:   String,
-                                           id:              String,
-                                           expectedVersion: Long,
-                                           locationId:      String,
-                                           name:            String,
-                                           street:          String,
-                                           city:            String,
-                                           province:        String,
-                                           postalCode:      String,
-                                           poBoxNumber:     Option[String],
-                                           countryIsoCode:  String)
+  final case class UpdateCentreLocationCmd(
+      sessionUserId:   String,
+      id:              String,
+      expectedVersion: Long,
+      locationId:      String,
+      name:            String,
+      street:          String,
+      city:            String,
+      province:        String,
+      postalCode:      String,
+      poBoxNumber:     Option[String],
+      countryIsoCode:  String)
       extends CentreModifyCommand
 
-  final case class RemoveCentreLocationCmd(sessionUserId:   String,
-                                           id:              String,
-                                           expectedVersion: Long,
-                                           locationId:      String)
+  final case class RemoveCentreLocationCmd(
+      sessionUserId:   String,
+      id:              String,
+      expectedVersion: Long,
+      locationId:      String)
       extends CentreModifyCommand
 
   trait CentreStudyCmd extends CentreCommandWithCentreId
 
-  final case class AddStudyToCentreCmd(sessionUserId:   String,
-                                       id:              String,
-                                       expectedVersion: Long,
-                                       studyId:         String)
+  final case class AddStudyToCentreCmd(
+      sessionUserId:   String,
+      id:              String,
+      expectedVersion: Long,
+      studyId:         String)
       extends CentreModifyCommand
 
-  final case class RemoveStudyFromCentreCmd(sessionUserId:   String,
-                                            id:              String,
-                                            expectedVersion: Long,
-                                            studyId:         String)
+  final case class RemoveStudyFromCentreCmd(
+      sessionUserId:   String,
+      id:              String,
+      expectedVersion: Long,
+      studyId:         String)
       extends CentreModifyCommand
 
-  final case class EnableCentreCmd(sessionUserId:   String,
-                                   id:              String,
-                                   expectedVersion: Long)
+  final case class EnableCentreCmd(sessionUserId: String, id: String, expectedVersion: Long)
       extends CentreStateChangeCommand
 
-  final case class DisableCentreCmd(sessionUserId:   String,
-                                    id:              String,
-                                    expectedVersion: Long)
+  final case class DisableCentreCmd(sessionUserId: String, id: String, expectedVersion: Long)
       extends CentreStateChangeCommand
 
-  final case class SearchCentreLocationsCmd(sessionUserId: String,
-                                            filter:        String,
-                                            limit:         Int)
-      extends Command
+  final case class SearchCentreLocationsCmd(sessionUserId: String, filter: String, limit: Int) extends Command
 
   implicit val addCentreCmdReads: Reads[AddCentreCmd] =
     Json.reads[AddCentreCmd]

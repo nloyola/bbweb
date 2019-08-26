@@ -20,10 +20,7 @@ trait ContainerTypeValidations {
  * of a physical container.
  */
 sealed trait ContainerType
-    extends ConcurrencySafeEntity[ContainerTypeId]
-    with HasUniqueName
-    with HasSlug
-    with HasOptionalDescription
+    extends ConcurrencySafeEntity[ContainerTypeId] with HasUniqueName with HasSlug with HasOptionalDescription
     with ContainerValidations {
 
   /**
@@ -55,13 +52,13 @@ sealed trait ContainerType
 
   def withName(name: String): DomainValidation[ContainerType]
 
-  def withDescription(description:  Option[String]): DomainValidation[ContainerType]
+  def withDescription(description: Option[String]): DomainValidation[ContainerType]
 
   def withShared(shared: Boolean): DomainValidation[ContainerType]
 
   def withEnabled(enabled: Boolean): DomainValidation[ContainerType]
 
-    override def toString: String =
+  override def toString: String =
     s"""|ContainerType:{
         |  id:          $id,
         |  slug:        $slug,
@@ -76,18 +73,18 @@ sealed trait ContainerType
 object ContainerType {
 
   implicit val containerTypeWrites: Writes[ContainerType] = new Writes[ContainerType] {
-    def writes(containerType: ContainerType): JsValue = Json.obj(
-      "id"           -> containerType.id,
-      "centreId"     -> containerType.centreId,
-      "schemaId"     -> containerType.schemaId,
-      "version"      -> containerType.version,
-      "timeAdded"    -> containerType.timeAdded,
-      "timeModified" -> containerType.timeModified,
-      "name"         -> containerType.name,
-      "description"  -> containerType.description,
-      "shared"       -> containerType.shared,
-      "status"       -> containerType.getClass.getSimpleName
-    )
+
+    def writes(containerType: ContainerType): JsValue =
+      Json.obj("id"           -> containerType.id,
+               "centreId"     -> containerType.centreId,
+               "schemaId"     -> containerType.schemaId,
+               "version"      -> containerType.version,
+               "timeAdded"    -> containerType.timeAdded,
+               "timeModified" -> containerType.timeModified,
+               "name"         -> containerType.name,
+               "description"  -> containerType.description,
+               "shared"       -> containerType.shared,
+               "status"       -> containerType.getClass.getSimpleName)
   }
 
 }
@@ -95,45 +92,41 @@ object ContainerType {
 /**
  * When a container type is enabled, it `can` be used to create new containers.
  */
-final case class StorageContainerType(id:           ContainerTypeId,
-                                      version:      Long,
-                                      timeAdded:    OffsetDateTime,
-                                      timeModified: Option[OffsetDateTime],
-                                      slug:         Slug,
-                                      name:         String,
-                                      description:  Option[String],
-                                      centreId:     Option[CentreId],
-                                      schemaId:     ContainerSchemaId,
-                                      shared:       Boolean,
-                                      enabled:      Boolean)
+final case class StorageContainerType(
+    id:           ContainerTypeId,
+    version:      Long,
+    timeAdded:    OffsetDateTime,
+    timeModified: Option[OffsetDateTime],
+    slug:         Slug,
+    name:         String,
+    description:  Option[String],
+    centreId:     Option[CentreId],
+    schemaId:     ContainerSchemaId,
+    shared:       Boolean,
+    enabled:      Boolean)
     extends ContainerType {
 
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
-  def withName(name: String): DomainValidation[StorageContainerType] = {
+  def withName(name: String): DomainValidation[StorageContainerType] =
     validateNonEmptyString(name, InvalidName) map { _ =>
       update.copy(name = name)
     }
-  }
 
-  def withDescription(description:  Option[String]): DomainValidation[StorageContainerType] = {
+  def withDescription(description: Option[String]): DomainValidation[StorageContainerType] =
     validateNonEmptyStringOption(description, InvalidDescription) map { _ =>
       update.copy(description = description)
     }
-  }
 
-  def withShared(shared: Boolean): DomainValidation[StorageContainerType] = {
+  def withShared(shared: Boolean): DomainValidation[StorageContainerType] =
     update.copy(shared = shared).success
-  }
 
-  def withEnabled(enabled: Boolean): DomainValidation[StorageContainerType] = {
+  def withEnabled(enabled: Boolean): DomainValidation[StorageContainerType] =
     update.copy(enabled = enabled).success
-  }
 
-  private def update(): StorageContainerType = {
+  private def update(): StorageContainerType =
     copy(version = version + 1L, timeModified = Some(OffsetDateTime.now))
-  }
 
 }
 
@@ -141,20 +134,23 @@ object StorageContainerType extends ContainerValidations {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
-  def create(id:          ContainerTypeId,
-             version:     Long,
-             name:        String,
-             description: Option[String],
-             centreId:    Option[CentreId],
-             schemaId:    ContainerSchemaId,
-             shared:      Boolean,
-             enabled:     Boolean): DomainValidation[StorageContainerType] = {
+  def create(
+      id:          ContainerTypeId,
+      version:     Long,
+      name:        String,
+      description: Option[String],
+      centreId:    Option[CentreId],
+      schemaId:    ContainerSchemaId,
+      shared:      Boolean,
+      enabled:     Boolean
+    ): DomainValidation[StorageContainerType] =
     (validateId(id) |@|
-       validateVersion(version) |@|
-       validateNonEmptyString(name, InvalidName) |@|
-       validateNonEmptyStringOption(description, InvalidDescription) |@|
-       validateIdOption(centreId, CentreIdRequired) |@|
-       validateId(schemaId, ContainerSchemaIdInvalid)) { case _ =>
+      validateVersion(version) |@|
+      validateNonEmptyString(name, InvalidName) |@|
+      validateNonEmptyStringOption(description, InvalidDescription) |@|
+      validateIdOption(centreId, CentreIdRequired) |@|
+      validateId(schemaId, ContainerSchemaIdInvalid)) {
+      case _ =>
         StorageContainerType(id           = id,
                              centreId     = centreId,
                              schemaId     = schemaId,
@@ -167,52 +163,47 @@ object StorageContainerType extends ContainerValidations {
                              shared       = shared,
                              enabled      = enabled)
     }
-  }
 
 }
 
 /**
  * When a container type is disabled, it ''can not'' be used to create new containers.
  */
-final case class SpecimenContainerType(id:           ContainerTypeId,
-                                       centreId:     Option[CentreId],
-                                       schemaId:     ContainerSchemaId,
-                                       version:      Long,
-                                       timeAdded:    OffsetDateTime,
-                                       timeModified: Option[OffsetDateTime],
-                                       slug:         Slug,
-                                       name:         String,
-                                       description:  Option[String],
-                                       shared:       Boolean,
-                                       enabled:      Boolean)
+final case class SpecimenContainerType(
+    id:           ContainerTypeId,
+    centreId:     Option[CentreId],
+    schemaId:     ContainerSchemaId,
+    version:      Long,
+    timeAdded:    OffsetDateTime,
+    timeModified: Option[OffsetDateTime],
+    slug:         Slug,
+    name:         String,
+    description:  Option[String],
+    shared:       Boolean,
+    enabled:      Boolean)
     extends ContainerType {
 
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
-  def withName(name: String): DomainValidation[SpecimenContainerType] = {
+  def withName(name: String): DomainValidation[SpecimenContainerType] =
     validateNonEmptyString(name, InvalidName) map { _ =>
       update.copy(name = name)
     }
-  }
 
-  def withDescription(description:  Option[String]): DomainValidation[SpecimenContainerType] = {
+  def withDescription(description: Option[String]): DomainValidation[SpecimenContainerType] =
     validateNonEmptyStringOption(description, InvalidDescription) map { _ =>
       update.copy(description = description)
     }
-  }
 
-  def withShared(shared: Boolean): DomainValidation[SpecimenContainerType] = {
+  def withShared(shared: Boolean): DomainValidation[SpecimenContainerType] =
     update.copy(shared = shared).success
-  }
 
-  def withEnabled(enabled: Boolean): DomainValidation[SpecimenContainerType] = {
+  def withEnabled(enabled: Boolean): DomainValidation[SpecimenContainerType] =
     update.copy(enabled = enabled).success
-  }
 
-  private def update() = {
+  private def update() =
     copy(version = version + 1L, timeModified = Some(OffsetDateTime.now))
-  }
 
 }
 
@@ -220,20 +211,23 @@ object SpecimenContainerType extends ContainerValidations {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
-  def create(id:           ContainerTypeId,
-             version:      Long,
-             name:         String,
-             description:  Option[String],
-             centreId:     Option[CentreId],
-             schemaId:     ContainerSchemaId,
-             shared:       Boolean,
-             enabled:      Boolean): DomainValidation[SpecimenContainerType] = {
+  def create(
+      id:          ContainerTypeId,
+      version:     Long,
+      name:        String,
+      description: Option[String],
+      centreId:    Option[CentreId],
+      schemaId:    ContainerSchemaId,
+      shared:      Boolean,
+      enabled:     Boolean
+    ): DomainValidation[SpecimenContainerType] =
     (validateId(id) |@|
-       validateVersion(version) |@|
-       validateIdOption(centreId, CentreIdRequired) |@|
-       validateId(schemaId, ContainerSchemaIdInvalid) |@|
-       validateNonEmptyString(name, InvalidName) |@|
-       validateNonEmptyStringOption(description, InvalidDescription)) { case _ =>
+      validateVersion(version) |@|
+      validateIdOption(centreId, CentreIdRequired) |@|
+      validateId(schemaId, ContainerSchemaIdInvalid) |@|
+      validateNonEmptyString(name, InvalidName) |@|
+      validateNonEmptyStringOption(description, InvalidDescription)) {
+      case _ =>
         SpecimenContainerType(id           = id,
                               centreId     = centreId,
                               schemaId     = schemaId,
@@ -246,5 +240,4 @@ object SpecimenContainerType extends ContainerValidations {
                               shared       = shared,
                               enabled      = enabled)
     }
-  }
 }

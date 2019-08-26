@@ -28,7 +28,7 @@ class AccessServiceSpec extends TestFixture with AccessServiceFixtures with Scal
   case class PermissionFixtureParam(user: ActiveUser, role: Role, permission: Permission)
 
   def permissionFixture() = {
-    val f = PermissionFixtureParam(user       = factory.createActiveUser,
+    val f = PermissionFixtureParam(user = factory.createActiveUser,
                                    role       = factory.createRole,
                                    permission = factory.createPermission)
     Set(f.user, f.role, f.permission).foreach(addToRepository)
@@ -46,76 +46,76 @@ class AccessServiceSpec extends TestFixture with AccessServiceFixtures with Scal
     describe("hasPermission") {
 
       it("allows access to a user that has permission through a role") {
-        val f = permissionFixture
-        val role = f.role.copy(userIds = Set(f.user.id))
+        val f          = permissionFixture
+        val role       = f.role.copy(userIds = Set(f.user.id))
         val permission = f.permission.copy(parentIds = Set(role.id))
 
         Set(f.user, role, permission).foreach(addToRepository)
 
-        accessService.hasPermission(f.user.id, permission.id) mustSucceed { _ must be (true) }
+        accessService.hasPermission(f.user.id, permission.id) mustSucceed { _ must be(true) }
       }
 
       it("allows access to a user through multiple roles") {
-        val f = permissionFixture
+        val f          = permissionFixture
         val parentRole = f.role.copy(userIds = Set(f.user.id))
-        val childRole = factory.createRole.copy(parentIds = Set(parentRole.id))
+        val childRole  = factory.createRole.copy(parentIds = Set(parentRole.id))
         val permission = f.permission.copy(parentIds = Set(childRole.id))
 
         Set(f.user, parentRole, childRole, permission).foreach(addToRepository)
 
-        accessService.hasPermission(f.user.id, permission.id) mustSucceed { _ must be (true) }
+        accessService.hasPermission(f.user.id, permission.id) mustSucceed { _ must be(true) }
       }
 
       it("allows access to a user through role that has multiple permissions") {
-        val f = permissionFixture
-        val role = f.role.copy(userIds = Set(f.user.id))
+        val f           = permissionFixture
+        val role        = f.role.copy(userIds = Set(f.user.id))
         val permission1 = f.permission.copy(parentIds = Set(f.role.id))
         val permission2 = factory.createPermission.copy(parentIds = Set(f.role.id))
 
         Set(f.user, role, permission1, permission2).foreach(addToRepository)
 
-        accessService.hasPermission(f.user.id, permission2.id) mustSucceed { _ must be (true) }
+        accessService.hasPermission(f.user.id, permission2.id) mustSucceed { _ must be(true) }
       }
 
       it("allows access to a user through different roles from a permission") {
-        val f = permissionFixture
-        val user1 = f.user
-        val user2 = factory.createActiveUser
-        val role1 = f.role.copy(userIds = Set(user1.id))
-        val role2 = factory.createRole.copy(userIds = Set(user2.id))
+        val f          = permissionFixture
+        val user1      = f.user
+        val user2      = factory.createActiveUser
+        val role1      = f.role.copy(userIds = Set(user1.id))
+        val role2      = factory.createRole.copy(userIds = Set(user2.id))
         val permission = f.permission.copy(parentIds = Set(role1.id, role2.id))
 
         Set(user1, user2, role1, role2, permission).foreach(addToRepository)
 
-        accessService.hasPermission(user1.id, permission.id) mustSucceed { _ must be (true) }
+        accessService.hasPermission(user1.id, permission.id) mustSucceed { _ must be(true) }
 
-        accessService.hasPermission(user2.id, permission.id) mustSucceed { _ must be (true) }
+        accessService.hasPermission(user2.id, permission.id) mustSucceed { _ must be(true) }
       }
 
       it("allows access to a user through common role") {
-        val f = permissionFixture
-        val user1 = f.user
-        val user2 = factory.createActiveUser
+        val f           = permissionFixture
+        val user1       = f.user
+        val user2       = factory.createActiveUser
         val parentRole1 = f.role.copy(userIds = Set(user1.id))
         val parentRole2 = factory.createRole.copy(userIds = Set(user2.id))
-        val childRole = factory.createRole.copy(parentIds = Set(parentRole1.id, parentRole2.id))
-        val permission = f.permission.copy(parentIds = Set(childRole.id))
+        val childRole   = factory.createRole.copy(parentIds = Set(parentRole1.id, parentRole2.id))
+        val permission  = f.permission.copy(parentIds = Set(childRole.id))
 
         Set(user1, user2, parentRole1, parentRole2, childRole, permission).foreach(addToRepository)
 
-        accessService.hasPermission(user1.id, permission.id) mustSucceed { _ must be (true) }
+        accessService.hasPermission(user1.id, permission.id) mustSucceed { _ must be(true) }
 
-        accessService.hasPermission(user2.id, permission.id) mustSucceed { _ must be (true) }
+        accessService.hasPermission(user2.id, permission.id) mustSucceed { _ must be(true) }
       }
 
       it("forbids access to a user does not have permission") {
-        val f = permissionFixture
-        val role = f.role.copy(userIds = Set(f.user.id))
+        val f          = permissionFixture
+        val role       = f.role.copy(userIds = Set(f.user.id))
         val permission = f.permission.copy(parentIds = Set(role.id))
-        val user2 = factory.createActiveUser
+        val user2      = factory.createActiveUser
         Set(f.user, role, permission, user2).foreach(addToRepository)
         accessService.hasPermission(user2.id, permission.id) mustSucceed { hasPermission =>
-          hasPermission must be (false)
+          hasPermission must be(false)
         }
       }
 
@@ -125,45 +125,48 @@ class AccessServiceSpec extends TestFixture with AccessServiceFixtures with Scal
 
       it("allows a user that is a member of a study and centre") {
         val f = membershipFixture
-        accessService.isMember(f.user.id, Some(f.study.id), Some(f.centre.id)) mustSucceed { _ must be (true) }
-        accessService.isMember(f.user.id, Some(f.study.id), None) mustSucceed { _ must be (true) }
-        accessService.isMember(f.user.id, None, Some(f.centre.id)) mustSucceed { _ must be (true) }
-        accessService.isMember(f.user.id, None, None) mustSucceed { _ must be (false) }
+        accessService.isMember(f.user.id, Some(f.study.id), Some(f.centre.id)) mustSucceed { _ must be(true) }
+        accessService.isMember(f.user.id, Some(f.study.id), None) mustSucceed { _ must be(true) }
+        accessService.isMember(f.user.id, None, Some(f.centre.id)) mustSucceed { _ must be(true) }
+        accessService.isMember(f.user.id, None, None) mustSucceed { _ must be(false) }
       }
 
       it("allows user that is member of all studies and all centres") {
         val f = membershipFixture
-        val membership = f.membership.copy(userIds    = Set(f.user.id),
+        val membership = f.membership.copy(userIds = Set(f.user.id),
                                            studyData  = MembershipEntitySet(true, Set.empty[StudyId]),
                                            centreData = MembershipEntitySet(true, Set.empty[CentreId]))
 
         addToRepository(membership)
-        accessService.isMember(f.user.id, Some(f.study.id), Some(f.centre.id)) mustSucceed { _ must be (true) }
-        accessService.isMember(f.user.id, Some(f.study.id), None) mustSucceed { _ must be (true) }
-        accessService.isMember(f.user.id, None, Some(f.centre.id)) mustSucceed { _ must be (true) }
-        accessService.isMember(f.user.id, None, None) mustSucceed { _ must be (false) }
+        accessService.isMember(f.user.id, Some(f.study.id), Some(f.centre.id)) mustSucceed { _ must be(true) }
+        accessService.isMember(f.user.id, Some(f.study.id), None) mustSucceed { _ must be(true) }
+        accessService.isMember(f.user.id, None, Some(f.centre.id)) mustSucceed { _ must be(true) }
+        accessService.isMember(f.user.id, None, None) mustSucceed { _ must be(false) }
       }
 
       it("forbids a user that is not a member of a study and centre") {
         val f = membershipFixture
-        val membership = f.membership.copy(userIds    = Set(f.user.id),
+        val membership = f.membership.copy(userIds = Set(f.user.id),
                                            studyData  = MembershipEntitySet(false, Set.empty[StudyId]),
                                            centreData = MembershipEntitySet(false, Set.empty[CentreId]))
         addToRepository(membership)
 
-        accessService.isMember(f.user.id, Some(f.study.id), Some(f.centre.id)) mustSucceed { _ must be (false) }
-        accessService.isMember(f.user.id, Some(f.study.id), None) mustSucceed { _ must be (false) }
-        accessService.isMember(f.user.id, None, Some(f.centre.id)) mustSucceed { _ must be (false) }
-        accessService.isMember(f.user.id, None, None) mustSucceed { _ must be (false) }
+        accessService.isMember(f.user.id, Some(f.study.id), Some(f.centre.id)) mustSucceed {
+          _ must be(false)
+        }
+        accessService.isMember(f.user.id, Some(f.study.id), None) mustSucceed { _ must be(false) }
+        accessService.isMember(f.user.id, None, Some(f.centre.id)) mustSucceed { _ must be(false) }
+        accessService.isMember(f.user.id, None, None) mustSucceed { _ must be(false) }
       }
 
       it("fails if user not found") {
-        val f = membershipFixture
+        val f          = membershipFixture
         val membership = factory.createMembership.copy(userIds = Set(f.user.id))
         addToRepository(membership)
 
         val user2 = factory.createActiveUser
-        accessService.isMember(user2.id, Some(f.study.id), Some(f.centre.id))
+        accessService
+          .isMember(user2.id, Some(f.study.id), Some(f.centre.id))
           .mustFail(s"IdNotFound: user id: ${user2.id}")
 
         accessService.isMember(user2.id, Some(f.study.id), None) mustFail s"IdNotFound: user id: ${user2.id}"
@@ -171,28 +174,32 @@ class AccessServiceSpec extends TestFixture with AccessServiceFixtures with Scal
       }
 
       it("fails if study not found") {
-        val f = membershipFixture
+        val f          = membershipFixture
         val membership = factory.createMembership.copy(userIds = Set(f.user.id))
         addToRepository(membership)
 
         val study2 = factory.createEnabledStudy
-        accessService.isMember(f.user.id, Some(study2.id), Some(f.centre.id))
+        accessService
+          .isMember(f.user.id, Some(study2.id), Some(f.centre.id))
           .mustFail(s"IdNotFound: study id: ${study2.id}")
 
-        accessService.isMember(f.user.id, Some(study2.id), None)
+        accessService
+          .isMember(f.user.id, Some(study2.id), None)
           .mustFail(s"IdNotFound: study id: ${study2.id}")
       }
 
       it("fails if centre not found") {
-        val f = membershipFixture
+        val f          = membershipFixture
         val membership = factory.createMembership.copy(userIds = Set(f.user.id))
         addToRepository(membership)
 
         val centre2 = factory.createEnabledCentre
-        accessService.isMember(f.user.id, Some(f.study.id), Some(centre2.id))
+        accessService
+          .isMember(f.user.id, Some(f.study.id), Some(centre2.id))
           .mustFail(s"IdNotFound: centre id: ${centre2.id}")
 
-        accessService.isMember(f.user.id, None, Some(centre2.id))
+        accessService
+          .isMember(f.user.id, None, Some(centre2.id))
           .mustFail(s"IdNotFound: centre id: ${centre2.id}")
       }
 
@@ -201,11 +208,11 @@ class AccessServiceSpec extends TestFixture with AccessServiceFixtures with Scal
     describe("for Memberships") {
 
       class Fixture {
-        val membership = factory.createMembership
-        val permittedUser = factory.createActiveUser
+        val membership       = factory.createMembership
+        val permittedUser    = factory.createActiveUser
         val nonPermittedUser = factory.createActiveUser
-        val role = factory.createRole.copy(userIds = Set(permittedUser.id))
-        val permission = factory.createPermission.copy(id        = PermissionId.MembershipRead,
+        val role             = factory.createRole.copy(userIds = Set(permittedUser.id))
+        val permission = factory.createPermission.copy(id = PermissionId.MembershipRead,
                                                        name      = PermissionId.MembershipRead.toString,
                                                        parentIds = Set(role.id))
         Set(membership, permittedUser, nonPermittedUser, role, permission).foreach(addToRepository)
@@ -215,8 +222,8 @@ class AccessServiceSpec extends TestFixture with AccessServiceFixtures with Scal
 
         it("user with 'membership read' permission can retrieve a membership") {
           val f = new Fixture
-          accessService.getMembership(f.permittedUser.id, f.membership.id) .mustSucceed { dto =>
-            dto.id must be (f.membership.id)
+          accessService.getMembership(f.permittedUser.id, f.membership.id).mustSucceed { dto =>
+            dto.id must be(f.membership.id)
           }
         }
 
@@ -230,19 +237,17 @@ class AccessServiceSpec extends TestFixture with AccessServiceFixtures with Scal
       describe("for getMemberships") {
 
         it("user with 'membership read' permission can retrieve memberships") {
-          val f = new Fixture
-          val query = PagedQuery(new FilterString(""), new SortString(""), 0 , 1)
-          accessService.getMemberships(f.permittedUser.id, query)
-            .futureValue.mustSucceed { pagedResults =>
-              pagedResults.items must have size (1L)
-            }
+          val f     = new Fixture
+          val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
+          accessService.getMemberships(f.permittedUser.id, query).futureValue.mustSucceed { pagedResults =>
+            pagedResults.items must have size (1L)
+          }
         }
 
         it("fails for user without 'membership read' permission") {
-          val f = new Fixture
-          val query = PagedQuery(new FilterString(""), new SortString(""), 0 , 1)
-          accessService.getMemberships(f.nonPermittedUser.id, query)
-            .futureValue.mustFail("Unauthorized")
+          val f     = new Fixture
+          val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
+          accessService.getMemberships(f.nonPermittedUser.id, query).futureValue.mustFail("Unauthorized")
         }
       }
 

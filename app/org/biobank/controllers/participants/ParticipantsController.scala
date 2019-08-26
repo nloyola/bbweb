@@ -7,18 +7,21 @@ import org.biobank.domain.studies.StudyId
 import org.biobank.domain.participants.ParticipantId
 import org.biobank.infrastructure.commands.ParticipantCommands._
 import org.biobank.services.participants._
-import play.api.{ Environment, Logger }
+import play.api.{Environment, Logger}
 import play.api.libs.json._
 import play.api.mvc.{Action, ControllerComponents}
 import scala.concurrent.ExecutionContext
 
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
 @Singleton
-class ParticipantsController @Inject() (controllerComponents: ControllerComponents,
-                                        val action:              BbwebAction,
-                                        val env:                 Environment,
-                                        val participantsService: ParticipantsService)
-                               (implicit val ec: ExecutionContext)
+class ParticipantsController @Inject()(
+    controllerComponents:    ControllerComponents,
+    val action:              BbwebAction,
+    val env:                 Environment,
+    val participantsService: ParticipantsService
+  )(
+    implicit
+    val ec: ExecutionContext)
     extends CommandController(controllerComponents) {
 
   val log: Logger = Logger(this.getClass)
@@ -54,15 +57,14 @@ class ParticipantsController @Inject() (controllerComponents: ControllerComponen
 
   def removeAnnotation(participantId: ParticipantId, annotTypeId: String, ver: Long): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = ParticipantRemoveAnnotationCmd(sessionUserId    = request.identity.user.id.id,
+      val cmd = ParticipantRemoveAnnotationCmd(sessionUserId = request.identity.user.id.id,
                                                id               = participantId.id,
                                                expectedVersion  = ver,
                                                annotationTypeId = annotTypeId)
       processCommand(cmd)
     }
 
-  private def processCommand(cmd: ParticipantCommand) = {
+  private def processCommand(cmd: ParticipantCommand) =
     validationReply(participantsService.processCommand(cmd))
-  }
 
 }

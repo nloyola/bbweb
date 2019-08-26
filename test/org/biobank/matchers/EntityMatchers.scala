@@ -18,17 +18,22 @@ trait EntityMatchers {
   import DateMatchers._
 
   def beEntityWithTimeAddedWithinSeconds(time: OffsetDateTime, diffSeconds: Long) =
-    beTimeWithinSeconds(time, diffSeconds) compose { (e: ConcurrencySafeEntity[_]) => e.timeAdded }
-
-  def beEntityWithTimeModifiedWithinSeconds(time: Option[OffsetDateTime], diffSeconds: Long) =
-    beOptionalTimeWithinSeconds(time, diffSeconds) compose {
-      (e: ConcurrencySafeEntity[_]) => e.timeModified
+    beTimeWithinSeconds(time, diffSeconds) compose { (e: ConcurrencySafeEntity[_]) =>
+      e.timeAdded
     }
 
-  def beEntityWithTimeStamps[T <: ConcurrencySafeEntity[_]](timeAdded:    OffsetDateTime,
-                                                            timeModified: Option[OffsetDateTime],
-                                                            diffSeconds:  Long) =
+  def beEntityWithTimeModifiedWithinSeconds(time: Option[OffsetDateTime], diffSeconds: Long) =
+    beOptionalTimeWithinSeconds(time, diffSeconds) compose { (e: ConcurrencySafeEntity[_]) =>
+      e.timeModified
+    }
+
+  def beEntityWithTimeStamps[T <: ConcurrencySafeEntity[_]](
+      timeAdded:    OffsetDateTime,
+      timeModified: Option[OffsetDateTime],
+      diffSeconds:  Long
+    ) =
     new Matcher[T] {
+
       def apply(left: T) = {
         val timeAddedMatches = beEntityWithTimeAddedWithinSeconds(timeAdded, diffSeconds)(left)
         if (!timeAddedMatches.matches) {
@@ -53,16 +58,16 @@ trait EntityMatchers {
    */
   def matchCentre(centre: Centre) =
     new Matcher[Centre] {
+
       def apply(left: Centre) = {
-        val matchers = Map(
-            ("id"          -> (left.id equals centre.id)),
-            ("slug"        -> (left.slug equals centre.slug)),
-            ("state"       -> (left.state equals centre.state)),
-            ("name"        -> (left.name equals centre.name)),
-            ("description" -> (left.description equals centre.description)),
-            ("studyIds"    -> (left.studyIds equals centre.studyIds)),
-            ("locations"   -> (locationsMatch(left.locations, centre.locations)))) ++
-        entityAttrsMatch(centre, left)
+        val matchers = Map(("id" -> (left.id equals centre.id)),
+                           ("slug"        -> (left.slug equals centre.slug)),
+                           ("state"       -> (left.state equals centre.state)),
+                           ("name"        -> (left.name equals centre.name)),
+                           ("description" -> (left.description equals centre.description)),
+                           ("studyIds"    -> (left.studyIds equals centre.studyIds)),
+                           ("locations"   -> (locationsMatch(left.locations, centre.locations)))) ++
+          entityAttrsMatch(centre, left)
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
@@ -81,15 +86,16 @@ trait EntityMatchers {
    */
   def matchStudy(study: Study) =
     new Matcher[Study] {
+
       def apply(left: Study) = {
-        val matchers = Map(
-            ("id"              -> (left.id equals study.id)),
-            ("slug"            -> (left.slug equals study.slug)),
-            ("state"           -> (left.state equals study.state)),
-            ("name"            -> (left.name equals study.name)),
-            ("description"     -> (left.description equals study.description)),
-            ("annotationTypes" -> (annotationTypesMatch(left.annotationTypes, study.annotationTypes)))) ++
-        entityAttrsMatch(study, left)
+        val matchers = Map(("id" -> (left.id equals study.id)),
+                           ("slug"        -> (left.slug equals study.slug)),
+                           ("state"       -> (left.state equals study.state)),
+                           ("name"        -> (left.name equals study.name)),
+                           ("description" -> (left.description equals study.description)),
+                           ("annotationTypes" -> (annotationTypesMatch(left.annotationTypes,
+                                                                       study.annotationTypes)))) ++
+          entityAttrsMatch(study, left)
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
@@ -108,18 +114,20 @@ trait EntityMatchers {
    */
   def matchCollectionEventType(eventType: CollectionEventType) =
     new Matcher[CollectionEventType] {
+
       def apply(left: CollectionEventType) = {
-        val matchers = Map(
-            ("id"              -> (left.id equals eventType.id)),
-            ("slug"            -> (left.slug equals eventType.slug)),
-            ("name"            -> (left.name equals eventType.name)),
-            ("description"     -> (left.description equals eventType.description)),
-            ("recurring"       -> (left.recurring equals eventType.recurring)),
-            ("specimenDefinitions" -> collectionSpecimenDefinitionsMatch(left.specimenDefinitions,
-                                                                        eventType.specimenDefinitions)),
-            ("annotationTypes" -> (annotationTypesMatch(left.annotationTypes,
-                                                       eventType.annotationTypes)))) ++
-        entityAttrsMatch(eventType, left)
+        val matchers = Map(("id" -> (left.id equals eventType.id)),
+                           ("slug"        -> (left.slug equals eventType.slug)),
+                           ("name"        -> (left.name equals eventType.name)),
+                           ("description" -> (left.description equals eventType.description)),
+                           ("recurring"   -> (left.recurring equals eventType.recurring)),
+                           ("specimenDefinitions" -> collectionSpecimenDefinitionsMatch(
+                             left.specimenDefinitions,
+                             eventType.specimenDefinitions
+                           )),
+                           ("annotationTypes" -> (annotationTypesMatch(left.annotationTypes,
+                                                                       eventType.annotationTypes)))) ++
+          entityAttrsMatch(eventType, left)
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
@@ -138,19 +146,18 @@ trait EntityMatchers {
    */
   def matchProcessingType(processingType: ProcessingType) =
     new Matcher[ProcessingType] {
+
       def apply(left: ProcessingType) = {
-        val matchers = Map(
-            ("id"                 -> (left.id          equals processingType.id)),
-            ("slug"               -> (left.slug        equals processingType.slug)),
-            ("name"               -> (left.name        equals processingType.name)),
-            ("description"        -> (left.description equals processingType.description)),
-            ("enabled"            -> (left.enabled     equals processingType.enabled)),
-            ("annotationTypes"    -> (annotationTypesMatch(left.annotationTypes,
-                                                          processingType.annotationTypes)))
-          ) ++
-        inputSpecimenInfosMatch(left, processingType) ++
-        outputSpecimenInfosMatch(left, processingType) ++
-        entityAttrsMatch(processingType, left)
+        val matchers = Map(("id" -> (left.id equals processingType.id)),
+                           ("slug"        -> (left.slug equals processingType.slug)),
+                           ("name"        -> (left.name equals processingType.name)),
+                           ("description" -> (left.description equals processingType.description)),
+                           ("enabled"     -> (left.enabled equals processingType.enabled)),
+                           ("annotationTypes" -> (annotationTypesMatch(left.annotationTypes,
+                                                                       processingType.annotationTypes)))) ++
+          inputSpecimenInfosMatch(left, processingType) ++
+          outputSpecimenInfosMatch(left, processingType) ++
+          entityAttrsMatch(processingType, left)
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
@@ -170,14 +177,14 @@ trait EntityMatchers {
    */
   def matchUser(user: User) =
     new Matcher[User] {
+
       def apply(left: User) = {
-        val matchers = Map(
-            ("id"           -> (left.id equals user.id)),
-            ("slug"         -> (left.slug equals user.slug)),
-            ("state"        -> (left.state equals user.state)),
-            ("name"         -> (left.name equals user.name)),
-            ("email"        -> (left.email equals user.email)),
-            ("avatarUrl"    -> (left.avatarUrl equals user.avatarUrl))) ++
+        val matchers = Map(("id" -> (left.id equals user.id)),
+                           ("slug"      -> (left.slug equals user.slug)),
+                           ("state"     -> (left.state equals user.state)),
+                           ("name"      -> (left.name equals user.name)),
+                           ("email"     -> (left.email equals user.email)),
+                           ("avatarUrl" -> (left.avatarUrl equals user.avatarUrl))) ++
           entityAttrsMatch(user, left)
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
@@ -197,21 +204,21 @@ trait EntityMatchers {
    */
   def matchShipment(shipment: Shipment) =
     new Matcher[Shipment] {
+
       def apply(left: Shipment) = {
-        val matchers = Map(
-            ("id"             -> (left.id equals shipment.id)),
-            ("state"          -> (left.state equals shipment.state)),
-            ("courierName"    -> (left.courierName equals shipment.courierName)),
-            ("trackingNumber" -> (left.trackingNumber equals shipment.trackingNumber)),
-            ("fromCentreId"   -> (left.fromCentreId equals shipment.fromCentreId)),
-            ("fromLocationId" -> (left.fromLocationId equals shipment.fromLocationId)),
-            ("toCentreId"     -> (left.toCentreId equals shipment.toCentreId)),
-            ("toLocationId"   -> (left.toLocationId equals shipment.toLocationId)),
-            ("timePacked"     -> (left.timePacked equals shipment.timePacked)),
-            ("timeSent"       -> (left.timeSent equals shipment.timeSent)),
-            ("timeReceived"   -> (left.timeReceived equals shipment.timeReceived)),
-            ("timeUnpacked"   -> (left.timeUnpacked equals shipment.timeUnpacked)),
-            ("timeCompleted"  -> (left.timeCompleted equals shipment.timeCompleted))) ++
+        val matchers = Map(("id" -> (left.id equals shipment.id)),
+                           ("state"          -> (left.state equals shipment.state)),
+                           ("courierName"    -> (left.courierName equals shipment.courierName)),
+                           ("trackingNumber" -> (left.trackingNumber equals shipment.trackingNumber)),
+                           ("fromCentreId"   -> (left.fromCentreId equals shipment.fromCentreId)),
+                           ("fromLocationId" -> (left.fromLocationId equals shipment.fromLocationId)),
+                           ("toCentreId"     -> (left.toCentreId equals shipment.toCentreId)),
+                           ("toLocationId"   -> (left.toLocationId equals shipment.toLocationId)),
+                           ("timePacked"     -> (left.timePacked equals shipment.timePacked)),
+                           ("timeSent"       -> (left.timeSent equals shipment.timeSent)),
+                           ("timeReceived"   -> (left.timeReceived equals shipment.timeReceived)),
+                           ("timeUnpacked"   -> (left.timeUnpacked equals shipment.timeUnpacked)),
+                           ("timeCompleted"  -> (left.timeCompleted equals shipment.timeCompleted))) ++
           entityAttrsMatch(shipment, left)
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
@@ -231,14 +238,14 @@ trait EntityMatchers {
    */
   def matchShipmentSpecimen(shSpc: ShipmentSpecimen) =
     new Matcher[ShipmentSpecimen] {
+
       def apply(left: ShipmentSpecimen) = {
-        val matchers = Map(
-            ("id"                  -> (left.id equals shSpc.id)),
-            ("state"               -> (left.state equals shSpc.state)),
-            ("shipmentId"          -> (left.shipmentId equals shSpc.shipmentId)),
-            ("specimenId"          -> (left.specimenId equals shSpc.specimenId)),
-            ("state"               -> (left.state equals shSpc.state)),
-            ("shipmentContainerId" -> (left.shipmentContainerId equals shSpc.shipmentContainerId))) ++
+        val matchers = Map(("id" -> (left.id equals shSpc.id)),
+                           ("state"               -> (left.state equals shSpc.state)),
+                           ("shipmentId"          -> (left.shipmentId equals shSpc.shipmentId)),
+                           ("specimenId"          -> (left.specimenId equals shSpc.specimenId)),
+                           ("state"               -> (left.state equals shSpc.state)),
+                           ("shipmentContainerId" -> (left.shipmentContainerId equals shSpc.shipmentContainerId))) ++
           entityAttrsMatch(shSpc, left)
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
@@ -258,20 +265,22 @@ trait EntityMatchers {
    */
   def matchParticipant(participant: Participant) =
     new Matcher[Participant] {
+
       def apply(left: Participant) = {
-        val matchers = Map(
-            ("id"           -> (left.id equals participant.id)),
-            ("slug"         -> (left.slug equals participant.slug)),
-            ("uniqueId"     -> (left.uniqueId equals participant.uniqueId)),
-            ("annotations"  -> annotationsMatch(left.annotations, participant.annotations))) ++
+        val matchers = Map(("id" -> (left.id equals participant.id)),
+                           ("slug"        -> (left.slug equals participant.slug)),
+                           ("uniqueId"    -> (left.uniqueId equals participant.uniqueId)),
+                           ("annotations" -> annotationsMatch(left.annotations, participant.annotations))) ++
           entityAttrsMatch(participant, left)
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
-        MatchResult(nonMatching.size <= 0,
-                    "participants do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
-                    "participants match: actual: {1},\nexpected: {2}",
-                    IndexedSeq(nonMatching.mkString(", "), left, participant))
+        MatchResult(
+          nonMatching.size <= 0,
+          "participants do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
+          "participants match: actual: {1},\nexpected: {2}",
+          IndexedSeq(nonMatching.mkString(", "), left, participant)
+        )
       }
     }
 
@@ -283,23 +292,25 @@ trait EntityMatchers {
    */
   def matchCollectionEvent(collectionEvent: CollectionEvent) =
     new Matcher[CollectionEvent] {
+
       def apply(left: CollectionEvent) = {
-        val matchers = Map(
-            ("id"            -> (left.id equals collectionEvent.id)),
-            ("slug"          -> (left.slug equals collectionEvent.slug)),
-            ("participantId" -> (left.participantId equals collectionEvent.participantId)),
-            ("eventTypeId"   -> (left.collectionEventTypeId equals collectionEvent.collectionEventTypeId)),
-            ("visitNumber"   -> (left.visitNumber equals collectionEvent.visitNumber)),
-            ("timeCompleted" -> (left.timeCompleted equals collectionEvent.timeCompleted)),
-            ("annotations"   -> annotationsMatch(left.annotations, collectionEvent.annotations))) ++
+        val matchers = Map(("id" -> (left.id equals collectionEvent.id)),
+                           ("slug"          -> (left.slug equals collectionEvent.slug)),
+                           ("participantId" -> (left.participantId equals collectionEvent.participantId)),
+                           ("eventTypeId"   -> (left.collectionEventTypeId equals collectionEvent.collectionEventTypeId)),
+                           ("visitNumber"   -> (left.visitNumber equals collectionEvent.visitNumber)),
+                           ("timeCompleted" -> (left.timeCompleted equals collectionEvent.timeCompleted)),
+                           ("annotations"   -> annotationsMatch(left.annotations, collectionEvent.annotations))) ++
           entityAttrsMatch(collectionEvent, left)
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
-        MatchResult(nonMatching.size <= 0,
-                    "collectionEvents do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
-                    "collectionEvents match: actual: {1},\nexpected: {2}",
-                    IndexedSeq(nonMatching.mkString(", "), left, collectionEvent))
+        MatchResult(
+          nonMatching.size <= 0,
+          "collectionEvents do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
+          "collectionEvents match: actual: {1},\nexpected: {2}",
+          IndexedSeq(nonMatching.mkString(", "), left, collectionEvent)
+        )
       }
     }
 
@@ -311,17 +322,17 @@ trait EntityMatchers {
    */
   def matchSpecimen(specimen: Specimen) =
     new Matcher[Specimen] {
+
       def apply(left: Specimen) = {
-        val matchers = Map(
-            ("id"                   -> (left.id equals specimen.id)),
-            ("slug"                 -> (left.slug equals specimen.slug)),
-            ("inventoryId"          -> (left.inventoryId equals specimen.inventoryId)),
-            ("specimenDefinitionId" -> (left.specimenDefinitionId equals specimen.specimenDefinitionId)),
-            ("originLocationId"     -> (left.originLocationId equals specimen.originLocationId)),
-            ("locationId"           -> (left.locationId equals specimen.locationId)),
-            ("containerId"          -> (left.containerId equals specimen.containerId)),
-            ("timeCreated"          -> (left.timeCreated equals specimen.timeCreated)),
-            ("amount"               -> (left.amount equals specimen.amount))) ++
+        val matchers = Map(("id" -> (left.id equals specimen.id)),
+                           ("slug"                 -> (left.slug equals specimen.slug)),
+                           ("inventoryId"          -> (left.inventoryId equals specimen.inventoryId)),
+                           ("specimenDefinitionId" -> (left.specimenDefinitionId equals specimen.specimenDefinitionId)),
+                           ("originLocationId"     -> (left.originLocationId equals specimen.originLocationId)),
+                           ("locationId"           -> (left.locationId equals specimen.locationId)),
+                           ("containerId"          -> (left.containerId equals specimen.containerId)),
+                           ("timeCreated"          -> (left.timeCreated equals specimen.timeCreated)),
+                           ("amount"               -> (left.amount equals specimen.amount))) ++
           entityAttrsMatch(specimen, left)
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
@@ -341,10 +352,11 @@ trait EntityMatchers {
    */
   def matchRole(role: Role) =
     new Matcher[Role] {
+
       def apply(left: Role) = {
         val matchers = Map(("userIds" -> (left.userIds equals role.userIds))) ++
-        accessItemsMatch(left, role) ++
-        entityAttrsMatch(role, left)
+          accessItemsMatch(left, role) ++
+          entityAttrsMatch(role, left)
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
@@ -357,36 +369,40 @@ trait EntityMatchers {
 
   def matchAccessItem(accessItem: AccessItem) =
     new Matcher[AccessItem] {
+
       def apply(left: AccessItem) = {
-        val matchers = accessItemsMatch(left, accessItem) ++ entityAttrsMatch(accessItem, left)
+        val matchers    = accessItemsMatch(left, accessItem) ++ entityAttrsMatch(accessItem, left)
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
-        MatchResult(nonMatching.size <= 0,
-                    "accessItems do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
-                    "accessItems match: actual: {1},\nexpected: {2}",
-                    IndexedSeq(nonMatching.mkString(", "), left, accessItem))
+        MatchResult(
+          nonMatching.size <= 0,
+          "accessItems do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
+          "accessItems match: actual: {1},\nexpected: {2}",
+          IndexedSeq(nonMatching.mkString(", "), left, accessItem)
+        )
       }
     }
 
   def matchMembership(membership: Membership) =
     new Matcher[Membership] {
+
       def apply(left: Membership) = {
-        val matchers = Map(
-            ("id"          -> (left.id          equals membership.id)),
-            ("slug"        -> (left.slug        equals membership.slug)),
-            ("name"        -> (left.name        equals membership.name)),
-            ("description" -> (left.description equals membership.description)),
-            ("userIds"     -> (left.userIds     equals membership.userIds)),
-            ("studyData"   -> (left.studyData   equals membership.studyData)),
-            ("centreData"  -> (left.centreData  equals membership.centreData))
-          )
+        val matchers = Map(("id" -> (left.id equals membership.id)),
+                           ("slug"        -> (left.slug equals membership.slug)),
+                           ("name"        -> (left.name equals membership.name)),
+                           ("description" -> (left.description equals membership.description)),
+                           ("userIds"     -> (left.userIds equals membership.userIds)),
+                           ("studyData"   -> (left.studyData equals membership.studyData)),
+                           ("centreData"  -> (left.centreData equals membership.centreData)))
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
-        MatchResult(nonMatching.size <= 0,
-                    "memberships do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
-                    "memberships match: actual: {1},\nexpected: {2}",
-                    IndexedSeq(nonMatching.mkString(", "), left, membership))
+        MatchResult(
+          nonMatching.size <= 0,
+          "memberships do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
+          "memberships match: actual: {1},\nexpected: {2}",
+          IndexedSeq(nonMatching.mkString(", "), left, membership)
+        )
       }
     }
 
@@ -398,16 +414,16 @@ trait EntityMatchers {
    */
   def matchContainerType(containerType: ContainerType) =
     new Matcher[ContainerType] {
+
       def apply(left: ContainerType) = {
-        val matchers = Map(
-            ("id"          -> (left.id          equals containerType.id)),
-            ("slug"        -> (left.slug        equals containerType.slug)),
-            ("name"        -> (left.name        equals containerType.name)),
-            ("description" -> (left.description equals containerType.description)),
-            ("centreId"    -> (left.centreId    equals containerType.centreId)),
-            ("schemaId"    -> (left.schemaId    equals containerType.schemaId)),
-            ("shared"      -> (left.shared      equals containerType.shared)),
-            ("enabled"     -> (left.enabled     equals containerType.enabled))) ++
+        val matchers = Map(("id" -> (left.id equals containerType.id)),
+                           ("slug"        -> (left.slug equals containerType.slug)),
+                           ("name"        -> (left.name equals containerType.name)),
+                           ("description" -> (left.description equals containerType.description)),
+                           ("centreId"    -> (left.centreId equals containerType.centreId)),
+                           ("schemaId"    -> (left.schemaId equals containerType.schemaId)),
+                           ("shared"      -> (left.shared equals containerType.shared)),
+                           ("enabled"     -> (left.enabled equals containerType.enabled))) ++
           entityAttrsMatch(containerType, left)
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
@@ -415,7 +431,8 @@ trait EntityMatchers {
           nonMatching.size <= 0,
           "containerTypes do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
           "containerTypes match: actual: {1},\nexpected: {2}",
-          IndexedSeq(nonMatching.mkString(", "), left, containerType))
+          IndexedSeq(nonMatching.mkString(", "), left, containerType)
+        )
       }
     }
 
@@ -427,14 +444,14 @@ trait EntityMatchers {
    */
   def matchContainerSchema(containerSchema: ContainerSchema) =
     new Matcher[ContainerSchema] {
+
       def apply(left: ContainerSchema) = {
-        val matchers = Map(
-            ("id"          -> (left.id          equals containerSchema.id)),
-            ("slug"        -> (left.slug        equals containerSchema.slug)),
-            ("name"        -> (left.name        equals containerSchema.name)),
-            ("description" -> (left.description equals containerSchema.description)),
-            ("shared"      -> (left.shared      equals containerSchema.shared)),
-            ("centreId"    -> (left.centreId    equals containerSchema.centreId))) ++
+        val matchers = Map(("id" -> (left.id equals containerSchema.id)),
+                           ("slug"        -> (left.slug equals containerSchema.slug)),
+                           ("name"        -> (left.name equals containerSchema.name)),
+                           ("description" -> (left.description equals containerSchema.description)),
+                           ("shared"      -> (left.shared equals containerSchema.shared)),
+                           ("centreId"    -> (left.centreId equals containerSchema.centreId))) ++
           entityAttrsMatch(containerSchema, left)
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
@@ -442,7 +459,8 @@ trait EntityMatchers {
           nonMatching.size <= 0,
           "containerSchemas do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
           "containerSchemas match: actual: {1},\nexpected: {2}",
-          IndexedSeq(nonMatching.mkString(", "), left, containerSchema))
+          IndexedSeq(nonMatching.mkString(", "), left, containerSchema)
+        )
       }
     }
 
@@ -454,18 +472,19 @@ trait EntityMatchers {
    */
   def matchContainerSchemaPosition(containerSchemaPosition: ContainerSchemaPosition) =
     new Matcher[ContainerSchemaPosition] {
+
       def apply(left: ContainerSchemaPosition) = {
-        val matchers = Map(
-            ("id"          -> (left.id       equals containerSchemaPosition.id)),
-            ("schemaId"    -> (left.schemaId equals containerSchemaPosition.schemaId)),
-            ("label"        -> (left.label   equals containerSchemaPosition.label)))
+        val matchers = Map(("id" -> (left.id equals containerSchemaPosition.id)),
+                           ("schemaId" -> (left.schemaId equals containerSchemaPosition.schemaId)),
+                           ("label"    -> (left.label equals containerSchemaPosition.label)))
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
         MatchResult(
           nonMatching.size <= 0,
           "containerSchemaPositions do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
           "containerSchemaPositions match: actual: {1},\nexpected: {2}",
-          IndexedSeq(nonMatching.mkString(", "), left, containerSchemaPosition))
+          IndexedSeq(nonMatching.mkString(", "), left, containerSchemaPosition)
+        )
       }
     }
 
@@ -477,8 +496,9 @@ trait EntityMatchers {
    */
   def matchContainer(container: Container) =
     new Matcher[Container] {
+
       def apply(left: Container) = {
-        val matchers = containersMatch(left, container)
+        val matchers    = containersMatch(left, container)
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
         MatchResult(nonMatching.size <= 0,
@@ -496,11 +516,11 @@ trait EntityMatchers {
    */
   def matchContainer(container: StorageContainer) =
     new Matcher[StorageContainer] {
+
       def apply(left: StorageContainer) = {
-        val matchers = Map(
-            ("enabled"     -> (left.enabled equals container.enabled)),
-            ("constraints" -> (left.constraints equals container.constraints))) ++
-        containersMatch(left, container)
+        val matchers = Map(("enabled" -> (left.enabled equals container.enabled)),
+                           ("constraints" -> (left.constraints equals container.constraints))) ++
+          containersMatch(left, container)
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
@@ -519,93 +539,105 @@ trait EntityMatchers {
    */
   def matchContainerConstraints(containerConstraints: ContainerConstraints) =
     new Matcher[ContainerConstraints] {
+
       def apply(left: ContainerConstraints) = {
-        val matchers = Map(
-            ("id"                    -> (left.id equals containerConstraints.id)),
-            ("slug"                  -> (left.slug equals containerConstraints.slug)),
-            ("name"                  -> (left.name equals containerConstraints.name)),
-            ("description"           -> (left.description equals containerConstraints.description)),
-            ("centreId"              -> (left.centreId equals containerConstraints.centreId)),
-            ("anatomicalSourceTypes" -> (left.anatomicalSourceTypes equals containerConstraints.anatomicalSourceTypes)),
-            ("preservationTypes"     -> (left.preservationTypes equals containerConstraints.preservationTypes)),
-            ("specimenTypes"         -> (left.specimenTypes equals containerConstraints.specimenTypes)))
+        val matchers = Map(("id" -> (left.id equals containerConstraints.id)),
+                           ("slug"                  -> (left.slug equals containerConstraints.slug)),
+                           ("name"                  -> (left.name equals containerConstraints.name)),
+                           ("description"           -> (left.description equals containerConstraints.description)),
+                           ("centreId"              -> (left.centreId equals containerConstraints.centreId)),
+                           ("anatomicalSourceTypes" -> (left.anatomicalSourceTypes equals containerConstraints.anatomicalSourceTypes)),
+                           ("preservationTypes"     -> (left.preservationTypes equals containerConstraints.preservationTypes)),
+                           ("specimenTypes"         -> (left.specimenTypes equals containerConstraints.specimenTypes)))
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
-        MatchResult(nonMatching.size <= 0,
-                    "containerConstraints do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
-                    "containerConstraints match: actual: {1},\nexpected: {2}",
-                    IndexedSeq(nonMatching.mkString(", "), left, containerConstraints))
+        MatchResult(
+          nonMatching.size <= 0,
+          "containerConstraints do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
+          "containerConstraints match: actual: {1},\nexpected: {2}",
+          IndexedSeq(nonMatching.mkString(", "), left, containerConstraints)
+        )
       }
     }
 
   private def annotationTypesMatch(a: Set[AnnotationType], b: Set[AnnotationType]): Boolean = {
     val maybeMatch = a.map { atToFind =>
-        b.exists { atOther =>
-          ((atOther.id            equals atToFind.id) &&
-             (atOther.slug          equals atToFind.slug) &&
-             (atOther.name          equals atToFind.name) &&
-             (atOther.description   equals atToFind.description) &&
-             (atOther.valueType     equals atToFind.valueType) &&
-             (atOther.maxValueCount equals atToFind.maxValueCount) &&
-             (atOther.options       equals atToFind.options) &&
-             (atOther.required      equals atToFind.required))
-        }
+      b.exists { atOther =>
+        ((atOther.id equals atToFind.id) &&
+        (atOther.slug equals atToFind.slug) &&
+        (atOther.name equals atToFind.name) &&
+        (atOther.description equals atToFind.description) &&
+        (atOther.valueType equals atToFind.valueType) &&
+        (atOther.maxValueCount equals atToFind.maxValueCount) &&
+        (atOther.options equals atToFind.options) &&
+        (atOther.required equals atToFind.required))
       }
+    }
 
-    maybeMatch.foldLeft(true) { (result, found) => result && found }
+    maybeMatch.foldLeft(true) { (result, found) =>
+      result && found
+    }
   }
 
   private def annotationsMatch(a: Set[Annotation], b: Set[Annotation]): Boolean = {
     val maybeMatch = a.map { atToFind =>
-        b.exists { atOther =>
-          ((atOther.annotationTypeId  equals atToFind.annotationTypeId)  &&
-             (atOther.stringValue    equals atToFind.stringValue) &&
-             (atOther.numberValue    equals atToFind.numberValue) &&
-             (atOther.selectedValues equals atToFind.selectedValues))
-        }
+      b.exists { atOther =>
+        ((atOther.annotationTypeId equals atToFind.annotationTypeId) &&
+        (atOther.stringValue equals atToFind.stringValue) &&
+        (atOther.numberValue equals atToFind.numberValue) &&
+        (atOther.selectedValues equals atToFind.selectedValues))
       }
+    }
 
-    maybeMatch.foldLeft(true) { (result, found) => result && found }
+    maybeMatch.foldLeft(true) { (result, found) =>
+      result && found
+    }
   }
 
-  private def collectionSpecimenDefinitionsMatch(a: Set[CollectionSpecimenDefinition],
-                                                 b: Set[CollectionSpecimenDefinition]): Boolean = {
+  private def collectionSpecimenDefinitionsMatch(
+      a: Set[CollectionSpecimenDefinition],
+      b: Set[CollectionSpecimenDefinition]
+    ): Boolean = {
     val maybeMatch = a.map { toFind =>
-        b.exists { other =>
-          ((other.id            equals toFind.id) &&
-             (other.slug          equals toFind.slug) &&
-             (other.name          equals toFind.name) &&
-             (other.description   equals toFind.description) &&
-             (other.units                   equals toFind.units) &&
-             (other.anatomicalSourceType    equals toFind.anatomicalSourceType) &&
-             (other.preservationType        equals toFind.preservationType) &&
-             (other.preservationTemperature equals toFind.preservationTemperature) &&
-             (other.specimenType            equals toFind.specimenType) &&
-             (other.maxCount                equals toFind.maxCount) &&
-             (other.amount                  equals toFind.amount))
-        }
+      b.exists { other =>
+        ((other.id equals toFind.id) &&
+        (other.slug equals toFind.slug) &&
+        (other.name equals toFind.name) &&
+        (other.description equals toFind.description) &&
+        (other.units equals toFind.units) &&
+        (other.anatomicalSourceType equals toFind.anatomicalSourceType) &&
+        (other.preservationType equals toFind.preservationType) &&
+        (other.preservationTemperature equals toFind.preservationTemperature) &&
+        (other.specimenType equals toFind.specimenType) &&
+        (other.maxCount equals toFind.maxCount) &&
+        (other.amount equals toFind.amount))
       }
+    }
 
-    maybeMatch.foldLeft(true) { (result, found) => result && found }
+    maybeMatch.foldLeft(true) { (result, found) =>
+      result && found
+    }
   }
 
   private def locationsMatch(a: Set[Location], b: Set[Location]): Boolean = {
     val maybeMatch = a.map { toFind =>
-        b.exists { other =>
-          ((other.id               equals toFind.id) &&
-             (other.slug           equals toFind.slug) &&
-             (other.name           equals toFind.name) &&
-             (other.street         equals toFind.street) &&
-             (other.city           equals toFind.city) &&
-             (other.province       equals toFind.province) &&
-             (other.postalCode     equals toFind.postalCode) &&
-             (other.poBoxNumber    equals toFind.poBoxNumber) &&
-             (other.countryIsoCode equals toFind.countryIsoCode))
-        }
+      b.exists { other =>
+        ((other.id equals toFind.id) &&
+        (other.slug equals toFind.slug) &&
+        (other.name equals toFind.name) &&
+        (other.street equals toFind.street) &&
+        (other.city equals toFind.city) &&
+        (other.province equals toFind.province) &&
+        (other.postalCode equals toFind.postalCode) &&
+        (other.poBoxNumber equals toFind.poBoxNumber) &&
+        (other.countryIsoCode equals toFind.countryIsoCode))
       }
+    }
 
-    maybeMatch.foldLeft(true) { (result, found) => result && found }
+    maybeMatch.foldLeft(true) { (result, found) =>
+      result && found
+    }
   }
 
   private def entityAttrsMatch(a: ConcurrencySafeEntity[_], b: ConcurrencySafeEntity[_]) = {
@@ -618,76 +650,67 @@ trait EntityMatchers {
         ("timeModified" -> (timeModifiedMatcher.matches)))
   }
 
-  private def accessItemsMatch(a: AccessItem, b: AccessItem) = {
-    Map(
-      ("id"          -> (a.id          equals b.id)),
-      ("slug"        -> (a.slug        equals b.slug)),
-      ("name"        -> (a.name        equals b.name)),
-      ("description" -> (a.description equals b.description)),
-      ("parentIds"   -> (a.parentIds   equals b.parentIds)),
-      ("childrenIds" -> (a.childrenIds equals b.childrenIds))
-    )
-  }
+  private def accessItemsMatch(a: AccessItem, b: AccessItem) =
+    Map(("id"          -> (a.id equals b.id)),
+        ("slug"        -> (a.slug equals b.slug)),
+        ("name"        -> (a.name equals b.name)),
+        ("description" -> (a.description equals b.description)),
+        ("parentIds"   -> (a.parentIds equals b.parentIds)),
+        ("childrenIds" -> (a.childrenIds equals b.childrenIds)))
 
   private def inputSpecimenInfosMatch(a: ProcessingType, b: ProcessingType) = {
     val aIsi = a.input
     val bIsi = b.input
-    Map(
-      ("input.expectedChange"       -> (aIsi.expectedChange       equals bIsi.expectedChange)),
-      ("input.count"                -> (aIsi.count                equals bIsi.count)),
-      ("input.containerTypeId"      -> (aIsi.containerTypeId      equals bIsi.containerTypeId)),
-      ("input.definitionType"       -> (aIsi.definitionType       equals bIsi.definitionType)),
-      ("input.entityId"             -> (aIsi.entityId             equals bIsi.entityId)),
-      ("input.specimenDefinitionId" -> (aIsi.specimenDefinitionId equals bIsi.specimenDefinitionId)),
-    )
+    Map(("input.expectedChange"       -> (aIsi.expectedChange equals bIsi.expectedChange)),
+        ("input.count"                -> (aIsi.count equals bIsi.count)),
+        ("input.containerTypeId"      -> (aIsi.containerTypeId equals bIsi.containerTypeId)),
+        ("input.definitionType"       -> (aIsi.definitionType equals bIsi.definitionType)),
+        ("input.entityId"             -> (aIsi.entityId equals bIsi.entityId)),
+        ("input.specimenDefinitionId" -> (aIsi.specimenDefinitionId equals bIsi.specimenDefinitionId)))
   }
 
   private def outputSpecimenInfosMatch(a: ProcessingType, b: ProcessingType) = {
     val aOsi = a.output
     val bOsi = b.output
-    Map(
-      ("output.expectedChange"  -> (aOsi.expectedChange equals bOsi.expectedChange)),
-      ("output.count"           -> (aOsi.count equals bOsi.count)),
-      ("output.containerTypeId" -> (aOsi.containerTypeId equals bOsi.containerTypeId)),
-    ) ++
-    outputSpecimenDefinitionsMatch(a, b)
+    Map(("output.expectedChange"  -> (aOsi.expectedChange equals bOsi.expectedChange)),
+        ("output.count"           -> (aOsi.count equals bOsi.count)),
+        ("output.containerTypeId" -> (aOsi.containerTypeId equals bOsi.containerTypeId))) ++
+      outputSpecimenDefinitionsMatch(a, b)
   }
 
   private def outputSpecimenDefinitionsMatch(a: ProcessingType, b: ProcessingType) = {
     val aOsd = a.output.specimenDefinition
     val bOsd = b.output.specimenDefinition
     Map(
-      ("output.specimenDefinition.id"                      ->
-         (aOsd.id                      equals bOsd.id)),
-      ("output.specimenDefinition.slug"                    ->
-         (aOsd.slug                    equals bOsd.slug)),
-      ("output.specimenDefinition.name"                    ->
-         (aOsd.name                    equals bOsd.name)),
-      ("output.specimenDefinition.description"             ->
-         (aOsd.description             equals bOsd.description)),
-      ("output.specimenDefinition.units"                   ->
-         (aOsd.units                   equals bOsd.units)),
-      ("output.specimenDefinition.anatomicalSourceType"    ->
-         (aOsd.anatomicalSourceType    equals bOsd.anatomicalSourceType)),
-      ("output.specimenDefinition.preservationType"        ->
-         (aOsd.preservationType        equals bOsd.preservationType)),
+      ("output.specimenDefinition.id" ->
+        (aOsd.id equals bOsd.id)),
+      ("output.specimenDefinition.slug" ->
+        (aOsd.slug equals bOsd.slug)),
+      ("output.specimenDefinition.name" ->
+        (aOsd.name equals bOsd.name)),
+      ("output.specimenDefinition.description" ->
+        (aOsd.description equals bOsd.description)),
+      ("output.specimenDefinition.units" ->
+        (aOsd.units equals bOsd.units)),
+      ("output.specimenDefinition.anatomicalSourceType" ->
+        (aOsd.anatomicalSourceType equals bOsd.anatomicalSourceType)),
+      ("output.specimenDefinition.preservationType" ->
+        (aOsd.preservationType equals bOsd.preservationType)),
       ("output.specimenDefinition.preservationTemperature" ->
-         (aOsd.preservationTemperature equals bOsd.preservationTemperature)),
-      ("output.specimenDefinition.specimenType"            ->
-         (aOsd.specimenType            equals bOsd.specimenType))
+        (aOsd.preservationTemperature equals bOsd.preservationTemperature)),
+      ("output.specimenDefinition.specimenType" ->
+        (aOsd.specimenType equals bOsd.specimenType))
     )
   }
 
-  private def containersMatch(a: Container, b: Container) = {
-    Map(
-      ("id"                    -> (a.id equals b.id)),
-      ("slug"                  -> (a.slug equals b.slug)),
-      ("inventoryId"           -> (a.inventoryId equals b.inventoryId)),
-      ("containerTypeId"       -> (a.containerTypeId equals b.containerTypeId)),
-      ("parentId"              -> (a.parentId equals b.parentId)),
-      ("osition"               -> (a.position equals b.position))) ++
-    entityAttrsMatch(b, a)
-  }
+  private def containersMatch(a: Container, b: Container) =
+    Map(("id"              -> (a.id equals b.id)),
+        ("slug"            -> (a.slug equals b.slug)),
+        ("inventoryId"     -> (a.inventoryId equals b.inventoryId)),
+        ("containerTypeId" -> (a.containerTypeId equals b.containerTypeId)),
+        ("parentId"        -> (a.parentId equals b.parentId)),
+        ("osition"         -> (a.position equals b.position))) ++
+      entityAttrsMatch(b, a)
 
 }
 

@@ -11,14 +11,11 @@ object AnnotationTestUtils {
 
   /** Converts a participant annotation into a Json object.
    */
-  def annotationToJson(annotation: Annotation) = {
-    Json.obj(
-      "annotationTypeId" -> annotation.annotationTypeId,
-      "valueType"        -> annotation.valueType,
-      "stringValue"      -> annotation.stringValue,
-      "numberValue"      -> annotation.numberValue,
-      "selectedValues"   -> annotation.selectedValues
-    )
-  }
+  def annotationToJson(annotation: Annotation) =
+    Json.obj("annotationTypeId" -> annotation.annotationTypeId,
+             "valueType"        -> annotation.valueType,
+             "stringValue"      -> annotation.stringValue,
+             "numberValue"      -> annotation.numberValue,
+             "selectedValues"   -> annotation.selectedValues)
 
 }

@@ -11,26 +11,26 @@ class ContainersRouter @Inject()(controller: ContainersController) extends Simpl
 
   override def routes: Routes = {
 
-    case GET(p"/search")  =>
+    case GET(p"/search") =>
       // this action extracts parameters from the raw query string
       controller.list
 
-    case GET(p"/${slug(s)}")  =>
+    case GET(p"/${slug(s)}") =>
       controller.getBySlug(s)
 
-    case POST(p"/")  =>
+    case POST(p"/") =>
       controller.addRootContainer
 
-    case POST(p"/add-storage")  =>
+    case POST(p"/add-storage") =>
       controller.addStorageContainer
 
-    case POST(p"/add-specimen")  =>
+    case POST(p"/add-specimen") =>
       controller.addStorageContainer
 
     case POST(p"/snapshot") =>
       controller.snapshot
 
-    case POST(p"/update/${containerId(id)}")  =>
+    case POST(p"/update/${containerId(id)}") =>
       controller.update(id)
 
   }

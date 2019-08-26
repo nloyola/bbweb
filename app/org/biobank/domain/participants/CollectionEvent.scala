@@ -36,54 +36,41 @@ trait CollectionEventValidations extends ParticipantValidations {
  * @param timeCompleted a time stamp for when the participant made the visit to the centre.
  * @param visitNumber an positive integer used to uniquely identify the visit. The fist visit starts at 1.
  */
-final case class CollectionEvent(id:                    CollectionEventId,
-                                 participantId:         ParticipantId,
-                                 collectionEventTypeId: CollectionEventTypeId,
-                                 version:               Long,
-                                 timeAdded:             OffsetDateTime,
-                                 timeModified:          Option[OffsetDateTime],
-                                 slug:                  Slug,
-                                 timeCompleted:         OffsetDateTime,
-                                 visitNumber:           Int,
-                                 annotations:           Set[Annotation])
-    extends ConcurrencySafeEntity[CollectionEventId]
-    with HasParticipantId
-    with CollectionEventValidations
-    with HasSlug
-    with HasAnnotations[CollectionEvent] {
+final case class CollectionEvent(
+    id:                    CollectionEventId,
+    participantId:         ParticipantId,
+    collectionEventTypeId: CollectionEventTypeId,
+    version:               Long,
+    timeAdded:             OffsetDateTime,
+    timeModified:          Option[OffsetDateTime],
+    slug:                  Slug,
+    timeCompleted:         OffsetDateTime,
+    visitNumber:           Int,
+    annotations:           Set[Annotation])
+    extends ConcurrencySafeEntity[CollectionEventId] with HasParticipantId with CollectionEventValidations
+    with HasSlug with HasAnnotations[CollectionEvent] {
   import org.biobank.CommonValidations._
 
-  def withVisitNumber(visitNumber: Int): DomainValidation[CollectionEvent] = {
+  def withVisitNumber(visitNumber: Int): DomainValidation[CollectionEvent] =
     validateMinimum(visitNumber, 1, VisitNumberInvalid).map { _ =>
-      copy(visitNumber  = visitNumber,
-           version      = version + 1,
-           timeModified = Some(OffsetDateTime.now))
+      copy(visitNumber = visitNumber, version = version + 1, timeModified = Some(OffsetDateTime.now))
     }
-  }
 
-  def withTimeCompleted(timeCompleted: OffsetDateTime): DomainValidation[CollectionEvent] = {
-    copy(timeCompleted = timeCompleted,
-         version         = version + 1,
-         timeModified    = Some(OffsetDateTime.now)).successNel[String]
-  }
+  def withTimeCompleted(timeCompleted: OffsetDateTime): DomainValidation[CollectionEvent] =
+    copy(timeCompleted = timeCompleted, version = version + 1, timeModified = Some(OffsetDateTime.now))
+      .successNel[String]
 
-  def withAnnotation(annotation: Annotation): DomainValidation[CollectionEvent] = {
+  def withAnnotation(annotation: Annotation): DomainValidation[CollectionEvent] =
     Annotation.validate(annotation).map { _ =>
       val newAnnotations = annotations - annotation + annotation
-      copy(annotations  = newAnnotations,
-           version      = version + 1,
-           timeModified = Some(OffsetDateTime.now))
+      copy(annotations = newAnnotations, version = version + 1, timeModified = Some(OffsetDateTime.now))
     }
-  }
 
-  def withoutAnnotation(annotationTypeId: AnnotationTypeId): DomainValidation[CollectionEvent] = {
+  def withoutAnnotation(annotationTypeId: AnnotationTypeId): DomainValidation[CollectionEvent] =
     checkRemoveAnnotation(annotationTypeId).map { annotation =>
       val newAnnotations = annotations - annotation
-      copy(annotations  = newAnnotations,
-           version      = version + 1,
-           timeModified = Some(OffsetDateTime.now))
+      copy(annotations = newAnnotations, version = version + 1, timeModified = Some(OffsetDateTime.now))
     }
-  }
 
   override def toString: String =
     s"""|CollectionEvent:{
@@ -100,26 +87,27 @@ final case class CollectionEvent(id:                    CollectionEventId,
 
 }
 
-object CollectionEvent
-    extends CollectionEventValidations {
+object CollectionEvent extends CollectionEventValidations {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
-  def create(id:                    CollectionEventId,
-             participantId:         ParticipantId,
-             collectionEventTypeId: CollectionEventTypeId,
-             version:               Long,
-             timeAdded:             OffsetDateTime,
-             timeCompleted:         OffsetDateTime,
-             visitNumber:           Int,
-             annotations:           Set[Annotation])
-      : DomainValidation[CollectionEvent] = {
+  def create(
+      id:                    CollectionEventId,
+      participantId:         ParticipantId,
+      collectionEventTypeId: CollectionEventTypeId,
+      version:               Long,
+      timeAdded:             OffsetDateTime,
+      timeCompleted:         OffsetDateTime,
+      visitNumber:           Int,
+      annotations:           Set[Annotation]
+    ): DomainValidation[CollectionEvent] =
     (validateId(id) |@|
-       validateId(participantId, ParticipantIdRequired) |@|
-       validateId(collectionEventTypeId, CollectionEventTypeIdRequired) |@|
-       validateVersion(version) |@|
-       validateMinimum(visitNumber, 1, VisitNumberInvalid) |@|
-       annotations.toList.traverseU(Annotation.validate)) { case _ =>
+      validateId(participantId, ParticipantIdRequired) |@|
+      validateId(collectionEventTypeId, CollectionEventTypeIdRequired) |@|
+      validateVersion(version) |@|
+      validateMinimum(visitNumber, 1, VisitNumberInvalid) |@|
+      annotations.toList.traverseU(Annotation.validate)) {
+      case _ =>
         CollectionEvent(id,
                         participantId,
                         collectionEventTypeId,
@@ -131,12 +119,10 @@ object CollectionEvent
                         visitNumber,
                         annotations)
     }
-  }
 
   val sort2Compare: Map[String, (CollectionEvent, CollectionEvent) => Boolean] =
-    Map[String, (CollectionEvent, CollectionEvent) => Boolean](
-      "visitNumber"   -> compareByVisitNumber,
-      "timeCompleted" -> compareByTimeCompleted)
+    Map[String, (CollectionEvent, CollectionEvent) => Boolean]("visitNumber" -> compareByVisitNumber,
+                                                               "timeCompleted" -> compareByTimeCompleted)
 
   def compareByVisitNumber(a: CollectionEvent, b: CollectionEvent): Boolean =
     (a.visitNumber compareTo b.visitNumber) < 0

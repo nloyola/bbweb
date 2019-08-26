@@ -21,10 +21,11 @@ trait UserPredicates extends HasNamePredicates[User] {
     email => entity => entity.email.contains(email.replaceAll("[\\*]", ""))
 
   val emailIsLike: Set[String] => UserFilter =
-    emails => entity => {
-      val lc = entity.email.toLowerCase
-      emails.forall(e => lc.contains(e.toLowerCase))
-    }
+    emails =>
+      entity => {
+        val lc = entity.email.toLowerCase
+        emails.forall(e => lc.contains(e.toLowerCase))
+      }
 
 }
 
@@ -54,10 +55,9 @@ sealed trait User extends ConcurrencySafeEntity[UserId] with HasState with HasUn
   /**
    * Authenticate a user.
    */
-  def authenticate(password: String): DomainValidation[User] = {
+  def authenticate(password: String): DomainValidation[User] =
     if (this.password == password) this.successNel[String]
     else DomainError("authentication failure").failureNel[User]
-  }
 
   override def toString: String =
     s"""|${this.getClass.getSimpleName}: {
@@ -78,45 +78,42 @@ sealed trait User extends ConcurrencySafeEntity[UserId] with HasState with HasUn
 object User {
 
   val registeredState: EntityState = new EntityState("registered")
-  val activeState: EntityState = new EntityState("active")
-  val lockedState: EntityState = new EntityState("locked")
+  val activeState:     EntityState = new EntityState("active")
+  val lockedState:     EntityState = new EntityState("locked")
 
-  val userStates: List[EntityState] = List(registeredState,
-                                           activeState,
-                                           lockedState)
+  val userStates: List[EntityState] = List(registeredState, activeState, lockedState)
 
   @SuppressWarnings(Array("org.wartremover.warts.Option2Iterable"))
   implicit val userFormat: Format[User] = new Format[User] {
-    override def writes(user: User): JsValue = {
+    override def writes(user: User): JsValue =
       ConcurrencySafeEntity.toJson(user) ++
-      Json.obj("state"    -> user.state.id,
-               "slug"     -> user.slug,
-               "name"     -> user.name,
-               "email"    -> user.email,
-               "password" -> user.password,
-               "salt"     -> user.salt) ++
-      JsObject(
-        Seq[(String, JsValue)]() ++
-          user.avatarUrl.map("avatarUrl" -> Json.toJson(_)))
-    }
+        Json.obj("state"    -> user.state.id,
+                 "slug"     -> user.slug,
+                 "name"     -> user.name,
+                 "email"    -> user.email,
+                 "password" -> user.password,
+                 "salt"     -> user.salt) ++
+        JsObject(
+          Seq[(String, JsValue)]() ++
+            user.avatarUrl.map("avatarUrl" -> Json.toJson(_))
+        )
 
-      override def reads(json: JsValue): JsResult[User] = (json \ "state") match {
-          case JsDefined(JsString(registeredState.id)) => json.validate[RegisteredUser]
-          case JsDefined(JsString(activeState.id)) => json.validate[ActiveUser]
-          case JsDefined(JsString(lockedState.id)) => json.validate[LockedUser]
-          case _ => JsError("error")
-        }
+    override def reads(json: JsValue): JsResult[User] = (json \ "state") match {
+      case JsDefined(JsString(registeredState.id)) => json.validate[RegisteredUser]
+      case JsDefined(JsString(activeState.id))     => json.validate[ActiveUser]
+      case JsDefined(JsString(lockedState.id))     => json.validate[LockedUser]
+      case _                                       => JsError("error")
+    }
   }
 
   implicit val registeredUserReads: Reads[RegisteredUser] = Json.reads[RegisteredUser]
-  implicit val activeUserReads: Reads[ActiveUser]         = Json.reads[ActiveUser]
-  implicit val lockedUserReads: Reads[LockedUser]         = Json.reads[LockedUser]
+  implicit val activeUserReads:     Reads[ActiveUser]     = Json.reads[ActiveUser]
+  implicit val lockedUserReads:     Reads[LockedUser]     = Json.reads[LockedUser]
 
   val sort2Compare: Map[String, (User, User) => Boolean] =
-    Map[String, (User, User) => Boolean](
-      "name"  -> compareByName,
-      "email" -> compareByEmail,
-      "state" -> compareByState)
+    Map[String, (User, User) => Boolean]("name" -> compareByName,
+                                         "email" -> compareByEmail,
+                                         "state" -> compareByState)
 
   // users with duplicate emails are not allowed
   def compareByEmail(a: User, b: User): Boolean =
@@ -144,26 +141,24 @@ trait UserValidations {
 
 }
 
-
 /** A user that just registered with the system. This user does not yet have full access
-  * the system.
-  */
-final case class RegisteredUser(id:           UserId,
-                                version:      Long,
-                                timeAdded:    OffsetDateTime,
-                                timeModified: Option[OffsetDateTime],
-                                slug:         Slug,
-                                name:         String,
-                                email:        String,
-                                password:     String,
-                                salt:         String,
-                                avatarUrl:    Option[String])
-    extends { val state: EntityState = new EntityState("registered") }
-    with User
-    with UserValidations {
+ * the system.
+ */
+final case class RegisteredUser(
+    id:           UserId,
+    version:      Long,
+    timeAdded:    OffsetDateTime,
+    timeModified: Option[OffsetDateTime],
+    slug:         Slug,
+    name:         String,
+    email:        String,
+    password:     String,
+    salt:         String,
+    avatarUrl:    Option[String])
+    extends { val state: EntityState = new EntityState("registered") } with User with UserValidations {
 
   /* if registration is valid, the user can be activated and allowed to access the system */
-  def activate(): DomainValidation[ActiveUser] = {
+  def activate(): DomainValidation[ActiveUser] =
     ActiveUser(id           = this.id,
                version      = this.version + 1,
                timeAdded    = this.timeAdded,
@@ -174,10 +169,9 @@ final case class RegisteredUser(id:           UserId,
                password     = this.password,
                salt         = this.salt,
                avatarUrl    = this.avatarUrl).successNel[String]
-  }
 
   /* if registration is invalid, the user registration is locked and not allowed to register again */
-  def lock(): DomainValidation[LockedUser] = {
+  def lock(): DomainValidation[LockedUser] =
     LockedUser(id           = this.id,
                version      = this.version + 1,
                timeAdded    = this.timeAdded,
@@ -188,9 +182,6 @@ final case class RegisteredUser(id:           UserId,
                password     = this.password,
                salt         = this.salt,
                avatarUrl    = this.avatarUrl).successNel[String]
-  }
-
-
 
 }
 
@@ -200,22 +191,24 @@ object RegisteredUser extends UserValidations {
   import org.biobank.domain.DomainValidations._
 
   /** Creates a registered user. */
-  def create(id:        UserId,
-             version:   Long,
-             name:      String,
-             email:     String,
-             password:  String,
-             salt:      String,
-             avatarUrl: Option[String]): DomainValidation[RegisteredUser] = {
-
+  def create(
+      id:        UserId,
+      version:   Long,
+      name:      String,
+      email:     String,
+      password:  String,
+      salt:      String,
+      avatarUrl: Option[String]
+    ): DomainValidation[RegisteredUser] =
     (validateId(id) |@|
-       validateVersion(version) |@|
-       validateNonEmptyString(name, InvalidName) |@|
-       validateName(name) |@|
-       validateEmail(email) |@|
-       validateNonEmptyString(password, PasswordRequired) |@|
-       validateNonEmptyString(salt, SaltRequired) |@|
-       validateOptionalUrl(avatarUrl)) { case _ =>
+      validateVersion(version) |@|
+      validateNonEmptyString(name, InvalidName) |@|
+      validateName(name) |@|
+      validateEmail(email) |@|
+      validateNonEmptyString(password, PasswordRequired) |@|
+      validateNonEmptyString(salt, SaltRequired) |@|
+      validateOptionalUrl(avatarUrl)) {
+      case _ =>
         RegisteredUser(id           = id,
                        version      = version,
                        timeAdded    = OffsetDateTime.now,
@@ -227,66 +220,56 @@ object RegisteredUser extends UserValidations {
                        salt         = salt,
                        avatarUrl    = avatarUrl)
     }
-  }
 
 }
 
 /** A user that has access to the system. */
-final case class ActiveUser(id:           UserId,
-                            version:      Long,
-                            timeAdded:    OffsetDateTime,
-                            timeModified: Option[OffsetDateTime],
-                            slug:         Slug,
-                            name:         String,
-                            email:        String,
-                            password:     String,
-                            salt:         String,
-                            avatarUrl:    Option[String])
-    extends { val state: EntityState = new EntityState("active") }
-    with User
-    with UserValidations {
+final case class ActiveUser(
+    id:           UserId,
+    version:      Long,
+    timeAdded:    OffsetDateTime,
+    timeModified: Option[OffsetDateTime],
+    slug:         Slug,
+    name:         String,
+    email:        String,
+    password:     String,
+    salt:         String,
+    avatarUrl:    Option[String])
+    extends { val state: EntityState = new EntityState("active") } with User with UserValidations {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
-  def withName(name: String): DomainValidation[ActiveUser] = {
+  def withName(name: String): DomainValidation[ActiveUser] =
     (validateNonEmptyString(name) |@|
-       validateName(name)) { case _ =>
-        copy(name         = name,
-             version      = version + 1,
-             timeModified = Some(OffsetDateTime.now))
+      validateName(name)) {
+      case _ =>
+        copy(name = name, version = version + 1, timeModified = Some(OffsetDateTime.now))
     }
-  }
 
-  def withEmail(email: String): DomainValidation[ActiveUser] = {
-    validateEmail(email).map(_ =>
-      copy(email        = email,
-           version      = version + 1,
-           timeModified = Some(OffsetDateTime.now)))
-  }
+  def withEmail(email: String): DomainValidation[ActiveUser] =
+    validateEmail(email).map(
+      _ => copy(email = email, version = version + 1, timeModified = Some(OffsetDateTime.now))
+    )
 
-  def withPassword(password: String, salt: String): DomainValidation[ActiveUser] = {
+  def withPassword(password: String, salt: String): DomainValidation[ActiveUser] =
     (validateNonEmptyString(password, PasswordRequired) |@|
-       validateNonEmptyString(salt, SaltRequired)) { case _ =>
-        copy(password     = password,
-             salt         = salt,
-             version      = version + 1,
-             timeModified = Some(OffsetDateTime.now))
+      validateNonEmptyString(salt, SaltRequired)) {
+      case _ =>
+        copy(password = password, salt = salt, version = version + 1, timeModified = Some(OffsetDateTime.now))
     }
-  }
 
   def withAvatarUrl(avatarUrl: Option[String]): DomainValidation[ActiveUser] = {
     val validAvatarUrl = avatarUrl match {
-        case Some(url) => validateUrl(url)
-        case None      => "valid".successNel[String]
-      }
-    validAvatarUrl.map(_ =>
-      copy(avatarUrl    = avatarUrl,
-           version      = version + 1,
-           timeModified = Some(OffsetDateTime.now)))
+      case Some(url) => validateUrl(url)
+      case None      => "valid".successNel[String]
+    }
+    validAvatarUrl.map(
+      _ => copy(avatarUrl = avatarUrl, version = version + 1, timeModified = Some(OffsetDateTime.now))
+    )
   }
 
   /** A registered user that can no longer access the system should be locked */
-  def lock(): DomainValidation[LockedUser] = {
+  def lock(): DomainValidation[LockedUser] =
     LockedUser(id           = this.id,
                version      = this.version + 1,
                timeAdded    = this.timeAdded,
@@ -297,26 +280,25 @@ final case class ActiveUser(id:           UserId,
                password     = this.password,
                salt         = this.salt,
                avatarUrl    = this.avatarUrl).successNel[String]
-  }
 
 }
 
 /** A user who no longer has access to the system. */
-final case class LockedUser(id:           UserId,
-                            version:      Long,
-                            timeAdded:    OffsetDateTime,
-                            timeModified: Option[OffsetDateTime],
-                            slug: Slug,
-                            name:         String,
-                            email:        String,
-                            password:     String,
-                            salt:         String,
-                            avatarUrl:    Option[String])
-    extends { val state: EntityState = new EntityState("locked") }
-    with User {
+final case class LockedUser(
+    id:           UserId,
+    version:      Long,
+    timeAdded:    OffsetDateTime,
+    timeModified: Option[OffsetDateTime],
+    slug:         Slug,
+    name:         String,
+    email:        String,
+    password:     String,
+    salt:         String,
+    avatarUrl:    Option[String])
+    extends { val state: EntityState = new EntityState("locked") } with User {
 
   /** Unlocks a locked user */
-  def unlock(): DomainValidation[ActiveUser] = {
+  def unlock(): DomainValidation[ActiveUser] =
     ActiveUser(id           = this.id,
                version      = this.version + 1,
                timeAdded    = this.timeAdded,
@@ -327,39 +309,34 @@ final case class LockedUser(id:           UserId,
                password     = this.password,
                salt         = this.salt,
                avatarUrl    = this.avatarUrl).successNel[String]
-  }
 
 }
 
 object UserHelper {
   import org.biobank.CommonValidations._
 
-  def isUserRegistered(user: User): DomainValidation[RegisteredUser] = {
+  def isUserRegistered(user: User): DomainValidation[RegisteredUser] =
     user match {
       case registeredUser: RegisteredUser => registeredUser.successNel[String]
       case _ => InvalidStatus(s"not registered").failureNel[RegisteredUser]
     }
-  }
 
-  def isUserActive(user: User): DomainValidation[ActiveUser] = {
+  def isUserActive(user: User): DomainValidation[ActiveUser] =
     user match {
       case activeUser: ActiveUser => activeUser.successNel[String]
       case _ => InvalidStatus(s"not active").failureNel[ActiveUser]
     }
-  }
 
-  def isUserLocked(user: User): DomainValidation[LockedUser] = {
+  def isUserLocked(user: User): DomainValidation[LockedUser] =
     user match {
       case lockedUser: LockedUser => lockedUser.successNel[String]
       case _ => InvalidStatus(s"not active").failureNel[LockedUser]
     }
-  }
 
-  def isUserNotLocked(user: User): DomainValidation[User] = {
+  def isUserNotLocked(user: User): DomainValidation[User] =
     user match {
       case lockedUser: LockedUser => InvalidStatus(s"user is locked").failureNel[User]
       case _ => user.successNel[String]
     }
-  }
 
 }

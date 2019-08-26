@@ -21,7 +21,7 @@ trait ShipmentSpecimenRepository extends ReadWriteRepository[ShipmentSpecimenId,
 }
 
 @Singleton
-class ShipmentSpecimenRepositoryImpl @Inject() (val testData: TestData)
+class ShipmentSpecimenRepositoryImpl @Inject()(val testData: TestData)
     extends ReadWriteRepositoryRefImpl[ShipmentSpecimenId, ShipmentSpecimen](v => v.id)
     with ShipmentSpecimenRepository {
   import org.biobank.CommonValidations._
@@ -41,22 +41,23 @@ class ShipmentSpecimenRepositoryImpl @Inject() (val testData: TestData)
   def specimenNotFound(specimen: Specimen): String =
     EntityCriteriaError(s"shipment specimen with inventory ID not found: ${specimen.inventoryId}").toString
 
-  def allForShipment(id: ShipmentId): Set[ShipmentSpecimen] = {
-    getValues.filter { ss => ss.shipmentId == id }.toSet
-  }
+  def allForShipment(id: ShipmentId): Set[ShipmentSpecimen] =
+    getValues.filter { ss =>
+      ss.shipmentId == id
+    }.toSet
 
-  def allForSpecimen(id: SpecimenId): Set[ShipmentSpecimen] = {
-    getValues.filter { ss => ss.specimenId == id }.toSet
-  }
+  def allForSpecimen(id: SpecimenId): Set[ShipmentSpecimen] =
+    getValues.filter { ss =>
+      ss.specimenId == id
+    }.toSet
 
-  def getBySpecimen(shipmentId: ShipmentId, specimen: Specimen): DomainValidation[ShipmentSpecimen] = {
-    getValues.
-      find(ss => (ss.shipmentId == shipmentId) && (ss.specimenId == specimen.id)).
-      toSuccessNel(specimenNotFound(specimen))
-  }
+  def getBySpecimen(shipmentId: ShipmentId, specimen: Specimen): DomainValidation[ShipmentSpecimen] =
+    getValues
+      .find(ss => (ss.shipmentId == shipmentId) && (ss.specimenId == specimen.id)).toSuccessNel(
+        specimenNotFound(specimen)
+      )
 
-  def getBySpecimens(shipmentId: ShipmentId, specimens: Specimen*): DomainValidation[List[ShipmentSpecimen]] = {
+  def getBySpecimens(shipmentId: ShipmentId, specimens: Specimen*): DomainValidation[List[ShipmentSpecimen]] =
     specimens.map(getBySpecimen(shipmentId, _)).toList.sequenceU
-  }
 
 }

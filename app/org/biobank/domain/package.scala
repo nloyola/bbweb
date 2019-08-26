@@ -15,16 +15,19 @@ package domain {
   }
 
   trait HasState {
+
     /** the entity's current state. */
     val state: EntityState
   }
 
   trait HasName {
+
     /** A short identifying name. */
     val name: String
   }
 
   trait HasSlug {
+
     /** A unique string that can be used in a URL to identify a domain entity. */
     val slug: Slug
 
@@ -40,7 +43,7 @@ package domain {
   }
 
   /** A trait that can be used to define the properties for an entity.
-    */
+   */
   trait HasOptionalDescription {
 
     /** An optional description that can provide additional details on the name. */
@@ -56,10 +59,11 @@ package domain {
       names => entity => names.contains(entity.name)
 
     val nameIsLike: Set[String] => EntityNameFilter =
-      names => entity => {
-        val lc = entity.name.toLowerCase
-        names.forall(n => lc.contains(n.toLowerCase))
-      }
+      names =>
+        entity => {
+          val lc = entity.name.toLowerCase
+          names.forall(n => lc.contains(n.toLowerCase))
+        }
 
   }
 
@@ -84,6 +88,8 @@ package object domain {
   type DomainError = String
 
   implicit val entityStateWriter: Writes[EntityState] =
-    Writes{ (state: EntityState) => JsString(state.id) }
+    Writes { (state: EntityState) =>
+      JsString(state.id)
+    }
 
 }

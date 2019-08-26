@@ -17,77 +17,68 @@ object StudyCommands {
   trait StudyCommandWithStudyId extends StudyCommand with HasStudyIdentity
 
   trait StudyModifyCommandWithStudyId
-      extends StudyCommand
-      with HasStudyIdentity
-      with HasIdentity
-      with HasExpectedVersion
+      extends StudyCommand with HasStudyIdentity with HasIdentity with HasExpectedVersion
 
-  final case class AddStudyCmd(sessionUserId: Option[String],
-                               name:          String,
-                               description:   Option[String])
+  final case class AddStudyCmd(sessionUserId: Option[String], name: String, description: Option[String])
       extends StudyCommand
 
-  final case class UpdateStudyNameCmd(sessionUserId:   Option[String],
-                                      id:              String,
-                                      expectedVersion: Long,
-                                      name:            String)
+  final case class UpdateStudyNameCmd(
+      sessionUserId:   Option[String],
+      id:              String,
+      expectedVersion: Long,
+      name:            String)
       extends StudyModifyCommand
 
-  final case class UpdateStudyDescriptionCmd(sessionUserId:   Option[String],
-                                             id:              String,
-                                             expectedVersion: Long,
-                                             description:     Option[String])
+  final case class UpdateStudyDescriptionCmd(
+      sessionUserId:   Option[String],
+      id:              String,
+      expectedVersion: Long,
+      description:     Option[String])
       extends StudyModifyCommand
 
-  final case class StudyAddParticipantAnnotationTypeCmd(sessionUserId:   Option[String],
-                                                        id:              String,
-                                                        expectedVersion: Long,
-                                                        name:            String,
-                                                        description:     Option[String],
-                                                        valueType:       AnnotationValueType,
-                                                        maxValueCount:   Option[Int],
-                                                        options:         Seq[String],
-                                                        required:        Boolean)
+  final case class StudyAddParticipantAnnotationTypeCmd(
+      sessionUserId:   Option[String],
+      id:              String,
+      expectedVersion: Long,
+      name:            String,
+      description:     Option[String],
+      valueType:       AnnotationValueType,
+      maxValueCount:   Option[Int],
+      options:         Seq[String],
+      required:        Boolean)
       extends StudyModifyCommand
 
-  final case class StudyUpdateParticipantAnnotationTypeCmd(sessionUserId:    Option[String],
-                                                           id:               String,
-                                                           annotationTypeId: String,
-                                                           expectedVersion:  Long,
-                                                           name:             String,
-                                                           description:      Option[String],
-                                                           valueType:        AnnotationValueType,
-                                                           maxValueCount:    Option[Int],
-                                                           options:          Seq[String],
-                                                           required:         Boolean)
+  final case class StudyUpdateParticipantAnnotationTypeCmd(
+      sessionUserId:    Option[String],
+      id:               String,
+      annotationTypeId: String,
+      expectedVersion:  Long,
+      name:             String,
+      description:      Option[String],
+      valueType:        AnnotationValueType,
+      maxValueCount:    Option[Int],
+      options:          Seq[String],
+      required:         Boolean)
       extends StudyModifyCommand
 
-  final case class UpdateStudyRemoveAnnotationTypeCmd(sessionUserId:    Option[String],
-                                                      id:               String,
-                                                      expectedVersion:  Long,
-                                                      annotationTypeId: String)
+  final case class UpdateStudyRemoveAnnotationTypeCmd(
+      sessionUserId:    Option[String],
+      id:               String,
+      expectedVersion:  Long,
+      annotationTypeId: String)
       extends StudyModifyCommand
 
-  final case class EnableStudyCmd(sessionUserId:   Option[String],
-                                  id:              String,
-                                  expectedVersion: Long)
+  final case class EnableStudyCmd(sessionUserId: Option[String], id: String, expectedVersion: Long)
       extends StudyStateChangeCommand
 
-  final case class DisableStudyCmd(sessionUserId:   Option[String],
-                                   id:              String,
-                                   expectedVersion: Long)
+  final case class DisableStudyCmd(sessionUserId: Option[String], id: String, expectedVersion: Long)
       extends StudyStateChangeCommand
 
-  final case class RetireStudyCmd(sessionUserId:   Option[String],
-                                  id:              String,
-                                  expectedVersion: Long)
+  final case class RetireStudyCmd(sessionUserId: Option[String], id: String, expectedVersion: Long)
       extends StudyStateChangeCommand
 
-  final case class UnretireStudyCmd(sessionUserId:   Option[String],
-                                    id:              String,
-                                    expectedVersion: Long)
+  final case class UnretireStudyCmd(sessionUserId: Option[String], id: String, expectedVersion: Long)
       extends StudyStateChangeCommand
-
 
   implicit val addStudyCmdReads: Reads[AddStudyCmd] =
     Json.reads[AddStudyCmd]

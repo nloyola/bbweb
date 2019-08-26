@@ -20,8 +20,7 @@ import scalaz.Validation.FlatMap._
  * Tests the REST API for [[CollectionEvents]].
  */
 class CollectionEventsControllerSpec
-    extends StudyAnnotationsControllerSharedSpec[CollectionEvent]
-    with PagedResultsMatchers
+    extends StudyAnnotationsControllerSharedSpec[CollectionEvent] with PagedResultsMatchers
     with PagedResultsSharedSpec {
 
   import org.biobank.TestUtils._
@@ -30,12 +29,11 @@ class CollectionEventsControllerSpec
   import org.biobank.matchers.JsonMatchers._
 
   class Fixture {
-    val study = factory.createEnabledStudy
-    val ceventType = factory.createCollectionEventType.copy(studyId = study.id,
-                                                            annotationTypes = Set.empty)
+    val study       = factory.createEnabledStudy
+    val ceventType  = factory.createCollectionEventType.copy(studyId = study.id, annotationTypes = Set.empty)
     val participant = factory.createParticipant.copy(studyId = study.id)
 
-    Set(study, ceventType, participant)foreach(addToRepository)
+    Set(study, ceventType, participant) foreach (addToRepository)
   }
 
   protected val basePath = "participants/cevents"
@@ -66,24 +64,24 @@ class CollectionEventsControllerSpec
       it("get a single collection event for a participant") {
         new Fixture
         val cevents = (0 until 2).map { x =>
-            val cevent = factory.createCollectionEvent
-            collectionEventRepository.put(cevent)
-            cevent
-          }
+          val cevent = factory.createCollectionEvent
+          collectionEventRepository.put(cevent)
+          cevent
+        }
 
         val ceventToGet = cevents(0)
-        val reply = makeAuthRequest(GET, uri(ceventToGet)).value
+        val reply       = makeAuthRequest(GET, uri(ceventToGet)).value
         reply must beOkResponseWithJsonReply
 
         val replyCevent = (contentAsJson(reply) \ "data").validate[CollectionEvent]
-        replyCevent must be (jsSuccess)
+        replyCevent must be(jsSuccess)
         replyCevent.get must matchCollectionEvent(ceventToGet)
       }
 
       it("fail when querying for a single collection event and ID is invalid") {
         new Fixture
         val cevent = factory.createCollectionEvent
-        val reply = makeAuthRequest(GET, uri(cevent)).value
+        val reply  = makeAuthRequest(GET, uri(cevent)).value
         reply must beNotFoundWithMessage("IdNotFound: collection event id")
       }
 
@@ -98,7 +96,7 @@ class CollectionEventsControllerSpec
 
       describe("list a single collection event") {
         listSingleCollectionEvent() { () =>
-          val f = new Fixture
+          val f      = new Fixture
           val cevent = factory.createCollectionEvent
           collectionEventRepository.put(cevent)
           (listUri(f.participant.id), cevent)
@@ -109,10 +107,10 @@ class CollectionEventsControllerSpec
         listMultipleCollectionEvents() { () =>
           val f = new Fixture
           val cevents = (0 until 2).map { _ =>
-              val cevent = factory.createCollectionEvent
-              collectionEventRepository.put(cevent)
-              cevent
-            }.toList
+            val cevent = factory.createCollectionEvent
+            collectionEventRepository.put(cevent)
+            cevent
+          }.toList
 
           (listUri(f.participant.id), cevents)
         }
@@ -122,10 +120,10 @@ class CollectionEventsControllerSpec
         def commonSetup = {
           val f = new Fixture
           val cevents = (1 to 4).map { visitNumber =>
-              val cevent = factory.createCollectionEvent.copy(visitNumber = visitNumber)
-              collectionEventRepository.put(cevent)
-              cevent
-            }.toList
+            val cevent = factory.createCollectionEvent.copy(visitNumber = visitNumber)
+            collectionEventRepository.put(cevent)
+            cevent
+          }.toList
           (f.participant, cevents)
         }
 
@@ -150,18 +148,17 @@ class CollectionEventsControllerSpec
         def commonSetup = {
           val f = new Fixture
           val cevents = (1 to 4).map { visitNumber =>
-              val cevent = factory.createCollectionEvent.copy(visitNumber = visitNumber)
-              collectionEventRepository.put(cevent)
-              cevent
-            }.toList
+            val cevent = factory.createCollectionEvent.copy(visitNumber = visitNumber)
+            collectionEventRepository.put(cevent)
+            cevent
+          }.toList
           (f.participant, cevents)
         }
 
         describe("in ascending order") {
           listMultipleCollectionEvents() { () =>
             val (participant, cevents) = commonSetup
-            (listUri(participant.id).addQueryString("sort=timeCompleted"),
-             cevents.sortBy(_.timeCompleted))
+            (listUri(participant.id).addQueryString("sort=timeCompleted"), cevents.sortBy(_.timeCompleted))
           }
         }
 
@@ -179,11 +176,10 @@ class CollectionEventsControllerSpec
         listSingleCollectionEvent(maybeNext = Some(2)) { () =>
           val f = new Fixture
           val cevents = (1 to 4).map { hour =>
-              val cevent = factory.createCollectionEvent.copy(
-                  timeCompleted = OffsetDateTime.now.withHour(hour))
-              collectionEventRepository.put(cevent)
-              cevent
-            }.toList
+            val cevent = factory.createCollectionEvent.copy(timeCompleted = OffsetDateTime.now.withHour(hour))
+            collectionEventRepository.put(cevent)
+            cevent
+          }.toList
           (listUri(f.participant.id).addQueryString("sort=timeCompleted", "limit=1"), cevents(0))
         }
       }
@@ -192,11 +188,10 @@ class CollectionEventsControllerSpec
         listSingleCollectionEvent(offset = 3, maybePrev = Some(3)) { () =>
           val f = new Fixture
           val cevents = (1 to 4).map { hour =>
-              val cevent = factory.createCollectionEvent.copy(
-                  timeCompleted = OffsetDateTime.now.withHour(hour))
-              collectionEventRepository.put(cevent)
-              cevent
-            }.toList
+            val cevent = factory.createCollectionEvent.copy(timeCompleted = OffsetDateTime.now.withHour(hour))
+            collectionEventRepository.put(cevent)
+            cevent
+          }.toList
           (listUri(f.participant.id).addQueryString("sort=timeCompleted", "page=4", "limit=1"), cevents(3))
         }
       }
@@ -210,7 +205,7 @@ class CollectionEventsControllerSpec
 
       it("list request fails for invalid participant id") {
         val participant = factory.createParticipant
-        val reply = makeAuthRequest(GET, listUri(participant.id)).value
+        val reply       = makeAuthRequest(GET, listUri(participant.id)).value
         reply must beNotFoundWithMessage("IdNotFound.*participant id")
       }
 
@@ -221,32 +216,32 @@ class CollectionEventsControllerSpec
       it("get a collection event by visit number") {
         val f = new Fixture
         val cevents = (1 to 2).map { visitNumber =>
-            val cevent = factory.createCollectionEvent.copy(visitNumber = visitNumber)
-            collectionEventRepository.put(cevent)
-            cevent
-          }
+          val cevent = factory.createCollectionEvent.copy(visitNumber = visitNumber)
+          collectionEventRepository.put(cevent)
+          cevent
+        }
 
         val ceventToGet = cevents(0)
-        val reply = makeAuthRequest(GET, uriWithVisitNumber(f.participant, ceventToGet)).value
+        val reply       = makeAuthRequest(GET, uriWithVisitNumber(f.participant, ceventToGet)).value
         reply must beOkResponseWithJsonReply
 
         val replyCevent = (contentAsJson(reply) \ "data").validate[CollectionEvent]
-        replyCevent must be (jsSuccess)
+        replyCevent must be(jsSuccess)
         replyCevent.get must matchCollectionEvent(ceventToGet)
       }
 
       it("fail for invalid participant id when querying for a collection event with a visit number") {
         val participant = factory.createParticipant
-        val cevent = factory.createCollectionEvent
+        val cevent      = factory.createCollectionEvent
         studyRepository.put(factory.defaultEnabledStudy)
         val reply = makeAuthRequest(GET, uriWithVisitNumber(participant, cevent)).value
         reply must beNotFoundWithMessage("NotFound.*collection event")
       }
 
       it("fail when querying for a collection event with a visit number") {
-        val f = new Fixture
+        val f      = new Fixture
         val cevent = factory.createCollectionEvent
-        val reply = makeAuthRequest(GET, uriWithVisitNumber(f.participant, cevent)).value
+        val reply  = makeAuthRequest(GET, uriWithVisitNumber(f.participant, cevent)).value
         reply must beNotFoundWithMessage("collection event does not exist")
       }
     }
@@ -254,33 +249,32 @@ class CollectionEventsControllerSpec
     describe("POST /api/participants/cevents/:participantId") {
 
       it("add a collection event with no annotations") {
-        val f = new Fixture
+        val f      = new Fixture
         val cevent = factory.createCollectionEvent
         cevent.annotations must have size 0
         val reply = makeAuthRequest(POST, uri(f.participant), collectionEventToAddJson(cevent)).value
         reply must beOkResponseWithJsonReply
 
         val replyId = (contentAsJson(reply) \ "data" \ "id").validate[CollectionEventId]
-        replyId must be (jsSuccess)
+        replyId must be(jsSuccess)
 
         val updatedCevent = cevent.copy(id = replyId.get,
-                                        slug = Slug(s"visit-number-${cevent.visitNumber}"),
+                                        slug      = Slug(s"visit-number-${cevent.visitNumber}"),
                                         timeAdded = OffsetDateTime.now)
         reply must matchUpdatedCollectionEvent(updatedCevent)
       }
 
       it("fail when adding and visit number that is already used") {
-        val f = new Fixture
+        val f      = new Fixture
         val cevent = factory.createCollectionEvent
         collectionEventRepository.put(cevent)
         val reply = makeAuthRequest(POST, uri(f.participant), collectionEventToAddJson(cevent)).value
-        reply must beForbiddenRequestWithMessage(
-          "a collection event with this visit number already exists")
+        reply must beForbiddenRequestWithMessage("a collection event with this visit number already exists")
       }
 
       it("add a collection event with annotations") {
-        val f = new Fixture
-        val annotTypes = createAnnotationsAndTypes
+        val f           = new Fixture
+        val annotTypes  = createAnnotationsAndTypes
         val annotations = annotTypes.values.toSet
         collectionEventTypeRepository.put(f.ceventType.copy(annotationTypes = annotTypes.keys.toSet))
 
@@ -291,11 +285,11 @@ class CollectionEventsControllerSpec
         reply must beOkResponseWithJsonReply
 
         val replyId = (contentAsJson(reply) \ "data" \ "id").validate[CollectionEventId]
-        replyId must be (jsSuccess)
+        replyId must be(jsSuccess)
         val updatedCevent = cevent.copy(id = replyId.get,
-                                        slug = Slug(s"visit-number-${cevent.visitNumber}"),
+                                        slug        = Slug(s"visit-number-${cevent.visitNumber}"),
                                         annotations = annotations,
-                                        timeAdded = OffsetDateTime.now)
+                                        timeAdded   = OffsetDateTime.now)
         reply must matchUpdatedCollectionEvent(updatedCevent)
       }
 
@@ -307,44 +301,41 @@ class CollectionEventsControllerSpec
         val annotation = factory.createAnnotation.copy(numberValue = Some(""))
         collectionEventTypeRepository.put(f.ceventType.copy(annotationTypes = Set(annotType)))
         val cevent = factory.createCollectionEvent
-        val reply = makeAuthRequest(POST,
-                                    uri(f.participant),
-                                    collectionEventToAddJson(cevent, List(annotation))).value
+        val reply =
+          makeAuthRequest(POST, uri(f.participant), collectionEventToAddJson(cevent, List(annotation))).value
         reply must beBadRequestWithMessage("InvalidNumberString")
       }
 
       it("fail when adding and participant and collection event type not in same study") {
-        val f = new Fixture
-        val otherStudy = factory.createDisabledStudy
+        val f               = new Fixture
+        val otherStudy      = factory.createDisabledStudy
         val otherCeventType = factory.createCollectionEventType.copy(studyId = otherStudy.id)
 
         studyRepository.put(otherStudy)
         collectionEventTypeRepository.put(otherCeventType)
 
         val cevent = factory.createCollectionEvent
-        val reply = makeAuthRequest(POST, uri(f.participant), collectionEventToAddJson(cevent)).value
-        reply must beBadRequestWithMessage(
-            "participant and collection event type not in the same study")
+        val reply  = makeAuthRequest(POST, uri(f.participant), collectionEventToAddJson(cevent)).value
+        reply must beBadRequestWithMessage("participant and collection event type not in the same study")
       }
 
       it("fail when adding collection event with duplicate visit number") {
-        val f = new Fixture
+        val f       = new Fixture
         val cevent1 = factory.createCollectionEvent
         collectionEventRepository.put(cevent1)
 
         val cevent2 = factory.createCollectionEvent.copy(visitNumber = cevent1.visitNumber)
-        val reply = makeAuthRequest(POST, uri(f.participant), collectionEventToAddJson(cevent2)).value
-        reply must beForbiddenRequestWithMessage(
-          "a collection event with this visit number already exists")
+        val reply   = makeAuthRequest(POST, uri(f.participant), collectionEventToAddJson(cevent2)).value
+        reply must beForbiddenRequestWithMessage("a collection event with this visit number already exists")
       }
 
       it("fail when missing a required annotation type") {
-        val f = new Fixture
+        val f         = new Fixture
         val annotType = factory.createAnnotationType.copy(required = true)
 
         collectionEventTypeRepository.put(f.ceventType.copy(annotationTypes = Set(annotType)))
         val cevent = factory.createCollectionEvent.copy(annotations = Set.empty)
-        val reply = makeAuthRequest(POST, uri(f.participant), collectionEventToAddJson(cevent)).value
+        val reply  = makeAuthRequest(POST, uri(f.participant), collectionEventToAddJson(cevent)).value
         reply must beBadRequestWithMessage("missing required annotation type")
       }
 
@@ -354,31 +345,29 @@ class CollectionEventsControllerSpec
           .copy(annotationTypeId = AnnotationTypeId(nameGenerator.next[Annotation]))
 
         val cevent = factory.createCollectionEvent
-        val reply = makeAuthRequest(POST,
-                                    uri(f.participant),
-                                    collectionEventToAddJson(cevent, List(annotation))).value
+        val reply =
+          makeAuthRequest(POST, uri(f.participant), collectionEventToAddJson(cevent, List(annotation))).value
         reply must beBadRequestWithMessage("no annotation types")
       }
 
       it("fail for an annotation with an invalid annotation type id") {
-        val f = new Fixture
+        val f         = new Fixture
         val annotType = factory.createAnnotationType
 
         // update the collection event type with annotation type data
         collectionEventTypeRepository.put(f.ceventType.copy(annotationTypes = Set(annotType)))
 
-        val annotation = factory.createAnnotation.copy(
-            annotationTypeId = AnnotationTypeId(nameGenerator.next[Annotation]))
+        val annotation =
+          factory.createAnnotation.copy(annotationTypeId = AnnotationTypeId(nameGenerator.next[Annotation]))
 
         val cevent = factory.createCollectionEvent
-        val reply = makeAuthRequest(POST,
-                                    uri(f.participant),
-                                    collectionEventToAddJson(cevent, List(annotation))).value
+        val reply =
+          makeAuthRequest(POST, uri(f.participant), collectionEventToAddJson(cevent, List(annotation))).value
         reply must beBadRequestWithMessage("annotation.*do not belong to annotation types")
       }
 
       it("fail for more than one annotation with the same annotation type ID") {
-        val f = new Fixture
+        val f         = new Fixture
         val annotType = factory.createAnnotationType
 
         // update the collection event type with annotation type data
@@ -388,19 +377,18 @@ class CollectionEventsControllerSpec
         annotation.stringValue mustBe defined
 
         val cevent = factory.createCollectionEvent
-        val annotations = List(annotation,
-                               annotation.copy(stringValue = Some(nameGenerator.next[Annotation])))
-        val reply = makeAuthRequest(POST,
-                                    uri(f.participant),
-                                    collectionEventToAddJson(cevent, annotations)).value
+        val annotations =
+          List(annotation, annotation.copy(stringValue = Some(nameGenerator.next[Annotation])))
+        val reply =
+          makeAuthRequest(POST, uri(f.participant), collectionEventToAddJson(cevent, annotations)).value
         reply must beBadRequestWithMessage("duplicate annotations")
       }
 
       describe("fail when adding collection event when the study is not enabled") {
         describe("when study is disabled") {
           addOnNonEnabledStudySharedBehaviour { () =>
-            val f = new Fixture
-            val study = f.study.disable.toOption.value
+            val f      = new Fixture
+            val study  = f.study.disable.toOption.value
             val cevent = factory.createCollectionEvent
             (study, cevent)
           }
@@ -408,8 +396,8 @@ class CollectionEventsControllerSpec
 
         describe("when study is retired") {
           addOnNonEnabledStudySharedBehaviour { () =>
-            val f = new Fixture
-            val study = f.study.disable.toOption.value.retire.toOption.value
+            val f      = new Fixture
+            val study  = f.study.disable.toOption.value.retire.toOption.value
             val cevent = factory.createCollectionEvent
             (study, cevent)
           }
@@ -422,7 +410,7 @@ class CollectionEventsControllerSpec
 
       it("update the visit number on a collection event") {
         new Fixture
-        val cevent = factory.createCollectionEvent
+        val cevent         = factory.createCollectionEvent
         val newVisitNumber = cevent.visitNumber + 1
 
         collectionEventRepository.put(cevent)
@@ -433,7 +421,7 @@ class CollectionEventsControllerSpec
                                     Json.obj("expectedVersion" -> Some(cevent.version),
                                              "visitNumber"     -> newVisitNumber)).value
         reply must beOkResponseWithJsonReply
-        val updatedCevent = cevent.copy(version      = cevent.version + 1,
+        val updatedCevent = cevent.copy(version = cevent.version + 1,
                                         visitNumber  = newVisitNumber,
                                         timeModified = Some(OffsetDateTime.now))
         reply must matchUpdatedCollectionEvent(updatedCevent)
@@ -442,25 +430,24 @@ class CollectionEventsControllerSpec
       it("fail when updating visit number to one already used") {
         new Fixture
         val cevents = (1 to 2).map { visitNumber =>
-            val cevent = factory.createCollectionEvent.copy(visitNumber = visitNumber)
-            collectionEventRepository.put(cevent)
-            cevent
-          }
-        val ceventToUpdate = cevents(0)
+          val cevent = factory.createCollectionEvent.copy(visitNumber = visitNumber)
+          collectionEventRepository.put(cevent)
+          cevent
+        }
+        val ceventToUpdate       = cevents(0)
         val duplicateVisitNumber = cevents(1).visitNumber
 
         val reply = makeAuthRequest(POST,
                                     updateUri(ceventToUpdate, "visitNumber"),
                                     Json.obj("expectedVersion" -> Some(ceventToUpdate.version),
                                              "visitNumber"     -> duplicateVisitNumber)).value
-        reply must beForbiddenRequestWithMessage(
-          "a collection event with this visit number already exists")
+        reply must beForbiddenRequestWithMessage("a collection event with this visit number already exists")
       }
 
       describe("not update a collection event's visit number on a non enabled study") {
         describe("when study is disabled") {
           updateOnNonEnabledStudySharedBehaviour { () =>
-            val f = new Fixture
+            val f     = new Fixture
             val study = f.study.disable.toOption.value
             val cevent = factory.createCollectionEvent.copy(participantId = f.participant.id,
                                                             collectionEventTypeId = f.ceventType.id)
@@ -471,7 +458,7 @@ class CollectionEventsControllerSpec
 
         describe("when study is retired") {
           updateOnNonEnabledStudySharedBehaviour { () =>
-            val f = new Fixture
+            val f     = new Fixture
             val study = f.study.disable.toOption.value.retire.toOption.value
             val cevent = factory.createCollectionEvent.copy(participantId = f.participant.id,
                                                             collectionEventTypeId = f.ceventType.id)
@@ -503,7 +490,7 @@ class CollectionEventsControllerSpec
 
       it("update the time completed on a collection event") {
         new Fixture
-        val cevent = factory.createCollectionEvent
+        val cevent           = factory.createCollectionEvent
         val newTimeCompleted = cevent.timeCompleted.minusMonths(2)
 
         collectionEventRepository.put(cevent)
@@ -511,9 +498,9 @@ class CollectionEventsControllerSpec
         val reply = makeAuthRequest(POST,
                                     updateUri(cevent, "timeCompleted"),
                                     Json.obj("expectedVersion" -> Some(cevent.version),
-                                             "timeCompleted"     -> newTimeCompleted)).value
+                                             "timeCompleted"   -> newTimeCompleted)).value
         reply must beOkResponseWithJsonReply
-        val updatedCevent = cevent.copy(version       = cevent.version + 1,
+        val updatedCevent = cevent.copy(version = cevent.version + 1,
                                         timeCompleted = newTimeCompleted,
                                         timeModified  = Some(OffsetDateTime.now))
         reply must matchUpdatedCollectionEvent(updatedCevent)
@@ -522,7 +509,7 @@ class CollectionEventsControllerSpec
       describe("not update a collection event's time completed on a non enabled study") {
         describe("when study is disabled") {
           updateOnNonEnabledStudySharedBehaviour { () =>
-            val f = new Fixture
+            val f     = new Fixture
             val study = f.study.disable.toOption.value
             val cevent = factory.createCollectionEvent.copy(participantId = f.participant.id,
                                                             collectionEventTypeId = f.ceventType.id)
@@ -533,7 +520,7 @@ class CollectionEventsControllerSpec
 
         describe("when study is retired") {
           updateOnNonEnabledStudySharedBehaviour { () =>
-            val f = new Fixture
+            val f     = new Fixture
             val study = f.study.disable.toOption.value.retire.toOption.value
             val cevent = factory.createCollectionEvent.copy(participantId = f.participant.id,
                                                             collectionEventTypeId = f.ceventType.id)
@@ -555,7 +542,7 @@ class CollectionEventsControllerSpec
 
       describe("fail when updating time completed with an invalid version") {
         updateWithInvalidVersionSharedBehaviour { () =>
-          val f = new Fixture
+          val f             = new Fixture
           val timeCompleted = OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
           (f.participant, f.ceventType, "timeCompleted", Json.obj("timeCompleted" -> timeCompleted))
         }
@@ -569,11 +556,11 @@ class CollectionEventsControllerSpec
 
       describe("fail when adding annotation and collection event ID is invalid") {
         updateOnInvalidCeventSharedBehaviour { () =>
-          val f = new Fixture
+          val f              = new Fixture
           val annotationType = factory.createAnnotationType
-          val annotation = factory.createAnnotation
+          val annotation     = factory.createAnnotation
           collectionEventTypeRepository.put(f.ceventType.copy(annotationTypes = Set(annotationType)))
-          val cevent = factory.createCollectionEvent.copy(participantId         = f.participant.id,
+          val cevent = factory.createCollectionEvent.copy(participantId = f.participant.id,
                                                           collectionEventTypeId = f.ceventType.id)
           (cevent, "annot", annotationToJson(annotation))
         }
@@ -590,21 +577,21 @@ class CollectionEventsControllerSpec
     describe("DELETE /api/participants/cevents/:participantId/:ceventId/:ver") {
 
       it("remove a collection event") {
-        val f = new Fixture
+        val f      = new Fixture
         val cevent = factory.createCollectionEvent
         collectionEventRepository.put(cevent)
         val reply = makeAuthRequest(DELETE, uri(f.participant, cevent, cevent.version)).value
         reply must beOkResponseWithJsonReply
 
         val result = (contentAsJson(reply) \ "data").validate[Boolean]
-        result must be (jsSuccess)
-        result.get must be (true)
-        collectionEventRepository.getByKey(cevent.id) mustFail("IdNotFound: collection event.*")
+        result must be(jsSuccess)
+        result.get must be(true)
+        collectionEventRepository.getByKey(cevent.id) mustFail ("IdNotFound: collection event.*")
       }
 
       describe("not remove a collection event from an disabled study") {
         removeOnNonEnabledStudySharedBehaviour { () =>
-          val f = new Fixture
+          val f             = new Fixture
           val disabledStudy = f.study.disable.toOption.value
           (disabledStudy, factory.createCollectionEvent)
         }
@@ -612,7 +599,7 @@ class CollectionEventsControllerSpec
 
       describe("not remove a collection event from an retired study") {
         removeOnNonEnabledStudySharedBehaviour { () =>
-          val f = new Fixture
+          val f            = new Fixture
           val retiredStudy = f.study.disable.toOption.value.retire.toOption.value
           (retiredStudy, factory.createCollectionEvent)
         }
@@ -622,64 +609,55 @@ class CollectionEventsControllerSpec
 
   }
 
-  private def addOnNonEnabledStudySharedBehaviour(setupFunc: () => (Study, CollectionEvent)) = {
-
+  private def addOnNonEnabledStudySharedBehaviour(setupFunc: () => (Study, CollectionEvent)) =
     it("must be bad request") {
       val (study, cevent) = setupFunc()
-      study must not be an [EnabledStudy]
+      study must not be an[EnabledStudy]
       studyRepository.put(study)
       val reqJson = collectionEventToAddJson(cevent)
-      val reply = makeAuthRequest(POST, uri(cevent.participantId), reqJson).value
+      val reply   = makeAuthRequest(POST, uri(cevent.participantId), reqJson).value
       reply must beBadRequestWithMessage("InvalidStatus: study not enabled")
     }
-  }
 
-  private def updateOnNonEnabledStudySharedBehaviour(setupFunc: () => (Study,
-                                                                      CollectionEvent,
-                                                                      String,
-                                                                      JsObject)) = {
+  private def updateOnNonEnabledStudySharedBehaviour(
+      setupFunc: () => (Study, CollectionEvent, String, JsObject)
+    ) =
     it("must be bad request") {
       val (study, cevent, url, jsonField) = setupFunc()
-      study must not be an [EnabledStudy]
+      study must not be an[EnabledStudy]
       studyRepository.put(study)
       collectionEventRepository.put(cevent)
       val reqJson = jsonField ++ Json.obj("expectedVersion" -> cevent.version)
-      val reply = makeAuthRequest(POST, updateUri(cevent, url), reqJson).value
+      val reply   = makeAuthRequest(POST, updateUri(cevent, url), reqJson).value
       reply must beBadRequestWithMessage("InvalidStatus: study not enabled")
     }
-  }
 
-  private def updateOnInvalidCeventSharedBehaviour(setupFunc: () => (CollectionEvent,
-                                                                    String,
-                                                                    JsObject)) = {
+  private def updateOnInvalidCeventSharedBehaviour(setupFunc: () => (CollectionEvent, String, JsObject)) =
     it("must be not found") {
       val (cevent, url, jsonField) = setupFunc()
-      val reqJson = jsonField ++ Json.obj("expectedVersion" -> cevent.version)
-      val reply = makeAuthRequest(POST, updateUri(cevent, url), reqJson).value
+      val reqJson                  = jsonField ++ Json.obj("expectedVersion" -> cevent.version)
+      val reply                    = makeAuthRequest(POST, updateUri(cevent, url), reqJson).value
       reply must beNotFoundWithMessage("IdNotFound.*collection event")
     }
-  }
 
-  private def removeOnNonEnabledStudySharedBehaviour(setupFunc: () => (Study, CollectionEvent)) = {
+  private def removeOnNonEnabledStudySharedBehaviour(setupFunc: () => (Study, CollectionEvent)) =
     it("must be bad request") {
       val (study, cevent) = setupFunc()
-      study must not be an [EnabledStudy]
+      study must not be an[EnabledStudy]
 
       studyRepository.put(study)
       collectionEventRepository.put(cevent)
       val reply = makeAuthRequest(DELETE, uri(cevent.participantId, cevent, cevent.version)).value
       reply must beBadRequestWithMessage("InvalidStatus: study not enabled")
     }
-  }
 
-  private def updateWithInvalidVersionSharedBehaviour(setupFunc: () => (Participant,
-                                                                       CollectionEventType,
-                                                                       String,
-                                                                       JsObject)) = {
+  private def updateWithInvalidVersionSharedBehaviour(
+      setupFunc: () => (Participant, CollectionEventType, String, JsObject)
+    ) =
     it("must be bad request") {
       val (participant, ceventType, url, jsonField) = setupFunc()
-      val cevent = factory.createCollectionEvent.copy(participantId = participant.id,
-                                                      collectionEventTypeId = ceventType.id)
+      val cevent = factory.createCollectionEvent
+        .copy(participantId = participant.id, collectionEventTypeId = ceventType.id)
       collectionEventRepository.put(cevent)
 
       val reqJson = jsonField ++ Json.obj("expectedVersion" -> (cevent.version + 1))
@@ -687,32 +665,32 @@ class CollectionEventsControllerSpec
       val reply = makeAuthRequest(POST, updateUri(cevent, url), reqJson).value
       reply must beBadRequestWithMessage(".*expected version doesn't match current version.*")
     }
-  }
 
-  private def listSingleCollectionEvent(offset:    Long = 0,
-                                        maybeNext: Option[Int] = None,
-                                        maybePrev: Option[Int] = None)
-                                       (setupFunc: () => (Url, CollectionEvent)) = {
-
+  private def listSingleCollectionEvent(
+      offset:    Long = 0,
+      maybeNext: Option[Int] = None,
+      maybePrev: Option[Int] = None
+    )(setupFunc: () => (Url, CollectionEvent)
+    ) =
     it("list single collectionEvent") {
       val (url, expectedCollectionEvent) = setupFunc()
-      val reply = makeAuthRequest(GET, url).value
+      val reply                          = makeAuthRequest(GET, url).value
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)
       json must beSingleItemResults(offset, maybeNext, maybePrev)
 
       val replyEvents = (json \ "data" \ "items").validate[List[CollectionEvent]]
-      replyEvents must be (jsSuccess)
+      replyEvents must be(jsSuccess)
       replyEvents.get.foreach { _ must matchCollectionEvent(expectedCollectionEvent) }
     }
-  }
 
-  private def listMultipleCollectionEvents(offset:    Long = 0,
-                                           maybeNext: Option[Int] = None,
-                                           maybePrev: Option[Int] = None)
-                                          (setupFunc: () => (Url, List[CollectionEvent])) = {
-
+  private def listMultipleCollectionEvents(
+      offset:    Long = 0,
+      maybeNext: Option[Int] = None,
+      maybePrev: Option[Int] = None
+    )(setupFunc: () => (Url, List[CollectionEvent])
+    ) =
     it("list multiple collectionEvents") {
       val (url, expectedCollectionEvents) = setupFunc()
 
@@ -720,25 +698,25 @@ class CollectionEventsControllerSpec
       reply must beOkResponseWithJsonReply
 
       val json = contentAsJson(reply)
-      json must beMultipleItemResults(offset = offset,
-                                      total = expectedCollectionEvents.size.toLong,
+      json must beMultipleItemResults(offset    = offset,
+                                      total     = expectedCollectionEvents.size.toLong,
                                       maybeNext = maybeNext,
                                       maybePrev = maybePrev)
 
       val replyEvents = (json \ "data" \ "items").validate[List[CollectionEvent]]
-      replyEvents must be (jsSuccess)
+      replyEvents must be(jsSuccess)
 
-      (replyEvents.get zip expectedCollectionEvents).foreach { case (replyEvent, collectionEvent) =>
-        replyEvent must matchCollectionEvent(collectionEvent)
+      (replyEvents.get zip expectedCollectionEvents).foreach {
+        case (replyEvent, collectionEvent) =>
+          replyEvent must matchCollectionEvent(collectionEvent)
       }
     }
 
-  }
-
   def matchUpdatedCollectionEvent(collectionEvent: CollectionEvent) =
     new Matcher[Future[Result]] {
-      def apply (left: Future[Result]) = {
-        val replyCevent = (contentAsJson(left) \ "data").validate[CollectionEvent]
+
+      def apply(left: Future[Result]) = {
+        val replyCevent      = (contentAsJson(left) \ "data").validate[CollectionEvent]
         val jsSuccessMatcher = jsSuccess(replyCevent)
 
         if (!jsSuccessMatcher.matches) {
@@ -759,37 +737,39 @@ class CollectionEventsControllerSpec
 
   def matchRepositoryCollectionEvent =
     new Matcher[CollectionEvent] {
-      def apply (left: CollectionEvent) = {
-        collectionEventRepository.getByKey(left.id).fold(
-          err => {
-            MatchResult(false, s"not found in repository: ${err.head}", "")
 
-          },
-          repoCet => {
-            val repoMatcher = matchCollectionEvent(left)(repoCet)
-            MatchResult(repoMatcher.matches,
-                        s"repository collectionEvent does not match expected: ${repoMatcher.failureMessage}",
-                        s"repository collectionEvent matches expected: ${repoMatcher.failureMessage}")
-          }
-        )
-      }
+      def apply(left: CollectionEvent) =
+        collectionEventRepository
+          .getByKey(left.id).fold(
+            err => {
+              MatchResult(false, s"not found in repository: ${err.head}", "")
+
+            },
+            repoCet => {
+              val repoMatcher = matchCollectionEvent(left)(repoCet)
+              MatchResult(repoMatcher.matches,
+                          s"repository collectionEvent does not match expected: ${repoMatcher.failureMessage}",
+                          s"repository collectionEvent matches expected: ${repoMatcher.failureMessage}")
+            }
+          )
     }
 
   /**
    * Converts a collectionEvent into an Add command.
    */
-  private def collectionEventToAddJson(collectionEvent: CollectionEvent,
-                                       annotations: List[Annotation] = List.empty) = {
-    Json.obj(
-      "collectionEventTypeId" -> collectionEvent.collectionEventTypeId,
-      "timeCompleted"         -> collectionEvent.timeCompleted,
-      "visitNumber"           -> collectionEvent.visitNumber,
-      "annotations"           -> annotations.map(annotationToJson(_))
-    )
-  }
+  private def collectionEventToAddJson(
+      collectionEvent: CollectionEvent,
+      annotations:     List[Annotation] = List.empty
+    ) =
+    Json.obj("collectionEventTypeId" -> collectionEvent.collectionEventTypeId,
+             "timeCompleted"         -> collectionEvent.timeCompleted,
+             "visitNumber"           -> collectionEvent.visitNumber,
+             "annotations"           -> annotations.map(annotationToJson(_)))
 
-  protected def createEntity(annotationTypes: Set[AnnotationType],
-                             annotations:     Set[Annotation]): CollectionEvent = {
+  protected def createEntity(
+      annotationTypes: Set[AnnotationType],
+      annotations:     Set[Annotation]
+    ): CollectionEvent = {
     val f = new Fixture
     collectionEventTypeRepository.put(f.ceventType.copy(annotationTypes = annotationTypes))
     val cevent = factory.createCollectionEvent.copy(annotations = annotations)
@@ -797,19 +777,17 @@ class CollectionEventsControllerSpec
     cevent
   }
 
-  protected def entityFromRepository(id: String): DomainValidation[CollectionEvent] = {
+  protected def entityFromRepository(id: String): DomainValidation[CollectionEvent] =
     collectionEventRepository.getByKey(CollectionEventId(id))
-  }
 
   protected def entityName(): String = "collection event"
 
   protected def updateUri(cevent: CollectionEvent): Url = updateUri(cevent, "annot")
 
-  protected def getStudy(cevent: CollectionEvent): DomainValidation[EnabledStudy] = {
+  protected def getStudy(cevent: CollectionEvent): DomainValidation[EnabledStudy] =
     for {
       participant <- participantRepository.getByKey(cevent.participantId)
       study       <- studyRepository.getEnabled(participant.studyId)
     } yield study
-  }
 
 }

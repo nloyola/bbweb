@@ -21,12 +21,10 @@ class AnnotationSpec extends DomainSpec {
     it("when a string value is given") {
       val annotation = factory.createAnnotation
       createFrom(annotation) mustSucceed { reply =>
-        reply must have (
-          'annotationTypeId (annotation.annotationTypeId),
-          'stringValue      (annotation.stringValue),
-          'numberValue      (annotation.numberValue),
-          'selectedValues   (annotation.selectedValues)
-        )
+        reply must have('annotationTypeId (annotation.annotationTypeId),
+                        'stringValue (annotation.stringValue),
+                        'numberValue (annotation.numberValue),
+                        'selectedValues (annotation.selectedValues))
         ()
       }
     }
@@ -34,12 +32,10 @@ class AnnotationSpec extends DomainSpec {
     it("when a number value is given") {
       val annotation = factory.createAnnotation.copy(numberValue = Some("1.01"))
       createFrom(annotation) mustSucceed { reply =>
-        reply must have (
-          'annotationTypeId (annotation.annotationTypeId),
-          'stringValue      (annotation.stringValue),
-          'numberValue      (annotation.numberValue),
-          'selectedValues   (annotation.selectedValues)
-        )
+        reply must have('annotationTypeId (annotation.annotationTypeId),
+                        'stringValue (annotation.stringValue),
+                        'numberValue (annotation.numberValue),
+                        'selectedValues (annotation.selectedValues))
         ()
       }
     }
@@ -49,12 +45,10 @@ class AnnotationSpec extends DomainSpec {
       val annotation = factory.createAnnotation
         .copy(selectedValues = Set(annotationType.id.id, nameGenerator.next[String]))
       createFrom(annotation) mustSucceed { reply =>
-        reply must have (
-          'annotationTypeId (annotation.annotationTypeId),
-          'stringValue      (annotation.stringValue),
-          'numberValue      (annotation.numberValue),
-          'selectedValues   (annotation.selectedValues)
-        )
+        reply must have('annotationTypeId (annotation.annotationTypeId),
+                        'stringValue (annotation.stringValue),
+                        'numberValue (annotation.numberValue),
+                        'selectedValues (annotation.selectedValues))
         ()
       }
     }
@@ -80,7 +74,7 @@ class AnnotationSpec extends DomainSpec {
 
     it("the value in selected value is empty") {
       val annotationType = factory.createAnnotationType
-      val annotation = factory.createAnnotation.copy(selectedValues = Set(annotationType.id.id, ""))
+      val annotation     = factory.createAnnotation.copy(selectedValues = Set(annotationType.id.id, ""))
       createFrom(annotation) mustFail "NonEmptyString"
     }
 

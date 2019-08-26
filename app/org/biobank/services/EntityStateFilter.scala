@@ -8,18 +8,16 @@ trait EntityStateFilter[A <: HasState] extends PredicateHelper with HasStatePred
   import org.biobank.CommonValidations._
   import Comparator._
 
-  protected def stateFilter(comparator:  Comparator,
-                            stateNames:  List[String],
-                            validStates: List[EntityState]):
-      ServiceValidation[EntityStateFilter] = {
-    stateNames.
-      map { str =>
-        validStates.find(_.id == str).toSuccessNel(
-          InvalidState(s"entity state does not exist: $str").toString)
-      }.
-      toList.
-      sequenceU.
-      flatMap { states =>
+  protected def stateFilter(
+      comparator:  Comparator,
+      stateNames:  List[String],
+      validStates: List[EntityState]
+    ): ServiceValidation[EntityStateFilter] =
+    stateNames
+      .map { str =>
+        validStates
+          .find(_.id == str).toSuccessNel(InvalidState(s"entity state does not exist: $str").toString)
+      }.toList.sequenceU.flatMap { states =>
         val stateSet = states.toSet
         comparator match {
           case Equal | In =>
@@ -30,6 +28,5 @@ trait EntityStateFilter[A <: HasState] extends PredicateHelper with HasStatePred
             ServiceError(s"invalid filter on state: $comparator").failureNel[EntityStateFilter]
         }
       }
-  }
 
 }

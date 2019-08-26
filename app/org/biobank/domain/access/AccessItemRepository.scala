@@ -25,7 +25,7 @@ trait AccessItemRepository extends ReadWriteRepositoryWithSlug[AccessItemId, Acc
 }
 
 @Singleton
-class AccessItemRepositoryImpl @Inject() (val testData: TestData)
+class AccessItemRepositoryImpl @Inject()(val testData: TestData)
     extends ReadWriteRepositoryRefImplWithSlug[AccessItemId, AccessItem](v => v.id)
     with AccessItemRepository {
 
@@ -45,16 +45,17 @@ class AccessItemRepositoryImpl @Inject() (val testData: TestData)
     super.init()
     initPermissions
     initRoles
-    testData.testRoles.foreach { case (userId, roleId) =>
-      getRole(roleId).foreach { role =>
-        put(role.copy(userIds = role.userIds + userId))
-      }
+    testData.testRoles.foreach {
+      case (userId, roleId) =>
+        getRole(roleId).foreach { role =>
+          put(role.copy(userIds = role.userIds + userId))
+        }
     }
   }
 
-  def getRole(id: AccessItemId): DomainValidation[Role] = {
+  def getRole(id: AccessItemId): DomainValidation[Role] =
     for {
-      accessItem <- getByKey(id).leftMap(err => IdNotFound{s"role id: $id"}.nel)
+      accessItem <- getByKey(id).leftMap(err => IdNotFound { s"role id: $id" }.nel)
       role <- {
         accessItem match {
           case role: Role => role.successNel[String]
@@ -62,20 +63,19 @@ class AccessItemRepositoryImpl @Inject() (val testData: TestData)
         }
       }
     } yield role
-  }
 
-  def getRoles(): Set[Role] = {
+  def getRoles(): Set[Role] =
     getValues.collect { case r: Role => r }.toSet
-  }
 
-  def rolesForUser(userId: UserId): Set[Role] = {
+  def rolesForUser(userId: UserId): Set[Role] =
     getValues
       .collect { case r: Role => r }
-      .filter { r => r.userIds.exists(_ == userId) }
+      .filter { r =>
+        r.userIds.exists(_ == userId)
+      }
       .toSet
-  }
 
-  def getPermission(id: AccessItemId): DomainValidation[Permission] = {
+  def getPermission(id: AccessItemId): DomainValidation[Permission] =
     for {
       accessItem <- getByKey(id)
       permission <- {
@@ -85,329 +85,311 @@ class AccessItemRepositoryImpl @Inject() (val testData: TestData)
         }
       }
     } yield permission
-  }
 
   def initPermissions(): Unit = {
     log.trace("accessItemRepository:initPermissions")
     val permissions = Set[Permission](
 
-        // FIXME: names and descriptions should be translated to different languages
+                                      // FIXME: names and descriptions should be translated to different languages
 
-        // USER PERMISSIONS
-        createPermissionSimple(PermissionId.UserUpdate,
-                               "Update user",
-                               "User can update other users",
-                               Set(RoleId.UserAdministrator)),
-        createPermissionSimple(PermissionId.UserChangeState,
-                               "Change user state",
-                               "User can change state on other users",
-                               Set(RoleId.UserAdministrator)),
-        createPermissionSimple(PermissionId.UserRead,
-                               "Read user",
-                               "User can view information for other users",
-                               Set(RoleId.UserAdministrator)),
-
-        // ROLE PERMISSIONS
-        createPermissionSimple(PermissionId.RoleRead,
-                               "View roles",
-                               "User can view roles",
-                               Set(RoleId.UserAdministrator)),
-        createPermissionSimple(PermissionId.RoleCreate,
-                               "Create roles",
-                               "User can create roles",
-                               Set(RoleId.UserAdministrator)),
-        createPermissionSimple(PermissionId.RoleUpdate,
-                               "Update roles",
-                               "User can update roles",
-                               Set(RoleId.UserAdministrator)),
-        createPermissionSimple(PermissionId.RoleDelete,
-                               "Delete roles",
-                               "User can remove a role",
-                               Set(RoleId.UserAdministrator)),
-
-        // MEMBERSHIP PERMISSIONS
-        createPermissionSimple(PermissionId.MembershipRead,
-                               "Read memberships",
-                               "User can view memberships",
-                               Set(RoleId.UserAdministrator)),
-        createPermissionSimple(PermissionId.MembershipCreate,
-                               "Create memberships",
-                               "User can create memberships",
-                               Set(RoleId.UserAdministrator)),
-        createPermissionSimple(PermissionId.MembershipUpdate,
-                               "Update memberships",
-                               "User can update memberships",
-                               Set(RoleId.UserAdministrator)),
-        createPermissionSimple(PermissionId.MembershipDelete,
-                               "Remove memberships",
-                               "User can remove memberships",
-                               Set(RoleId.UserAdministrator)),
-
-        // CENTRE PERMISSIONS
-        createPermissionSimple(PermissionId.CentreRead,
-                               "Read centres",
-                               "User can view centres",
-                               Set(RoleId.CentreUser, RoleId.ShippingUser)),
-        createPermissionSimple(PermissionId.CentreCreate,
-                               "Create centres",
-                               "User can create centres",
-                               Set(RoleId.CentreAdministrator)),
-        createPermissionSimple(PermissionId.CentreUpdate,
-                               "Update centres",
-                               "User can update centres",
-                               Set(RoleId.CentreAdministrator)),
-        createPermissionSimple(PermissionId.CentreChangeState,
-                               "Change state on centres",
-                               "User can change states on centres",
-                               Set(RoleId.CentreAdministrator)),
-
-        // CONTAINER TYPE PERMISSIONS
-        createPermissionSimple(PermissionId.ContainerTypeRead,
-                               "Read container types",
-                               "User can view container types",
-                               Set(RoleId.CentreUser)),
-        createPermissionSimple(PermissionId.ContainerTypeCreate,
-                               "Create container types",
-                               "User can create container types",
-                               Set(RoleId.CentreUser)),
-        createPermissionSimple(PermissionId.ContainerTypeUpdate,
-                               "Update container types",
-                               "User can update container types",
-                               Set(RoleId.CentreUser)),
-        createPermissionSimple(PermissionId.ContainerTypeDelete,
-                               "Delete container types",
-                               "User can delete a container type",
-                               Set(RoleId.CentreUser)),
-
-        // CONTAINER PERMISSIONS
-        createPermissionSimple(PermissionId.ContainerRead,
-                               "Read containers",
-                               "User can view containers",
-                               Set(RoleId.CentreUser)),
-        createPermissionSimple(PermissionId.ContainerCreate,
-                               "Create containers",
-                               "User can create containers",
-                               Set(RoleId.CentreUser)),
-        createPermissionSimple(PermissionId.ContainerUpdate,
-                               "Update containers",
-                               "User can update containers",
-                               Set(RoleId.CentreUser)),
-        createPermissionSimple(PermissionId.ContainerDelete,
-                               "Delete containers",
-                               "User can delete a container",
-                               Set(RoleId.CentreUser)),
-
-        // STUDY PERMISSIONS
-        createPermissionSimple(PermissionId.StudyRead,
-                               "Read studies",
-                               "User can view studies",
-                               Set(RoleId.StudyUser, RoleId.SpecimenCollector, RoleId.ShippingUser)),
-        createPermissionSimple(PermissionId.StudyCreate,
-                               "Create studies",
-                               "User can create studies",
-                               Set(RoleId.StudyAdministrator)),
-        createPermissionSimple(PermissionId.StudyUpdate,
-                               "Update studies",
-                               "User can update studies",
-                               Set(RoleId.StudyAdministrator)),
-        createPermissionSimple(PermissionId.StudyChangeState,
-                               "Change states on studies",
-                               "User can change states on studies",
-                               Set(RoleId.StudyAdministrator)),
-
-        // PARTICIPANT PERMISSIONS
-        createPermissionSimple(PermissionId.ParticipantRead,
-                               "Read participants",
-                               "User can view participants",
-                               Set(RoleId.SpecimenCollector)),
-        createPermissionSimple(PermissionId.ParticipantCreate,
-                               "Create participants",
-                               "User can create participants",
-                               Set(RoleId.SpecimenCollector)),
-        createPermissionSimple(PermissionId.ParticipantUpdate,
-                               "Update participants",
-                               "User can update participants",
-                               Set(RoleId.SpecimenCollector)),
-        createPermissionSimple(PermissionId.ParticipantDelete,
-                               "Delete participants",
-                               "User can update participants",
-                               Set(RoleId.StudyAdministrator)),
-
-        // COLLECTION EVENT PERMISSIONS
-        createPermissionSimple(PermissionId.CollectionEventRead,
-                               "Read collection events",
-                               "User can view collectionEvents",
-                               Set(RoleId.SpecimenCollector, RoleId.ShippingUser)),
-        createPermissionSimple(PermissionId.CollectionEventCreate,
-                               "Create collection events",
-                               "User can create collectionEvents",
-                               Set(RoleId.SpecimenCollector)),
-        createPermissionSimple(PermissionId.CollectionEventUpdate,
-                               "Update collection events",
-                               "User can update collectionEvents",
-                               Set(RoleId.SpecimenCollector)),
-        createPermissionSimple(PermissionId.CollectionEventDelete,
-                               "Delete collection events",
-                               "User can update collectionEvents",
-                               Set(RoleId.SpecimenCollector)),
-
-        // SPECIMEN PERMISSIONS
-        createPermissionSimple(PermissionId.SpecimenRead,
-                               "Read specimens",
-                               "User can view specimens",
-                               Set(RoleId.SpecimenCollector, RoleId.ShippingUser)),
-        createPermissionSimple(PermissionId.SpecimenCreate,
-                               "Create specimens",
-                               "User can create specimens",
-                               Set(RoleId.SpecimenCollector)),
-        createPermissionSimple(PermissionId.SpecimenUpdate,
-                               "Update specimens",
-                               "User can update specimens",
-                               Set(RoleId.SpecimenCollector)),
-        createPermissionSimple(PermissionId.SpecimenDelete,
-                               "Delete specimens",
-                               "User can update specimens",
-                               Set(RoleId.SpecimenCollector)),
-        createPermissionSimple(PermissionId.SpecimenChangeState,
-                               "Change state on specimens",
-                               "User can change states on specimens",
-                               Set(RoleId.StudyUser)),
-
-        // SHIPMENT PERMISSIONS
-        createPermissionSimple(PermissionId.ShipmentRead,
-                               "Read shipments",
-                               "User can view shipments",
-                               Set(RoleId.ShippingUser)),
-        createPermissionSimple(PermissionId.ShipmentCreate,
-                               "Create shipments",
-                               "User can create shipments",
-                               Set(RoleId.ShippingUser)),
-        createPermissionSimple(PermissionId.ShipmentUpdate,
-                               "Update shipments",
-                               "User can update shipments",
-                               Set(RoleId.ShippingUser)),
-        createPermissionSimple(PermissionId.ShipmentChangeState,
-                               "Change state on shipments",
-                               "User can change states on shipments",
-                               Set(RoleId.StudyUser)),
-        createPermissionSimple(PermissionId.ShipmentDelete,
-                               "Delete shipments",
-                               "User can delete shipments",
-                               Set(RoleId.ShippingAdministrator)),
-
-        // SNAPSHOTS
-        createPermissionSimple(PermissionId.Snapshot,
-                               "Storage snapshots",
-                               "User can create storage snapshots",
-                               Set(RoleId.WebsiteAdministrator))
-      )
+                                      // USER PERMISSIONS
+                                      createPermissionSimple(PermissionId.UserUpdate,
+                                                             "Update user",
+                                                             "User can update other users",
+                                                             Set(RoleId.UserAdministrator)),
+                                      createPermissionSimple(PermissionId.UserChangeState,
+                                                             "Change user state",
+                                                             "User can change state on other users",
+                                                             Set(RoleId.UserAdministrator)),
+                                      createPermissionSimple(PermissionId.UserRead,
+                                                             "Read user",
+                                                             "User can view information for other users",
+                                                             Set(RoleId.UserAdministrator)),
+                                      // ROLE PERMISSIONS
+                                      createPermissionSimple(PermissionId.RoleRead,
+                                                             "View roles",
+                                                             "User can view roles",
+                                                             Set(RoleId.UserAdministrator)),
+                                      createPermissionSimple(PermissionId.RoleCreate,
+                                                             "Create roles",
+                                                             "User can create roles",
+                                                             Set(RoleId.UserAdministrator)),
+                                      createPermissionSimple(PermissionId.RoleUpdate,
+                                                             "Update roles",
+                                                             "User can update roles",
+                                                             Set(RoleId.UserAdministrator)),
+                                      createPermissionSimple(PermissionId.RoleDelete,
+                                                             "Delete roles",
+                                                             "User can remove a role",
+                                                             Set(RoleId.UserAdministrator)),
+                                      // MEMBERSHIP PERMISSIONS
+                                      createPermissionSimple(PermissionId.MembershipRead,
+                                                             "Read memberships",
+                                                             "User can view memberships",
+                                                             Set(RoleId.UserAdministrator)),
+                                      createPermissionSimple(PermissionId.MembershipCreate,
+                                                             "Create memberships",
+                                                             "User can create memberships",
+                                                             Set(RoleId.UserAdministrator)),
+                                      createPermissionSimple(PermissionId.MembershipUpdate,
+                                                             "Update memberships",
+                                                             "User can update memberships",
+                                                             Set(RoleId.UserAdministrator)),
+                                      createPermissionSimple(PermissionId.MembershipDelete,
+                                                             "Remove memberships",
+                                                             "User can remove memberships",
+                                                             Set(RoleId.UserAdministrator)),
+                                      // CENTRE PERMISSIONS
+                                      createPermissionSimple(PermissionId.CentreRead,
+                                                             "Read centres",
+                                                             "User can view centres",
+                                                             Set(RoleId.CentreUser, RoleId.ShippingUser)),
+                                      createPermissionSimple(PermissionId.CentreCreate,
+                                                             "Create centres",
+                                                             "User can create centres",
+                                                             Set(RoleId.CentreAdministrator)),
+                                      createPermissionSimple(PermissionId.CentreUpdate,
+                                                             "Update centres",
+                                                             "User can update centres",
+                                                             Set(RoleId.CentreAdministrator)),
+                                      createPermissionSimple(PermissionId.CentreChangeState,
+                                                             "Change state on centres",
+                                                             "User can change states on centres",
+                                                             Set(RoleId.CentreAdministrator)),
+                                      // CONTAINER TYPE PERMISSIONS
+                                      createPermissionSimple(PermissionId.ContainerTypeRead,
+                                                             "Read container types",
+                                                             "User can view container types",
+                                                             Set(RoleId.CentreUser)),
+                                      createPermissionSimple(PermissionId.ContainerTypeCreate,
+                                                             "Create container types",
+                                                             "User can create container types",
+                                                             Set(RoleId.CentreUser)),
+                                      createPermissionSimple(PermissionId.ContainerTypeUpdate,
+                                                             "Update container types",
+                                                             "User can update container types",
+                                                             Set(RoleId.CentreUser)),
+                                      createPermissionSimple(PermissionId.ContainerTypeDelete,
+                                                             "Delete container types",
+                                                             "User can delete a container type",
+                                                             Set(RoleId.CentreUser)),
+                                      // CONTAINER PERMISSIONS
+                                      createPermissionSimple(PermissionId.ContainerRead,
+                                                             "Read containers",
+                                                             "User can view containers",
+                                                             Set(RoleId.CentreUser)),
+                                      createPermissionSimple(PermissionId.ContainerCreate,
+                                                             "Create containers",
+                                                             "User can create containers",
+                                                             Set(RoleId.CentreUser)),
+                                      createPermissionSimple(PermissionId.ContainerUpdate,
+                                                             "Update containers",
+                                                             "User can update containers",
+                                                             Set(RoleId.CentreUser)),
+                                      createPermissionSimple(PermissionId.ContainerDelete,
+                                                             "Delete containers",
+                                                             "User can delete a container",
+                                                             Set(RoleId.CentreUser)),
+                                      // STUDY PERMISSIONS
+                                      createPermissionSimple(
+                                        PermissionId.StudyRead,
+                                        "Read studies",
+                                        "User can view studies",
+                                        Set(RoleId.StudyUser, RoleId.SpecimenCollector, RoleId.ShippingUser)
+                                      ),
+                                      createPermissionSimple(PermissionId.StudyCreate,
+                                                             "Create studies",
+                                                             "User can create studies",
+                                                             Set(RoleId.StudyAdministrator)),
+                                      createPermissionSimple(PermissionId.StudyUpdate,
+                                                             "Update studies",
+                                                             "User can update studies",
+                                                             Set(RoleId.StudyAdministrator)),
+                                      createPermissionSimple(PermissionId.StudyChangeState,
+                                                             "Change states on studies",
+                                                             "User can change states on studies",
+                                                             Set(RoleId.StudyAdministrator)),
+                                      // PARTICIPANT PERMISSIONS
+                                      createPermissionSimple(PermissionId.ParticipantRead,
+                                                             "Read participants",
+                                                             "User can view participants",
+                                                             Set(RoleId.SpecimenCollector)),
+                                      createPermissionSimple(PermissionId.ParticipantCreate,
+                                                             "Create participants",
+                                                             "User can create participants",
+                                                             Set(RoleId.SpecimenCollector)),
+                                      createPermissionSimple(PermissionId.ParticipantUpdate,
+                                                             "Update participants",
+                                                             "User can update participants",
+                                                             Set(RoleId.SpecimenCollector)),
+                                      createPermissionSimple(PermissionId.ParticipantDelete,
+                                                             "Delete participants",
+                                                             "User can update participants",
+                                                             Set(RoleId.StudyAdministrator)),
+                                      // COLLECTION EVENT PERMISSIONS
+                                      createPermissionSimple(
+                                        PermissionId.CollectionEventRead,
+                                        "Read collection events",
+                                        "User can view collectionEvents",
+                                        Set(RoleId.SpecimenCollector, RoleId.ShippingUser)
+                                      ),
+                                      createPermissionSimple(PermissionId.CollectionEventCreate,
+                                                             "Create collection events",
+                                                             "User can create collectionEvents",
+                                                             Set(RoleId.SpecimenCollector)),
+                                      createPermissionSimple(PermissionId.CollectionEventUpdate,
+                                                             "Update collection events",
+                                                             "User can update collectionEvents",
+                                                             Set(RoleId.SpecimenCollector)),
+                                      createPermissionSimple(PermissionId.CollectionEventDelete,
+                                                             "Delete collection events",
+                                                             "User can update collectionEvents",
+                                                             Set(RoleId.SpecimenCollector)),
+                                      // SPECIMEN PERMISSIONS
+                                      createPermissionSimple(
+                                        PermissionId.SpecimenRead,
+                                        "Read specimens",
+                                        "User can view specimens",
+                                        Set(RoleId.SpecimenCollector, RoleId.ShippingUser)
+                                      ),
+                                      createPermissionSimple(PermissionId.SpecimenCreate,
+                                                             "Create specimens",
+                                                             "User can create specimens",
+                                                             Set(RoleId.SpecimenCollector)),
+                                      createPermissionSimple(PermissionId.SpecimenUpdate,
+                                                             "Update specimens",
+                                                             "User can update specimens",
+                                                             Set(RoleId.SpecimenCollector)),
+                                      createPermissionSimple(PermissionId.SpecimenDelete,
+                                                             "Delete specimens",
+                                                             "User can update specimens",
+                                                             Set(RoleId.SpecimenCollector)),
+                                      createPermissionSimple(PermissionId.SpecimenChangeState,
+                                                             "Change state on specimens",
+                                                             "User can change states on specimens",
+                                                             Set(RoleId.StudyUser)),
+                                      // SHIPMENT PERMISSIONS
+                                      createPermissionSimple(PermissionId.ShipmentRead,
+                                                             "Read shipments",
+                                                             "User can view shipments",
+                                                             Set(RoleId.ShippingUser)),
+                                      createPermissionSimple(PermissionId.ShipmentCreate,
+                                                             "Create shipments",
+                                                             "User can create shipments",
+                                                             Set(RoleId.ShippingUser)),
+                                      createPermissionSimple(PermissionId.ShipmentUpdate,
+                                                             "Update shipments",
+                                                             "User can update shipments",
+                                                             Set(RoleId.ShippingUser)),
+                                      createPermissionSimple(PermissionId.ShipmentChangeState,
+                                                             "Change state on shipments",
+                                                             "User can change states on shipments",
+                                                             Set(RoleId.StudyUser)),
+                                      createPermissionSimple(PermissionId.ShipmentDelete,
+                                                             "Delete shipments",
+                                                             "User can delete shipments",
+                                                             Set(RoleId.ShippingAdministrator)),
+                                      // SNAPSHOTS
+                                      createPermissionSimple(PermissionId.Snapshot,
+                                                             "Storage snapshots",
+                                                             "User can create storage snapshots",
+                                                             Set(RoleId.WebsiteAdministrator)))
     permissions.foreach(p => put(p.copy(slug = uniqueSlug(Slug(p.name)))))
   }
 
   def initRoles(): Unit = {
     log.trace("accessItemRepository:initRoles")
     val roles = Set[Role](
-        // FIXME: names and descriptions should be translated to different languages
-
-        createRoleSimple(RoleId.SpecimenProcessor,
-                         "Process specimens",
-                         "SpecimenProcessor"),
-
-        createRole(roleId      = RoleId.UserAdministrator,
-                   name        = "User administrator",
-                   description = "UserAdministrator",
-                   parentIds   = Set(RoleId.WebsiteAdministrator),
-                   childrenIds = Set(PermissionId.UserUpdate,
-                                     PermissionId.UserChangeState,
-                                     PermissionId.UserRead,
-                                     PermissionId.MembershipCreate,
-                                     PermissionId.MembershipUpdate,
-                                     PermissionId.MembershipDelete)),
-
-        createRole(roleId      = RoleId.CentreUser,
-                   name        = "Centre User",
-                   description = "Centre User",
-                   parentIds   = Set(RoleId.CentreAdministrator),
-                   childrenIds = Set(PermissionId.CentreRead)),
-
-        createRole(roleId      = RoleId.CentreAdministrator,
-                   name        = "Centre Administrator",
-                   description = "Centre Administrator",
-                   parentIds   = Set(RoleId.WebsiteAdministrator),
-                   childrenIds = Set(PermissionId.CentreUpdate,
-                                     PermissionId.CentreChangeState,
-                                     RoleId.CentreUser,
-                                     RoleId.ShippingAdministrator)),
-
-        createRole(roleId      = RoleId.StudyUser,
-                   name        = "Study User",
-                   description = "Study User",
-                   parentIds   = Set(RoleId.StudyAdministrator),
-                   childrenIds = Set(PermissionId.StudyRead,
-                                     PermissionId.SpecimenChangeState,
-                                     PermissionId.SpecimenDelete,
-                                     RoleId.SpecimenCollector)),
-
-        createRole(roleId      = RoleId.StudyAdministrator,
-                   name        = "Study Administrator",
-                   description = "Study Administrator",
-                   parentIds   = Set(RoleId.WebsiteAdministrator),
-                   childrenIds = Set(PermissionId.StudyUpdate,
-                                     PermissionId.StudyChangeState,
-                                     RoleId.StudyUser)),
-
-        createRole(roleId      = RoleId.SpecimenCollector,
-                   name        = "Specimen Collector",
-                   description = "Specimen Collector",
-                   parentIds   = Set(RoleId.StudyUser),
-                   childrenIds = Set(PermissionId.SpecimenRead,
-                                     PermissionId.SpecimenCreate,
-                                     PermissionId.SpecimenUpdate)),
-
-        createRole(roleId      = RoleId.ShippingAdministrator,
-                   name        = "Shipping Administrator",
-                   description = "Shipping Administrator",
-                   parentIds   = Set(RoleId.CentreAdministrator),
-                   childrenIds = Set(RoleId.ShippingUser,
-                                     PermissionId.ShipmentDelete)),
-
-        createRole(roleId      = RoleId.ShippingUser,
-                   name        = "Shipping User",
-                   description = "Shipping User",
-                   parentIds   = Set(RoleId.ShippingAdministrator),
-                   childrenIds = Set(PermissionId.ShipmentRead,
-                                     PermissionId.ShipmentCreate,
-                                     PermissionId.ShipmentUpdate,
-                                     PermissionId.ShipmentChangeState,
-                                     PermissionId.CentreRead,
-                                     PermissionId.SpecimenRead,
-                                     PermissionId.CollectionEventRead,
-                                     PermissionId.StudyRead)),
-
-        createRole(roleId      = RoleId.WebsiteAdministrator,
-                   name        = "Website Administrator",
-                   description = "Website Administrator",
-                   userIds     = Set(Global.DefaultUserId),
-                   parentIds   = Set.empty[AccessItemId],
-                   childrenIds = Set(PermissionId.StudyCreate,
-                                     PermissionId.CentreCreate,
-                                     RoleId.UserAdministrator,
-                                     RoleId.StudyAdministrator,
-                                     RoleId.CentreAdministrator,
-                                     RoleId.SpecimenCollector,
-                                     RoleId.SpecimenProcessor,
-                                     RoleId.ShippingAdministrator))
-      )
-
+                          // FIXME: names and descriptions should be translated to different languages
+                          createRoleSimple(RoleId.SpecimenProcessor,
+                                           "Process specimens",
+                                           "SpecimenProcessor"),
+                          createRole(roleId      = RoleId.UserAdministrator,
+                                     name        = "User administrator",
+                                     description = "UserAdministrator",
+                                     parentIds   = Set(RoleId.WebsiteAdministrator),
+                                     childrenIds = Set(PermissionId.UserUpdate,
+                                                       PermissionId.UserChangeState,
+                                                       PermissionId.UserRead,
+                                                       PermissionId.MembershipCreate,
+                                                       PermissionId.MembershipUpdate,
+                                                       PermissionId.MembershipDelete)),
+                          createRole(roleId      = RoleId.CentreUser,
+                                     name        = "Centre User",
+                                     description = "Centre User",
+                                     parentIds   = Set(RoleId.CentreAdministrator),
+                                     childrenIds = Set(PermissionId.CentreRead)),
+                          createRole(roleId      = RoleId.CentreAdministrator,
+                                     name        = "Centre Administrator",
+                                     description = "Centre Administrator",
+                                     parentIds   = Set(RoleId.WebsiteAdministrator),
+                                     childrenIds = Set(PermissionId.CentreUpdate,
+                                                       PermissionId.CentreChangeState,
+                                                       RoleId.CentreUser,
+                                                       RoleId.ShippingAdministrator)),
+                          createRole(roleId      = RoleId.StudyUser,
+                                     name        = "Study User",
+                                     description = "Study User",
+                                     parentIds   = Set(RoleId.StudyAdministrator),
+                                     childrenIds = Set(PermissionId.StudyRead,
+                                                       PermissionId.SpecimenChangeState,
+                                                       PermissionId.SpecimenDelete,
+                                                       RoleId.SpecimenCollector)),
+                          createRole(roleId      = RoleId.StudyAdministrator,
+                                     name        = "Study Administrator",
+                                     description = "Study Administrator",
+                                     parentIds   = Set(RoleId.WebsiteAdministrator),
+                                     childrenIds = Set(PermissionId.StudyUpdate,
+                                                       PermissionId.StudyChangeState,
+                                                       RoleId.StudyUser)),
+                          createRole(roleId      = RoleId.SpecimenCollector,
+                                     name        = "Specimen Collector",
+                                     description = "Specimen Collector",
+                                     parentIds   = Set(RoleId.StudyUser),
+                                     childrenIds = Set(PermissionId.SpecimenRead,
+                                                       PermissionId.SpecimenCreate,
+                                                       PermissionId.SpecimenUpdate)),
+                          createRole(roleId      = RoleId.ShippingAdministrator,
+                                     name        = "Shipping Administrator",
+                                     description = "Shipping Administrator",
+                                     parentIds   = Set(RoleId.CentreAdministrator),
+                                     childrenIds = Set(RoleId.ShippingUser, PermissionId.ShipmentDelete)),
+                          createRole(roleId      = RoleId.ShippingUser,
+                                     name        = "Shipping User",
+                                     description = "Shipping User",
+                                     parentIds   = Set(RoleId.ShippingAdministrator),
+                                     childrenIds = Set(PermissionId.ShipmentRead,
+                                                       PermissionId.ShipmentCreate,
+                                                       PermissionId.ShipmentUpdate,
+                                                       PermissionId.ShipmentChangeState,
+                                                       PermissionId.CentreRead,
+                                                       PermissionId.SpecimenRead,
+                                                       PermissionId.CollectionEventRead,
+                                                       PermissionId.StudyRead)),
+                          createRole(roleId      = RoleId.WebsiteAdministrator,
+                                     name        = "Website Administrator",
+                                     description = "Website Administrator",
+                                     userIds     = Set(Global.DefaultUserId),
+                                     parentIds   = Set.empty[AccessItemId],
+                                     childrenIds = Set(PermissionId.StudyCreate,
+                                                       PermissionId.CentreCreate,
+                                                       RoleId.UserAdministrator,
+                                                       RoleId.StudyAdministrator,
+                                                       RoleId.CentreAdministrator,
+                                                       RoleId.SpecimenCollector,
+                                                       RoleId.SpecimenProcessor,
+                                                       RoleId.ShippingAdministrator)))
 
     roles.foreach(r => put(r.copy(slug = uniqueSlug(Slug(r.name)))))
   }
 
-  private def createPermission(permissionId: PermissionId,
-                               name:         String,
-                               description:  String,
-                               parentIds:    Set[AccessItemId],
-                               childrenIds:  Set[AccessItemId]): Permission =
+  private def createPermission(
+      permissionId: PermissionId,
+      name:         String,
+      description:  String,
+      parentIds:    Set[AccessItemId],
+      childrenIds:  Set[AccessItemId]
+    ): Permission =
     Permission(id           = AccessItemId(permissionId.toString),
                version      = 0,
                timeAdded    = Global.StartOfTime,
@@ -418,20 +400,23 @@ class AccessItemRepositoryImpl @Inject() (val testData: TestData)
                parentIds    = parentIds,
                childrenIds  = childrenIds)
 
-  private def createPermissionSimple(permissionId: PermissionId,
-                                     name:         String,
-                                     description:  String,
-                                     parentIds:    Set[AccessItemId]): Permission =
-      createPermission(permissionId, name, description, parentIds, Set.empty[AccessItemId])
-
+  private def createPermissionSimple(
+      permissionId: PermissionId,
+      name:         String,
+      description:  String,
+      parentIds:    Set[AccessItemId]
+    ): Permission =
+    createPermission(permissionId, name, description, parentIds, Set.empty[AccessItemId])
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  private def createRole(roleId:       RoleId,
-                         name:         String,
-                         description:  String,
-                         userIds:      Set[UserId] = Set.empty[UserId],
-                         parentIds:    Set[AccessItemId],
-                         childrenIds:  Set[AccessItemId]): Role =
+  private def createRole(
+      roleId:      RoleId,
+      name:        String,
+      description: String,
+      userIds:     Set[UserId] = Set.empty[UserId],
+      parentIds:   Set[AccessItemId],
+      childrenIds: Set[AccessItemId]
+    ): Role =
     Role(id           = AccessItemId(roleId.toString),
          version      = 0,
          timeAdded    = Global.StartOfTime,

@@ -15,7 +15,8 @@ object ContainerConstraintsId {
 
   // Do not want JSON to create a sub object, we just want it to be converted
   // to a single string
-  implicit val containerConstraintsIdFormat: Format[ContainerConstraintsId] = new Format[ContainerConstraintsId] {
+  implicit val containerConstraintsIdFormat: Format[ContainerConstraintsId] =
+    new Format[ContainerConstraintsId] {
 
       override def writes(id: ContainerConstraintsId): JsValue = JsString(id.id)
 

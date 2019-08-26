@@ -42,72 +42,56 @@ object TestUtils extends MustMatchers with OptionValues {
   implicit class ValidationTests[T](val validation: DomainValidation[T]) {
 
     /** Executes the function if the validation is successful. If the validation fails then the test fails. To be
-      * used in ScalaTest tests.
-      *
-      *  @param fn the function to execute.
-      */
-    def mustSucceed(fn: T => Any): Unit = {
-      validation.fold(
-        err => fail(err.list.toList.mkString(", ")),
-        entity => {
-          fn(entity)
-          ()
+     * used in ScalaTest tests.
+     *
+     *  @param fn the function to execute.
+     */
+    def mustSucceed(fn: T => Any): Unit =
+      validation.fold(err => fail(err.list.toList.mkString(", ")), entity => {
+        fn(entity)
+        ()
+      })
+
+    /** Looks for an expected message in the validation failure error. If the validation is successful the test
+     * fails. To be used in ScalaTest tests.
+     *
+     *  @param expectedMessages one or more regular expression to look for in the error list.
+     */
+    def mustFail(expectedMessages: String*): Unit =
+      validation.fold(err => {
+        val errList = err.list.toList
+        errList.size must be > 0
+        expectedMessages.foreach { em =>
+          errList must containItemMatchingRegex(em)
         }
-      )
-    }
+      }, event => fail(s"validation must have failed: $validation"))
 
     /** Looks for an expected message in the validation failure error. If the validation is successful the test
-      * fails. To be used in ScalaTest tests.
-      *
-      *  @param expectedMessages one or more regular expression to look for in the error list.
-      */
-    def mustFail(expectedMessages: String*): Unit = {
-      validation.fold(
-        err => {
-          val errList = err.list.toList
-          errList.size must be > 0
-          expectedMessages.foreach { em =>
-            errList must containItemMatchingRegex (em)
-          }
-        },
-        event => fail(s"validation must have failed: $validation")
-      )
-    }
+     * fails. To be used in ScalaTest tests.
+     *
+     *  @param minMessages the minimum number of messages expected in the error list.
+     *  @param expectedMessages one or more regular expressions to look for in the error message.
+     */
+    def mustFail(minMessages: Int, expectedMessages: String*): Unit =
+      validation.fold(err => {
+        err.list.toList.size must be >= minMessages
+        expectedMessages.foreach { em =>
+          err.list.toList must containItemMatchingRegex(em)
+        }
+      }, event => fail(s"validation must have failed: $validation"))
 
     /** Looks for an expected message in the validation failure error. If the validation is successful the test
-      * fails. To be used in ScalaTest tests.
-      *
-      *  @param minMessages the minimum number of messages expected in the error list.
-      *  @param expectedMessages one or more regular expressions to look for in the error message.
-      */
-    def mustFail(minMessages: Int, expectedMessages: String*): Unit = {
-      validation.fold(
-        err => {
-          err.list.toList.size must be >= minMessages
-          expectedMessages.foreach { em =>
-            err.list.toList must containItemMatchingRegex (em)
-          }
-        },
-        event => fail(s"validation must have failed: $validation")
-      )
-    }
-
-    /** Looks for an expected message in the validation failure error. If the validation is successful the test
-      * fails. To be used in ScalaTest tests.
-      *
-      *  @param expectedMessages one or more regular expression to look for in the error list.
-      */
-    def mustFailContains(expectedMessages: String*): Unit = {
-      validation.fold(
-        err => {
-          err.list.toList must have size expectedMessages.size.toLong
-          expectedMessages.foreach { em =>
-            err.list.toList must containItemContainingRegex (em)
-          }
-        },
-        event => fail(s"validation must have failed: $validation")
-      )
-    }
+     * fails. To be used in ScalaTest tests.
+     *
+     *  @param expectedMessages one or more regular expression to look for in the error list.
+     */
+    def mustFailContains(expectedMessages: String*): Unit =
+      validation.fold(err => {
+        err.list.toList must have size expectedMessages.size.toLong
+        expectedMessages.foreach { em =>
+          err.list.toList must containItemContainingRegex(em)
+        }
+      }, event => fail(s"validation must have failed: $validation"))
 
   }
 

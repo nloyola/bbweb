@@ -4,7 +4,7 @@ import org.biobank.domain.centres._
 import org.biobank.fixtures.ControllerFixture
 import org.biobank.domain.participants._
 
-private[centres] abstract class ShipmentsControllerSpecFixtures
+abstract private[centres] class ShipmentsControllerSpecFixtures
     extends ControllerFixture with ShipmentSpecFixtures {
 
   override def centresFixture = {

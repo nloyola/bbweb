@@ -3,9 +3,9 @@ package org.biobank.domain
 import play.api.libs.json._
 
 /** Identifies a unique [[domain.Location Location]] in for a [[domain.centres.Centre Centre]].
-  *
-  * Used as a value object to maintain associations to with entities in the system.
-  */
+ *
+ * Used as a value object to maintain associations to with entities in the system.
+ */
 final case class LocationId(id: String) extends IdentifiedValueObject[String]
 
 object LocationId {
@@ -14,11 +14,11 @@ object LocationId {
   // to a single string
   implicit val locationIdFormat: Format[LocationId] = new Format[LocationId] {
 
-      override def writes(id: LocationId): JsValue = JsString(id.id)
+    override def writes(id: LocationId): JsValue = JsString(id.id)
 
-      override def reads(json: JsValue): JsResult[LocationId] =
-        Reads.StringReads.reads(json).map(LocationId.apply _)
-    }
+    override def reads(json: JsValue): JsResult[LocationId] =
+      Reads.StringReads.reads(json).map(LocationId.apply _)
+  }
 
 }
 
@@ -43,17 +43,17 @@ object LocationId {
  *
  * @param countryIsoCode the ISO country code for the country the location is in.
  */
-final case class Location(id:             LocationId,
-                          slug:           Slug,
-                          name:           String,
-                          street:         String,
-                          city:           String,
-                          province:       String,
-                          postalCode:     String,
-                          poBoxNumber:    Option[String],
-                          countryIsoCode: String)
-    extends IdentifiedValueObject[LocationId]
-    with HasName {
+final case class Location(
+    id:             LocationId,
+    slug:           Slug,
+    name:           String,
+    street:         String,
+    city:           String,
+    province:       String,
+    postalCode:     String,
+    poBoxNumber:    Option[String],
+    countryIsoCode: String)
+    extends IdentifiedValueObject[LocationId] with HasName {
 
   override def toString: String =
     s"""|${this.getClass.getSimpleName}: {
@@ -76,15 +76,17 @@ object Location {
 
   implicit val locationFormat: Format[Location] = Json.format[Location]
 
-  def create(name:           String,
-             street:         String,
-             city:           String,
-             province:       String,
-             postalCode:     String,
-             poBoxNumber:    Option[String],
-             countryIsoCode: String): DomainValidation[Location] = {
+  def create(
+      name:           String,
+      street:         String,
+      city:           String,
+      province:       String,
+      postalCode:     String,
+      poBoxNumber:    Option[String],
+      countryIsoCode: String
+    ): DomainValidation[Location] =
     validate(name).map { _ =>
-      val id = LocationId(java.util.UUID.randomUUID.toString.replaceAll("-","").toUpperCase)
+      val id = LocationId(java.util.UUID.randomUUID.toString.replaceAll("-", "").toUpperCase)
       Location(id             = id,
                slug           = Slug(name),
                name           = name,
@@ -95,11 +97,12 @@ object Location {
                poBoxNumber    = poBoxNumber,
                countryIsoCode = countryIsoCode)
     }
-  }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def validate(name: String): DomainValidation[Unit] =
-    validateString(name, NameRequired).map { _ => () }
+    validateString(name, NameRequired).map { _ =>
+      ()
+    }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def validate(location: Location): DomainValidation[Unit] =

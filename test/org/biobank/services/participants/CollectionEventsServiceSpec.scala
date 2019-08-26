@@ -15,9 +15,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks._
  * Primarily these are tests that exercise the User Access aspect of CollectionEventService.
  */
 class CollectionEventServiceSpec
-    extends ProcessorTestFixture
-    with ParticipantsServiceFixtures
-    with ScalaFutures {
+    extends ProcessorTestFixture with ParticipantsServiceFixtures with ScalaFutures {
 
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.CollectionEventCommands._
@@ -40,39 +38,27 @@ class CollectionEventServiceSpec
 
   private val ceventsService = app.injector.instanceOf[CollectionEventsService]
 
-  private def updateCommandsTable(sessionUserId: UserId,
-                                  cevent:        CollectionEvent,
-                                  annotation:    Annotation) = {
+  private def updateCommandsTable(sessionUserId: UserId, cevent: CollectionEvent, annotation: Annotation) =
     Table("collection event type update commands",
-          UpdateCollectionEventVisitNumberCmd(
-            sessionUserId   = sessionUserId.id,
-            id              = cevent.id.id,
-            expectedVersion = cevent.version,
-            visitNumber     = cevent.visitNumber
-          ),
-          UpdateCollectionEventTimeCompletedCmd(
-            sessionUserId   = sessionUserId.id,
-            id              = cevent.id.id,
-            expectedVersion = cevent.version,
-            timeCompleted   = cevent.timeCompleted
-          ),
-          CollectionEventUpdateAnnotationCmd(
-            sessionUserId    = sessionUserId.id,
-            id               = cevent.id.id,
-            expectedVersion  = cevent.version,
-            annotationTypeId = annotation.annotationTypeId.id,
-            stringValue      = annotation.stringValue,
-            numberValue      = annotation.numberValue,
-            selectedValues   = annotation.selectedValues
-          ),
-          RemoveCollectionEventAnnotationCmd(
-            sessionUserId    = sessionUserId.id,
-            id               = cevent.id.id,
-            expectedVersion  = cevent.version,
-            annotationTypeId = annotation.annotationTypeId.id
-          )
-    )
-  }
+          UpdateCollectionEventVisitNumberCmd(sessionUserId     = sessionUserId.id,
+                                              id                = cevent.id.id,
+                                              expectedVersion   = cevent.version,
+                                              visitNumber       = cevent.visitNumber),
+          UpdateCollectionEventTimeCompletedCmd(sessionUserId   = sessionUserId.id,
+                                                id              = cevent.id.id,
+                                                expectedVersion = cevent.version,
+                                                timeCompleted   = cevent.timeCompleted),
+          CollectionEventUpdateAnnotationCmd(sessionUserId      = sessionUserId.id,
+                                             id                 = cevent.id.id,
+                                             expectedVersion    = cevent.version,
+                                             annotationTypeId   = annotation.annotationTypeId.id,
+                                             stringValue        = annotation.stringValue,
+                                             numberValue        = annotation.numberValue,
+                                             selectedValues     = annotation.selectedValues),
+          RemoveCollectionEventAnnotationCmd(sessionUserId      = sessionUserId.id,
+                                             id                 = cevent.id.id,
+                                             expectedVersion    = cevent.version,
+                                             annotationTypeId   = annotation.annotationTypeId.id))
 
   override def beforeEach() {
     super.beforeEach()
@@ -87,11 +73,12 @@ class CollectionEventServiceSpec
 
       it("users can access") {
         val f = new UsersWithCeventAccessFixture
-        forAll (f.usersCanReadTable) { (user, label) =>
+        forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
-          ceventsService.get(user.id, f.cevent.id)
+          ceventsService
+            .get(user.id, f.cevent.id)
             .mustSucceed { result =>
-              result.id must be (f.cevent.id.id)
+              result.id must be(f.cevent.id.id)
             }
         }
       }
@@ -99,11 +86,13 @@ class CollectionEventServiceSpec
       it("users cannot access") {
         val f = new UsersWithCeventAccessFixture
         info("no membership user")
-        ceventsService.get(f.noMembershipUser.id, f.cevent.id)
+        ceventsService
+          .get(f.noMembershipUser.id, f.cevent.id)
           .mustFail("Unauthorized")
 
         info("no permission user")
-        ceventsService.get(f.nonStudyPermissionUser.id, f.cevent.id)
+        ceventsService
+          .get(f.nonStudyPermissionUser.id, f.cevent.id)
           .mustFail("Unauthorized")
 
       }
@@ -114,11 +103,12 @@ class CollectionEventServiceSpec
 
       it("users can access") {
         val f = new UsersWithCeventAccessFixture
-        forAll (f.usersCanReadTable) { (user, label) =>
+        forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
-          ceventsService.getByVisitNumber(user.id, f.participant.id, f.cevent.visitNumber)
+          ceventsService
+            .getByVisitNumber(user.id, f.participant.id, f.cevent.visitNumber)
             .mustSucceed { result =>
-              result.id must be (f.cevent.id.id)
+              result.id must be(f.cevent.id.id)
             }
         }
       }
@@ -126,11 +116,13 @@ class CollectionEventServiceSpec
       it("users cannot access") {
         val f = new UsersWithCeventAccessFixture
         info("no membership user")
-        ceventsService.getByVisitNumber(f.noMembershipUser.id, f.participant.id, f.cevent.visitNumber)
+        ceventsService
+          .getByVisitNumber(f.noMembershipUser.id, f.participant.id, f.cevent.visitNumber)
           .mustFail("Unauthorized")
 
         info("no permission user")
-        ceventsService.getByVisitNumber(f.nonStudyPermissionUser.id, f.participant.id, f.cevent.visitNumber)
+        ceventsService
+          .getByVisitNumber(f.nonStudyPermissionUser.id, f.participant.id, f.cevent.visitNumber)
           .mustFail("Unauthorized")
 
       }
@@ -140,12 +132,13 @@ class CollectionEventServiceSpec
     describe("when listing all collection events") {
 
       it("users can access") {
-        val f = new UsersWithCeventAccessFixture
-        val query = PagedQuery(new FilterString(""), new SortString(""), 0 , 1)
+        val f     = new UsersWithCeventAccessFixture
+        val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
 
-        forAll (f.usersCanReadTable) { (user, label) =>
+        forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
-          ceventsService.list(user.id, f.participant.id, query).futureValue
+          ceventsService
+            .list(user.id, f.participant.id, query).futureValue
             .mustSucceed { result =>
               result.items must have size 1
             }
@@ -153,15 +146,17 @@ class CollectionEventServiceSpec
       }
 
       it("users cannot access") {
-        val f = new UsersWithCeventAccessFixture
-        val query = PagedQuery(new FilterString(""), new SortString(""), 0 , 1)
+        val f     = new UsersWithCeventAccessFixture
+        val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
 
         info("no membership user")
-        ceventsService.list(f.noMembershipUser.id, f.participant.id, query).futureValue
+        ceventsService
+          .list(f.noMembershipUser.id, f.participant.id, query).futureValue
           .mustFail("Unauthorized")
 
         info("no permission user")
-        ceventsService.list(f.nonStudyPermissionUser.id, f.participant.id, query).futureValue
+        ceventsService
+          .list(f.nonStudyPermissionUser.id, f.participant.id, query).futureValue
           .mustFail("Unauthorized")
       }
 
@@ -171,8 +166,8 @@ class CollectionEventServiceSpec
 
       it("users can access") {
         val f = new UsersWithCeventAccessFixture
-        forAll (f.usersCanAddOrUpdateTable) { (user, label) =>
-          val cmd = AddCollectionEventCmd(sessionUserId         = user.id.id,
+        forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
+          val cmd = AddCollectionEventCmd(sessionUserId = user.id.id,
                                           participantId         = f.participant.id.id,
                                           collectionEventTypeId = f.ceventType.id.id,
                                           timeCompleted         = f.cevent.timeCompleted,
@@ -181,15 +176,15 @@ class CollectionEventServiceSpec
 
           collectionEventRepository.removeAll
           ceventsService.processCommand(cmd).futureValue mustSucceed { reply =>
-            reply.participantId must be (f.participant.id.id)
+            reply.participantId must be(f.participant.id.id)
           }
         }
       }
 
       it("users cannot access") {
         val f = new UsersWithCeventAccessFixture
-        forAll (f.usersCannotAddOrUpdateTable) { (user, label) =>
-          val cmd = AddCollectionEventCmd(sessionUserId         = user.id.id,
+        forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
+          val cmd = AddCollectionEventCmd(sessionUserId = user.id.id,
                                           participantId         = f.participant.id.id,
                                           collectionEventTypeId = f.ceventType.id.id,
                                           timeCompleted         = f.cevent.timeCompleted,
@@ -206,19 +201,19 @@ class CollectionEventServiceSpec
 
       it("users with access") {
         val f = new UsersWithCeventAccessFixture
-        forAll (f.usersCanAddOrUpdateTable) { (user, label) =>
+        forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           info(label)
           forAll(updateCommandsTable(user.id, f.cevent, f.ceventAnnotation)) { cmd =>
             val cevent = cmd match {
-                case _: CollectionEventUpdateAnnotationCmd =>
-                  f.cevent.copy(annotations = Set.empty[Annotation])
-                case _ =>
-                  f.cevent
-              }
+              case _: CollectionEventUpdateAnnotationCmd =>
+                f.cevent.copy(annotations = Set.empty[Annotation])
+              case _ =>
+                f.cevent
+            }
 
             collectionEventRepository.put(cevent) // restore it to it's previous state
             ceventsService.processCommand(cmd).futureValue mustSucceed { reply =>
-              reply.id must be (f.cevent.id.id)
+              reply.id must be(f.cevent.id.id)
             }
           }
         }
@@ -226,7 +221,7 @@ class CollectionEventServiceSpec
 
       it("users without access") {
         val f = new UsersWithCeventAccessFixture
-        forAll (f.usersCannotAddOrUpdateTable) { (user, label) =>
+        forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           forAll(updateCommandsTable(user.id, f.cevent, f.ceventAnnotation)) { cmd =>
             ceventsService.processCommand(cmd).futureValue mustFail "Unauthorized"
           }
@@ -239,9 +234,9 @@ class CollectionEventServiceSpec
 
       it("users with access") {
         val f = new UsersWithCeventAccessFixture
-        forAll (f.usersCanAddOrUpdateTable) { (user, label) =>
+        forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           info(label)
-          val cmd = RemoveCollectionEventCmd(sessionUserId   = user.id.id,
+          val cmd = RemoveCollectionEventCmd(sessionUserId = user.id.id,
                                              id              = f.cevent.id.id,
                                              participantId   = f.cevent.participantId.id,
                                              expectedVersion = f.cevent.version)
@@ -255,9 +250,9 @@ class CollectionEventServiceSpec
 
       it("users without access") {
         val f = new UsersWithCeventAccessFixture
-        forAll (f.usersCannotAddOrUpdateTable) { (user, label) =>
+        forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           info(label)
-          val cmd = RemoveCollectionEventCmd(sessionUserId   = user.id.id,
+          val cmd = RemoveCollectionEventCmd(sessionUserId = user.id.id,
                                              id              = f.cevent.id.id,
                                              participantId   = f.cevent.participantId.id,
                                              expectedVersion = f.cevent.version)

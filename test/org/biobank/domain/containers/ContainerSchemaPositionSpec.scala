@@ -15,7 +15,7 @@ class ContainerSchemaPositionSpec extends DomainSpec {
 
   def createFrom(schemaPosition: ContainerSchemaPosition): DomainValidation[ContainerSchemaPosition] =
     ContainerSchemaPosition
-      .create(schemaId = schemaPosition.schemaId, label = schemaPosition.label)
+      .create(id = schemaPosition.id, schemaId = schemaPosition.schemaId, label = schemaPosition.label)
 
   describe("A container position schema") {
 

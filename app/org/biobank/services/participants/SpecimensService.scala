@@ -10,13 +10,12 @@ import org.biobank.domain.centres.CentreRepository
 import org.biobank.domain.participants._
 import org.biobank.domain.studies._
 import org.biobank.domain.users.UserId
-import org.biobank.dto.{CollectionEventDto, SpecimenDto}
+import org.biobank.dto.{CentreLocationInfo, CollectionEventDto, SpecimenDto}
 import org.biobank.infrastructure.AscendingOrder
 import org.biobank.infrastructure.commands.SpecimenCommands._
 import org.biobank.infrastructure.events.SpecimenEvents._
 import org.biobank.services._
 import org.biobank.services.access.AccessService
-import org.biobank.services.centres.CentreLocationInfo
 import org.slf4j.{Logger, LoggerFactory}
 import scala.concurrent._
 import scalaz.Scalaz._

@@ -3,12 +3,11 @@ package org.biobank.domain.participants
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import org.biobank.ValidationKey
-import org.biobank.dto.SpecimenDto
+import org.biobank.dto.{CentreLocationInfo, SpecimenDto}
 import org.biobank.domain._
 import org.biobank.domain.containers._
 import org.biobank.domain.studies.{CollectionSpecimenDefinition, SpecimenDefinitionId, StudyValidations}
 import org.biobank.domain.{ConcurrencySafeEntity, DomainValidation}
-import org.biobank.services.centres.CentreLocationInfo
 import play.api.libs.json._
 import scalaz.Scalaz._
 

@@ -9,8 +9,8 @@ import org.biobank.domain.SpecimenType._
 import org.biobank.domain.annotations.Annotation
 import org.biobank.domain.centres._
 import org.biobank.domain.containers._
+import org.biobank.domain.studies._
 import org.biobank.dto.access.{UserMembershipDto, UserRoleDto}
-import org.biobank.services.centres.CentreLocationInfo
 import play.api.libs.json._
 
 package dto {
@@ -78,7 +78,64 @@ package dto {
 
   object CentreDto {
 
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(centre: Centre, studies: Set[Study]): CentreDto =
+      CentreDto(id           = centre.id.id,
+                version      = centre.version,
+                timeAdded    = centre.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                timeModified = centre.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                state        = centre.state.id,
+                slug         = centre.slug,
+                name         = centre.name,
+                description  = centre.description,
+                studyNames   = studies.map(EntityInfoAndStateDto(_)),
+                locations    = centre.locations)
+
     implicit val centreDtoFormat: Format[CentreDto] = Json.format[CentreDto]
+
+  }
+
+  final case class CentreLocationInfo(centreId: String, locationId: String, name: String)
+
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  object CentreLocationInfo {
+
+    def apply(centre: Centre, location: Location): CentreLocationInfo =
+      CentreLocationInfo(centre.id.id, location.id.id, s"${centre.name}: ${location.name}")
+
+    implicit val centreLocationInfoFormat: Format[CentreLocationInfo] = Json.format[CentreLocationInfo]
+
+  }
+
+  final case class ContainerSchemaDto(
+      id:           String,
+      version:      Long,
+      timeAdded:    String,
+      timeModified: Option[String],
+      slug:         Slug,
+      name:         String,
+      description:  Option[String],
+      shared:       Boolean,
+      centre:       EntityInfoDto,
+      labels:       Set[String])
+
+  object ContainerSchemaDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(schema: ContainerSchema, centre: Centre): ContainerSchemaDto =
+      ContainerSchemaDto(id        = schema.id.id,
+                         version   = schema.version,
+                         timeAdded = schema.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                         timeModified =
+                           schema.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                         slug        = schema.slug,
+                         name        = schema.name,
+                         description = schema.description,
+                         shared      = schema.shared,
+                         centre      = EntityInfoDto(centre),
+                         labels      = schema.positions.map(_.label))
+
+    implicit val containerSchemaDtoFormat: Format[ContainerSchemaDto] = Json.format[ContainerSchemaDto]
 
   }
 
@@ -91,11 +148,26 @@ package dto {
       name:         String,
       description:  Option[String],
       centre:       Option[EntityInfoAndStateDto],
-      schema:       EntityInfoAndStateDto,
+      schema:       EntityInfoDto,
       shared:       Boolean,
       enabled:      Boolean)
 
   object ContainerTypeDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(containerType: ContainerType, centre: Centre, schema: ContainerSchema): ContainerTypeDto =
+      ContainerTypeDto(id        = containerType.id.id,
+                       version   = containerType.version,
+                       timeAdded = containerType.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                       timeModified =
+                         containerType.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                       slug        = containerType.slug,
+                       name        = containerType.name,
+                       description = containerType.description,
+                       centre      = containerType.centreId.map(_ => EntityInfoAndStateDto(centre)),
+                       schema      = EntityInfoDto(schema),
+                       shared      = containerType.shared,
+                       enabled     = containerType.enabled)
 
     implicit val containerTypeDtoFormat: Format[ContainerTypeDto] = Json.format[ContainerTypeDto]
 
@@ -187,6 +259,26 @@ package dto {
 
   object RootContainerDto {
 
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(
+        c:             RootContainer,
+        containerType: ContainerType,
+        centre:        Centre,
+        location:      Location
+      ): RootContainerDto =
+      RootContainerDto(id                 = c.id.id,
+                       version            = c.version,
+                       timeAdded          = c.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                       timeModified       = c.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                       slug               = c.slug,
+                       label              = c.label,
+                       inventoryId        = c.inventoryId,
+                       enabled            = c.enabled,
+                       containerType      = EntityInfoDto(containerType),
+                       centreLocationInfo = CentreLocationInfo(centre, location),
+                       temperature        = c.temperature,
+                       constraints        = c.constraints.map(ContainerConstraintsDto(_, centre)))
+
     implicit val rootContainerDtoFormat: Format[RootContainerDto] = Json.format[RootContainerDto]
 
   }
@@ -194,6 +286,14 @@ package dto {
   final case class ContainerInfoDto(id: String, slug: String, label: String)
 
   object ContainerInfoDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(container: Container): ContainerInfoDto =
+      container match {
+        case c: RootContainer     => apply(c)
+        case c: StorageContainer  => apply(c)
+        case c: SpecimenContainer => apply(c)
+      }
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def apply(container: RootContainer): ContainerInfoDto =
@@ -211,21 +311,6 @@ package dto {
 
   }
 
-  final case class ContainerSchemaPositionDto(schema: EntityInfoDto, label: String)
-
-  object ContainerSchemaPositionDto {
-
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply(position: ContainerSchemaPosition, schema: ContainerSchema): ContainerSchemaPositionDto = {
-      val schemaInfo = EntityInfoDto(schema.id.id, schema.slug, schema.name)
-      ContainerSchemaPositionDto(schema = schemaInfo, label = position.label)
-    }
-
-    implicit val containerSchemaPositionDtoFormat: Format[ContainerSchemaPositionDto] =
-      Json.format[ContainerSchemaPositionDto]
-
-  }
-
   final case class StorageContainerDto(
       id:            String,
       version:       Long,
@@ -236,7 +321,7 @@ package dto {
       enabled:       Boolean,
       containerType: EntityInfoDto,
       parent:        ContainerInfoDto,
-      position:      ContainerSchemaPositionDto,
+      label:         String,
       constraints:   Option[ContainerConstraintsDto])
       extends ContainerDto {
 
@@ -251,12 +336,37 @@ package dto {
           |  enabled          $enabled,
           |  containerType:   $containerType,
           |  parent:          $parent,
-          |  position:        $position,
+          |  label:           $label,
           |  constraints      $constraints
           |}""".stripMargin
   }
 
   object StorageContainerDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(
+        c:                 StorageContainer,
+        containerType:     ContainerType,
+        parent:            Container,
+        constraintsCentre: Option[Centre]
+      ): StorageContainerDto = {
+      val constraintsDto = (c.constraints, constraintsCentre) match {
+        case (Some(constraints), Some(centre)) => Some(ContainerConstraintsDto(constraints, centre))
+        case _                                 => None
+      }
+
+      StorageContainerDto(id            = c.id.id,
+                          version       = c.version,
+                          timeAdded     = c.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                          timeModified  = c.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                          slug          = c.slug,
+                          inventoryId   = c.inventoryId,
+                          enabled       = c.enabled,
+                          containerType = EntityInfoDto(containerType),
+                          parent        = ContainerInfoDto(parent),
+                          label         = c.position.label,
+                          constraints   = constraintsDto)
+    }
 
     implicit val storageContainerDtoFormat: Format[StorageContainerDto] = Json.format[StorageContainerDto]
 
@@ -271,7 +381,7 @@ package dto {
       inventoryId:   String,
       containerType: EntityInfoDto,
       parent:        ContainerInfoDto,
-      position:      ContainerSchemaPositionDto)
+      label:         String)
       extends ContainerDto {
 
     override def toString: String =
@@ -284,11 +394,23 @@ package dto {
           |  inventoryId:     $inventoryId,
           |  containerType:   $containerType,
           |  parent:          $parent,
-          |  position:        $position
+          |  label:           $label,
           |}""".stripMargin
   }
 
   object SpecimenContainerDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(c: SpecimenContainer, containerType: ContainerType, parent: Container): SpecimenContainerDto =
+      SpecimenContainerDto(id            = c.id.id,
+                           version       = c.version,
+                           timeAdded     = c.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                           timeModified  = c.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                           slug          = c.slug,
+                           inventoryId   = c.inventoryId,
+                           containerType = EntityInfoDto(containerType),
+                           parent        = ContainerInfoDto(parent),
+                           label         = c.position.label)
 
     implicit val specimenContainerDtoFormat: Format[SpecimenContainerDto] = Json.format[SpecimenContainerDto]
 

@@ -90,11 +90,8 @@ class ContainersControllerSpec
 
         val setupFull = () => {
           val f = new StorageContainerFixtures
-          Set(f.centre,
-              f.storageContainerSchema,
-              f.rootContainerType,
-              f.storageContainerType,
-              f.rootContainer).foreach(addToRepository)
+          Set(f.centre, f.rootContainerSchema, f.rootContainerType, f.storageContainerType, f.rootContainer)
+            .foreach(addToRepository)
           ChildContainerTestSetup(url, f.storageContainerType, f.storageContainer)
         }
 
@@ -109,7 +106,8 @@ class ContainersControllerSpec
           val f = new SpecimenContainerFixtures
           Set(f.centre,
               f.rootContainerType,
-              f.storageContainerSchema,
+              f.rootContainerSchema,
+              f.specimenContainerSchema,
               f.storageContainerType,
               f.specimenContainerType,
               f.rootContainer)
@@ -138,9 +136,9 @@ class ContainersControllerSpec
         val setupPositionNotAvailable = () => {
           val f = new StorageContainerFixtures
           Set(f.centre,
+              f.rootContainerSchema,
+              f.storageContainerSchema,
               f.rootContainerType,
-              f.storageContainerSchema,
-              f.storageContainerSchema,
               f.storageContainerType,
               f.rootContainer,
               f.storageContainer)
@@ -164,10 +162,11 @@ class ContainersControllerSpec
         val setupFull = () => {
           val f = new SpecimenContainerFixtures
           Set(f.centre,
+              f.rootContainerSchema,
+              f.storageContainerSchema,
               f.rootContainerType,
               f.storageContainerType,
               f.specimenContainerType,
-              f.specimenContainerSchema,
               f.rootContainer,
               f.storageContainer)
             .foreach(addToRepository)
@@ -177,9 +176,10 @@ class ContainersControllerSpec
         val setupMissingContainerType = () => {
           val f = new SpecimenContainerFixtures
           Set(f.centre,
+              f.rootContainerSchema,
+              f.storageContainerSchema,
               f.rootContainerType,
               f.storageContainerType,
-              f.specimenContainerSchema,
               f.rootContainer,
               f.storageContainer)
             .foreach(addToRepository)
@@ -189,9 +189,11 @@ class ContainersControllerSpec
         val setupInvalidContainerType = () => {
           val f = new SpecimenContainerFixtures
           Set(f.centre,
+              f.rootContainerSchema,
+              f.storageContainerSchema,
+              f.specimenContainerSchema,
               f.rootContainerType,
               f.storageContainerType,
-              f.specimenContainerSchema,
               f.rootContainer,
               f.storageContainer)
             .foreach(addToRepository)
@@ -201,9 +203,10 @@ class ContainersControllerSpec
         val setupMissingParent = () => {
           val f = new SpecimenContainerFixtures
           Set(f.centre,
+              f.rootContainerSchema,
+              f.specimenContainerSchema,
               f.rootContainerType,
               f.storageContainerType,
-              f.specimenContainerSchema,
               f.rootContainer)
             .foreach(addToRepository)
           ChildContainerTestSetup(url, f.specimenContainerType, f.specimenContainer)
@@ -212,9 +215,10 @@ class ContainersControllerSpec
         val setupInventoryIdExists = () => {
           val f = new SpecimenContainerFixtures
           Set(f.centre,
+              f.rootContainerSchema,
+              f.specimenContainerSchema,
               f.rootContainerType,
               f.storageContainerType,
-              f.specimenContainerSchema,
               f.specimenContainerType,
               f.rootContainer,
               f.storageContainer,
@@ -226,9 +230,11 @@ class ContainersControllerSpec
         val setupPositionNotAvailable = () => {
           val f = new SpecimenContainerFixtures
           Set(f.centre,
+              f.rootContainerSchema,
+              f.storageContainerSchema,
+              f.specimenContainerSchema,
               f.rootContainerType,
               f.storageContainerType,
-              f.specimenContainerSchema,
               f.specimenContainerType,
               f.rootContainer,
               f.storageContainer,
@@ -263,7 +269,7 @@ class ContainersControllerSpec
     ) =
     describe("child container (shared)") {
 
-      it("add a storage container") {
+      it("add a child container") {
         val (url, containerType, container) = ChildContainerTestSetup.unapply(setupFull()).get
         val addJson                         = containerToAddJson(container, containerType)
         val reply                           = makeAuthRequest(POST, url, addJson).value
@@ -272,14 +278,14 @@ class ContainersControllerSpec
         validateContainer(container, contentAsJson(reply))
       }
 
-      it("adding a storage container fails if container type is not defined") {
+      it("adding a child container fails if container type is not defined") {
         val (url, containerType, container) = ChildContainerTestSetup.unapply(setupMissingContainerType()).get
         val addJson                         = containerToAddJson(container, containerType)
         val reply                           = makeAuthRequest(POST, url, addJson).value
         reply must beNotFoundWithMessage("IdNotFound: container type id")
       }
 
-      it("adding a container fails if a container type is of the wrong type") {
+      it("adding a child container fails if a container type is of the wrong type") {
         val (url, containerType, container) = ChildContainerTestSetup.unapply(setupInvalidContainerType()).get
         val addJson                         = containerToAddJson(container, containerType)
         val reply                           = makeAuthRequest(POST, url, addJson).value
@@ -307,7 +313,7 @@ class ContainersControllerSpec
         )
       }
 
-      it("adding a container fails if the position is not available") {
+      it("adding a child container fails if the position is not available") {
         val (url, containerType, container) = ChildContainerTestSetup.unapply(setupPositionNotAvailable()).get
         val addJson                         = containerToAddJson(container, containerType)
         val reply                           = makeAuthRequest(POST, url, addJson).value
@@ -317,35 +323,51 @@ class ContainersControllerSpec
     }
 
   private class RootContainerFixtures {
-    val location        = factory.createLocation
-    val centre          = factory.defaultEnabledCentre.copy(locations = Set(location))
-    val containerSchema = factory.createContainerSchema
-    val containerType   = factory.createStorageContainerType
-    val container       = factory.createRootContainer(centre, containerType)
+    val location = factory.createLocation
+    val centre   = factory.defaultEnabledCentre.copy(locations = Set(location))
+
+    val containerSchema =
+      factory.createContainerSchema.copy(positions = Set(factory.createContainerSchemaPosition))
+
+    val containerType = factory.createStorageContainerType
+    val container     = factory.createRootContainer(centre, containerType)
   }
 
   private class StorageContainerFixtures {
-    private val f              = new RootContainerFixtures
-    val rootContainer          = f.container
-    val rootContainerSchema    = f.containerSchema
-    val rootContainerType      = f.containerType
-    val centre                 = f.centre
-    val storageContainerSchema = f.containerSchema
-    val storageContainerType   = factory.createStorageContainerType
-    val storageContainer       = factory.createStorageContainer(storageContainerType, rootContainer)
+    private val f           = new RootContainerFixtures
+    val rootContainerSchema = f.containerSchema
+    val rootContainer       = f.container
+    val rootContainerType   = f.containerType
+    val centre              = f.centre
+
+    val storageContainerSchema =
+      factory.createContainerSchema.copy(positions = Set(factory.createContainerSchemaPosition))
+
+    val storageContainerType = factory.createStorageContainerType(centre, storageContainerSchema)
+
+    val storageContainer = factory.createStorageContainer(storageContainerType,
+                                                          rootContainer,
+                                                          rootContainerSchema.positions.headOption.value)
   }
 
   private class SpecimenContainerFixtures {
-    private val f               = new StorageContainerFixtures
-    val rootContainer           = f.rootContainer
-    val rootContainerType       = f.rootContainerType
-    val centre                  = f.centre
-    val storageContainerSchema  = f.storageContainerSchema
-    val storageContainerType    = f.storageContainerType
-    val storageContainer        = f.storageContainer
-    val specimenContainerSchema = f.storageContainerSchema
-    val specimenContainerType   = factory.createSpecimenContainerType
-    val specimenContainer       = factory.createSpecimenContainer(specimenContainerType, storageContainer)
+    private val f              = new StorageContainerFixtures
+    val rootContainerSchema    = f.rootContainerSchema
+    val rootContainer          = f.rootContainer
+    val rootContainerType      = f.rootContainerType
+    val centre                 = f.centre
+    val storageContainerSchema = f.storageContainerSchema
+    val storageContainerType   = f.storageContainerType
+    val storageContainer       = f.storageContainer
+
+    val specimenContainerSchema =
+      factory.createContainerSchema.copy(positions = Set(factory.createContainerSchemaPosition))
+
+    val specimenContainerType = factory.createSpecimenContainerType(specimenContainerSchema)
+
+    val specimenContainer = factory.createSpecimenContainer(specimenContainerType,
+                                                            storageContainer,
+                                                            storageContainerSchema.positions.headOption.value)
   }
 
   def validateContainer[T <: Container, D <: ContainerDto](
@@ -404,10 +426,9 @@ class ContainersControllerSpec
              "containerTypeId" -> containerType.id)
 
   private def containerToAddJson(container: ChildContainer, containerType: ContainerType): JsValue =
-    Json.obj("label"           -> container.position.label,
-             "inventoryId"     -> container.inventoryId,
+    Json.obj("inventoryId"     -> container.inventoryId,
              "containerTypeId" -> containerType.id,
              "parentId"        -> container.parentId,
-             "schemaId"        -> container.position.schemaId)
+             "label"           -> container.position.label)
 
 }

@@ -442,24 +442,25 @@ trait EntityMatchers {
    * The `equals` matcher, from scalatest, cannot be used since ConcurrencySafeEntity overrides `equals`
    * and `hashCode`.
    */
-  def matchContainerSchema(containerSchema: ContainerSchema) =
+  def matchContainerSchema(schema: ContainerSchema) =
     new Matcher[ContainerSchema] {
 
       def apply(left: ContainerSchema) = {
-        val matchers = Map(("id" -> (left.id equals containerSchema.id)),
-                           ("slug"        -> (left.slug equals containerSchema.slug)),
-                           ("name"        -> (left.name equals containerSchema.name)),
-                           ("description" -> (left.description equals containerSchema.description)),
-                           ("shared"      -> (left.shared equals containerSchema.shared)),
-                           ("centreId"    -> (left.centreId equals containerSchema.centreId))) ++
-          entityAttrsMatch(containerSchema, left)
+        val matchers = Map(("id" -> (left.id equals schema.id)),
+                           ("slug"        -> (left.slug equals schema.slug)),
+                           ("name"        -> (left.name equals schema.name)),
+                           ("description" -> (left.description equals schema.description)),
+                           ("shared"      -> (left.shared equals schema.shared)),
+                           ("centreId"    -> (left.centreId equals schema.centreId)),
+                           ("positions"   -> (positionsMatch(left.positions, schema.positions)))) ++
+          entityAttrsMatch(schema, left)
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
         MatchResult(
           nonMatching.size <= 0,
           "containerSchemas do not match for the following attributes: {0},\n: actual {1},\nexpected: {2}",
           "containerSchemas match: actual: {1},\nexpected: {2}",
-          IndexedSeq(nonMatching.mkString(", "), left, containerSchema)
+          IndexedSeq(nonMatching.mkString(", "), left, schema)
         )
       }
     }
@@ -669,6 +670,20 @@ trait EntityMatchers {
         (other.postalCode equals toFind.postalCode) &&
         (other.poBoxNumber equals toFind.poBoxNumber) &&
         (other.countryIsoCode equals toFind.countryIsoCode))
+      }
+    }
+
+    maybeMatch.foldLeft(true) { (result, found) =>
+      result && found
+    }
+  }
+
+  private def positionsMatch(a: Set[ContainerSchemaPosition], b: Set[ContainerSchemaPosition]): Boolean = {
+    val maybeMatch = a.map { toFind =>
+      b.exists { other =>
+        ((other.id equals toFind.id) &&
+        (other.schemaId equals toFind.schemaId) &&
+        (other.label equals toFind.label))
       }
     }
 

@@ -3,7 +3,6 @@ package org.biobank.services.centres
 import akka.actor._
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
-import java.time.format.DateTimeFormatter
 import javax.inject.{Inject, Named}
 import org.biobank.domain.{LocationId, Slug}
 import org.biobank.domain.access._
@@ -152,9 +151,7 @@ class CentresServiceImpl @Inject()(
   def searchLocations(cmd: SearchCentreLocationsCmd): ServiceValidation[Set[CentreLocationInfo]] =
     withPermittedCentres(UserId(cmd.sessionUserId)) { centres =>
       val allLocationInfos = centres.flatMap { centre =>
-        centre.locations.map { location =>
-          CentreLocationInfo(centre.id.id, location.id.id, centre.name, location.name)
-        }
+        centre.locations.map(CentreLocationInfo(centre, _))
       }
 
       val filterLowerCase = cmd.filter.toLowerCase.trim
@@ -226,24 +223,11 @@ class CentresServiceImpl @Inject()(
   def centreToDto(requestUserId: UserId, centre: Centre): ServiceValidation[CentreDto] = {
     val v = centre.studyIds
       .map { id =>
-        studiesService.getStudy(requestUserId, id).map { study =>
-          EntityInfoAndStateDto(study.id.id, study.slug, study.name, study.state.id)
-        }
+        studiesService.getStudy(requestUserId, id)
       }
       .toList.sequenceU
 
-    v.map { studyNames =>
-      CentreDto(id           = centre.id.id,
-                version      = centre.version,
-                timeAdded    = centre.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                timeModified = centre.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                state        = centre.state.id,
-                slug         = centre.slug,
-                name         = centre.name,
-                description  = centre.description,
-                studyNames   = studyNames.toSet,
-                locations    = centre.locations)
-    }
+    v.map(studies => CentreDto(centre, studies.toSet))
   }
 
 }

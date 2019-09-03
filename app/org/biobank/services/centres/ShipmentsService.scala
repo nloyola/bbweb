@@ -11,7 +11,7 @@ import org.biobank.domain.access.PermissionId
 import org.biobank.domain.participants._
 import org.biobank.domain.studies.CollectionEventTypeRepository
 import org.biobank.domain.users.UserId
-import org.biobank.dto.{ShipmentDto, ShipmentSpecimenDto, SpecimenDto}
+import org.biobank.dto.{CentreLocationInfo, ShipmentDto, ShipmentSpecimenDto, SpecimenDto}
 import org.biobank.infrastructure.AscendingOrder
 import org.biobank.infrastructure.commands.ShipmentCommands._
 import org.biobank.infrastructure.commands.ShipmentSpecimenCommands._
@@ -345,7 +345,7 @@ class ShipmentsServiceImpl @Inject()(
     }
 
     isMemberOfCentres(sessionUserId, validCentreIds).fold(
-      err    => Future.successful(err.failure[T]),
+      err => Future.successful(err.failure[T]),
       member => whenPermittedAsync(sessionUserId, permission)(block)
     )
   }
@@ -362,22 +362,21 @@ class ShipmentsServiceImpl @Inject()(
     val sessionUserId = UserId(cmd.sessionUserId)
     val shipmentId    = ShipmentId(cmd.shipmentId)
     isMemberOfCentres(sessionUserId, validCentresIds(shipmentId)).fold(
-      err    => Future.successful(err.failure[T]),
+      err => Future.successful(err.failure[T]),
       member => whenPermittedAsync(sessionUserId, PermissionId.ShipmentUpdate)(block)
     )
   }
 
   private def shipmentToDto(shipment: Shipment): ServiceValidation[ShipmentDto] =
     for {
-      fromCentre       <- centreRepository.getByLocationId(shipment.fromLocationId)
-      fromLocationName <- fromCentre.locationName(shipment.fromLocationId)
-      toCentre         <- centreRepository.getByLocationId(shipment.toLocationId)
-      toLocationName   <- toCentre.locationName(shipment.toLocationId)
+      fromCentre   <- centreRepository.getByLocationId(shipment.fromLocationId)
+      fromLocation <- fromCentre.locationWithId(shipment.fromLocationId)
+      toCentre     <- centreRepository.getByLocationId(shipment.toLocationId)
+      toLocation   <- toCentre.locationWithId(shipment.toLocationId)
     } yield {
-      val fromLocationInfo =
-        CentreLocationInfo(fromCentre.id.id, shipment.fromLocationId.id, fromLocationName)
-      val toLocationInfo = CentreLocationInfo(toCentre.id.id, shipment.toLocationId.id, toLocationName)
-      val specimens      = shipmentSpecimenRepository.allForShipment(shipment.id)
+      val fromLocationInfo = CentreLocationInfo(fromCentre, fromLocation)
+      val toLocationInfo   = CentreLocationInfo(toCentre, toLocation)
+      val specimens        = shipmentSpecimenRepository.allForShipment(shipment.id)
 
       // TODO: update with container count when ready
       ShipmentDto.create(shipment, fromLocationInfo, toLocationInfo, specimens.size, 0)

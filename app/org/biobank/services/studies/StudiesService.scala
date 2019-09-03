@@ -16,7 +16,7 @@ import org.biobank.infrastructure.commands.StudyCommands._
 import org.biobank.infrastructure.events.StudyEvents._
 import org.biobank.services._
 import org.biobank.services.access.AccessService
-import org.biobank.services.centres.{CentreLocation, CentreServicePermissionChecks}
+import org.biobank.services.centres.CentreServicePermissionChecks
 import org.slf4j.{Logger, LoggerFactory}
 import scala.concurrent._
 import scalaz.Scalaz._
@@ -63,7 +63,7 @@ trait StudiesService extends BbwebService {
       query:         FilterAndSortQuery
     ): Future[ServiceValidation[Seq[EntityInfoAndStateDto]]]
 
-  def getCentresForStudy(requestUserId: UserId, studyId: StudyId): ServiceValidation[Set[CentreLocation]]
+  def getCentresForStudy(requestUserId: UserId, studyId: StudyId): ServiceValidation[Set[CentreLocationInfo]]
 
   def enableAllowed(requestUserId: UserId, studyId: StudyId): ServiceValidation[Boolean]
 
@@ -203,13 +203,14 @@ class StudiesServiceImpl @Inject()(
       result <- if (permission) study.successNel[String] else Unauthorized.failureNel[Study]
     } yield result
 
-  def getCentresForStudy(requestUserId: UserId, studyId: StudyId): ServiceValidation[Set[CentreLocation]] =
+  def getCentresForStudy(
+      requestUserId: UserId,
+      studyId:       StudyId
+    ): ServiceValidation[Set[CentreLocationInfo]] =
     whenPermittedAndIsMember(requestUserId, PermissionId.StudyRead, Some(studyId), None) { () =>
       centreRepository
         .withStudy(studyId).flatMap { centre =>
-          centre.locations.map { location =>
-            CentreLocation(centre.id.id, location.id.id, centre.name, location.name)
-          }
+          centre.locations.map(CentreLocationInfo(centre, _))
         }.successNel[String]
     }
 

@@ -10,7 +10,6 @@ import org.biobank.domain.studies._
 import org.biobank.domain.users._
 import org.biobank.dto._
 import org.biobank.dto.access._
-import org.biobank.services.centres.CentreLocationInfo
 import play.api.libs.json._
 import org.scalatest.Matchers._
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -506,11 +505,10 @@ trait DtoMatchers {
 
       def apply(left: StorageContainerDto) = {
         val matchers =
-          Map(("enabled"           -> (left.enabled equals container.enabled)),
-              ("constraints"       -> (left.constraints equals container.constraints)),
-              ("parentId"          -> (left.parent.id equals container.parentId.id)),
-              ("position:schemaId" -> (left.position.schema.id equals container.position.schemaId.id)),
-              ("position:label"    -> (left.position.label equals container.position.label))) ++
+          Map(("enabled"     -> (left.enabled equals container.enabled)),
+              ("constraints" -> (left.constraints equals container.constraints)),
+              ("parentId"    -> (left.parent.id equals container.parentId.id)),
+              ("label"       -> (left.label equals container.position.label))) ++
             dtoAndContainerMatches(left, container)
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
@@ -527,9 +525,8 @@ trait DtoMatchers {
 
       def apply(left: SpecimenContainerDto) = {
         val nonMatching =
-          Map(("parentId"          -> (left.parent.id equals container.parentId.id)),
-              ("position:schemaId" -> (left.position.schema.id equals container.position.schemaId.id)),
-              ("position:label"    -> (left.position.label equals container.position.label))) ++
+          Map(("parentId" -> (left.parent.id equals container.parentId.id)),
+              ("label"    -> (left.label equals container.position.label))) ++
             dtoAndContainerMatches(left, container) filter { case (k, v) => !v } keys
 
         MatchResult(nonMatching.size <= 0,

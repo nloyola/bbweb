@@ -6,10 +6,9 @@ import org.biobank.domain._
 import org.biobank.domain.annotations._
 import org.biobank.domain.Slug
 import org.biobank.domain.studies._
-import org.biobank.dto.EntityInfoAndStateDto
+import org.biobank.dto.{CentreLocationInfo, EntityInfoAndStateDto}
 import org.biobank.fixtures._
 import org.biobank.matchers.PagedResultsMatchers
-import org.biobank.services.centres.CentreLocation
 import org.biobank.services.studies.StudyCountsByStatus
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import play.api.libs.json._
@@ -995,9 +994,9 @@ class StudiesControllerSpec
         val reply = makeAuthRequest(GET, uri("centres", study.id.id)).value
         reply must beOkResponseWithJsonReply
 
-        val dtos = (contentAsJson(reply) \ "data").validate[Seq[CentreLocation]]
+        val dtos = (contentAsJson(reply) \ "data").validate[Seq[CentreLocationInfo]]
         dtos must be(jsSuccess)
-        dtos.get must equal(Seq(CentreLocation(centre, location)))
+        dtos.get must equal(Seq(CentreLocationInfo(centre, location)))
       }
 
     }

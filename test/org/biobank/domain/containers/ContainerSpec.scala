@@ -83,7 +83,7 @@ trait ContainerSharedSpec[T <: Container] { this: FunSpec =>
     it("not be created with an invalid position") {
       val position  = factory.createContainerSchemaPosition.copy(schemaId = ContainerSchemaId(""))
       val container = createWithPosition(position)
-      createFrom(container) mustFail ("ContainerSchemaPositionInvalid", "IdRequired")
+      createFrom(container) mustFail ("ContainerSchemaPositionInvalid")
     }
   }
 }
@@ -109,26 +109,35 @@ class StorageContainerSpec extends DomainSpec with ContainerSharedSpec[StorageCo
       case _ => DomainError("invalid container").failureNel[StorageContainer]
     }
 
-  protected def createEntity(): StorageContainer =
-    factory.createStorageContainer()
+  protected def createEntity(): StorageContainer = {
+    val location = factory.createLocation()
+    val centre   = factory.createEnabledCentre().copy(locations = Set(location))
+
+    val position = factory.createContainerSchemaPosition
+    val schema   = factory.createContainerSchema(Set(position))
+
+    val ctype  = factory.createStorageContainerType(centre, schema)
+    val parent = factory.createRootContainer(centre, ctype)
+    factory.createStorageContainer(ctype, parent, position)
+  }
 
   protected def createWithId(id: ContainerId): StorageContainer =
-    factory.createStorageContainer().copy(id = id)
+    createEntity.copy(id = id)
 
   protected def createWithInventoryId(inventoryId: String): StorageContainer =
-    factory.createStorageContainer().copy(inventoryId = inventoryId)
+    createEntity.copy(inventoryId = inventoryId)
 
   protected def createWithVersion(version: Long): StorageContainer =
-    factory.createStorageContainer().copy(version = version)
+    createEntity.copy(version = version)
 
   protected def createWithContainerTypeId(id: ContainerTypeId): StorageContainer =
-    factory.createStorageContainer().copy(containerTypeId = id)
+    createEntity.copy(containerTypeId = id)
 
   protected def createWithParentId(id: ContainerId): StorageContainer =
-    factory.createStorageContainer().copy(parentId = id)
+    createEntity.copy(parentId = id)
 
   protected def createWithPosition(position: ContainerSchemaPosition): StorageContainer =
-    factory.createStorageContainer().copy(position = position)
+    createEntity.copy(position = position)
 
   describe("A StorageContainer") {
 
@@ -142,7 +151,7 @@ class StorageContainerSpec extends DomainSpec with ContainerSharedSpec[StorageCo
 
     it("can be enabled and disabled") {
       Set(true, false).foreach { enabled =>
-        val container = factory.createStorageContainer()
+        val container = createEntity
         container.withEnabled(enabled) mustSucceed { c =>
           c must matchContainer(
             container.copy(enabled      = enabled,
@@ -189,25 +198,43 @@ class SpecimenContainerSpec extends DomainSpec with ContainerSharedSpec[Specimen
                              parentId        = container.parentId,
                              position        = container.position)
 
-  protected def createEntity(): SpecimenContainer = factory.createSpecimenContainer()
+  protected def createEntity(): SpecimenContainer = {
+    val location = factory.createLocation()
+    val centre   = factory.createEnabledCentre().copy(locations = Set(location))
+
+    val rootPosition = factory.createContainerSchemaPosition
+    val rootSchema   = factory.createContainerSchema(Set(rootPosition))
+
+    val rootCType     = factory.createStorageContainerType(centre, rootSchema)
+    val rootContainer = factory.createRootContainer(centre, rootCType)
+
+    val storagePosition = factory.createContainerSchemaPosition
+    val storageSchema   = factory.createContainerSchema(Set(rootPosition))
+
+    val storageCType  = factory.createStorageContainerType(centre, storageSchema)
+    val storageParent = factory.createStorageContainer(storageCType, rootContainer, rootPosition)
+
+    val ctype = factory.createSpecimenContainerType(factory.createContainerSchema)
+    factory.createSpecimenContainer(ctype, storageParent, storagePosition)
+  }
 
   protected def createWithId(id: ContainerId): SpecimenContainer =
-    factory.createSpecimenContainer().copy(id = id)
+    createEntity.copy(id = id)
 
   protected def createWithInventoryId(inventoryId: String): SpecimenContainer =
-    factory.createSpecimenContainer().copy(inventoryId = inventoryId)
+    createEntity.copy(inventoryId = inventoryId)
 
   protected def createWithVersion(version: Long): SpecimenContainer =
-    factory.createSpecimenContainer().copy(version = version)
+    createEntity.copy(version = version)
 
   protected def createWithContainerTypeId(id: ContainerTypeId): SpecimenContainer =
-    factory.createSpecimenContainer().copy(containerTypeId = id)
+    createEntity.copy(containerTypeId = id)
 
   protected def createWithParentId(id: ContainerId): SpecimenContainer =
-    factory.createSpecimenContainer().copy(parentId = id)
+    createEntity.copy(parentId = id)
 
   protected def createWithPosition(position: ContainerSchemaPosition): SpecimenContainer =
-    factory.createSpecimenContainer().copy(position = position)
+    createEntity.copy(position = position)
 
   describe("A SpecimenContainer") {
 

@@ -27,15 +27,12 @@ object ContainerCommands {
 
   trait AddSubContainerCommand
       extends AddContainerCommand with HasContainerTypeIdentity with HasParentIdentity {
-    val inventoryId: String
     val label:       String
+    val inventoryId: String
   }
 
   trait ContainerModifyCommand extends ContainerCommand with HasIdentity with HasExpectedVersion
 
-  /**
-   * The treeId field is filled  in by the service.
-   */
   final case class AddRootContainerCmd(
       sessionUserId:   String,
       inventoryId:     String,
@@ -51,8 +48,7 @@ object ContainerCommands {
       label:           String,
       inventoryId:     String,
       containerTypeId: String,
-      parentId:        String,
-      schemaId:        String)
+      parentId:        String)
       extends AddSubContainerCommand
 
   final case class AddSpecimenContainerCmd(
@@ -60,8 +56,7 @@ object ContainerCommands {
       label:           String,
       inventoryId:     String,
       containerTypeId: String,
-      parentId:        String,
-      schemaId:        String)
+      parentId:        String)
       extends AddSubContainerCommand
 
   final case class UpdateContainerCmd(

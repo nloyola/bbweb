@@ -1,0 +1,56 @@
+syntax = "proto2";
+
+package org.biobank.infrastructure.events;
+
+// import "CommonEvents.proto";
+
+message ContainerSchemaEvent {
+
+  message Position {
+    optional string positionId = 1;
+    optional string label      = 2;
+  }
+
+  message Added {
+    optional string name        = 1;
+    optional string description = 2;
+  }
+
+  message NameUpdated {
+    optional int64  version     = 1;
+    optional string name        = 2;
+  }
+
+  message DescriptionUpdated {
+    optional int64  version     = 1;
+    optional string description = 2;
+  }
+
+  message SharedUpdated {
+    optional int64 version = 1;
+    optional bool  shared  = 2;
+  }
+
+  message CentreUpdated {
+    optional int64  version  = 1;
+    optional string centreId = 2;
+  }
+
+  message PositionsUpdated {
+    optional int64    version  = 1;
+    repeated Position position = 2;
+  }
+
+  required string id            = 1;
+  optional string sessionUserId = 2;
+  optional string time          = 3;
+
+  oneof event_type {
+    Added              added              = 4;
+    NameUpdated        nameUpdated        = 5;
+    DescriptionUpdated descriptionUpdated = 6;
+    SharedUpdated      sharedUpdated      = 7;
+    CentreUpdated      centreUpdated      = 8;
+    PositionsUpdated   positionsUpdated   = 9;
+  }
+}

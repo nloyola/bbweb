@@ -296,17 +296,11 @@ final case class StorageContainer(
     constraints:     Option[ContainerConstraints])
     extends Container with ChildContainer with ContainerValidations {
 
-  import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
   def withInventoryId(inventoryId: String): DomainValidation[Container] =
     validateInventoryId(inventoryId) map { _ =>
       update.copy(inventoryId = inventoryId)
-    }
-
-  def withLabel(label: String): DomainValidation[Container] =
-    validateNonEmptyString(label) map { _ =>
-      update.copy(position = ContainerSchemaPosition(position.schemaId, label))
     }
 
   def withEnabled(enabled: Boolean): DomainValidation[StorageContainer] =

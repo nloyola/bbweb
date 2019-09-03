@@ -3,7 +3,6 @@ package org.biobank.services.centres
 import akka.actor.ActorRef
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
-import java.time.format.DateTimeFormatter
 import javax.inject.{Inject, Named}
 import org.biobank.domain.access.PermissionId
 import org.biobank.domain.centres.{CentreId, CentreRepository}
@@ -145,77 +144,31 @@ class ContainersServiceImpl @Inject()(
 
   private def containerToDto(container: Container): ServiceValidation[ContainerDto] =
     containerTypeRepository.getByKey(container.containerTypeId).flatMap { containerType =>
-      val containerTypeInfo = EntityInfoDto(containerType.id.id, containerType.slug, containerType.name)
-
       container match {
         case c: RootContainer =>
           for {
-            centre       <- centreRepository.getByKey(c.centreId)
-            locationName <- centre.locationName(c.locationId)
-          } yield {
-            val centreLocationInfo = CentreLocationInfo(centre.id.id, c.locationId.id, locationName)
-            val constraintsDto     = c.constraints.flatMap(containerConstraintsToDto(_).toOption)
-            RootContainerDto(id        = c.id.id,
-                             version   = c.version,
-                             timeAdded = c.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                             timeModified =
-                               c.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                             slug               = c.slug,
-                             label              = c.label,
-                             inventoryId        = c.inventoryId,
-                             enabled            = c.enabled,
-                             containerType      = containerTypeInfo,
-                             centreLocationInfo = centreLocationInfo,
-                             temperature        = c.temperature,
-                             constraints        = constraintsDto)
-          }
+            centre   <- centreRepository.getByKey(c.centreId)
+            location <- centre.locationWithId(c.locationId)
+          } yield RootContainerDto(c, containerType, centre, location)
 
         case c: ChildContainer =>
           for {
             parent <- containerRepository.getByKey(c.parentId)
-            schema <- containerSchemaRepository.getByKey(containerType.schemaId)
           } yield {
-            val parentInfo  = ContainerInfoDto(parent.id.id, parent.slug.id, parent.getLabel)
-            val positionDto = ContainerSchemaPositionDto(c.position, schema)
-
             c match {
               case c: StorageContainer =>
-                val constraintsDto = c.constraints.flatMap(containerConstraintsToDto(_).toOption)
-
-                StorageContainerDto(id        = c.id.id,
-                                    version   = c.version,
-                                    timeAdded = c.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                                    timeModified =
-                                      c.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                                    slug          = c.slug,
-                                    inventoryId   = c.inventoryId,
-                                    enabled       = c.enabled,
-                                    containerType = containerTypeInfo,
-                                    parent        = parentInfo,
-                                    position      = positionDto,
-                                    constraints   = constraintsDto)
+                val constraintsCentre = c.constraints match {
+                  case Some(constraints) =>
+                    centreRepository.getByKey(constraints.centreId).toOption
+                  case None => None
+                }
+                StorageContainerDto(c, containerType, parent, constraintsCentre)
 
               case c: SpecimenContainer =>
-                SpecimenContainerDto(id        = c.id.id,
-                                     version   = c.version,
-                                     timeAdded = c.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                                     timeModified =
-                                       c.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                                     slug          = c.slug,
-                                     inventoryId   = c.inventoryId,
-                                     containerType = containerTypeInfo,
-                                     parent        = parentInfo,
-                                     position      = positionDto)
+                SpecimenContainerDto(c, containerType, parent)
             }
           }
       }
-    }
-
-  private def containerConstraintsToDto(
-      constraints: ContainerConstraints
-    ): ServiceValidation[ContainerConstraintsDto] =
-    centreRepository.getByKey(constraints.centreId).map { centre =>
-      ContainerConstraintsDto(constraints, centre)
     }
 
   private def getContainerCentreId(containerId: ContainerId): ServiceValidation[CentreId] =

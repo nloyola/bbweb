@@ -20,7 +20,7 @@ message ContainerEvent {
     optional string containerTypeId = 2;
     optional string parentId        = 3;
     optional string schemaId        = 4;
-    optional string label           = 5;
+    optional string positionId      = 5;
   }
 
   required string id            = 1;

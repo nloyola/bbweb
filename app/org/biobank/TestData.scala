@@ -21,150 +21,138 @@ import scalaz.Scalaz._
  */
 object TestData {
 
-  val centreData: List[Tuple2[String, String]] = List(("CL1-Foothills", "CL1-Foothills"),
-                                                      ("CL1-Heritage", "CL1-Heritage"),
-                                                      ("CL1-Sunridge", "CL1-Sunridge"),
-                                                      ("CL2-Children Hosp",
-                                                       "CL2-Alberta's Children's Hospital"),
-                                                      ("ED1-UofA", "ED1-UofA"),
-                                                      ("OT2-Children Hosp",
-                                                       "OT2-Children's Hospital of Eastern Ontario"),
-                                                      ("QB1-Enfant-Jesus", "QB1-Hopital Enfant-Jesus"),
-                                                      ("RD1-Red Deer Hosp", "RD1-Red Deer Regional Hospital"),
-                                                      ("SB1-St John NB Hosp",
-                                                       "SB1-Saint Johns NB Regional Hospital"),
-                                                      ("SD1-Sudbury Hosp", "SD1-Sudbury Regional Hospital"),
-                                                      ("SF1-Health NFLD", "SF1-Health Science Center"),
-                                                      ("SP1-St Therese Hosp", "SP1-St Therese Hospital"),
-                                                      ("SS1-Royal Hosp", "SS1-Royal University Hospital"),
-                                                      ("TH1-Regional Hosp",
-                                                       "TH1-Thunder Bay Regional Hospital"),
-                                                      ("TR1-St Mikes", "TR1-St Michael's Hospital"),
-                                                      ("VN1-St Paul", "VN1-St Paul's Hospital"),
-                                                      ("VN2-Childrens Hosp",
-                                                       "VN2-BC Women and Children's Hospital"),
-                                                      ("WL1-Westlock Hosp",
-                                                       "WL1-Westlock Health Care Center"),
-                                                      ("WN1-Cancer Care", "WN1-Cancer Care Manitoba"),
-                                                      ("CL1-Foothills TRW", "CL1-Foothills TRW"),
-                                                      ("CBSR", "Canadian BioSample Repository"),
-                                                      ("Calgary-F", "Calgary Foothills"),
-                                                      ("100-Calgary AB", "100-Calgary Alberta Refine"),
-                                                      ("College Plaza UofA", "College Plaza UofA"),
-                                                      ("101-London ON", "101-London Ontario Refine"),
-                                                      ("102-Newmarket ON", "102-Newmarket Ontario Refine"),
-                                                      ("103-Montreal QC", "103-Montreal Quebec Refine"),
-                                                      ("104-Montreal QC", "104-Montreal Quebec Refine"),
-                                                      ("105-Victoria BC",
-                                                       "105-Victoria British Columbia refine"),
-                                                      ("106-Quebec City QC", "106-Quebec City Quebec Refine"),
-                                                      ("CaRE ED1", "CaRE ED1"),
-                                                      ("200-Spokane WA", "200-Spokane Washington REFINE"),
-                                                      ("201-Erie PA", "201-Erie Pennsylvania REFINE"),
-                                                      ("202-Cherry Hill NJ",
-                                                       "202-Cherry Hill New Jersey REFINE"),
-                                                      ("203-West Des Moines IA",
-                                                       "203-West Des Moines Iowa REFINE"),
-                                                      ("204-Evansville IN", "204-Evansville Indiana REFINE"),
-                                                      ("205-Southfield MI", "205-Southfield Michigan REFINE"),
-                                                      ("206 A -Nashville TN",
-                                                       "206 A -Nashville Tennessee REFINE"),
-                                                      ("207-Amarillo TX", "207-Amarillo Texas REFINE"),
-                                                      ("300-Oulu FI", "300-Oulu Finland REFINE"),
-                                                      ("ED1-GNH", "ED1-GNH"),
-                                                      ("KIDNI CL1", "KIDNI Calgary"))
+  val centreIdCBSR:    CentreId = CentreId("CBSR")
+  val centreIdCalgary: CentreId = CentreId("100-Calgary AB_id")
+  val centreIdLondon:  CentreId = CentreId("101-London ON_id")
 
-  val studyData: List[Tuple2[String, String]] = List(("AHFEM", "Acute Heart Failure-Emergency Management"),
-                                                     ("AKI", "Acute Kidney Injury"),
-                                                     ("Asthma", "Asthma"),
-                                                     ("BBPSP", "Blood Borne Pathogens Surveillance Project"),
-                                                     ("CCCS", "Critical Care Cohort Study"),
-                                                     ("CCSC Demo", "CCSC Demo"),
-                                                     ("CDGI", "Crohn's Disease Genetic Inflizimab"),
-                                                     ("CEGIIR",
-                                                      "Centre of Excellence for Gastrointestinal Inflammation and Immunity Research"),
-                                                     ("CHILD",
-                                                      "Canadian Health Infant Longitudinal Development Study"),
-                                                     ("CITP", "Clinical Islet Transplant Program"),
-                                                     ("CRM",
-                                                      "Diagnostic Marker for a Colorectal Cancer Blood Test"),
-                                                     ("CSF", "CSF"),
-                                                     ("CaRE", "CaRE"),
-                                                     ("Caspase", "CITP Caspase"),
-                                                     ("DBStudy", "DBTestStudy"),
-                                                     ("DDPS", "Double Dialysate Phosphate Study"),
-                                                     ("DG Study", "Delta Genomics Study"),
-                                                     ("ERCIN",
-                                                      "Exploring the Renoprotective effects of fluid prophylaxis strategies for Contrast Induced Nephropathy (Study)"),
-                                                     ("FABRY",
-                                                      "Enzyme replacement therapy in patients with Fabry disease: differential impact on Heart Remodeling and Vascular Function"),
-                                                     ("FALLOT", "FALLOT"),
-                                                     ("FIDS", "Fedorak Iron Deficiency Study"),
-                                                     ("HAART",
-                                                      "Randomized Controlled Pilot Study of Highly Active Anti-Retroviral Therapy"),
-                                                     ("HEART",
-                                                      "Heart failure Etiology and Analysis Research Team"),
-                                                     ("JB", "Bradwein"),
-                                                     ("KDCS", "Kidney Disease Cohort Study"),
-                                                     ("KIDNI", "KIDNI"),
-                                                     ("KMS", "Kingston Merger Study"),
-                                                     ("LCS", "Laboratory Controls Study"),
-                                                     ("MPS", "Man-Chui Poon Study"),
-                                                     ("NEC", "Necrotizing Enterocolitis Study"),
-                                                     ("NHS", "Novartis Hepatitis C Study"),
-                                                     ("Novel - ESRD", "Novel - ESRD"),
-                                                     ("PG1", "Phenomic Gap"),
-                                                     ("PROBE", "PROBE"),
-                                                     ("PSS", "(Dr.) Parent Scoliosis Study"),
-                                                     ("QPCS", "Quebec Pancreas Cancer Study"),
-                                                     ("REFINE", "REFINE ICD"),
-                                                     ("REIM",
-                                                      "Resilience Enhancement in Military Populations Through Multiple Health Status Assessments"),
-                                                     ("RVS", "Retroviral Study"),
-                                                     ("SPARK",
-                                                      "A phase II randomized blinded controlled trial of the effect of furoSemide in cricially ill Patients with eARly acute Kidney injury"),
-                                                     ("Spinal Stiffness", "Spinal Stiffness"),
-                                                     ("TCKS", "Tonelli Chronic Kidney Study"),
-                                                     ("TMIC", "TMIC"),
-                                                     ("VAS", "Vascular Access Study"),
-                                                     ("ZEST", "ZEST"),
-                                                     ("iGenoMed", "iGenoMed"))
+  val centreData: List[Tuple2[String, String]] =
+    List(("CL1-Foothills", "CL1-Foothills"),
+         ("CL1-Heritage", "CL1-Heritage"),
+         ("CL1-Sunridge", "CL1-Sunridge"),
+         ("CL2-Children Hosp", "CL2-Alberta's Children's Hospital"),
+         ("ED1-UofA", "ED1-UofA"),
+         ("OT2-Children Hosp", "OT2-Children's Hospital of Eastern Ontario"),
+         ("QB1-Enfant-Jesus", "QB1-Hopital Enfant-Jesus"),
+         ("RD1-Red Deer Hosp", "RD1-Red Deer Regional Hospital"),
+         ("SB1-St John NB Hosp", "SB1-Saint Johns NB Regional Hospital"),
+         ("SD1-Sudbury Hosp", "SD1-Sudbury Regional Hospital"),
+         ("SF1-Health NFLD", "SF1-Health Science Center"),
+         ("SP1-St Therese Hosp", "SP1-St Therese Hospital"),
+         ("SS1-Royal Hosp", "SS1-Royal University Hospital"),
+         ("TH1-Regional Hosp", "TH1-Thunder Bay Regional Hospital"),
+         ("TR1-St Mikes", "TR1-St Michael's Hospital"),
+         ("VN1-St Paul", "VN1-St Paul's Hospital"),
+         ("VN2-Childrens Hosp", "VN2-BC Women and Children's Hospital"),
+         ("WL1-Westlock Hosp", "WL1-Westlock Health Care Center"),
+         ("WN1-Cancer Care", "WN1-Cancer Care Manitoba"),
+         ("CL1-Foothills TRW", "CL1-Foothills TRW"),
+         (centreIdCBSR.id, "Canadian BioSample Repository"),
+         ("Calgary-F", "Calgary Foothills"),
+         (centreIdCalgary.id, "100-Calgary Alberta Refine"),
+         ("College Plaza UofA", "College Plaza UofA"),
+         (centreIdLondon.id, "101-London Ontario Refine"),
+         ("102-Newmarket ON", "102-Newmarket Ontario Refine"),
+         ("103-Montreal QC", "103-Montreal Quebec Refine"),
+         ("104-Montreal QC", "104-Montreal Quebec Refine"),
+         ("105-Victoria BC", "105-Victoria British Columbia refine"),
+         ("106-Quebec City QC", "106-Quebec City Quebec Refine"),
+         ("CaRE ED1", "CaRE ED1"),
+         ("200-Spokane WA", "200-Spokane Washington REFINE"),
+         ("201-Erie PA", "201-Erie Pennsylvania REFINE"),
+         ("202-Cherry Hill NJ", "202-Cherry Hill New Jersey REFINE"),
+         ("203-West Des Moines IA", "203-West Des Moines Iowa REFINE"),
+         ("204-Evansville IN", "204-Evansville Indiana REFINE"),
+         ("205-Southfield MI", "205-Southfield Michigan REFINE"),
+         ("206 A -Nashville TN", "206 A -Nashville Tennessee REFINE"),
+         ("207-Amarillo TX", "207-Amarillo Texas REFINE"),
+         ("300-Oulu FI", "300-Oulu Finland REFINE"),
+         ("ED1-GNH", "ED1-GNH"),
+         ("KIDNI CL1", "KIDNI Calgary"))
 
-  val userData: List[Tuple2[String, String]] = List(("Nelson Loyola", "loyola@ualberta.ca"),
-                                                    ("Luisa Franco", "lfrancor@ucalgary.ca"),
-                                                    ("Corazon Oballo", "coballo@ucalgary.ca"),
-                                                    ("Amie Lee", "amie1@ualberta.ca"),
-                                                    ("Lisa Tanguay", "lisa.tanguay@ualberta.ca"),
-                                                    ("Darlene Ramadan", "ramadan@ucalgary.ca"),
-                                                    ("Juline Skripitsky", "Jskrip@biosample.ca"),
-                                                    ("Leslie Jackson Carter", "jacksola@ucalgary.ca"),
-                                                    ("Thiago Oliveira", "toliveir@ucalgary.ca"),
-                                                    ("Rozsa Sass", "rsas@ucalgary.ca"),
-                                                    ("Margaret Morck", "mmorck@ucalgary.ca"),
-                                                    ("Kristan Nagy", "nagy1@ualberta.ca"),
-                                                    ("Bruce Ritchie", "bruce.ritchie@ualberta.ca"),
-                                                    ("Matthew Klassen", "mwklasse@ualberta.ca"),
-                                                    ("Marleen Irwin", "mirwin@ualberta.ca"),
-                                                    ("Millie Silverstone", "millie.silverstone@me.com"),
-                                                    ("Trevor Soll", "tsoll@ualberta.ca"),
-                                                    ("Stephanie Wichuk", "stephaniewichuk@med.ualberta.ca"),
-                                                    ("Deborah Parfett", "dparfett@catrials.org"),
-                                                    ("Samantha Taylor",
-                                                     "samantha.taylor@albertahealthservices.ca"),
-                                                    ("Martine Bergeron", "martine.bergeron@crchum.qc.ca"),
-                                                    ("Isabelle Deneufbourg",
-                                                     "isabelle.deneufbourg@criucpq.ulaval.ca"),
-                                                    ("Colin Coros", "coros@ualberta.ca"),
-                                                    ("Suzanne Morissette",
-                                                     "suzanne.morissette.chum@ssss.gouv.qc.ca"),
-                                                    ("Francine Marsan",
-                                                     "francine.marsan.chum@ssss.gouv.qc.ca"),
-                                                    ("Jeanne Bjergo", "jeannebjergo@hcnw.com"),
-                                                    ("Larissa Weeks", "larissaweeks@hcnw.com"),
-                                                    ("Sharon Fulton", "sharonfulton@hcnw.com"),
-                                                    ("Mirjana Maric Viskovic", "maric@ucalgary.ca"),
-                                                    ("Paivi Kastell", "paivi.kastell@ppshp.fi"),
-                                                    ("Paivi Koski", "paivi.koski@ppshp.fi"))
+  val studyData: List[Tuple2[String, String]] =
+    List(("AHFEM", "Acute Heart Failure-Emergency Management"),
+         ("AKI", "Acute Kidney Injury"),
+         ("Asthma", "Asthma"),
+         ("BBPSP", "Blood Borne Pathogens Surveillance Project"),
+         ("CCCS", "Critical Care Cohort Study"),
+         ("CCSC Demo", "CCSC Demo"),
+         ("CDGI", "Crohn's Disease Genetic Inflizimab"),
+         ("CEGIIR", "Centre of Excellence for Gastrointestinal Inflammation and Immunity Research"),
+         ("CHILD", "Canadian Health Infant Longitudinal Development Study"),
+         ("CITP", "Clinical Islet Transplant Program"),
+         ("CRM", "Diagnostic Marker for a Colorectal Cancer Blood Test"),
+         ("CSF", "CSF"),
+         ("CaRE", "CaRE"),
+         ("Caspase", "CITP Caspase"),
+         ("DBStudy", "DBTestStudy"),
+         ("DDPS", "Double Dialysate Phosphate Study"),
+         ("DG Study", "Delta Genomics Study"),
+         ("ERCIN",
+          "Exploring the Renoprotective effects of fluid prophylaxis strategies for Contrast Induced Nephropathy (Study)"),
+         ("FABRY",
+          "Enzyme replacement therapy in patients with Fabry disease: differential impact on Heart Remodeling and Vascular Function"),
+         ("FALLOT", "FALLOT"),
+         ("FIDS", "Fedorak Iron Deficiency Study"),
+         ("HAART", "Randomized Controlled Pilot Study of Highly Active Anti-Retroviral Therapy"),
+         ("HEART", "Heart failure Etiology and Analysis Research Team"),
+         ("JB", "Bradwein"),
+         ("KDCS", "Kidney Disease Cohort Study"),
+         ("KIDNI", "KIDNI"),
+         ("KMS", "Kingston Merger Study"),
+         ("LCS", "Laboratory Controls Study"),
+         ("MPS", "Man-Chui Poon Study"),
+         ("NEC", "Necrotizing Enterocolitis Study"),
+         ("NHS", "Novartis Hepatitis C Study"),
+         ("Novel - ESRD", "Novel - ESRD"),
+         ("PG1", "Phenomic Gap"),
+         ("PROBE", "PROBE"),
+         ("PSS", "(Dr.) Parent Scoliosis Study"),
+         ("QPCS", "Quebec Pancreas Cancer Study"),
+         ("REFINE", "REFINE ICD"),
+         ("REIM",
+          "Resilience Enhancement in Military Populations Through Multiple Health Status Assessments"),
+         ("RVS", "Retroviral Study"),
+         ("SPARK",
+          "A phase II randomized blinded controlled trial of the effect of furoSemide in cricially ill Patients with eARly acute Kidney injury"),
+         ("Spinal Stiffness", "Spinal Stiffness"),
+         ("TCKS", "Tonelli Chronic Kidney Study"),
+         ("TMIC", "TMIC"),
+         ("VAS", "Vascular Access Study"),
+         ("ZEST", "ZEST"),
+         ("iGenoMed", "iGenoMed"))
+
+  val userData: List[Tuple2[String, String]] =
+    List(("Nelson Loyola", "loyola@ualberta.ca"),
+         ("Luisa Franco", "lfrancor@ucalgary.ca"),
+         ("Corazon Oballo", "coballo@ucalgary.ca"),
+         ("Amie Lee", "amie1@ualberta.ca"),
+         ("Lisa Tanguay", "lisa.tanguay@ualberta.ca"),
+         ("Darlene Ramadan", "ramadan@ucalgary.ca"),
+         ("Juline Skripitsky", "Jskrip@biosample.ca"),
+         ("Leslie Jackson Carter", "jacksola@ucalgary.ca"),
+         ("Thiago Oliveira", "toliveir@ucalgary.ca"),
+         ("Rozsa Sass", "rsas@ucalgary.ca"),
+         ("Margaret Morck", "mmorck@ucalgary.ca"),
+         ("Kristan Nagy", "nagy1@ualberta.ca"),
+         ("Bruce Ritchie", "bruce.ritchie@ualberta.ca"),
+         ("Matthew Klassen", "mwklasse@ualberta.ca"),
+         ("Marleen Irwin", "mirwin@ualberta.ca"),
+         ("Millie Silverstone", "millie.silverstone@me.com"),
+         ("Trevor Soll", "tsoll@ualberta.ca"),
+         ("Stephanie Wichuk", "stephaniewichuk@med.ualberta.ca"),
+         ("Deborah Parfett", "dparfett@catrials.org"),
+         ("Samantha Taylor", "samantha.taylor@albertahealthservices.ca"),
+         ("Martine Bergeron", "martine.bergeron@crchum.qc.ca"),
+         ("Isabelle Deneufbourg", "isabelle.deneufbourg@criucpq.ulaval.ca"),
+         ("Colin Coros", "coros@ualberta.ca"),
+         ("Suzanne Morissette", "suzanne.morissette.chum@ssss.gouv.qc.ca"),
+         ("Francine Marsan", "francine.marsan.chum@ssss.gouv.qc.ca"),
+         ("Jeanne Bjergo", "jeannebjergo@hcnw.com"),
+         ("Larissa Weeks", "larissaweeks@hcnw.com"),
+         ("Sharon Fulton", "sharonfulton@hcnw.com"),
+         ("Mirjana Maric Viskovic", "maric@ucalgary.ca"),
+         ("Paivi Kastell", "paivi.kastell@ppshp.fi"),
+         ("Paivi Koski", "paivi.koski@ppshp.fi"))
 
   val ahfemDescription: String =
     s"""|Magnis turpis mollis. Duis commodo libero. Turpis magnis massa morbi cras non mollis, maecenas
@@ -181,11 +169,12 @@ object TestData {
         |tempor diam.
         |""".stripMargin
 
-  val accessUserData: List[Tuple2[String, String]] = List(("study-administrator", "Study Administrator"),
-                                                          ("study-user", "Study User"),
-                                                          ("specimen-collector", "Specimen Collector"),
-                                                          ("shipping-admin", "Shipping Admin"),
-                                                          ("shipping-user", "Shipping User"))
+  val accessUserData: List[Tuple2[String, String]] =
+    List(("study-administrator", "Study Administrator"),
+         ("study-user", "Study User"),
+         ("specimen-collector", "Specimen Collector"),
+         ("shipping-admin", "Shipping Admin"),
+         ("shipping-user", "Shipping User"))
 
   val EventTypeHashids:      Hashids = Hashids("test-data-cevent-types")
   val ProcessingTypeHashids: Hashids = Hashids("test-data-processing-types")
@@ -339,6 +328,13 @@ object BbpspTestData {
     ).map { at =>
       at.copy(slug = Slug(at.name))
     }
+}
+
+object CbsrTestData {
+
+  val schemaData: List[String] =
+    List("96 Well Microplate", "384 Well Microplate")
+
 }
 
 /**
@@ -647,9 +643,9 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
       /*
        * - creates 3 shipments, each in a different state
        */
-      val fromCentreId   = CentreId("100-Calgary AB_id")
+      val fromCentreId   = centreIdCalgary
       val fromLocationId = LocationId(s"${fromCentreId}:Primary")
-      val toCentreId     = CentreId("101-London ON_id")
+      val toCentreId     = centreIdLondon
       val toLocationId   = LocationId(s"${toCentreId}:Primary")
 
       List[Shipment](
@@ -759,7 +755,7 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
        *
        * - takes all the specimens at the second centre and assigns them to the shipment in PACKED state
        */
-      val fromCentreId      = CentreId("100-Calgary AB_id")
+      val fromCentreId      = centreIdCalgary
       val fromLocationId    = LocationId(s"${fromCentreId}:Primary")
       val specimens         = testSpecimens
       val halfSpecimenCount = specimens.filter(_.locationId == fromLocationId).size / 2
@@ -938,13 +934,51 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
     }
 
   def testContainerSchemas(): List[ContainerSchema] =
-    ???
+    CbsrTestData.schemaData.map { name =>
+      val schema = addContainerSchema(name, Some(name))
+      val positions = name match {
+        case "96 Well Microplate"  => microplatePositions96Wells
+        case "384 Well Microplate" => microplatePositions384Wells
+        case _                     => Set.empty[ContainerSchemaPosition]
+      }
+      schema.copy(positions = positions.map { _.copy(schemaId = schema.id) })
+    }
 
   def testContainerTypes(): List[ContainerType] =
     ???
 
   def testContainers(): List[Container] =
     ???
+
+  private def addContainerSchema(name: String, description: Option[String]): ContainerSchema = {
+    val slug = Slug(name)
+    ContainerSchema(id           = ContainerSchemaId(slug.id),
+                    version      = 0L,
+                    timeAdded    = Global.StartOfTime,
+                    timeModified = None,
+                    slug         = slug,
+                    name         = name,
+                    description  = description,
+                    shared       = true,
+                    centreId     = centreIdCBSR,
+                    positions    = Set.empty[ContainerSchemaPosition])
+  }
+
+  private def microplatePositions96Wells(): Set[ContainerSchemaPosition] =
+    "ABCDEFGH".flatMap { row =>
+      (1 to 12).map { col =>
+        val label = s"$row$col"
+        ContainerSchemaPosition(id = ContainerSchemaPositionId(Slug(label).id), ContainerSchemaId(""), label)
+      }
+    }.toSet
+
+  private def microplatePositions384Wells(): Set[ContainerSchemaPosition] =
+    "ABCDEFGHIJKLMNOP".flatMap { row =>
+      (1 to 24).map { col =>
+        val label = s"$row$col"
+        ContainerSchemaPosition(id = ContainerSchemaPositionId(Slug(label).id), ContainerSchemaId(""), label)
+      }
+    }.toSet
 
   log.debug(s"""|TEST DATA:
                 |  mode:                 ${env.mode}

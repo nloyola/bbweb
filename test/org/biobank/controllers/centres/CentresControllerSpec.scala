@@ -5,10 +5,10 @@ import org.biobank.controllers.PagedResultsSharedSpec
 import org.biobank.domain.{Location, Slug}
 import org.biobank.domain.centres._
 import org.biobank.domain.studies.{Study, StudyId}
-import org.biobank.dto.{CentreDto, EntityInfoAndStateDto}
+import org.biobank.dto.{CentreDto, CentreLocationInfo, EntityInfoAndStateDto}
 import org.biobank.fixtures.{ControllerFixture, Url}
 import org.biobank.matchers.PagedResultsMatchers
-import org.biobank.services.centres.{CentreCountsByStatus, CentreLocationInfo}
+import org.biobank.services.centres.{CentreCountsByStatus}
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import play.api.libs.json._
 import play.api.test.Helpers._
@@ -814,9 +814,7 @@ class CentresControllerSpec extends ControllerFixture with PagedResultsSharedSpe
         replyLocations must be(jsSuccess)
         replyLocations.get.size must be(1)
         replyLocations.get.foreach { replyLocation =>
-          replyLocation must equal(
-            CentreLocationInfo(centre.id.id, location.id.id, centre.name, location.name)
-          )
+          replyLocation must equal(CentreLocationInfo(centre, location))
         }
       }
 
@@ -836,9 +834,7 @@ class CentresControllerSpec extends ControllerFixture with PagedResultsSharedSpe
         replyLocations must be(jsSuccess)
         replyLocations.get.size must be(1)
         replyLocations.get.foreach { replyLocation =>
-          replyLocation must equal(
-            CentreLocationInfo(centre.id.id, location.id.id, centre.name, location.name)
-          )
+          replyLocation must equal(CentreLocationInfo(centre, location))
         }
       }
 

@@ -2,26 +2,22 @@ package org.biobank.domain.participants
 
 import org.biobank.domain.Factory
 import scala.language.reflectiveCalls
-import org.biobank.services.centres.CentreLocationInfo
+import org.biobank.dto.CentreLocationInfo
 
 trait SpecimenSpecFixtures {
 
   protected val factory: Factory
 
   protected def createEntities() = {
-    val _centre             = factory.createEnabledCentre.copy(locations = Set(factory.createLocation))
+    val _location           = factory.createLocation
+    val _centre             = factory.createEnabledCentre.copy(locations = Set(_location))
     val _study              = factory.createEnabledStudy
     val _specimenDefinition = factory.createCollectionSpecimenDefinition
     val _ceventType = factory.createCollectionEventType
       .copy(studyId = _study.id, specimenDefinitions = Set(_specimenDefinition), annotationTypes = Set.empty)
-    val _participant = factory.createParticipant.copy(studyId = _study.id)
-    val _cevent      = factory.createCollectionEvent
-
-    val _centreLocationInfo =
-      CentreLocationInfo(_centre.id.id,
-                         _centre.locations.head.id.id,
-                         _centre.name,
-                         _centre.locations.head.name)
+    val _participant        = factory.createParticipant.copy(studyId = _study.id)
+    val _cevent             = factory.createCollectionEvent
+    val _centreLocationInfo = CentreLocationInfo(_centre, _location)
 
     new {
       val centre             = _centre

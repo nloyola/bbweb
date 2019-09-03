@@ -5,11 +5,21 @@ import javax.inject.{Inject, Singleton}
 import org.biobank.TestData
 import org.biobank.domain._
 //import org.biobank.domain.centres.CentreId
-//import scalaz.Scalaz._
-//import scalaz.Validation.FlatMap._
+import scalaz.Scalaz._
+import scalaz.Validation.FlatMap._
 
 @ImplementedBy(classOf[ContainerSchemaRepositoryImpl])
-trait ContainerSchemaRepository extends ReadWriteRepository[ContainerSchemaId, ContainerSchema] {}
+trait ContainerSchemaRepository extends ReadWriteRepository[ContainerSchemaId, ContainerSchema] {
+
+  def getPosition(schemaId: ContainerSchemaId, label: String): DomainValidation[ContainerSchemaPosition]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  def getPosition(
+      schemaId:   ContainerSchemaId,
+      positionId: ContainerSchemaPositionId
+    ): DomainValidation[ContainerSchemaPosition]
+
+}
 
 @Singleton
 class ContainerSchemaRepositoryImpl @Inject()(val testData: TestData)
@@ -25,4 +35,19 @@ class ContainerSchemaRepositoryImpl @Inject()(val testData: TestData)
     super.init()
     testData.testContainerSchemas.foreach(put)
   }
+
+  def getPosition(schemaId: ContainerSchemaId, label: String): DomainValidation[ContainerSchemaPosition] =
+    for {
+      schema   <- getByKey(schemaId)
+      position <- schema.getPosition(label)
+    } yield position
+
+  def getPosition(
+      schemaId:   ContainerSchemaId,
+      positionId: ContainerSchemaPositionId
+    ): DomainValidation[ContainerSchemaPosition] =
+    for {
+      schema   <- getByKey(schemaId)
+      position <- schema.getPosition(positionId)
+    } yield position
 }

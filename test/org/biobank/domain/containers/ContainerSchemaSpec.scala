@@ -2,6 +2,7 @@ package org.biobank.domain.containers
 
 import java.time.OffsetDateTime
 import org.biobank.domain.DomainSpec
+import org.biobank.domain.centres.CentreId
 import org.biobank.fixtures.NameGenerator
 import org.slf4j.LoggerFactory
 import scalaz.Scalaz._
@@ -59,6 +60,48 @@ class ContainerSchemaSpec extends DomainSpec {
       }
     }
 
+    it("have it's shared attribute updated") {
+      Set(true, false).foreach { shared =>
+        val containerSchema = factory.createContainerSchema.copy(shared = !shared)
+
+        containerSchema.withShared(shared) mustSucceed {
+          _ must matchContainerSchema(
+            containerSchema.copy(shared       = shared,
+                                 version      = containerSchema.version + 1L,
+                                 timeModified = Some(OffsetDateTime.now))
+          )
+        }
+      }
+    }
+
+    it("have it's centre ID attribute updated") {
+      val containerSchema = factory.createContainerSchema
+      val centreId        = CentreId(nameGenerator.next[ContainerSchema])
+
+      containerSchema.withCentre(centreId) mustSucceed {
+        _ must matchContainerSchema(
+          containerSchema.copy(centreId     = centreId,
+                               version      = containerSchema.version + 1L,
+                               timeModified = Some(OffsetDateTime.now))
+        )
+      }
+    }
+
+    it("have it's positions updated") {
+      val schema    = factory.createContainerSchema.copy(positions = Set.empty[ContainerSchemaPosition])
+      val positions = Set(factory.createContainerSchemaPosition.copy(schemaId = ContainerSchemaId("")))
+
+      val positionsWithSchemaId = positions.map { _.copy(schemaId = schema.id) }
+
+      schema.withPositions(positions) mustSucceed {
+        _ must matchContainerSchema(
+          schema.copy(positions    = positionsWithSchemaId,
+                      version      = schema.version + 1L,
+                      timeModified = Some(OffsetDateTime.now))
+        )
+      }
+    }
+
   }
 
   describe("A container schema can not") {
@@ -87,6 +130,11 @@ class ContainerSchemaSpec extends DomainSpec {
 
       schema = factory.createContainerSchema.copy(description = Some(""))
       createFrom(schema) mustFail "InvalidDescription"
+    }
+
+    it("be created with an empty centre id") {
+      val schema = factory.createContainerSchema.copy(centreId = CentreId(""))
+      createFrom(schema) mustFail "InvalidCentreId"
     }
 
     it("have more than one validation fail") {

@@ -29,6 +29,7 @@ object ContainersProcessor {
 final case class AddChildRequest(
     containerType:  ContainerType,
     schema:         ContainerSchema,
+    position:       ContainerSchemaPosition,
     parent:         Container,
     newContainerId: ContainerId)
 
@@ -151,23 +152,22 @@ class ContainersProcessor @Inject()(
     for {
       values     <- addChildValidate(cmd)
       validCtype <- containerTypeRepository.getStorageContainerType(values.containerType.id)
-      position   <- ContainerSchemaPosition.create(values.containerType.schemaId, cmd.label)
       newContainer <- StorageContainer
                        .create(id              = values.newContainerId,
                                version         = 0L,
                                inventoryId     = cmd.inventoryId,
                                containerTypeId = values.containerType.id,
                                parentId        = values.parent.id,
-                               position        = position,
+                               position        = values.position,
                                constraints     = None)
     } yield ContainerEvent(newContainer.id.id)
       .update(_.sessionUserId                := cmd.sessionUserId,
               _.time                         := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
               _.storageAdded.inventoryId     := cmd.inventoryId,
-              _.storageAdded.label           := cmd.label,
               _.storageAdded.containerTypeId := cmd.containerTypeId,
               _.storageAdded.parentId        := cmd.parentId,
-              _.storageAdded.schemaId        := cmd.schemaId)
+              _.storageAdded.schemaId        := values.schema.id.id,
+              _.storageAdded.positionId      := values.position.id.id)
 
   private def addSpecimenContainerCmdToEvent(
       cmd: AddSpecimenContainerCmd
@@ -175,35 +175,36 @@ class ContainersProcessor @Inject()(
     for {
       values     <- addChildValidate(cmd)
       validCtype <- containerTypeRepository.getSpecimenContainerType(values.containerType.id)
-      position   <- ContainerSchemaPosition.create(values.containerType.schemaId, cmd.label)
       newContainer <- SpecimenContainer
                        .create(id              = values.newContainerId,
                                version         = 0L,
                                inventoryId     = cmd.inventoryId,
                                containerTypeId = values.containerType.id,
                                parentId        = values.parent.id,
-                               position        = position)
+                               position        = values.position)
     } yield ContainerEvent(newContainer.id.id)
       .update(_.sessionUserId                 := cmd.sessionUserId,
               _.time                          := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
               _.specimenAdded.inventoryId     := cmd.inventoryId,
-              _.specimenAdded.label           := cmd.label,
               _.specimenAdded.containerTypeId := cmd.containerTypeId,
               _.specimenAdded.parentId        := cmd.parentId,
-              _.specimenAdded.schemaId        := cmd.schemaId)
+              _.specimenAdded.schemaId        := values.schema.id.id,
+              _.specimenAdded.positionId      := values.position.id.id)
 
   private def addChildValidate(cmd: AddSubContainerCommand): ServiceValidation[AddChildRequest] =
     for {
       containerType <- containerTypeRepository.getByKey(ContainerTypeId(cmd.containerTypeId))
-      schema        <- containerSchemaRepository.getByKey(containerType.schemaId)
       inventoryId   <- inventoryIdAvailable(cmd.inventoryId)
       parent <- containerRepository
                  .getByKey(ContainerId(cmd.parentId)).leftMap(
                    err => IdNotFound(s"parent id ${cmd.parentId}").nel
                  )
-      posEmpty    <- containerRepository.positionEmpty(parent.id, cmd.label)
+      parentCType <- containerTypeRepository.getByKey(parent.containerTypeId)
+      schema      <- containerSchemaRepository.getByKey(parentCType.schemaId)
+      position    <- containerSchemaRepository.getPosition(schema.id, cmd.label)
+      posEmpty    <- containerRepository.positionEmpty(parent.id, position.label)
       containerId <- validNewIdentity(containerRepository.nextIdentity, containerRepository)
-    } yield AddChildRequest(containerType, schema, parent, containerId)
+    } yield AddChildRequest(containerType, schema, position, parent, containerId)
 
   private def applyRootAddedEvent(event: ContainerEvent): Unit =
     if (!event.eventType.isRootAdded) {
@@ -239,8 +240,9 @@ class ContainersProcessor @Inject()(
     } else {
       val addedEvent = event.getStorageAdded
       val validation = for {
-        position <- ContainerSchemaPosition
-                     .create(ContainerSchemaId(addedEvent.getSchemaId), addedEvent.getLabel)
+        position <- containerSchemaRepository
+                     .getPosition(ContainerSchemaId(addedEvent.getSchemaId),
+                                  ContainerSchemaPositionId(addedEvent.getPositionId))
         container <- StorageContainer
                       .create(id              = ContainerId(event.id),
                               version         = 0L,
@@ -267,8 +269,8 @@ class ContainersProcessor @Inject()(
     } else {
       val addedEvent = event.getSpecimenAdded
       val validation = for {
-        position <- ContainerSchemaPosition
-                     .create(ContainerSchemaId(addedEvent.getSchemaId), addedEvent.getLabel)
+        position <- containerSchemaRepository.getPosition(ContainerSchemaId(addedEvent.getSchemaId),
+                                                          ContainerSchemaPositionId(addedEvent.getPositionId))
         container <- SpecimenContainer
                       .create(id              = ContainerId(event.id),
                               version         = 0L,

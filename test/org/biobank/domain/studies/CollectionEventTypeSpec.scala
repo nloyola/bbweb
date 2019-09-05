@@ -153,7 +153,7 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
 
     it("add a specimen spec") {
       val cet                = factory.createCollectionEventType.copy(specimenDefinitions = Set.empty)
-      val specimenDefinition = factory.createCollectionSpecimenDefinition
+      val specimenDefinition = factory.createCollectedSpecimenDefinition
 
       cet.withSpecimenDefinition(specimenDefinition) mustSucceed { updatedCet =>
         updatedCet mustBe a[CollectionEventType]
@@ -172,8 +172,8 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
     }
 
     it("replace a specimen spec") {
-      val specimenDefinition  = factory.createCollectionSpecimenDefinition
-      val specimenDefinition2 = factory.createCollectionSpecimenDefinition.copy(id = specimenDefinition.id)
+      val specimenDefinition  = factory.createCollectedSpecimenDefinition
+      val specimenDefinition2 = factory.createCollectedSpecimenDefinition.copy(id = specimenDefinition.id)
       val cet                 = factory.createCollectionEventType.copy(specimenDefinitions = Set(specimenDefinition))
 
       cet.withSpecimenDefinition(specimenDefinition2) mustSucceed { updatedCet =>
@@ -193,7 +193,7 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
     }
 
     it("remove a specimen spec") {
-      val specimenDefinition = factory.createCollectionSpecimenDefinition
+      val specimenDefinition = factory.createCollectedSpecimenDefinition
       val cet                = factory.createCollectionEventType.copy(specimenDefinitions = Set(specimenDefinition))
 
       cet.removeSpecimenDefinition(specimenDefinition.id) mustSucceed { updatedCet =>
@@ -213,9 +213,9 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
     }
 
     it("not allow adding a specimen spec with a duplicate name") {
-      val specimenDefinition = factory.createCollectionSpecimenDefinition
+      val specimenDefinition = factory.createCollectedSpecimenDefinition
       val specimenDefinition2 =
-        factory.createCollectionSpecimenDefinition.copy(name = specimenDefinition.name)
+        factory.createCollectedSpecimenDefinition.copy(name = specimenDefinition.name)
       val cet = factory.createCollectionEventType.copy(specimenDefinitions = Set(specimenDefinition))
 
       cet

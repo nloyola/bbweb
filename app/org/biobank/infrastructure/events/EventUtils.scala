@@ -5,7 +5,7 @@ import org.biobank.domain._
 import org.biobank.domain.annotations._
 import org.biobank.domain.centres.ShipmentSpecimen
 import org.biobank.domain.participants.SpecimenId
-import org.biobank.domain.studies.{CollectionSpecimenDefinition, SpecimenDefinitionId}
+import org.biobank.domain.studies.{CollectedSpecimenDefinition, SpecimenDefinitionId}
 import org.biobank.infrastructure.commands.SpecimenCommands.SpecimenInfo
 import org.biobank.infrastructure.events.CollectionEventTypeEvents._
 import org.biobank.infrastructure.events.CommonEvents.{AnnotationType => EventAnnotationType}
@@ -53,7 +53,7 @@ object EventUtils {
                                               selectedValues   = event.selectedValues.toSet)
 
   def specimenDefinitionToEvent(
-      specimenDefinition: CollectionSpecimenDefinition
+      specimenDefinition: CollectedSpecimenDefinition
     ): CollectionEventTypeEvent.SpecimenDefinition =
     CollectionEventTypeEvent
       .SpecimenDefinition().update(_.id                      := specimenDefinition.id.id,
@@ -69,20 +69,20 @@ object EventUtils {
 
   def specimenDefinitionFromEvent(
       event: CollectionEventTypeEvent.SpecimenDefinition
-    ): CollectionSpecimenDefinition =
-    CollectionSpecimenDefinition(id          = SpecimenDefinitionId(event.getId),
-                                 slug        = Slug(event.getName),
-                                 name        = event.getName,
-                                 description = event.description,
-                                 units       = event.getUnits,
-                                 anatomicalSourceType =
-                                   AnatomicalSourceType.withName(event.getAnatomicalSourceType),
-                                 preservationType = PreservationType.withName(event.getPreservationType),
-                                 preservationTemperature =
-                                   PreservationTemperature.withName(event.getPreservationTemperature),
-                                 specimenType = SpecimenType.withName(event.getSpecimenType),
-                                 maxCount     = event.getMaxCount,
-                                 amount       = event.getAmount)
+    ): CollectedSpecimenDefinition =
+    CollectedSpecimenDefinition(id          = SpecimenDefinitionId(event.getId),
+                                slug        = Slug(event.getName),
+                                name        = event.getName,
+                                description = event.description,
+                                units       = event.getUnits,
+                                anatomicalSourceType =
+                                  AnatomicalSourceType.withName(event.getAnatomicalSourceType),
+                                preservationType = PreservationType.withName(event.getPreservationType),
+                                preservationTemperature =
+                                  PreservationTemperature.withName(event.getPreservationTemperature),
+                                specimenType = SpecimenType.withName(event.getSpecimenType),
+                                maxCount     = event.getMaxCount,
+                                amount       = event.getAmount)
 
   def specimenInfoToEvent(id: SpecimenId, specimenInfo: SpecimenInfo): SpecimenEvent.Added.SpecimenInfo =
     SpecimenEvent.Added

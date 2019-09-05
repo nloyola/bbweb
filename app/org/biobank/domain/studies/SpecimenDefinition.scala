@@ -118,7 +118,7 @@ trait SpecimenDefinitionValidations {
  * collection of [[domain.participants. Specimen Specimens]]. A specimen description is defined either for
  * specimen types collected from participants, or for specimen types that are processed.
  */
-final case class CollectionSpecimenDefinition(
+final case class CollectedSpecimenDefinition(
     id:                      SpecimenDefinitionId,
     slug:                    Slug,
     name:                    String,
@@ -132,16 +132,16 @@ final case class CollectionSpecimenDefinition(
     amount:                  BigDecimal)
     extends SpecimenDefinition
 
-object CollectionSpecimenDefinition extends SpecimenDefinitionValidations {
+object CollectedSpecimenDefinition extends SpecimenDefinitionValidations {
   import org.biobank.CommonValidations._
 
-  implicit val collectionSpecimenDefinitionFormat: Format[CollectionSpecimenDefinition] =
-    Json.format[CollectionSpecimenDefinition]
+  implicit val collectedSpecimenDefinitionFormat: Format[CollectedSpecimenDefinition] =
+    Json.format[CollectedSpecimenDefinition]
 
   val hashidsSalt: String = "biobank-collection-event-types"
 
   /**
-   * Creates a [[domain.studies.CollectionSpecimenDefinition.create CollectionSpecimenDefinition]] with the
+   * Creates a [[domain.studies.CollectedSpecimenDefinition.create CollectedSpecimenDefinition]] with the
    * given properties.
    */
   def create(
@@ -154,7 +154,7 @@ object CollectionSpecimenDefinition extends SpecimenDefinitionValidations {
       specimenType:            SpecimenType,
       maxCount:                Int,
       amount:                  BigDecimal
-    ): DomainValidation[CollectionSpecimenDefinition] =
+    ): DomainValidation[CollectedSpecimenDefinition] =
     validate(name,
              description,
              units,
@@ -165,17 +165,17 @@ object CollectionSpecimenDefinition extends SpecimenDefinitionValidations {
              maxCount,
              amount).map { _ =>
       val id = SpecimenDefinitionId(java.util.UUID.randomUUID.toString.replaceAll("-", "").toUpperCase)
-      CollectionSpecimenDefinition(id                      = id,
-                                   slug                    = Slug(name),
-                                   name                    = name,
-                                   description             = description,
-                                   units                   = units,
-                                   anatomicalSourceType    = anatomicalSourceType,
-                                   preservationType        = preservationType,
-                                   preservationTemperature = preservationTemperature,
-                                   specimenType            = specimenType,
-                                   maxCount                = maxCount,
-                                   amount                  = amount)
+      CollectedSpecimenDefinition(id                      = id,
+                                  slug                    = Slug(name),
+                                  name                    = name,
+                                  description             = description,
+                                  units                   = units,
+                                  anatomicalSourceType    = anatomicalSourceType,
+                                  preservationType        = preservationType,
+                                  preservationTemperature = preservationTemperature,
+                                  specimenType            = specimenType,
+                                  maxCount                = maxCount,
+                                  amount                  = amount)
     }
 
   @silent def validate(

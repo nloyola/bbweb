@@ -90,7 +90,7 @@ object CollectionEventTypeCommands {
       annotationTypeId: String)
       extends CollectionEventTypeModifyCommand
 
-  final case class AddCollectionSpecimenDefinitionCmd(
+  final case class AddCollectedSpecimenDefinitionCmd(
       sessionUserId:           String,
       studyId:                 String,
       id:                      String,
@@ -106,7 +106,7 @@ object CollectionEventTypeCommands {
       amount:                  BigDecimal)
       extends CollectionEventTypeModifyCommand
 
-  final case class UpdateCollectionSpecimenDefinitionCmd(
+  final case class UpdateCollectedSpecimenDefinitionCmd(
       sessionUserId:           String,
       studyId:                 String,
       id:                      String,
@@ -123,7 +123,7 @@ object CollectionEventTypeCommands {
       amount:                  BigDecimal)
       extends CollectionEventTypeModifyCommand
 
-  final case class RemoveCollectionSpecimenDefinitionCmd(
+  final case class RemoveCollectedSpecimenDefinitionCmd(
       sessionUserId:        String,
       studyId:              String,
       id:                   String,
@@ -159,13 +159,13 @@ object CollectionEventTypeCommands {
       : Reads[RemoveCollectionEventTypeAnnotationTypeCmd] =
     Json.reads[RemoveCollectionEventTypeAnnotationTypeCmd]
 
-  implicit val addCollectionSpecimenDefinitionCmdReads: Reads[AddCollectionSpecimenDefinitionCmd] =
-    Json.reads[AddCollectionSpecimenDefinitionCmd]
+  implicit val addCollectedSpecimenDefinitionCmdReads: Reads[AddCollectedSpecimenDefinitionCmd] =
+    Json.reads[AddCollectedSpecimenDefinitionCmd]
 
-  implicit val updateCollectionSpecimenDefinitionCmdReads: Reads[UpdateCollectionSpecimenDefinitionCmd] =
-    Json.reads[UpdateCollectionSpecimenDefinitionCmd]
+  implicit val updateCollectedSpecimenDefinitionCmdReads: Reads[UpdateCollectedSpecimenDefinitionCmd] =
+    Json.reads[UpdateCollectedSpecimenDefinitionCmd]
 
-  implicit val removeCollectionSpecimenDefinitionCmdReads: Reads[RemoveCollectionSpecimenDefinitionCmd] =
-    Json.reads[RemoveCollectionSpecimenDefinitionCmd]
+  implicit val removeCollectedSpecimenDefinitionCmdReads: Reads[RemoveCollectedSpecimenDefinitionCmd] =
+    Json.reads[RemoveCollectedSpecimenDefinitionCmd]
 
 }

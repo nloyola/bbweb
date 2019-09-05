@@ -12,7 +12,7 @@ trait SpecimenSpecFixtures {
     val _location           = factory.createLocation
     val _centre             = factory.createEnabledCentre.copy(locations = Set(_location))
     val _study              = factory.createEnabledStudy
-    val _specimenDefinition = factory.createCollectionSpecimenDefinition
+    val _specimenDefinition = factory.createCollectedSpecimenDefinition
     val _ceventType = factory.createCollectionEventType
       .copy(studyId = _study.id, specimenDefinitions = Set(_specimenDefinition), annotationTypes = Set.empty)
     val _participant        = factory.createParticipant.copy(studyId = _study.id)

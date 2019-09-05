@@ -19,7 +19,7 @@ class CollectionEventTypeServiceSpec
   import org.biobank.infrastructure.commands.CollectionEventTypeCommands._
 
   class UsersCeventTypeFixture extends UsersWithStudyAccessFixture {
-    val specimenDefinition = factory.createCollectionSpecimenDefinition
+    val specimenDefinition = factory.createCollectedSpecimenDefinition
     val annotationType     = factory.createAnnotationType
 
     val ceventType = factory.createCollectionEventType
@@ -47,7 +47,7 @@ class CollectionEventTypeServiceSpec
       sessionUserId:      UserId,
       study:              Study,
       ceventType:         CollectionEventType,
-      specimenDefinition: CollectionSpecimenDefinition,
+      specimenDefinition: CollectedSpecimenDefinition,
       annotationType:     AnnotationType
     ) =
     Table("collection event type update commands",
@@ -81,25 +81,25 @@ class CollectionEventTypeServiceSpec
                                                      id               = ceventType.id.id,
                                                      expectedVersion  = ceventType.version,
                                                      annotationTypeId = annotationType.id.id),
-          AddCollectionSpecimenDefinitionCmd(sessionUserId            = sessionUserId.id,
-                                             studyId                  = study.id.id,
-                                             id                       = ceventType.id.id,
-                                             expectedVersion          = ceventType.version,
-                                             name                     = specimenDefinition.name,
-                                             description              = specimenDefinition.description,
-                                             units                    = specimenDefinition.units,
-                                             anatomicalSourceType     = specimenDefinition.anatomicalSourceType,
-                                             preservationType         = specimenDefinition.preservationType,
-                                             preservationTemperature =
-                                               specimenDefinition.preservationTemperature,
-                                             specimenType            = specimenDefinition.specimenType,
-                                             maxCount                = specimenDefinition.maxCount,
-                                             amount                  = specimenDefinition.amount),
-          RemoveCollectionSpecimenDefinitionCmd(sessionUserId        = sessionUserId.id,
-                                                studyId              = study.id.id,
-                                                id                   = ceventType.id.id,
-                                                expectedVersion      = ceventType.version,
-                                                specimenDefinitionId = specimenDefinition.id.id))
+          AddCollectedSpecimenDefinitionCmd(sessionUserId             = sessionUserId.id,
+                                            studyId                   = study.id.id,
+                                            id                        = ceventType.id.id,
+                                            expectedVersion           = ceventType.version,
+                                            name                      = specimenDefinition.name,
+                                            description               = specimenDefinition.description,
+                                            units                     = specimenDefinition.units,
+                                            anatomicalSourceType      = specimenDefinition.anatomicalSourceType,
+                                            preservationType          = specimenDefinition.preservationType,
+                                            preservationTemperature =
+                                              specimenDefinition.preservationTemperature,
+                                            specimenType            = specimenDefinition.specimenType,
+                                            maxCount                = specimenDefinition.maxCount,
+                                            amount                  = specimenDefinition.amount),
+          RemoveCollectedSpecimenDefinitionCmd(sessionUserId        = sessionUserId.id,
+                                               studyId              = study.id.id,
+                                               id                   = ceventType.id.id,
+                                               expectedVersion      = ceventType.version,
+                                               specimenDefinitionId = specimenDefinition.id.id))
 
   override def beforeEach() {
     super.beforeEach()
@@ -243,8 +243,8 @@ class CollectionEventTypeServiceSpec
               val ceventType = cmd match {
                 case _: CollectionEventTypeAddAnnotationTypeCmd =>
                   f.ceventType.copy(annotationTypes = Set.empty[AnnotationType])
-                case _: AddCollectionSpecimenDefinitionCmd =>
-                  f.ceventType.copy(specimenDefinitions = Set.empty[CollectionSpecimenDefinition])
+                case _: AddCollectedSpecimenDefinitionCmd =>
+                  f.ceventType.copy(specimenDefinitions = Set.empty[CollectedSpecimenDefinition])
                 case _ =>
                   f.ceventType
               }

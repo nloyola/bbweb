@@ -10,6 +10,7 @@ import org.biobank.domain.annotations.Annotation
 import org.biobank.domain.centres._
 import org.biobank.domain.containers._
 import org.biobank.domain.studies._
+import org.biobank.domain.participants._
 import org.biobank.dto.access.{UserMembershipDto, UserRoleDto}
 import play.api.libs.json._
 
@@ -17,7 +18,14 @@ package dto {
 
   trait Dto
 
-  final case class EntityInfoDto(id: String, slug: Slug, name: String) {
+  trait IdentifiedDomainObjectDto {
+    val id:   String
+    val slug: Slug
+    val name: String
+  }
+
+  final case class IdentifiedValueObjectInfoDto(id: String, slug: Slug, name: String)
+      extends IdentifiedDomainObjectDto {
 
     override def toString: String =
       s"""|${this.getClass.getSimpleName}: {
@@ -27,15 +35,35 @@ package dto {
           |}""".stripMargin
   }
 
+  object IdentifiedValueObjectInfoDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply[T <: IdentifiedDomainObject[_] with HasSlug with HasName](
+        entity: T
+      ): IdentifiedValueObjectInfoDto =
+      IdentifiedValueObjectInfoDto(entity.id.toString, entity.slug, entity.name)
+
+    def compareByName(a: IdentifiedValueObjectInfoDto, b: IdentifiedValueObjectInfoDto): Boolean =
+      (a.name compareToIgnoreCase b.name) < 0
+
+    implicit val identifiedValueObjectInfoDtoFormat: Format[IdentifiedValueObjectInfoDto] =
+      Json.format[IdentifiedValueObjectInfoDto]
+
+  }
+
+  final case class EntityInfoDto(id: String, slug: Slug, name: String) extends IdentifiedDomainObjectDto
+
   object EntityInfoDto {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def apply[T <: ConcurrencySafeEntity[_] with HasSlug with HasName](entity: T): EntityInfoDto =
       EntityInfoDto(entity.id.toString, entity.slug, entity.name)
 
-    def compareByName(a: EntityInfoDto, b: EntityInfoDto): Boolean = (a.name compareToIgnoreCase b.name) < 0
+    def compareByName(a: EntityInfoDto, b: EntityInfoDto): Boolean =
+      (a.name compareToIgnoreCase b.name) < 0
 
-    implicit val entityInfoDtoFormat: Format[EntityInfoDto] = Json.format[EntityInfoDto]
+    implicit val entityInfoDtoFormat: Format[EntityInfoDto] =
+      Json.format[EntityInfoDto]
 
   }
 
@@ -424,29 +452,42 @@ package dto {
 
   }
 
-  final case class CollectionSpecimenDefinitionNames(
+  final case class CollectedSpecimenDefinitionNames(
       id:                      String,
       slug:                    Slug,
       name:                    String,
-      specimenDefinitionNames: Set[EntityInfoDto])
+      specimenDefinitionNames: Set[IdentifiedValueObjectInfoDto])
 
-  object CollectionSpecimenDefinitionNames {
+  object CollectedSpecimenDefinitionNames {
 
-    implicit val specimenDefinitionNamesFormat: Format[CollectionSpecimenDefinitionNames] =
-      Json.format[CollectionSpecimenDefinitionNames]
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(eventType: CollectionEventType): CollectedSpecimenDefinitionNames = {
+      val definitionNames = eventType.specimenDefinitions.map(sd => IdentifiedValueObjectInfoDto(sd))
+      CollectedSpecimenDefinitionNames(eventType.id.id, eventType.slug, eventType.name, definitionNames)
+    }
+
+    implicit val specimenDefinitionNamesFormat: Format[CollectedSpecimenDefinitionNames] =
+      Json.format[CollectedSpecimenDefinitionNames]
 
   }
 
-  final case class ProcessedSpecimenDefinitionNames(
+  final case class ProcessedSpecimenDefinitionName(
       id:                     String,
       slug:                   Slug,
       name:                   String,
-      specimenDefinitionName: EntityInfoDto)
+      specimenDefinitionName: IdentifiedValueObjectInfoDto)
 
-  object ProcessedSpecimenDefinitionNames {
+  object ProcessedSpecimenDefinitionName {
 
-    implicit val specimenDefinitionNamesFormat: Format[ProcessedSpecimenDefinitionNames] =
-      Json.format[ProcessedSpecimenDefinitionNames]
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(processingType: ProcessingType): ProcessedSpecimenDefinitionName =
+      ProcessedSpecimenDefinitionName(processingType.id.id,
+                                      processingType.slug,
+                                      processingType.name,
+                                      IdentifiedValueObjectInfoDto(processingType.output.specimenDefinition))
+
+    implicit val specimenDefinitionNamesFormat: Format[ProcessedSpecimenDefinitionName] =
+      Json.format[ProcessedSpecimenDefinitionName]
 
   }
 
@@ -461,6 +502,18 @@ package dto {
       annotations:  Set[Annotation])
 
   object ParticipantDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(participant: Participant, study: Study): ParticipantDto =
+      ParticipantDto(id        = participant.id.id,
+                     slug      = participant.slug,
+                     study     = EntityInfoDto(study),
+                     version   = participant.version,
+                     timeAdded = participant.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                     timeModified =
+                       participant.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                     uniqueId    = participant.uniqueId,
+                     annotations = participant.annotations)
 
     implicit val participantDtoForma: Format[ParticipantDto] = Json.format[ParticipantDto]
 
@@ -481,6 +534,26 @@ package dto {
       annotations:             Set[Annotation])
 
   object CollectionEventDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(
+        event:       CollectionEvent,
+        participant: Participant,
+        eventType:   CollectionEventType
+      ): CollectionEventDto =
+      CollectionEventDto(id                      = event.id.id,
+                         participantId           = participant.id.id,
+                         participantSlug         = participant.slug.id,
+                         collectionEventTypeId   = eventType.id.id,
+                         collectionEventTypeSlug = eventType.slug.id,
+                         version                 = event.version,
+                         timeAdded               = event.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                         timeModified =
+                           event.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                         slug          = event.slug,
+                         timeCompleted = event.timeCompleted.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                         visitNumber   = event.visitNumber,
+                         annotations   = event.annotations)
 
     implicit val collectionEventDtoWriter: Writes[CollectionEventDto] = Json.writes[CollectionEventDto]
 
@@ -578,14 +651,8 @@ package dto {
 
   object ShipmentDto {
 
-    val sort2Compare: Map[String, (ShipmentDto, ShipmentDto) => Boolean] =
-      Map[String, (ShipmentDto, ShipmentDto) => Boolean]("courierName"      -> compareByCourier,
-                                                         "trackingNumber"   -> compareByTrackingNumber,
-                                                         "state"            -> compareByState,
-                                                         "fromLocationName" -> compareByFromLocation,
-                                                         "toLocationName"   -> compareByToLocation)
-
-    def create(
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(
         shipment:         Shipment,
         fromLocationInfo: CentreLocationInfo,
         toLocationInfo:   CentreLocationInfo,
@@ -608,6 +675,13 @@ package dto {
                   specimenCount    = specimenCount,
                   containerCount   = containerCount,
                   state            = shipment.state.id)
+
+    val sort2Compare: Map[String, (ShipmentDto, ShipmentDto) => Boolean] =
+      Map[String, (ShipmentDto, ShipmentDto) => Boolean]("courierName" -> compareByCourier,
+                                                         "trackingNumber"   -> compareByTrackingNumber,
+                                                         "state"            -> compareByState,
+                                                         "fromLocationName" -> compareByFromLocation,
+                                                         "toLocationName"   -> compareByToLocation)
 
     def compareByCourier(a: ShipmentDto, b: ShipmentDto): Boolean =
       (a.courierName compareToIgnoreCase b.courierName) < 0
@@ -653,6 +727,19 @@ package dto {
   }
 
   object ShipmentSpecimenDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(shipmentSpecimen: ShipmentSpecimen, specimen: SpecimenDto): ShipmentSpecimenDto =
+      ShipmentSpecimenDto(id      = shipmentSpecimen.id.id,
+                          version = shipmentSpecimen.version,
+                          timeAdded =
+                            shipmentSpecimen.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                          timeModified = shipmentSpecimen.timeModified
+                            .map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                          shipmentId          = shipmentSpecimen.shipmentId.id,
+                          shipmentContainerId = shipmentSpecimen.shipmentContainerId.map(id => id.id),
+                          state               = shipmentSpecimen.state.toString,
+                          specimen            = specimen)
 
     val sort2Compare: Map[String, (ShipmentSpecimenDto, ShipmentSpecimenDto) => Boolean] =
       Map[String, (ShipmentSpecimenDto, ShipmentSpecimenDto) => Boolean](

@@ -121,7 +121,7 @@ trait EntityMatchers {
                            ("name"        -> (left.name equals eventType.name)),
                            ("description" -> (left.description equals eventType.description)),
                            ("recurring"   -> (left.recurring equals eventType.recurring)),
-                           ("specimenDefinitions" -> collectionSpecimenDefinitionsMatch(
+                           ("specimenDefinitions" -> collectedSpecimenDefinitionsMatch(
                              left.specimenDefinitions,
                              eventType.specimenDefinitions
                            )),
@@ -633,9 +633,9 @@ trait EntityMatchers {
     }
   }
 
-  private def collectionSpecimenDefinitionsMatch(
-      a: Set[CollectionSpecimenDefinition],
-      b: Set[CollectionSpecimenDefinition]
+  private def collectedSpecimenDefinitionsMatch(
+      a: Set[CollectedSpecimenDefinition],
+      b: Set[CollectedSpecimenDefinition]
     ): Boolean = {
     val maybeMatch = a.map { toFind =>
       b.exists { other =>

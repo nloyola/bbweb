@@ -176,13 +176,13 @@ class Factory {
     retiredStudy
   }
 
-  def createCollectionSpecimenDefinition(): CollectionSpecimenDefinition = {
+  def createCollectedSpecimenDefinition(): CollectedSpecimenDefinition = {
     val name = faker.Lorem.sentence(3)
-    val specimenSpec = CollectionSpecimenDefinition(
-      id                      = SpecimenDefinitionId(nextIdentityAsString[CollectionSpecimenDefinition]),
+    val specimenSpec = CollectedSpecimenDefinition(
+      id                      = SpecimenDefinitionId(nextIdentityAsString[CollectedSpecimenDefinition]),
       slug                    = Slug(name),
       name                    = name,
-      description             = Some(nameGenerator.next[CollectionSpecimenDefinition]),
+      description             = Some(nameGenerator.next[CollectedSpecimenDefinition]),
       units                   = nameGenerator.next[String],
       anatomicalSourceType    = AnatomicalSourceType.Blood,
       preservationType        = PreservationType.FreshSpecimen,
@@ -191,7 +191,7 @@ class Factory {
       maxCount                = 1,
       amount                  = BigDecimal(0.5)
     )
-    domainObjects = domainObjects + (classOf[CollectionSpecimenDefinition] -> specimenSpec)
+    domainObjects = domainObjects + (classOf[CollectedSpecimenDefinition] -> specimenSpec)
     specimenSpec
   }
 
@@ -364,7 +364,7 @@ class Factory {
   }
 
   def createUsableSpecimen(): UsableSpecimen = {
-    val specimenDefinition = defaultCollectionSpecimenDefinition
+    val specimenDefinition = defaultCollectedSpecimenDefinition
     val location           = defaultLocation
     val inventoryId        = nextIdentityAsString[Specimen]
 
@@ -386,7 +386,7 @@ class Factory {
   }
 
   def createUnusableSpecimen(): UnusableSpecimen = {
-    val specimenDefinition = defaultCollectionSpecimenDefinition
+    val specimenDefinition = defaultCollectedSpecimenDefinition
     val location           = defaultLocation
     val inventoryId        = nextIdentityAsString[Specimen]
 
@@ -729,8 +729,8 @@ class Factory {
   def defaultCollectionEventType: CollectionEventType =
     defaultObject(classOf[CollectionEventType], createCollectionEventType)
 
-  def defaultCollectionSpecimenDefinition: CollectionSpecimenDefinition =
-    defaultObject(classOf[CollectionSpecimenDefinition], createCollectionSpecimenDefinition)
+  def defaultCollectedSpecimenDefinition: CollectedSpecimenDefinition =
+    defaultObject(classOf[CollectedSpecimenDefinition], createCollectedSpecimenDefinition)
 
   def defaultProcessedSpecimenDefinition: ProcessedSpecimenDefinition =
     defaultObject(classOf[ProcessedSpecimenDefinition], createProcessedSpecimenDefinition)

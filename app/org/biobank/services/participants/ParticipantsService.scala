@@ -3,7 +3,6 @@ package org.biobank.services.participants
 import akka.actor._
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
-import java.time.format.DateTimeFormatter
 import javax.inject.{Inject, Named, Singleton}
 import org.biobank.domain.Slug
 import org.biobank.domain.access._
@@ -66,7 +65,7 @@ class ParticipantsServiceImpl @Inject()(
       for {
         participant <- participantRepository.withId(studyId, participantId)
         study       <- studiesService.getStudy(requestUserId, studyId)
-      } yield participantToDto(participant, study)
+      } yield ParticipantDto(participant, study)
     }
 
   def getBySlug(requestUserId: UserId, slug: Slug): ServiceValidation[ParticipantDto] =
@@ -81,7 +80,7 @@ class ParticipantsServiceImpl @Inject()(
         if (permission) participant.successNel[String]
         else Unauthorized.failureNel[Participant]
       }
-    } yield participantToDto(participant, study)
+    } yield ParticipantDto(participant, study)
 
   def getByUniqueId(requestUserId: UserId, uniqueId: String): ServiceValidation[ParticipantDto] =
     for {
@@ -95,7 +94,7 @@ class ParticipantsServiceImpl @Inject()(
         if (permission) participant.successNel[String]
         else Unauthorized.failureNel[Participant]
       }
-    } yield participantToDto(participant, study)
+    } yield ParticipantDto(participant, study)
 
   def processCommand(cmd: ParticipantCommand): Future[ServiceValidation[ParticipantDto]] = {
     val validStudyId = cmd match {
@@ -119,20 +118,9 @@ class ParticipantsServiceImpl @Inject()(
                               event       <- validation
                               participant <- participantRepository.getByKey(ParticipantId(event.id))
                               study       <- studiesService.getStudy(requestUserId, studyId)
-                            } yield participantToDto(participant, study)
+                            } yield ParticipantDto(participant, study)
                           }
                         })
   }
-
-  private def participantToDto(participant: Participant, study: Study): ParticipantDto =
-    ParticipantDto(id        = participant.id.id,
-                   slug      = participant.slug,
-                   study     = EntityInfoDto(study),
-                   version   = participant.version,
-                   timeAdded = participant.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                   timeModified =
-                     participant.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                   uniqueId    = participant.uniqueId,
-                   annotations = participant.annotations)
 
 }

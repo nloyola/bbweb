@@ -26,8 +26,8 @@ class CeventTypesControllerSpec
 
     val eventTypes = (0 until numEventTypes).map { _ =>
       val specimenDefinitions =
-        if (hasSpecimenDefinition) Set(factory.createCollectionSpecimenDefinition)
-        else Set.empty[CollectionSpecimenDefinition]
+        if (hasSpecimenDefinition) Set(factory.createCollectedSpecimenDefinition)
+        else Set.empty[CollectedSpecimenDefinition]
 
       factory.createCollectionEventType.copy(studyId = study.id, specimenDefinitions = specimenDefinitions)
     }.toList
@@ -252,21 +252,13 @@ class CeventTypesControllerSpec
         val f = new EventTypeFixture(2, true)
         val expectedReply = f.eventTypes
           .sortBy(_.name)
-          .map { eventType =>
-            val definitionNames = eventType.specimenDefinitions.map { definition =>
-              EntityInfoDto(definition.id.id, definition.slug, definition.name)
-            }
-            CollectionSpecimenDefinitionNames(eventType.id.id,
-                                              eventType.slug,
-                                              eventType.name,
-                                              definitionNames)
-          }
+          .map(eventType => CollectedSpecimenDefinitionNames(eventType))
           .toList
 
         val reply = makeAuthRequest(GET, uri("spcdefs", f.study.slug.id)).value
         reply must beOkResponseWithJsonReply
 
-        val replyDtos = (contentAsJson(reply) \ "data").validate[List[CollectionSpecimenDefinitionNames]]
+        val replyDtos = (contentAsJson(reply) \ "data").validate[List[CollectedSpecimenDefinitionNames]]
         replyDtos must be(jsSuccess)
         replyDtos.get must equal(expectedReply)
       }
@@ -757,12 +749,12 @@ class CeventTypesControllerSpec
       it("add a specimen spec") {
         val f          = new EventTypeFixture
         val cet        = f.eventTypes(0)
-        val definition = factory.createCollectionSpecimenDefinition
+        val definition = factory.createCollectedSpecimenDefinition
 
         val reqJson = Json.obj("id" -> cet.id.id,
                                "studyId"         -> cet.studyId.id,
                                "expectedVersion" -> Some(cet.version)) ++
-          collectionSpecimenDefinitionToJsonNoId(definition)
+          collectedSpecimenDefinitionToJsonNoId(definition)
 
         val reply = makeAuthRequest(POST, urlAddSepecimenDescription(cet), reqJson).value
         reply must beOkResponseWithJsonReply
@@ -781,35 +773,35 @@ class CeventTypesControllerSpec
       describe("fail when adding specimen spec and collection event type ID does not exist") {
         updateOnInvalidCeventTypeSharedBehaviour { cet =>
           (urlAddSepecimenDescription(cet),
-           collectionSpecimenDefinitionToJsonNoId(factory.createCollectionSpecimenDefinition))
+           collectedSpecimenDefinitionToJsonNoId(factory.createCollectedSpecimenDefinition))
         }
       }
 
       describe("fail when adding specimen spec and an invalid version") {
         updateWithInvalidVersionSharedBehaviour { cet =>
           (urlAddSepecimenDescription(cet),
-           collectionSpecimenDefinitionToJsonNoId(factory.createCollectionSpecimenDefinition))
+           collectedSpecimenDefinitionToJsonNoId(factory.createCollectedSpecimenDefinition))
         }
       }
 
       describe("not add an specimen spec on an enabled study") {
         updateOnNonDisabledStudySharedBehaviour(factory.createEnabledStudy) { cet =>
           (urlAddSepecimenDescription(cet),
-           collectionSpecimenDefinitionToJsonNoId(factory.createCollectionSpecimenDefinition))
+           collectedSpecimenDefinitionToJsonNoId(factory.createCollectedSpecimenDefinition))
         }
       }
 
       describe("not add a specimen spec on an retired study") {
         updateOnNonDisabledStudySharedBehaviour(factory.createRetiredStudy) { cet =>
           (urlAddSepecimenDescription(cet),
-           collectionSpecimenDefinitionToJsonNoId(factory.createCollectionSpecimenDefinition))
+           collectedSpecimenDefinitionToJsonNoId(factory.createCollectedSpecimenDefinition))
         }
       }
 
       describe("fail when adding specimen spec and collection event type ID is invalid") {
         updateOnInvalidCeventTypeSharedBehaviour { cet =>
           (urlAddSepecimenDescription(cet),
-           collectionSpecimenDefinitionToJsonNoId(factory.createCollectionSpecimenDefinition))
+           collectedSpecimenDefinitionToJsonNoId(factory.createCollectedSpecimenDefinition))
         }
       }
     }
@@ -819,7 +811,7 @@ class CeventTypesControllerSpec
       it("update a specimen definition") {
         val f                  = new EventTypeFixture
         val cet                = f.eventTypes(0)
-        val specimenDefinition = factory.createCollectionSpecimenDefinition
+        val specimenDefinition = factory.createCollectedSpecimenDefinition
         collectionEventTypeRepository.put(cet.copy(specimenDefinitions = Set(specimenDefinition)))
 
         val updatedSpecimenDefinition =
@@ -828,7 +820,7 @@ class CeventTypesControllerSpec
         val reqJson = Json.obj("id" -> cet.id.id,
                                "studyId"         -> cet.studyId.id,
                                "expectedVersion" -> Some(cet.version)) ++
-          collectionSpecimenDefinitionToJsonNoId(updatedSpecimenDefinition)
+          collectedSpecimenDefinitionToJsonNoId(updatedSpecimenDefinition)
 
         val url   = urlAddSepecimenDescription(cet).append(specimenDefinition.id.id)
         val reply = makeAuthRequest(POST, url, reqJson).value
@@ -841,41 +833,41 @@ class CeventTypesControllerSpec
 
       describe("fail when updating specimen definition and collection event type ID does not exist") {
         updateOnInvalidCeventTypeSharedBehaviour { cet =>
-          val specimenDefinition = factory.createCollectionSpecimenDefinition
+          val specimenDefinition = factory.createCollectedSpecimenDefinition
           (urlUpdateSpecimenDefinition(cet, specimenDefinition),
-           collectionSpecimenDefinitionToJson(specimenDefinition))
+           collectedSpecimenDefinitionToJson(specimenDefinition))
         }
       }
 
       describe("fail when updating specimen description and an invalid version") {
         updateWithInvalidVersionSharedBehaviour { cet =>
-          val specimenDefinition = factory.createCollectionSpecimenDefinition
+          val specimenDefinition = factory.createCollectedSpecimenDefinition
           (urlUpdateSpecimenDefinition(cet, specimenDefinition),
-           collectionSpecimenDefinitionToJson(specimenDefinition))
+           collectedSpecimenDefinitionToJson(specimenDefinition))
         }
       }
 
       describe("not add an specimen description on an enabled study") {
         updateOnNonDisabledStudySharedBehaviour(factory.createEnabledStudy) { cet =>
-          val specimenDefinition = factory.createCollectionSpecimenDefinition
+          val specimenDefinition = factory.createCollectedSpecimenDefinition
           (urlUpdateSpecimenDefinition(cet, specimenDefinition),
-           collectionSpecimenDefinitionToJson(specimenDefinition))
+           collectedSpecimenDefinitionToJson(specimenDefinition))
         }
       }
 
       describe("not add an specimen description on an retired study") {
         updateOnNonDisabledStudySharedBehaviour(factory.createRetiredStudy) { cet =>
-          val specimenDefinition = factory.createCollectionSpecimenDefinition
+          val specimenDefinition = factory.createCollectedSpecimenDefinition
           (urlUpdateSpecimenDefinition(cet, specimenDefinition),
-           collectionSpecimenDefinitionToJson(specimenDefinition))
+           collectedSpecimenDefinitionToJson(specimenDefinition))
         }
       }
 
       describe("fail when adding specimen description and collection event type ID is invalid") {
         updateOnInvalidCeventTypeSharedBehaviour { cet =>
-          val specimenDefinition = factory.createCollectionSpecimenDefinition
+          val specimenDefinition = factory.createCollectedSpecimenDefinition
           (urlUpdateSpecimenDefinition(cet, specimenDefinition),
-           collectionSpecimenDefinitionToJson(specimenDefinition))
+           collectedSpecimenDefinitionToJson(specimenDefinition))
         }
       }
     }
@@ -885,14 +877,14 @@ class CeventTypesControllerSpec
       it("remove an specimen spec") {
         val f                  = new EventTypeFixture
         val cet                = f.eventTypes(0)
-        val specimenDefinition = factory.createCollectionSpecimenDefinition
+        val specimenDefinition = factory.createCollectedSpecimenDefinition
         collectionEventTypeRepository.put(cet.copy(specimenDefinitions = Set(specimenDefinition)))
 
         val url   = uri("spcdef", f.study.id.id, cet.id.id, cet.version.toString, specimenDefinition.id.id)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beOkResponseWithJsonReply
         val updatedCet = cet.copy(version = cet.version + 1,
-                                  specimenDefinitions = Set.empty[CollectionSpecimenDefinition],
+                                  specimenDefinitions = Set.empty[CollectedSpecimenDefinition],
                                   timeModified        = Some(OffsetDateTime.now))
         reply must matchUpdatedEventType(updatedCet)
       }
@@ -900,7 +892,7 @@ class CeventTypesControllerSpec
       it("fail when removing specimen spec and an invalid version") {
         val f                  = new EventTypeFixture
         val cet                = f.eventTypes(0)
-        val specimenDefinition = factory.createCollectionSpecimenDefinition
+        val specimenDefinition = factory.createCollectedSpecimenDefinition
         collectionEventTypeRepository.put(cet.copy(specimenDefinitions = Set(specimenDefinition)))
 
         val badVersion = cet.version + 1
@@ -930,7 +922,7 @@ class CeventTypesControllerSpec
         val f                  = new EventTypeFixture
         val cet                = f.eventTypes(0)
         val badUniqueId        = nameGenerator.next[Study]
-        val specimenDefinition = factory.createCollectionSpecimenDefinition
+        val specimenDefinition = factory.createCollectedSpecimenDefinition
 
         collectionEventTypeRepository.put(cet.copy(specimenDefinitions = Set(specimenDefinition)))
 
@@ -943,7 +935,7 @@ class CeventTypesControllerSpec
         List(factory.createEnabledStudy, factory.createRetiredStudy).foreach { study =>
           studyRepository.put(study)
 
-          val specimenDefinition = factory.createCollectionSpecimenDefinition
+          val specimenDefinition = factory.createCollectedSpecimenDefinition
           val cet = factory.createCollectionEventType.copy(studyId = study.id,
                                                            specimenDefinitions = Set(specimenDefinition))
           collectionEventTypeRepository.put(cet)
@@ -965,7 +957,7 @@ class CeventTypesControllerSpec
 
       val cet = factory.createCollectionEventType.copy(studyId = study.id,
                                                        specimenDefinitions =
-                                                         Set(factory.createCollectionSpecimenDefinition),
+                                                         Set(factory.createCollectedSpecimenDefinition),
                                                        annotationTypes = Set(factory.createAnnotationType))
 
       val reply = makeAuthRequest(POST, uri(study.id.id), cetToAddCmd(cet)).value
@@ -1017,7 +1009,7 @@ class CeventTypesControllerSpec
 
       val cet = factory.createCollectionEventType.copy(studyId = study.id,
                                                        specimenDefinitions =
-                                                         Set(factory.createCollectionSpecimenDefinition),
+                                                         Set(factory.createCollectedSpecimenDefinition),
                                                        annotationTypes = Set(factory.createAnnotationType))
       collectionEventTypeRepository.put(cet)
 
@@ -1039,7 +1031,7 @@ class CeventTypesControllerSpec
 
       val cet = factory.createCollectionEventType.copy(studyId = study.id,
                                                        specimenDefinitions =
-                                                         Set(factory.createCollectionSpecimenDefinition),
+                                                         Set(factory.createCollectedSpecimenDefinition),
                                                        annotationTypes = Set(factory.createAnnotationType))
       collectionEventTypeRepository.put(cet)
 
@@ -1136,7 +1128,7 @@ class CeventTypesControllerSpec
           )
     }
 
-  protected def collectionSpecimenDefinitionToJson(desc: CollectionSpecimenDefinition): JsObject =
+  protected def collectedSpecimenDefinitionToJson(desc: CollectedSpecimenDefinition): JsObject =
     Json.obj("id"                      -> desc.id,
              "slug"                    -> desc.slug,
              "name"                    -> desc.name,
@@ -1149,7 +1141,7 @@ class CeventTypesControllerSpec
              "maxCount"                -> desc.maxCount,
              "amount"                  -> desc.amount)
 
-  protected def collectionSpecimenDefinitionToJsonNoId(spec: CollectionSpecimenDefinition): JsObject =
-    collectionSpecimenDefinitionToJson(spec) - "id"
+  protected def collectedSpecimenDefinitionToJsonNoId(spec: CollectedSpecimenDefinition): JsObject =
+    collectedSpecimenDefinitionToJson(spec) - "id"
 
 }

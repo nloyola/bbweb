@@ -4,7 +4,6 @@ import akka.actor._
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Named}
-import java.time.format.DateTimeFormatter
 import org.biobank.domain.access._
 import org.biobank.domain.participants._
 import org.biobank.domain.studies._
@@ -215,20 +214,7 @@ class CollectionEventsServiceImpl @Inject()(
                                             None) { () =>
                     ().successNel[String]
                   }
-    } yield CollectionEventDto(id                      = event.id.id,
-                               participantId           = participant.id.id,
-                               participantSlug         = participant.slug.id,
-                               collectionEventTypeId   = ceventType.id.id,
-                               collectionEventTypeSlug = ceventType.slug.id,
-                               version                 = event.version,
-                               timeAdded               = event.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                               timeModified =
-                                 event.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                               slug = event.slug,
-                               timeCompleted =
-                                 event.timeCompleted.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                               visitNumber = event.visitNumber,
-                               annotations = event.annotations)
+    } yield CollectionEventDto(event, participant, ceventType)
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def collectionEventToDto(

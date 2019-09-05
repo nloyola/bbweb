@@ -32,7 +32,7 @@ trait ShipmentSpecFixtures {
 
   class CollectionEventFixture {
     val study              = factory.createEnabledStudy
-    val specimenDefinition = factory.createCollectionSpecimenDefinition
+    val specimenDefinition = factory.createCollectedSpecimenDefinition
 
     val ceventType = factory.createCollectionEventType
       .copy(studyId = study.id, specimenDefinitions = Set(specimenDefinition), annotationTypes = Set.empty)
@@ -47,7 +47,7 @@ trait ShipmentSpecFixtures {
       val fromLocation:       Location,
       val toLocation:         Location,
       val study:              Study,
-      val specimenDefinition: CollectionSpecimenDefinition,
+      val specimenDefinition: CollectedSpecimenDefinition,
       val ceventType:         CollectionEventType,
       val participant:        Participant,
       val cevent:             CollectionEvent,
@@ -61,7 +61,7 @@ trait ShipmentSpecFixtures {
       toCentre:                Centre,
       shipment:                Shipment,
       study:                   Study,
-      specimenDefinition:      CollectionSpecimenDefinition,
+      specimenDefinition:      CollectedSpecimenDefinition,
       ceventType:              CollectionEventType,
       participant:             Participant,
       cevent:                  CollectionEvent,

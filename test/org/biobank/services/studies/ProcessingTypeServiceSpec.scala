@@ -45,7 +45,7 @@ class ProcessingTypeServiceSpec
   // private def updateCommandsTable(sessionUserId:  UserId,
   //                                 study:          Study,
   //                                 processingType:     ProcessingType,
-  //                                 specimenDefinition:   CollectionSpecimenDefinition,
+  //                                 specimenDefinition:   CollectedSpecimenDefinition,
   //                                 annotationType: AnnotationType) = {
   //   Table("processing type update commands",
   //         UpdateProcessingTypeNameCmd(
@@ -88,7 +88,7 @@ class ProcessingTypeServiceSpec
   //           expectedVersion  = processingType.version,
   //           annotationTypeId = annotationType.id.id
   //         ),
-  //         AddCollectionSpecimenDefinitionCmd(
+  //         AddCollectedSpecimenDefinitionCmd(
   //           sessionUserId               = sessionUserId.id,
   //           studyId                     = study.id.id,
   //           id                          = processingType.id.id,
@@ -103,7 +103,7 @@ class ProcessingTypeServiceSpec
   //           maxCount                    = specimenDefinition.maxCount,
   //           amount                      = specimenDefinition.amount
   //         ),
-  //         RemoveCollectionSpecimenDefinitionCmd(
+  //         RemoveCollectedSpecimenDefinitionCmd(
   //           sessionUserId         = sessionUserId.id,
   //           studyId               = study.id.id,
   //           id                    = processingType.id.id,
@@ -232,8 +232,8 @@ class ProcessingTypeServiceSpec
     //           val processingType = cmd match {
     //               case _: ProcessingTypeAddAnnotationTypeCmd =>
     //                 f.processingType.copy(annotationTypes = Set.empty[AnnotationType])
-    //               case _: AddCollectionSpecimenDefinitionCmd =>
-    //                 f.processingType.copy(specimenDefinitions = Set.empty[CollectionSpecimenDefinition])
+    //               case _: AddCollectedSpecimenDefinitionCmd =>
+    //                 f.processingType.copy(specimenDefinitions = Set.empty[CollectedSpecimenDefinition])
     //               case _ =>
     //                 f.processingType
     //             }

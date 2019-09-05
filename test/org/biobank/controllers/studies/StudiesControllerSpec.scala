@@ -27,7 +27,7 @@ class StudiesControllerSpec
 
   class CollectionFixture {
     val study              = factory.createEnabledStudy
-    val specimenDefinition = factory.createCollectionSpecimenDefinition
+    val specimenDefinition = factory.createCollectedSpecimenDefinition
 
     val ceventType = factory.createCollectionEventType
       .copy(studyId = study.id, specimenDefinitions = Set(specimenDefinition), annotationTypes = Set.empty)
@@ -664,7 +664,7 @@ class StudiesControllerSpec
 
         val cet = factory.createCollectionEventType.copy(studyId = study.id,
                                                          specimenDefinitions =
-                                                           Set(factory.createCollectionSpecimenDefinition))
+                                                           Set(factory.createCollectedSpecimenDefinition))
         collectionEventTypeRepository.put(cet)
 
         val reqJson = Json.obj("expectedVersion" -> Some(study.version))

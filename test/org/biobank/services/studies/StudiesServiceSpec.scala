@@ -24,7 +24,7 @@ class StudiesServiceSpec extends ProcessorTestFixture with StudiesServiceFixture
     val retiredStudy  = factory.createRetiredStudy
 
     val cet = factory.createCollectionEventType
-      .copy(studyId = disabledStudy.id, specimenDefinitions = Set(factory.createCollectionSpecimenDefinition))
+      .copy(studyId = disabledStudy.id, specimenDefinitions = Set(factory.createCollectedSpecimenDefinition))
 
     Set(disabledStudy, enabledStudy, retiredStudy).foreach(addToRepository)
     collectionEventTypeRepository.put(cet)

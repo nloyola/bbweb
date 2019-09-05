@@ -13,7 +13,7 @@ trait ParticipantsServiceFixtures extends StudiesServiceFixtures {
     val annotationType     = factory.createAnnotationType
     val annotation         = factory.createAnnotationWithValues(annotationType)
     val enabledStudy       = factory.createEnabledStudy.copy(annotationTypes = Set(annotationType))
-    val specimenDefinition = factory.createCollectionSpecimenDefinition
+    val specimenDefinition = factory.createCollectedSpecimenDefinition
     val participant        = factory.createParticipant.copy(studyId = enabledStudy.id, annotations = Set(annotation))
 
     override def usersCanAddOrUpdateTable() =

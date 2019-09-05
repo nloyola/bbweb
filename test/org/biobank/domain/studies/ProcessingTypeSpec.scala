@@ -42,7 +42,7 @@ class ProcessingTypeSpec
     describe("be created") {
 
       it("with a collected specimen definition") {
-        val f = new CollectionSpecimenDefinitionFixtures
+        val f = new CollectedSpecimenDefinitionFixtures
         f.processingType.annotationTypes must have size 0
         createFrom(f.processingType) mustSucceed { pt =>
           pt must matchProcessingType(f.processingType)
@@ -59,7 +59,7 @@ class ProcessingTypeSpec
     }
 
     it("have it's name updated") {
-      val f    = new CollectionSpecimenDefinitionFixtures
+      val f    = new CollectedSpecimenDefinitionFixtures
       val name = nameGenerator.next[CollectionEventType]
 
       f.processingType.withName(name) mustSucceed { pt =>
@@ -72,7 +72,7 @@ class ProcessingTypeSpec
     }
 
     it("have it's description updated") {
-      val f           = new CollectionSpecimenDefinitionFixtures
+      val f           = new CollectedSpecimenDefinitionFixtures
       val description = Some(nameGenerator.next[CollectionEventType])
 
       f.processingType.withDescription(description) mustSucceed { pt =>
@@ -84,7 +84,7 @@ class ProcessingTypeSpec
     }
 
     it("be enabled and disabled") {
-      val f = new CollectionSpecimenDefinitionFixtures
+      val f = new CollectedSpecimenDefinitionFixtures
 
       val statusTable = Table(("processing type status", "label"), (true, "enabled"), (false, "disabled"))
 
@@ -99,7 +99,7 @@ class ProcessingTypeSpec
     }
 
     it("have it's expected input change updated") {
-      val f = new CollectionSpecimenDefinitionFixtures
+      val f = new CollectedSpecimenDefinitionFixtures
       val input = f.processingType.input
         .copy(expectedChange = f.processingType.input.expectedChange + 1)
 
@@ -114,7 +114,7 @@ class ProcessingTypeSpec
     }
 
     it("have it's expected output change updated") {
-      val f = new CollectionSpecimenDefinitionFixtures
+      val f = new CollectedSpecimenDefinitionFixtures
       val output = f.processingType.output
         .copy(expectedChange = f.processingType.output.expectedChange + 1)
 
@@ -129,7 +129,7 @@ class ProcessingTypeSpec
     }
 
     it("have it's input count updated") {
-      val f = new CollectionSpecimenDefinitionFixtures
+      val f = new CollectedSpecimenDefinitionFixtures
       val input = f.processingType.input
         .copy(count = f.processingType.input.count + 1)
 
@@ -144,7 +144,7 @@ class ProcessingTypeSpec
     }
 
     it("have it's output count updated") {
-      val f = new CollectionSpecimenDefinitionFixtures
+      val f = new CollectedSpecimenDefinitionFixtures
       val output = f.processingType.output
         .copy(count = f.processingType.output.count + 1)
 
@@ -159,7 +159,7 @@ class ProcessingTypeSpec
     }
 
     it("have it's inUse status updated") {
-      val f = new CollectionSpecimenDefinitionFixtures
+      val f = new CollectedSpecimenDefinitionFixtures
 
       val statusTable = Table(("processing type inUse status", "label"), (true, "used"), (false, "unused"))
 
@@ -176,25 +176,25 @@ class ProcessingTypeSpec
     describe("not be created") {
 
       it("with an empty study id") {
-        val f              = new CollectionSpecimenDefinitionFixtures
+        val f              = new CollectedSpecimenDefinitionFixtures
         val processingType = f.processingType.copy(studyId = StudyId(""))
         createFrom(processingType) mustFail "StudyIdRequired"
       }
 
       it("not be created with an empty id") {
-        val f              = new CollectionSpecimenDefinitionFixtures
+        val f              = new CollectedSpecimenDefinitionFixtures
         val processingType = f.processingType.copy(id = ProcessingTypeId(""))
         createFrom(processingType) mustFail "IdRequired"
       }
 
       it("not be created with an invalid version") {
-        val f              = new CollectionSpecimenDefinitionFixtures
+        val f              = new CollectedSpecimenDefinitionFixtures
         val processingType = f.processingType.copy(version = -2L)
         createFrom(processingType) mustFail "InvalidVersion"
       }
 
       it("not be created with an invalid name") {
-        val f = new CollectionSpecimenDefinitionFixtures
+        val f = new CollectedSpecimenDefinitionFixtures
 
         val invalidNameTable = Table(("invalid name", "label"), ("", "empty"), (null, "null"))
         forAll(invalidNameTable) { (invalidName, label) =>
@@ -205,7 +205,7 @@ class ProcessingTypeSpec
       }
 
       it("not be created with an invalid description") {
-        val f = new CollectionSpecimenDefinitionFixtures
+        val f = new CollectedSpecimenDefinitionFixtures
 
         val invalidDescriptionTable =
           Table(("invalid description", "label"), (Some(""), "empty"), (Some(null), "null"))
@@ -217,42 +217,42 @@ class ProcessingTypeSpec
       }
 
       it("not be created with an invalid expected input change") {
-        val f              = new CollectionSpecimenDefinitionFixtures
+        val f              = new CollectedSpecimenDefinitionFixtures
         val changeLens     = lens[ProcessingType].input.expectedChange
         val processingType = changeLens.set(f.processingType)(-1.0)
         createFrom(processingType) mustFail "InvalidPositiveNumber"
       }
 
       it("not be created with an invalid expected output change") {
-        val f              = new CollectionSpecimenDefinitionFixtures
+        val f              = new CollectedSpecimenDefinitionFixtures
         val changeLens     = lens[ProcessingType].output.expectedChange
         val processingType = changeLens.set(f.processingType)(-1.0)
         createFrom(processingType) mustFail "InvalidPositiveNumber"
       }
 
       it("not be created with an invalid input count") {
-        val f              = new CollectionSpecimenDefinitionFixtures
+        val f              = new CollectedSpecimenDefinitionFixtures
         val changeLens     = lens[ProcessingType].input.count
         val processingType = changeLens.set(f.processingType)(-1)
         createFrom(processingType) mustFail "InvalidPositiveNumber"
       }
 
       it("not be created with an invalid output count") {
-        val f              = new CollectionSpecimenDefinitionFixtures
+        val f              = new CollectedSpecimenDefinitionFixtures
         val changeLens     = lens[ProcessingType].output.count
         val processingType = changeLens.set(f.processingType)(-1)
         createFrom(processingType) mustFail "InvalidPositiveNumber"
       }
 
       it("not be created with an invalid input container id") {
-        val f              = new CollectionSpecimenDefinitionFixtures
+        val f              = new CollectedSpecimenDefinitionFixtures
         val changeLens     = lens[ProcessingType].input.containerTypeId
         val processingType = changeLens.set(f.processingType)(Some(ContainerTypeId("")))
         createFrom(processingType) mustFail "ContainerTypeIdRequired"
       }
 
       it("not be created with an invalid output container id") {
-        val f              = new CollectionSpecimenDefinitionFixtures
+        val f              = new CollectedSpecimenDefinitionFixtures
         val changeLens     = lens[ProcessingType].output.containerTypeId
         val processingType = changeLens.set(f.processingType)(Some(ContainerTypeId("")))
         createFrom(processingType) mustFail "ContainerTypeIdRequired"
@@ -265,11 +265,11 @@ class ProcessingTypeSpec
         val inputSpecimenInfoLens    = entityIdLens ~ specimenDefinitionIdLens
 
         it("when it is for a collected specimen") {
-          val f = new CollectionSpecimenDefinitionFixtures
+          val f = new CollectedSpecimenDefinitionFixtures
 
           val invalidSpecimenDefinitionTable =
             Table(("processingType", "error", "label"),
-                  (inputSpecimenInfoLens.set(f.processingType)(Tuple2("", f.collectionSpecimenDefinition.id)),
+                  (inputSpecimenInfoLens.set(f.processingType)(Tuple2("", f.collectedSpecimenDefinition.id)),
                    "CollectionEventTypeIdRequired",
                    "invalid collection event type id"),
                   (inputSpecimenInfoLens.set(f.processingType)(
@@ -308,7 +308,7 @@ class ProcessingTypeSpec
       }
 
       it("have more than one validation fail") {
-        val f              = new CollectionSpecimenDefinitionFixtures
+        val f              = new CollectedSpecimenDefinitionFixtures
         val processingType = f.processingType.copy(version = -2L, description = Some(""))
         createFrom(processingType).mustFail("InvalidVersion", "InvalidDescription")
       }
@@ -316,7 +316,7 @@ class ProcessingTypeSpec
     }
 
     it("not be created with an invalid output specimen definition") {
-      val f = new CollectionSpecimenDefinitionFixtures
+      val f = new CollectedSpecimenDefinitionFixtures
 
       val updateLens = lens[ProcessingType].output.specimenDefinition.name ~
         lens[ProcessingType].output.specimenDefinition.description

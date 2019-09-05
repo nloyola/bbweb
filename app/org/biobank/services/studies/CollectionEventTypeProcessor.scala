@@ -114,13 +114,13 @@ class CollectionEventTypeProcessor @javax.inject.Inject()(
     case cmd: RemoveCollectionEventTypeAnnotationTypeCmd =>
       processUpdateCmd(cmd, removeAnnotationTypeCmdToEvent, applyAnnotationTypeRemovedEvent)
 
-    case cmd: AddCollectionSpecimenDefinitionCmd =>
+    case cmd: AddCollectedSpecimenDefinitionCmd =>
       processUpdateCmd(cmd, addSepcimenSpecCmdToEvent, applySpecimenDefinitionAddedEvent)
 
-    case cmd: UpdateCollectionSpecimenDefinitionCmd =>
+    case cmd: UpdateCollectedSpecimenDefinitionCmd =>
       processUpdateCmd(cmd, updateSepcimenSpecCmdToEvent, applySpecimenDefinitionUpdatedEvent)
 
-    case cmd: RemoveCollectionSpecimenDefinitionCmd =>
+    case cmd: RemoveCollectedSpecimenDefinitionCmd =>
       processUpdateCmd(cmd, removeSpecimenDefinitionCmdToEvent, applySpecimenDefinitionRemovedEvent)
 
     case "snap" =>
@@ -288,19 +288,19 @@ class CollectionEventTypeProcessor @javax.inject.Inject()(
     }
 
   private def addSepcimenSpecCmdToEvent(
-      cmd: AddCollectionSpecimenDefinitionCmd,
+      cmd: AddCollectedSpecimenDefinitionCmd,
       cet: CollectionEventType
     ): ServiceValidation[CollectionEventTypeEvent] =
     for {
-      specimenDefinition <- CollectionSpecimenDefinition.create(cmd.name,
-                                                                cmd.description,
-                                                                cmd.units,
-                                                                cmd.anatomicalSourceType,
-                                                                cmd.preservationType,
-                                                                cmd.preservationTemperature,
-                                                                cmd.specimenType,
-                                                                cmd.maxCount,
-                                                                cmd.amount)
+      specimenDefinition <- CollectedSpecimenDefinition.create(cmd.name,
+                                                               cmd.description,
+                                                               cmd.units,
+                                                               cmd.anatomicalSourceType,
+                                                               cmd.preservationType,
+                                                               cmd.preservationTemperature,
+                                                               cmd.specimenType,
+                                                               cmd.maxCount,
+                                                               cmd.amount)
       updatedCet <- cet.withSpecimenDefinition(specimenDefinition)
     } yield CollectionEventTypeEvent(cet.id.id).update(_.studyId       := cet.studyId.id,
                                                        _.sessionUserId := cmd.sessionUserId,
@@ -311,22 +311,22 @@ class CollectionEventTypeProcessor @javax.inject.Inject()(
                                                          .specimenDefinitionToEvent(specimenDefinition))
 
   private def updateSepcimenSpecCmdToEvent(
-      cmd: UpdateCollectionSpecimenDefinitionCmd,
+      cmd: UpdateCollectedSpecimenDefinitionCmd,
       cet: CollectionEventType
     ): ServiceValidation[CollectionEventTypeEvent] =
     for {
       specimenDefinition <- {
-        CollectionSpecimenDefinition(SpecimenDefinitionId(cmd.specimenDefinitionId),
-                                     Slug(cmd.name),
-                                     cmd.name,
-                                     cmd.description,
-                                     cmd.units,
-                                     cmd.anatomicalSourceType,
-                                     cmd.preservationType,
-                                     cmd.preservationTemperature,
-                                     cmd.specimenType,
-                                     cmd.maxCount,
-                                     cmd.amount).successNel[String]
+        CollectedSpecimenDefinition(SpecimenDefinitionId(cmd.specimenDefinitionId),
+                                    Slug(cmd.name),
+                                    cmd.name,
+                                    cmd.description,
+                                    cmd.units,
+                                    cmd.anatomicalSourceType,
+                                    cmd.preservationType,
+                                    cmd.preservationTemperature,
+                                    cmd.specimenType,
+                                    cmd.maxCount,
+                                    cmd.amount).successNel[String]
       }
       updatedCet <- cet.withSpecimenDefinition(specimenDefinition)
     } yield CollectionEventTypeEvent(cet.id.id).update(_.studyId       := cet.studyId.id,
@@ -338,7 +338,7 @@ class CollectionEventTypeProcessor @javax.inject.Inject()(
                                                          .specimenDefinitionToEvent(specimenDefinition))
 
   private def removeSpecimenDefinitionCmdToEvent(
-      cmd: RemoveCollectionSpecimenDefinitionCmd,
+      cmd: RemoveCollectedSpecimenDefinitionCmd,
       cet: CollectionEventType
     ): ServiceValidation[CollectionEventTypeEvent] =
     cet.removeSpecimenDefinition(SpecimenDefinitionId(cmd.specimenDefinitionId)) map { c =>

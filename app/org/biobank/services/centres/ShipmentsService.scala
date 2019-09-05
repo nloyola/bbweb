@@ -3,7 +3,6 @@ package org.biobank.services.centres
 import akka.actor._
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
-import java.time.format.DateTimeFormatter
 import javax.inject.{Inject, Named}
 import org.biobank.domain.LocationId
 import org.biobank.domain.centres._
@@ -345,7 +344,7 @@ class ShipmentsServiceImpl @Inject()(
     }
 
     isMemberOfCentres(sessionUserId, validCentreIds).fold(
-      err => Future.successful(err.failure[T]),
+      err    => Future.successful(err.failure[T]),
       member => whenPermittedAsync(sessionUserId, permission)(block)
     )
   }
@@ -362,7 +361,7 @@ class ShipmentsServiceImpl @Inject()(
     val sessionUserId = UserId(cmd.sessionUserId)
     val shipmentId    = ShipmentId(cmd.shipmentId)
     isMemberOfCentres(sessionUserId, validCentresIds(shipmentId)).fold(
-      err => Future.successful(err.failure[T]),
+      err    => Future.successful(err.failure[T]),
       member => whenPermittedAsync(sessionUserId, PermissionId.ShipmentUpdate)(block)
     )
   }
@@ -379,7 +378,7 @@ class ShipmentsServiceImpl @Inject()(
       val specimens        = shipmentSpecimenRepository.allForShipment(shipment.id)
 
       // TODO: update with container count when ready
-      ShipmentDto.create(shipment, fromLocationInfo, toLocationInfo, specimens.size, 0)
+      ShipmentDto(shipment, fromLocationInfo, toLocationInfo, specimens.size, 0)
     }
 
   private def shipmentSpecimenToDto(
@@ -387,16 +386,7 @@ class ShipmentsServiceImpl @Inject()(
       shipmentSpecimen: ShipmentSpecimen
     ): ServiceValidation[ShipmentSpecimenDto] =
     specimensService.get(requestUserId, shipmentSpecimen.specimenId).map { specimen =>
-      ShipmentSpecimenDto(id      = shipmentSpecimen.id.id,
-                          version = shipmentSpecimen.version,
-                          timeAdded =
-                            shipmentSpecimen.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                          timeModified = shipmentSpecimen.timeModified
-                            .map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                          shipmentId          = shipmentSpecimen.shipmentId.id,
-                          shipmentContainerId = shipmentSpecimen.shipmentContainerId.map(id => id.id),
-                          state               = shipmentSpecimen.state.toString,
-                          specimen            = specimen)
+      ShipmentSpecimenDto(shipmentSpecimen, specimen)
     }
 
 }

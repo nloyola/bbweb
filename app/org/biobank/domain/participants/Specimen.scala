@@ -6,7 +6,7 @@ import org.biobank.ValidationKey
 import org.biobank.dto.{CentreLocationInfo, SpecimenDto}
 import org.biobank.domain._
 import org.biobank.domain.containers._
-import org.biobank.domain.studies.{CollectionSpecimenDefinition, SpecimenDefinitionId, StudyValidations}
+import org.biobank.domain.studies.{CollectedSpecimenDefinition, SpecimenDefinitionId, StudyValidations}
 import org.biobank.domain.{ConcurrencySafeEntity, DomainValidation}
 import play.api.libs.json._
 import scalaz.Scalaz._
@@ -28,7 +28,7 @@ sealed trait Specimen extends ConcurrencySafeEntity[SpecimenId] with HasSlug {
   /** The inventory ID assigned to this specimen. */
   val inventoryId: String
 
-  /** The [[domain.studies.CollectionSpecimenDefinition CollectionSpecimenDefinition]] this specimen
+  /** The [[domain.studies.CollectedSpecimenDefinition CollectedSpecimenDefinition]] this specimen
    * belongs to, defined by the study it belongs to. */
   val specimenDefinitionId: SpecimenDefinitionId
 
@@ -63,7 +63,7 @@ sealed trait Specimen extends ConcurrencySafeEntity[SpecimenId] with HasSlug {
   def createDto(
       collectionEvent:    CollectionEvent,
       eventTypeName:      String,
-      specimenDefinition: CollectionSpecimenDefinition,
+      specimenDefinition: CollectedSpecimenDefinition,
       originLocationInfo: CentreLocationInfo,
       locationInfo:       CentreLocationInfo
     ): SpecimenDto =

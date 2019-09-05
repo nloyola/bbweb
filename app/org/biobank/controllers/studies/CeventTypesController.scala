@@ -4,7 +4,7 @@ import javax.inject.{Inject, Singleton}
 import org.biobank.controllers._
 import org.biobank.domain.Slug
 import org.biobank.domain.studies.{CollectionEventType, CollectionEventTypeId, StudyId}
-import org.biobank.dto.CollectionSpecimenDefinitionNames
+import org.biobank.dto.CollectedSpecimenDefinitionNames
 import org.biobank.infrastructure.commands.CollectionEventTypeCommands._
 import org.biobank.services.PagedResults
 import org.biobank.services.studies.CollectionEventTypeService
@@ -63,7 +63,7 @@ class CeventTypesController @Inject()(
   def specimenDefinitions(studySlug: Slug): Action[Unit] =
     action.async(parse.empty) { implicit request =>
       PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(err => {
-        validationReply(Future.successful(err.failure[Set[CollectionSpecimenDefinitionNames]]))
+        validationReply(Future.successful(err.failure[Set[CollectedSpecimenDefinitionNames]]))
       }, pagedQuery => {
         validationReply(service.specimenDefinitionsForStudy(request.identity.user.id, studySlug))
       })
@@ -124,12 +124,12 @@ class CeventTypesController @Inject()(
     }
 
   def addSpecimenDefinition(id: CollectionEventTypeId): Action[JsValue] =
-    commandAction[AddCollectionSpecimenDefinitionCmd](Json.obj("id" -> id))(processCommand)
+    commandAction[AddCollectedSpecimenDefinitionCmd](Json.obj("id" -> id))(processCommand)
 
   def updateSpecimenDefinition(id: CollectionEventTypeId, sdId: String): Action[JsValue] =
-    commandAction[UpdateCollectionSpecimenDefinitionCmd](
-      Json.obj("id" -> id, "specimenDefinitionId" -> sdId)
-    )(processCommand)
+    commandAction[UpdateCollectedSpecimenDefinitionCmd](Json.obj("id" -> id, "specimenDefinitionId" -> sdId))(
+      processCommand
+    )
 
   def removeSpecimenDefinition(
       studyId: StudyId,
@@ -138,11 +138,11 @@ class CeventTypesController @Inject()(
       sdId:    String
     ): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val cmd = RemoveCollectionSpecimenDefinitionCmd(sessionUserId = request.identity.user.id.id,
-                                                      studyId              = studyId.id,
-                                                      id                   = id.id,
-                                                      expectedVersion      = ver,
-                                                      specimenDefinitionId = sdId)
+      val cmd = RemoveCollectedSpecimenDefinitionCmd(sessionUserId = request.identity.user.id.id,
+                                                     studyId              = studyId.id,
+                                                     id                   = id.id,
+                                                     expectedVersion      = ver,
+                                                     specimenDefinitionId = sdId)
       processCommand(cmd)
     }
 

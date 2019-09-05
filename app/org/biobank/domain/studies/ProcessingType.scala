@@ -25,7 +25,7 @@ trait ProcessingTypeValidations extends StudyValidations {
 
   case object ProcessedSpecimenDefinitionIdRequired extends ValidationKey
 
-  case object CollectionSpecimenDefinitionIdRequired extends ValidationKey
+  case object CollectedSpecimenDefinitionIdRequired extends ValidationKey
 
   case object ContainerTypeIdRequired extends ValidationKey
 

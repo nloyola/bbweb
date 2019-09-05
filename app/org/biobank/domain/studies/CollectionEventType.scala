@@ -32,7 +32,7 @@ trait CollectionEventTypeValidations extends StudyValidations {
  *
  * A participant visit is a record of when specimens were collected from a
  * [[domain.participants.Participant]] at a collection [[domain.centres.Centre]]. Each collection event type
- * is assigned one or more [[domain.studies.CollectionSpecimenDefinition CollectionSpecimenDefinitions]] to
+ * is assigned one or more [[domain.studies.CollectedSpecimenDefinition CollectedSpecimenDefinitions]] to
  * specify the type of [[domain.participants.Specimen Specimens]] that are collected.
  *
  * A study must have at least one collection event type defined in order to record collected specimens.
@@ -56,10 +56,10 @@ final case class CollectionEventType(
     name:                String,
     description:         Option[String],
     recurring:           Boolean,
-    specimenDefinitions: Set[CollectionSpecimenDefinition],
+    specimenDefinitions: Set[CollectedSpecimenDefinition],
     annotationTypes:     Set[AnnotationType])
     extends ConcurrencySafeEntity[CollectionEventTypeId] with HasName with HasSlug with HasOptionalDescription
-    with HasStudyId with HasAnnotationTypes with HasSpecimenDefinitions[CollectionSpecimenDefinition] {
+    with HasStudyId with HasAnnotationTypes with HasSpecimenDefinitions[CollectedSpecimenDefinition] {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
@@ -98,7 +98,7 @@ final case class CollectionEventType(
   //
   // fails if there is another with the same name
   def withSpecimenDefinition(
-      specimenDefinition: CollectionSpecimenDefinition
+      specimenDefinition: CollectedSpecimenDefinition
     ): DomainValidation[CollectionEventType] =
     checkAddSpecimenDefinition(specimenDefinition).map { _ =>
       val newDefinitions = specimenDefinitions - specimenDefinition + specimenDefinition
@@ -151,7 +151,7 @@ object CollectionEventType extends CollectionEventTypeValidations {
       name:                String,
       description:         Option[String],
       recurring:           Boolean,
-      specimenDefinitions: Set[CollectionSpecimenDefinition],
+      specimenDefinitions: Set[CollectedSpecimenDefinition],
       annotationTypes:     Set[AnnotationType]
     ): DomainValidation[CollectionEventType] =
     (validateId(studyId, StudyIdRequired) |@|
@@ -159,7 +159,7 @@ object CollectionEventType extends CollectionEventTypeValidations {
       validateVersion(version) |@|
       validateNonEmptyString(name, NameRequired) |@|
       validateNonEmptyStringOption(description, InvalidDescription) |@|
-      specimenDefinitions.toList.traverseU(CollectionSpecimenDefinition.validate) |@|
+      specimenDefinitions.toList.traverseU(CollectedSpecimenDefinition.validate) |@|
       annotationTypes.toList.traverseU(AnnotationType.validate)) {
       case _ =>
         CollectionEventType(studyId             = studyId,

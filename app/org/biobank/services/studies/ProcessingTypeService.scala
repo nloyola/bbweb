@@ -8,7 +8,7 @@ import org.biobank.domain.Slug
 import org.biobank.domain.access._
 import org.biobank.domain.studies._
 import org.biobank.domain.users.UserId
-import org.biobank.dto.{EntityInfoDto, ProcessedSpecimenDefinitionNames}
+import org.biobank.dto.ProcessedSpecimenDefinitionName
 import org.biobank.infrastructure.AscendingOrder
 import org.biobank.infrastructure.commands.ProcessingTypeCommands._
 import org.biobank.infrastructure.events.ProcessingTypeEvents._
@@ -52,7 +52,7 @@ trait ProcessingTypeService extends BbwebService {
   def specimenDefinitionsForStudy(
       requestUserId: UserId,
       studyId:       StudyId
-    ): Future[ServiceValidation[Set[ProcessedSpecimenDefinitionNames]]]
+    ): Future[ServiceValidation[Set[ProcessedSpecimenDefinitionName]]]
 
   def processCommand(cmd: ProcessingTypeCommand): Future[ServiceValidation[ProcessingType]]
 
@@ -122,19 +122,13 @@ class ProcessingTypeServiceImpl @Inject()(
   def specimenDefinitionsForStudy(
       requestUserId: UserId,
       studyId:       StudyId
-    ): Future[ServiceValidation[Set[ProcessedSpecimenDefinitionNames]]] =
+    ): Future[ServiceValidation[Set[ProcessedSpecimenDefinitionName]]] =
     Future {
       for {
         study           <- studiesService.getStudy(requestUserId, studyId)
         processingTypes <- queryInternal(study.id, new FilterString(""), new SortString(""))
       } yield {
-        processingTypes.map { processingType =>
-          val definition = processingType.output.specimenDefinition
-          ProcessedSpecimenDefinitionNames(processingType.id.id,
-                                           processingType.slug,
-                                           processingType.name,
-                                           EntityInfoDto(definition.id.id, definition.slug, definition.name))
-        }.toSet
+        processingTypes.map(pt => ProcessedSpecimenDefinitionName(pt)).toSet
       }
     }
 

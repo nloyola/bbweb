@@ -6,7 +6,7 @@ import org.biobank.domain.Slug
 import org.biobank.domain.annotations._
 import org.biobank.domain.containers.{ContainerType, ContainerTypeId}
 import org.biobank.domain.studies._
-import org.biobank.dto.{EntityInfoDto, ProcessedSpecimenDefinitionNames}
+import org.biobank.dto.ProcessedSpecimenDefinitionName
 import org.biobank.fixtures._
 import org.biobank.matchers.PagedResultsMatchers
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -30,7 +30,7 @@ class ProcessingTypesControllerSpec
     describe("GET /api/studies/proctypes/:studySlug/:procTypeSlug") {
 
       it("get a single processing type") {
-        val f = collectionSpecimenDefinitionFixtures
+        val f = collectedSpecimenDefinitionFixtures
         addToRepository(f.processingType)
 
         val reply = makeAuthRequest(GET, uri(f.study.slug.id, f.processingType.slug.id)).value
@@ -42,7 +42,7 @@ class ProcessingTypesControllerSpec
       }
 
       it("fail for an invalid study slug") {
-        val f = collectionSpecimenDefinitionFixtures
+        val f = collectedSpecimenDefinitionFixtures
         studyRepository.remove(f.study)
 
         val reply = makeAuthRequest(GET, uri(f.study.slug.id, f.processingType.slug.id))
@@ -50,7 +50,7 @@ class ProcessingTypesControllerSpec
       }
 
       it("fail for an invalid processing type slug") {
-        val f     = collectionSpecimenDefinitionFixtures
+        val f     = collectedSpecimenDefinitionFixtures
         val reply = makeAuthRequest(GET, uri(f.study.slug.id, f.processingType.slug.id))
         reply.value must beNotFoundWithMessage("EntityCriteriaNotFound.*processing type slug")
       }
@@ -60,7 +60,7 @@ class ProcessingTypesControllerSpec
     describe("GET /api/studies/proctypes/id/:studyId/:procTypeId") {
 
       it("get a single processing type by ID") {
-        val f = collectionSpecimenDefinitionFixtures
+        val f = collectedSpecimenDefinitionFixtures
         addToRepository(f.processingType)
 
         val reply = makeAuthRequest(GET, uri("id", f.study.id.id, f.processingType.id.id)).value
@@ -72,7 +72,7 @@ class ProcessingTypesControllerSpec
       }
 
       it("fail for an invalid study ID") {
-        val f = collectionSpecimenDefinitionFixtures
+        val f = collectedSpecimenDefinitionFixtures
         studyRepository.remove(f.study)
 
         val reply = makeAuthRequest(GET, uri("id", f.study.id.id, f.processingType.id.id))
@@ -80,7 +80,7 @@ class ProcessingTypesControllerSpec
       }
 
       it("fail for an invalid processing type ID") {
-        val f     = collectionSpecimenDefinitionFixtures
+        val f     = collectedSpecimenDefinitionFixtures
         val reply = makeAuthRequest(GET, uri("id", f.study.id.id, f.processingType.id.id))
         reply.value must beNotFoundWithMessage("IdNotFound.*processing type")
       }
@@ -153,20 +153,14 @@ class ProcessingTypesControllerSpec
     describe("GET /api/studies/proctypes/spcdefs/:studyId") {
 
       it("can retrieve specimen definitions for a study") {
-        val f = new CollectionSpecimenDefinitionFixtures
+        val f = new CollectedSpecimenDefinitionFixtures
         Set(f.study, f.collectionEventType, f.processingType).foreach(addToRepository)
-        val definition = f.processingType.output.specimenDefinition
-        val expectedReply = List(
-          ProcessedSpecimenDefinitionNames(f.processingType.id.id,
-                                           f.processingType.slug,
-                                           f.processingType.name,
-                                           EntityInfoDto(definition.id.id, definition.slug, definition.name))
-        )
+        val expectedReply = List(ProcessedSpecimenDefinitionName(f.processingType))
 
         val reply = makeAuthRequest(GET, uri("spcdefs", f.study.id.id)).value
         reply must beOkResponseWithJsonReply
 
-        val replyDtos = (contentAsJson(reply) \ "data").validate[List[ProcessedSpecimenDefinitionNames]]
+        val replyDtos = (contentAsJson(reply) \ "data").validate[List[ProcessedSpecimenDefinitionName]]
         replyDtos must be(jsSuccess)
         replyDtos.get must equal(expectedReply)
       }
@@ -182,7 +176,7 @@ class ProcessingTypesControllerSpec
     describe("GET /api/studies/proctypes/inuse/:id") {
 
       it("must return false if not in use") {
-        val f = collectionSpecimenDefinitionFixtures
+        val f = collectedSpecimenDefinitionFixtures
         addToRepository(f.processingType)
 
         val reply = makeAuthRequest(GET, uri("inuse", f.processingType.slug.id)).value
@@ -198,7 +192,7 @@ class ProcessingTypesControllerSpec
     describe("POST /api/studies/proctypes/:studyId") {
 
       it("add a processing type for a collected input specimen") {
-        val f = new CollectionSpecimenDefinitionFixtures
+        val f = new CollectedSpecimenDefinitionFixtures
         Set(f.study, f.collectionEventType).foreach(addToRepository)
 
         val reply = makeAuthRequest(POST, uri(f.study.id.id), procTypeToAddJson(f.processingType)).value
@@ -249,7 +243,7 @@ class ProcessingTypesControllerSpec
 
       describe("not add a processing type to an enabled study") {
         addOnNonDisabledStudySharedBehaviour { () =>
-          val f            = collectionSpecimenDefinitionFixtures
+          val f            = collectedSpecimenDefinitionFixtures
           val enabledStudy = f.study.enable.toOption.value
           studyRepository.put(enabledStudy)
           (uri(enabledStudy.id.id), f.processingType)
@@ -258,7 +252,7 @@ class ProcessingTypesControllerSpec
 
       describe("not add a processing type to a retired study") {
         addOnNonDisabledStudySharedBehaviour { () =>
-          val f            = collectionSpecimenDefinitionFixtures
+          val f            = collectedSpecimenDefinitionFixtures
           val enabledStudy = f.study.retire.toOption.value
           studyRepository.put(enabledStudy)
           (uri(enabledStudy.id.id), f.processingType)
@@ -266,8 +260,8 @@ class ProcessingTypesControllerSpec
       }
 
       it("allow adding a processing type with same name on two different studies") {
-        val f1         = collectionSpecimenDefinitionFixtures
-        val f2         = collectionSpecimenDefinitionFixtures
+        val f1         = collectedSpecimenDefinitionFixtures
+        val f2         = collectedSpecimenDefinitionFixtures
         val commonName = nameGenerator.next[ProcessingType]
 
         val pt1 = f1.processingType.copy(name = commonName)
@@ -281,7 +275,7 @@ class ProcessingTypesControllerSpec
       }
 
       it("cannot add a processing type with the same name as an exising one") {
-        val f = collectionSpecimenDefinitionFixtures
+        val f = collectedSpecimenDefinitionFixtures
         processingTypeRepository.put(f.processingType)
 
         val reply = makeAuthRequest(POST, uri(f.study.id.id), procTypeToAddJson(f.processingType)).value
@@ -291,7 +285,7 @@ class ProcessingTypesControllerSpec
       }
 
       it("fail for an invalid study ID") {
-        val f = new CollectionSpecimenDefinitionFixtures
+        val f = new CollectedSpecimenDefinitionFixtures
         Set(f.collectionEventType).foreach(addToRepository)
         val reply = makeAuthRequest(POST, uri(f.study.id.id), procTypeToAddJson(f.processingType)).value
         reply must beNotFoundWithMessage("IdNotFound: study id")
@@ -303,7 +297,7 @@ class ProcessingTypesControllerSpec
       describe("update a processing type's name") {
 
         it("update a processing type") {
-          val f       = collectionSpecimenDefinitionFixtures
+          val f       = collectedSpecimenDefinitionFixtures
           val newName = nameGenerator.next[ProcessingType]
           processingTypeRepository.put(f.processingType)
 
@@ -318,8 +312,8 @@ class ProcessingTypesControllerSpec
         }
 
         it("allow a updating processing types on two different studies to same name") {
-          val f1         = collectionSpecimenDefinitionFixtures
-          val f2         = collectionSpecimenDefinitionFixtures
+          val f1         = collectedSpecimenDefinitionFixtures
+          val f2         = collectedSpecimenDefinitionFixtures
           val commonName = nameGenerator.next[ProcessingType]
 
           val processingTypes = List(f1.processingType, f2.processingType)
@@ -344,7 +338,7 @@ class ProcessingTypesControllerSpec
         }
 
         it("cannot change the name to be the same name as an exising processing type") {
-          val f                    = collectionSpecimenDefinitionFixtures
+          val f                    = collectedSpecimenDefinitionFixtures
           val secondProcessingType = factory.createProcessingType
           val dupName              = nameGenerator.next[ProcessingType]
 
@@ -358,7 +352,7 @@ class ProcessingTypesControllerSpec
         }
 
         it("must not update with an invalid value") {
-          val f = collectionSpecimenDefinitionFixtures
+          val f = collectedSpecimenDefinitionFixtures
           processingTypeRepository.put(f.processingType)
           val reply = makeUpdateRequest(f.processingType, "name", JsNumber(1)).value
           reply must beBadRequestWithMessage("expected.jsstring")
@@ -383,7 +377,7 @@ class ProcessingTypesControllerSpec
       describe("when updating a processing type's description") {
 
         it("must update with valid descriptions") {
-          val f = collectionSpecimenDefinitionFixtures
+          val f = collectedSpecimenDefinitionFixtures
           processingTypeRepository.put(f.processingType)
 
           val descriptionValues = List(Some(nameGenerator.next[ProcessingType]), None)
@@ -406,7 +400,7 @@ class ProcessingTypesControllerSpec
         }
 
         it("must not update with an invalid value") {
-          val f = collectionSpecimenDefinitionFixtures
+          val f = collectedSpecimenDefinitionFixtures
           processingTypeRepository.put(f.processingType)
           val reply = makeUpdateRequest(f.processingType, "description", JsNumber(1)).value
           reply must beBadRequestWithMessage("expected.jsstring")
@@ -432,7 +426,7 @@ class ProcessingTypesControllerSpec
       describe("when updating a processing type's enabled state") {
 
         it("must update with valid values") {
-          val f = collectionSpecimenDefinitionFixtures
+          val f = collectedSpecimenDefinitionFixtures
           processingTypeRepository.put(f.processingType)
 
           val validValues = List(true, false)
@@ -451,7 +445,7 @@ class ProcessingTypesControllerSpec
         }
 
         it("must not update with an invalid value") {
-          val f = collectionSpecimenDefinitionFixtures
+          val f = collectedSpecimenDefinitionFixtures
           processingTypeRepository.put(f.processingType)
           val reply = makeUpdateRequest(f.processingType, "enabled", JsNumber(1)).value
           reply must beBadRequestWithMessage("expected.jsboolean")
@@ -491,8 +485,8 @@ class ProcessingTypesControllerSpec
         describe("for a processing type from a collected specimen") {
 
           def commonSetup = {
-            val f                  = collectionSpecimenDefinitionFixtures
-            val specimenDefinition = factory.createCollectionSpecimenDefinition
+            val f                  = collectedSpecimenDefinitionFixtures
+            val specimenDefinition = factory.createCollectedSpecimenDefinition
             val eventType =
               factory.createCollectionEventType.copy(specimenDefinitions = Set(specimenDefinition))
             val newValue = f.processingType.input
@@ -632,7 +626,7 @@ class ProcessingTypesControllerSpec
 
         describe("not update when study is not disabled") {
           updateSharedBehaviour { () =>
-            val f = collectionSpecimenDefinitionFixtures
+            val f = collectedSpecimenDefinitionFixtures
             ("inputSpecimenProcessing", Json.toJson(f.processingType.input))
           }
         }
@@ -696,7 +690,7 @@ class ProcessingTypesControllerSpec
       }
 
       it("must not update with an invalid value") {
-        val f = collectionSpecimenDefinitionFixtures
+        val f = collectedSpecimenDefinitionFixtures
         processingTypeRepository.put(f.processingType)
         val reply = makeUpdateRequest(f.processingType, "inputSpecimenProcessing", JsNumber(-1)).value
         reply must beBadRequestWithMessage("expected.jsobject")
@@ -713,7 +707,7 @@ class ProcessingTypesControllerSpec
 
       describe("not update when study is not disabled") {
         updateSharedBehaviour { () =>
-          val f = collectionSpecimenDefinitionFixtures
+          val f = collectedSpecimenDefinitionFixtures
           ("outputSpecimenProcessing", Json.toJson(f.processingType.output))
         }
       }
@@ -721,7 +715,7 @@ class ProcessingTypesControllerSpec
     }
 
     it("when updating an invalid field on a processing type") {
-      val f = new CollectionSpecimenDefinitionFixtures
+      val f = new CollectedSpecimenDefinitionFixtures
       Set(f.study, f.collectionEventType, f.processingType).foreach(addToRepository)
       val reply = makeUpdateRequest(f.processingType,
                                     nameGenerator.next[String],
@@ -732,7 +726,7 @@ class ProcessingTypesControllerSpec
     describe("POST /api/studies/proctypes/annottypes/:id") {
 
       def commonSetup = {
-        val f         = collectionSpecimenDefinitionFixtures
+        val f         = collectedSpecimenDefinitionFixtures
         val annotType = factory.createAnnotationType
 
         val reqJson = Json.obj("id" -> f.processingType.id.id,
@@ -786,7 +780,7 @@ class ProcessingTypesControllerSpec
     describe("POST /api/studies/proctypes/annottype/:cetId/:annotationTypeId") {
 
       def commonSetup = {
-        val f              = collectionSpecimenDefinitionFixtures
+        val f              = collectedSpecimenDefinitionFixtures
         val annotationType = factory.createAnnotationType
         val updatedAnnotationType =
           annotationType.copy(description = Some(nameGenerator.next[ProcessingType]))
@@ -889,7 +883,7 @@ class ProcessingTypesControllerSpec
       }
 
       it("not remove a processing type on a study that is not disabled") {
-        val f = collectionSpecimenDefinitionFixtures
+        val f = collectedSpecimenDefinitionFixtures
         processingTypeRepository.put(f.processingType)
         val studiesTable = Table("study", f.study.enable.toOption.value, f.study.retire.toOption.value)
 
@@ -910,7 +904,7 @@ class ProcessingTypesControllerSpec
     describe("DELETE /api/studies/proctypes/annottype/:id/:ver/:uniqueId") {
 
       def commonSetup = {
-        val f              = collectionSpecimenDefinitionFixtures
+        val f              = collectedSpecimenDefinitionFixtures
         val annotationType = factory.createAnnotationType
         val processingType = f.processingType.copy(annotationTypes = Set(annotationType))
         (processingType, annotationType)
@@ -983,7 +977,7 @@ class ProcessingTypesControllerSpec
       }
 
       it("not delete an annotation type when study is not disabled") {
-        val f = collectionSpecimenDefinitionFixtures
+        val f = collectedSpecimenDefinitionFixtures
         processingTypeRepository.put(f.processingType)
         val annotationType = factory.createAnnotationType
 
@@ -1095,8 +1089,8 @@ class ProcessingTypesControllerSpec
           )
     }
 
-  protected def collectionSpecimenDefinitionFixtures() = {
-    val f = new CollectionSpecimenDefinitionFixtures
+  protected def collectedSpecimenDefinitionFixtures() = {
+    val f = new CollectedSpecimenDefinitionFixtures
     Set(f.study, f.collectionEventType).foreach(addToRepository)
     f
   }
@@ -1161,7 +1155,7 @@ class ProcessingTypesControllerSpec
 
     it("not update a processing type on a non disabled study") {
       val (property, value) = setupFunc()
-      val f                 = collectionSpecimenDefinitionFixtures
+      val f                 = collectedSpecimenDefinitionFixtures
       val studiesTable      = Table("study", f.study.enable.toOption.value, f.study.retire.toOption.value)
 
       processingTypeRepository.put(f.processingType)
@@ -1174,7 +1168,7 @@ class ProcessingTypesControllerSpec
 
     it("fail for an invalid study ID") {
       val (property, value) = setupFunc()
-      val f                 = new CollectionSpecimenDefinitionFixtures
+      val f                 = new CollectedSpecimenDefinitionFixtures
       Set(f.collectionEventType, f.processingType).foreach(addToRepository)
       val reply = makeUpdateRequest(f.processingType, property, value).value
       reply must beNotFoundWithMessage("IdNotFound: study id")
@@ -1182,7 +1176,7 @@ class ProcessingTypesControllerSpec
 
     it("fail for an invalid processing type ID") {
       val (property, value) = setupFunc()
-      val f                 = new CollectionSpecimenDefinitionFixtures
+      val f                 = new CollectedSpecimenDefinitionFixtures
       Set(f.study, f.collectionEventType).foreach(addToRepository)
       val reply = makeUpdateRequest(f.processingType, property, value).value
       reply must beNotFoundWithMessage("IdNotFound: processing type id")
@@ -1234,7 +1228,7 @@ class ProcessingTypesControllerSpec
       }
 
     it("must update expected change with valid values") {
-      val f        = collectionSpecimenDefinitionFixtures
+      val f        = collectedSpecimenDefinitionFixtures
       val newValue = BigDecimal(0.0001)
 
       val table = Table("specimen processing", "inputSpecimenProcessing", "outputSpecimenProcessing")
@@ -1250,7 +1244,7 @@ class ProcessingTypesControllerSpec
     }
 
     it("must not update with a negative number") {
-      val f = collectionSpecimenDefinitionFixtures
+      val f = collectedSpecimenDefinitionFixtures
       processingTypeRepository.put(f.processingType)
       val newValue = BigDecimal(-0.0001)
 
@@ -1296,7 +1290,7 @@ class ProcessingTypesControllerSpec
       }
 
     it("must update with a valid value") {
-      val f = collectionSpecimenDefinitionFixtures
+      val f = collectedSpecimenDefinitionFixtures
       processingTypeRepository.put(f.processingType)
       val newValue = 10
 
@@ -1312,7 +1306,7 @@ class ProcessingTypesControllerSpec
     }
 
     it("must not update with a negative number") {
-      val f        = collectionSpecimenDefinitionFixtures
+      val f        = collectedSpecimenDefinitionFixtures
       val newValue = -1
 
       val table = Table("specimen processing", "inputSpecimenProcessing", "outputSpecimenProcessing")
@@ -1362,7 +1356,7 @@ class ProcessingTypesControllerSpec
       }
 
     it("must update container type with valid values") {
-      val f         = collectionSpecimenDefinitionFixtures
+      val f         = collectedSpecimenDefinitionFixtures
       val newValues = List(Some(ContainerTypeId(nameGenerator.next[ContainerType])), None)
 
       newValues.foreach { newValue =>
@@ -1380,7 +1374,7 @@ class ProcessingTypesControllerSpec
     }
 
     it("must not update with an invalid value") {
-      val f     = collectionSpecimenDefinitionFixtures
+      val f     = collectedSpecimenDefinitionFixtures
       val table = Table("specimen processing", "inputSpecimenProcessing", "outputSpecimenProcessing")
       forAll(table) { specimenProcessingType =>
         processingTypeRepository.put(f.processingType)
@@ -1396,7 +1390,7 @@ class ProcessingTypesControllerSpec
   private def updateWithInvalidVersionSharedBehaviour(func: ProcessingType => (Url, JsValue)) {
 
     it("should be a bad request") {
-      val f = collectionSpecimenDefinitionFixtures
+      val f = collectedSpecimenDefinitionFixtures
       var reqJson = Json.obj("id" -> f.processingType.id.id,
                              "studyId"         -> f.study.id,
                              "expectedVersion" -> (f.processingType.version + 1))
@@ -1413,7 +1407,7 @@ class ProcessingTypesControllerSpec
   private def updateWithNonDisabledStudySharedBehaviour(func: ProcessingType => (Url, JsValue)) {
 
     it("should be a bad request") {
-      val f = collectionSpecimenDefinitionFixtures
+      val f = collectedSpecimenDefinitionFixtures
       var reqJson = Json.obj("id" -> f.processingType.id.id,
                              "studyId"         -> f.study.id,
                              "expectedVersion" -> (f.processingType.version + 1))

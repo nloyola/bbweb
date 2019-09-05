@@ -61,8 +61,8 @@ class ProcessingTypesProcessorSpec extends ProcessorTestFixture with ProcessingT
       case e => fail(s"cannot add entity: $e")
     }
 
-  private def collectionSpecimenDefinitionFixtures() = {
-    val f = new CollectionSpecimenDefinitionFixtures()
+  private def collectedSpecimenDefinitionFixtures() = {
+    val f = new CollectedSpecimenDefinitionFixtures()
     Set(f.study, f.collectionEventType)
       .foreach(addToRepository)
     f
@@ -87,7 +87,7 @@ class ProcessingTypesProcessorSpec extends ProcessorTestFixture with ProcessingT
   describe("A processingTypes processor must") {
 
     it("allow recovery from journal", PersistenceTest) {
-      val f = collectionSpecimenDefinitionFixtures
+      val f = collectedSpecimenDefinitionFixtures
       val cmdInput = ProcessingTypeCommands.InputSpecimenProcessing(expectedChange =
                                                                       f.processingType.input.expectedChange,
                                                                     count = f.processingType.input.count,
@@ -151,7 +151,7 @@ class ProcessingTypesProcessorSpec extends ProcessorTestFixture with ProcessingT
     it("recovers a snapshot", PersistenceTest) {
       val snapshotFilename = "testfilename"
       val fixtures = (1 to 2).map { _ =>
-        collectionSpecimenDefinitionFixtures
+        collectedSpecimenDefinitionFixtures
       }
       val processingTypes = fixtures.map { f =>
         f.processingType

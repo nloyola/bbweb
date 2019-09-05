@@ -8,28 +8,28 @@ trait ProcessingTypeFixtures {
   protected val factory: Factory
 
   private class SpecimenDefinitionFixtures {
-    val study                        = factory.createDisabledStudy
-    val collectionSpecimenDefinition = factory.createCollectionSpecimenDefinition
+    val study                       = factory.createDisabledStudy
+    val collectedSpecimenDefinition = factory.createCollectedSpecimenDefinition
 
     val collectionEventType =
-      factory.createCollectionEventType.copy(specimenDefinitions = Set(collectionSpecimenDefinition))
+      factory.createCollectionEventType.copy(specimenDefinitions = Set(collectedSpecimenDefinition))
 
     val input = InputSpecimenProcessing(expectedChange = BigDecimal(1.0),
                                         count                = 1,
                                         containerTypeId      = None,
                                         definitionType       = ProcessingType.collectedDefinition,
                                         entityId             = collectionEventType.id.id,
-                                        specimenDefinitionId = collectionSpecimenDefinition.id)
+                                        specimenDefinitionId = collectedSpecimenDefinition.id)
 
     val processingType = factory.createProcessingType.copy(input = input)
   }
 
-  protected class CollectionSpecimenDefinitionFixtures {
-    private val f                    = new SpecimenDefinitionFixtures
-    val collectionSpecimenDefinition = f.collectionSpecimenDefinition
-    val collectionEventType          = f.collectionEventType
-    val processingType               = f.processingType
-    val study                        = f.study
+  protected class CollectedSpecimenDefinitionFixtures {
+    private val f                   = new SpecimenDefinitionFixtures
+    val collectedSpecimenDefinition = f.collectedSpecimenDefinition
+    val collectionEventType         = f.collectionEventType
+    val processingType              = f.processingType
+    val study                       = f.study
   }
 
   protected class ProcessedSpecimenDefinitionFixtures {

@@ -9,7 +9,7 @@ import org.biobank.domain.access._
 import org.biobank.domain.studies._
 import org.biobank.domain.participants.CollectionEventRepository
 import org.biobank.domain.users.UserId
-import org.biobank.dto.{CollectionSpecimenDefinitionNames, EntityInfoDto}
+import org.biobank.dto.{CollectedSpecimenDefinitionNames, EntityInfoDto}
 import org.biobank.infrastructure.AscendingOrder
 import org.biobank.infrastructure.commands.CollectionEventTypeCommands._
 import org.biobank.infrastructure.events.CollectionEventTypeEvents._
@@ -59,7 +59,7 @@ trait CollectionEventTypeService extends BbwebService {
   def specimenDefinitionsForStudy(
       requestUserId: UserId,
       studySlug:     Slug
-    ): Future[ServiceValidation[Set[CollectionSpecimenDefinitionNames]]]
+    ): Future[ServiceValidation[Set[CollectedSpecimenDefinitionNames]]]
 
   def listNamesByStudySlug(
       requestUserId: UserId,
@@ -152,7 +152,7 @@ class CollectionEventTypeServiceImpl @Inject()(
   def specimenDefinitionsForStudy(
       requestUserId: UserId,
       studySlug:     Slug
-    ): Future[ServiceValidation[Set[CollectionSpecimenDefinitionNames]]] =
+    ): Future[ServiceValidation[Set[CollectedSpecimenDefinitionNames]]] =
     Future {
       for {
         study      <- studiesService.getStudyBySlug(requestUserId, studySlug)
@@ -160,15 +160,7 @@ class CollectionEventTypeServiceImpl @Inject()(
       } yield {
         eventTypes
           .filter { !_.specimenDefinitions.isEmpty }
-          .map { eventType =>
-            val definitionNames = eventType.specimenDefinitions.map { definition =>
-              EntityInfoDto(definition.id.id, definition.slug, definition.name)
-            }
-            CollectionSpecimenDefinitionNames(eventType.id.id,
-                                              eventType.slug,
-                                              eventType.name,
-                                              definitionNames)
-          }
+          .map(et => CollectedSpecimenDefinitionNames(et))
           .toSet
       }
     }

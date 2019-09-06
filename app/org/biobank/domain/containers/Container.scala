@@ -22,7 +22,7 @@ trait ContainerPredicates {
       container =>
         container match {
           case c: RootContainer  => labels.contains(c.label)
-          case c: ChildContainer => labels.contains(c.position.label)
+          case c: ChildContainer => labels.contains(c.schemaLabel.label)
         }
 
   val labelIsLike: Set[String] => ContainerFilter =
@@ -30,7 +30,7 @@ trait ContainerPredicates {
       container => {
         val lc = container match {
           case c: RootContainer  => c.label.toLowerCase
-          case c: ChildContainer => c.position.label.toLowerCase
+          case c: ChildContainer => c.schemaLabel.label.toLowerCase
         }
         labels.forall(n => lc.contains(n.toLowerCase))
       }
@@ -40,7 +40,7 @@ trait ContainerValidations {
 
   case object ContainerInventoryIdInvalid extends ValidationKey
 
-  case object ContainerLabelInvalid extends ValidationKey
+  case object ContainerSchemaLabelInvalid extends ValidationKey
 
   case object ContainerTypeIdInvalid extends ValidationKey
 
@@ -97,7 +97,6 @@ sealed trait Container
 object Container extends ContainerValidations {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
-  import ContainerSchemaPositionValidations._
 
   def validate(
       id:              ContainerId,
@@ -110,9 +109,9 @@ object Container extends ContainerValidations {
       validateNonEmptyString(inventoryId, ContainerInventoryIdInvalid) |@|
       validateId(containerTypeId, ContainerTypeIdInvalid)) { case _ => () }
 
-  def validatePosition(position: ContainerSchemaPosition): DomainValidation[Unit] =
-    ContainerSchemaPosition.validate(position).leftMap { err =>
-      nel(ContainerSchemaPositionInvalid.toString, err.list)
+  def validateLabel(schemaLabel: ContainerSchemaLabel): DomainValidation[Unit] =
+    ContainerSchemaLabel.validate(schemaLabel).leftMap { err =>
+      nel(ContainerSchemaLabelInvalid.toString, err.list)
     }
 
   def constraintsValidate(constraints: Option[ContainerConstraints]): DomainValidation[Unit] =
@@ -128,9 +127,9 @@ object Container extends ContainerValidations {
   def compareByLabel(c1: Container, c2: Container): Boolean =
     (c1, c2) match {
       case (a: StorageContainer, b: StorageContainer) =>
-        (a.position.label compareTo b.position.label) < 0
+        (a.schemaLabel.label compareTo b.schemaLabel.label) < 0
       case (a: SpecimenContainer, b: SpecimenContainer) =>
-        (a.position.label compareTo b.position.label) < 0
+        (a.schemaLabel.label compareTo b.schemaLabel.label) < 0
       case (a: RootContainer, b: RootContainer) =>
         (a.label compareTo b.label) < 0
       case _ => false
@@ -170,9 +169,9 @@ sealed trait ChildContainer extends HasInventoryId {
 
   val parentId: ContainerId
 
-  val position: ContainerSchemaPosition
+  val schemaLabel: ContainerSchemaLabel
 
-  def getLabel(): String = position.label
+  def getLabel(): String = schemaLabel.label
 }
 
 /**
@@ -292,7 +291,7 @@ final case class StorageContainer(
     enabled:         Boolean,
     containerTypeId: ContainerTypeId,
     parentId:        ContainerId,
-    position:        ContainerSchemaPosition,
+    schemaLabel:     ContainerSchemaLabel,
     constraints:     Option[ContainerConstraints])
     extends Container with ChildContainer with ContainerValidations {
 
@@ -306,19 +305,16 @@ final case class StorageContainer(
   def withEnabled(enabled: Boolean): DomainValidation[StorageContainer] =
     update.copy(enabled = enabled).success
 
-  def withPosition(position: ContainerSchemaPosition): DomainValidation[Container] =
-    ContainerSchemaPosition.validate(position) map { _ =>
-      update.copy(position = position)
+  def withLabel(schemaLabel: ContainerSchemaLabel): DomainValidation[Container] =
+    ContainerSchemaLabel.validate(schemaLabel) map { _ =>
+      update.copy(schemaLabel = schemaLabel)
     }
 
-  def withParentPosition(
-      parentId: ContainerId,
-      position: ContainerSchemaPosition
-    ): DomainValidation[Container] =
+  def withParentLabel(parentId: ContainerId, schemaLabel: ContainerSchemaLabel): DomainValidation[Container] =
     (validateId(parentId, ContainerParentIdInvalid) |@|
-      ContainerSchemaPosition.validate(position)) {
+      ContainerSchemaLabel.validate(schemaLabel)) {
       case _ =>
-        update.copy(parentId = parentId, position = position)
+        update.copy(parentId = parentId, schemaLabel = schemaLabel)
     }
 
   def withConstraints(constraints: Option[ContainerConstraints]): DomainValidation[StorageContainer] =
@@ -333,7 +329,7 @@ final case class StorageContainer(
     super.toString +
       s"""|,
           |  parentId:        $parentId,
-          |  position:        $position,
+          |  schemaLabel:     $schemaLabel,
           |  enabled          $enabled,
           |  constraints      $constraints
           |}""".stripMargin
@@ -349,24 +345,24 @@ object StorageContainer extends ContainerValidations {
       inventoryId:     String,
       containerTypeId: ContainerTypeId,
       parentId:        ContainerId,
-      position:        ContainerSchemaPosition,
+      schemaLabel:     ContainerSchemaLabel,
       constraints:     Option[ContainerConstraints]
     ): DomainValidation[StorageContainer] =
     (Container.validate(id, version, inventoryId, containerTypeId) |@|
       validateId(parentId, ContainerParentIdInvalid) |@|
-      Container.validatePosition(position) |@|
+      Container.validateLabel(schemaLabel) |@|
       Container.constraintsValidate(constraints)) {
       case _ =>
         StorageContainer(id              = id,
                          version         = version,
                          timeAdded       = OffsetDateTime.now,
                          timeModified    = None,
-                         slug            = Slug(position.label),
+                         slug            = Slug(schemaLabel.label),
                          inventoryId     = inventoryId,
                          enabled         = false,
                          containerTypeId = containerTypeId,
                          parentId        = parentId,
-                         position        = position,
+                         schemaLabel     = schemaLabel,
                          constraints     = constraints)
     }
 }
@@ -385,7 +381,7 @@ final case class SpecimenContainer(
     inventoryId:     String,
     containerTypeId: ContainerTypeId,
     parentId:        ContainerId,
-    position:        ContainerSchemaPosition)
+    schemaLabel:     ContainerSchemaLabel)
     extends Container with ChildContainer with ContainerValidations {
   import org.biobank.domain.DomainValidations._
 
@@ -394,19 +390,16 @@ final case class SpecimenContainer(
       update.copy(inventoryId = inventoryId)
     }
 
-  def withPosition(position: ContainerSchemaPosition): DomainValidation[Container] =
-    ContainerSchemaPosition.validate(position) map { _ =>
-      update.copy(position = position)
+  def withSchemaLabel(schemaLabel: ContainerSchemaLabel): DomainValidation[Container] =
+    ContainerSchemaLabel.validate(schemaLabel) map { _ =>
+      update.copy(schemaLabel = schemaLabel)
     }
 
-  def withParentPosition(
-      parentId: ContainerId,
-      position: ContainerSchemaPosition
-    ): DomainValidation[Container] =
+  def withParentLabel(parentId: ContainerId, schemaLabel: ContainerSchemaLabel): DomainValidation[Container] =
     (validateId(parentId, ContainerParentIdInvalid) |@|
-      ContainerSchemaPosition.validate(position)) {
+      ContainerSchemaLabel.validate(schemaLabel)) {
       case _ =>
-        update.copy(parentId = parentId, position = position)
+        update.copy(parentId = parentId, schemaLabel = schemaLabel)
     }
 
   private def update(): SpecimenContainer =
@@ -416,7 +409,7 @@ final case class SpecimenContainer(
     super.toString +
       s"""|,
           |  parentId:        $parentId,
-          |  position:        $position,
+          |  schemaLabel:     $schemaLabel,
           |}""".stripMargin
 }
 
@@ -429,21 +422,21 @@ object SpecimenContainer extends ContainerValidations {
       inventoryId:     String,
       containerTypeId: ContainerTypeId,
       parentId:        ContainerId,
-      position:        ContainerSchemaPosition
+      schemaLabel:     ContainerSchemaLabel
     ): DomainValidation[SpecimenContainer] =
     (Container.validate(id, version, inventoryId, containerTypeId) |@|
       validateId(parentId, ContainerParentIdInvalid) |@|
-      Container.validatePosition(position)) {
+      ContainerSchemaLabel.validate(schemaLabel)) {
       case _ =>
         SpecimenContainer(id              = id,
                           version         = version,
                           timeAdded       = OffsetDateTime.now,
                           timeModified    = None,
-                          slug            = Slug(position.label),
+                          slug            = Slug(schemaLabel.label),
                           inventoryId     = inventoryId,
                           containerTypeId = containerTypeId,
                           parentId        = parentId,
-                          position        = position)
+                          schemaLabel     = schemaLabel)
     }
 
 }

@@ -87,17 +87,13 @@ class ContainerSchemaSpec extends DomainSpec {
       }
     }
 
-    it("have it's positions updated") {
-      val schema    = factory.createContainerSchema.copy(positions = Set.empty[ContainerSchemaPosition])
-      val positions = Set(factory.createContainerSchemaPosition.copy(schemaId = ContainerSchemaId("")))
+    it("have it's labels updated") {
+      val schema = factory.createContainerSchema.copy(labels = Set.empty[String])
+      val labels = Set(nameGenerator.next[ContainerSchema])
 
-      val positionsWithSchemaId = positions.map { _.copy(schemaId = schema.id) }
-
-      schema.withPositions(positions) mustSucceed {
+      schema.withLabels(labels) mustSucceed {
         _ must matchContainerSchema(
-          schema.copy(positions    = positionsWithSchemaId,
-                      version      = schema.version + 1L,
-                      timeModified = Some(OffsetDateTime.now))
+          schema.copy(labels = labels, version = schema.version + 1L, timeModified = Some(OffsetDateTime.now))
         )
       }
     }

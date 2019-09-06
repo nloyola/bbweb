@@ -42,10 +42,10 @@ sealed trait Specimen extends ConcurrencySafeEntity[SpecimenId] with HasSlug {
   val containerId: Option[ContainerId]
 
   /**
-   * The [[domain.containers.ContainerSchemaPosition ContainerSchemaPosition]] (i.e. position or label) this
-   * specimen has in its container.
+   * The [[domain.containers.ContainerSchemaLabel ContainerSchemaLabel]] label this specimen has in its
+   * container.
    */
-  val position: Option[ContainerSchemaPosition]
+  val schemaLabel: Option[ContainerSchemaLabel]
 
   /**
    * The date and time when the specimen was physically created.
@@ -81,7 +81,7 @@ sealed trait Specimen extends ConcurrencySafeEntity[SpecimenId] with HasSlug {
                 originLocationInfo      = originLocationInfo,
                 locationInfo            = locationInfo,
                 containerId             = this.containerId.map(_.id),
-                position                = this.position.map(_.label),
+                label                   = this.schemaLabel.map(_.label),
                 timeCreated             = this.timeCreated.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
                 amount                  = this.amount,
                 units                   = specimenDefinition.units,
@@ -100,7 +100,7 @@ sealed trait Specimen extends ConcurrencySafeEntity[SpecimenId] with HasSlug {
         |  originLocationId:     $originLocationId
         |  locationId:           $locationId
         |  containerId:          $containerId
-        |  position:             $position
+        |  schemaLabel:          $schemaLabel
         |  timeCreated:          $timeCreated
         |  amount:               $amount
         |}""".stripMargin
@@ -121,7 +121,7 @@ object Specimen {
                  "originLocationId"     -> specimen.originLocationId.id,
                  "locationId"           -> specimen.locationId.id,
                  "containerId"          -> specimen.containerId,
-                 "position"             -> specimen.position,
+                 "schemaLabel"          -> specimen.schemaLabel,
                  "version"              -> specimen.version,
                  "timeCreated"          -> specimen.timeCreated,
                  "amount"               -> specimen.amount)
@@ -176,7 +176,7 @@ final case class UsableSpecimen(
     originLocationId:     LocationId,
     locationId:           LocationId,
     containerId:          Option[ContainerId],
-    position:             Option[ContainerSchemaPosition],
+    schemaLabel:          Option[ContainerSchemaLabel],
     timeCreated:          OffsetDateTime,
     amount:               BigDecimal)
     extends { val state: EntityState = Specimen.usableState } with HasSlug with Specimen
@@ -211,9 +211,9 @@ with SpecimenValidations with ParticipantValidations with StudyValidations {
       update.copy(locationId = id)
     }
 
-  def withPosition(position: Option[ContainerSchemaPosition]): DomainValidation[Specimen] =
-    ContainerSchemaPosition.validate(position).map { s =>
-      update.copy(position = position)
+  def withContainerLabel(schemaLabel: Option[ContainerSchemaLabel]): DomainValidation[Specimen] =
+    ContainerSchemaLabel.validate(schemaLabel).map { s =>
+      update.copy(schemaLabel = schemaLabel)
     }
 
   def makeUnusable(): DomainValidation[UnusableSpecimen] =
@@ -227,7 +227,7 @@ with SpecimenValidations with ParticipantValidations with StudyValidations {
                      originLocationId     = this.originLocationId,
                      locationId           = this.locationId,
                      containerId          = this.containerId,
-                     position             = this.position,
+                     schemaLabel          = this.schemaLabel,
                      timeCreated          = this.timeCreated,
                      amount               = this.amount).successNel[String]
 
@@ -248,7 +248,7 @@ object UsableSpecimen extends SpecimenValidations with ParticipantValidations wi
       originLocationId:     LocationId,
       locationId:           LocationId,
       containerId:          Option[ContainerId],
-      position:             Option[ContainerSchemaPosition],
+      schemaLabel:          Option[ContainerSchemaLabel],
       timeAdded:            OffsetDateTime,
       timeCreated:          OffsetDateTime,
       amount:               BigDecimal
@@ -260,7 +260,7 @@ object UsableSpecimen extends SpecimenValidations with ParticipantValidations wi
              originLocationId,
              locationId,
              containerId,
-             position,
+             schemaLabel,
              amount)
       .map(
         _ =>
@@ -274,7 +274,7 @@ object UsableSpecimen extends SpecimenValidations with ParticipantValidations wi
                          originLocationId     = originLocationId,
                          locationId           = locationId,
                          containerId          = containerId,
-                         position             = position,
+                         schemaLabel          = schemaLabel,
                          timeCreated          = timeCreated,
                          amount               = amount)
       )
@@ -287,7 +287,7 @@ object UsableSpecimen extends SpecimenValidations with ParticipantValidations wi
       originLocationId:     LocationId,
       locationId:           LocationId,
       containerId:          Option[ContainerId],
-      position:             Option[ContainerSchemaPosition],
+      schemaLabel:          Option[ContainerSchemaLabel],
       amount:               BigDecimal
     ): DomainValidation[Unit] =
     (validateId(id) |@|
@@ -297,7 +297,7 @@ object UsableSpecimen extends SpecimenValidations with ParticipantValidations wi
       validateNonEmptyString(originLocationId.id, OriginLocationIdInvalid) |@|
       validateNonEmptyString(locationId.id, LocationIdInvalid) |@|
       validateIdOption(containerId, ContainerIdInvalid) |@|
-      ContainerSchemaPosition.validate(position) |@|
+      ContainerSchemaLabel.validate(schemaLabel) |@|
       validatePositiveNumber(amount, AmountInvalid)) {
       case _ => ()
     }
@@ -320,7 +320,7 @@ final case class UnusableSpecimen(
     originLocationId:     LocationId,
     locationId:           LocationId,
     containerId:          Option[ContainerId],
-    position:             Option[ContainerSchemaPosition],
+    schemaLabel:          Option[ContainerSchemaLabel],
     timeCreated:          OffsetDateTime,
     amount:               BigDecimal)
     extends { val state: EntityState = Specimen.unusableState } with HasSlug with Specimen {
@@ -336,7 +336,7 @@ final case class UnusableSpecimen(
                    originLocationId     = this.originLocationId,
                    locationId           = this.locationId,
                    containerId          = this.containerId,
-                   position             = this.position,
+                   schemaLabel          = this.schemaLabel,
                    timeCreated          = this.timeCreated,
                    amount               = this.amount).successNel[String]
 }

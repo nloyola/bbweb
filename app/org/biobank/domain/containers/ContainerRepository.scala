@@ -72,7 +72,7 @@ class ContainerRepositoryImpl @Inject()(val testData: TestData)
     getValues
       .collect { case c: ChildContainer => c }
       .find { c =>
-        c.parentId == id && c.position.label == label
+        c.parentId == id && c.schemaLabel.label == label
       }
       .toSuccessNel(EntityCriteriaError(s"container with parent $id and label $label not found").toString)
 

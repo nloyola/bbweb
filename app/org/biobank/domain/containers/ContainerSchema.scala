@@ -5,6 +5,18 @@ import org.biobank.domain._
 import play.api.libs.json._
 import scalaz.Scalaz._
 import org.biobank.domain.centres.CentreId
+import scalaz.Scalaz._
+import scalaz.NonEmptyList._
+
+/**
+ * Predicates that can be used to filter collections of [[ContainerSchema ContainerSchemas]].
+ *
+ */
+trait ContainerSchemaPredicates extends HasNamePredicates[ContainerSchema] {
+
+  type ContainerSchemaFilter = ContainerSchema => Boolean
+
+}
 
 /**
  * A plan for how the children in a {@link Container} are positioned and labelled.
@@ -19,9 +31,9 @@ final case class ContainerSchema(
     description:  Option[String],
     shared:       Boolean,
     centreId:     CentreId,
-    positions:    Set[ContainerSchemaPosition])
+    labels:       Set[String])
     extends ConcurrencySafeEntity[ContainerSchemaId] with HasSlug with HasUniqueName
-    with HasOptionalDescription {
+    with HasOptionalDescription with ContainerValidations {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
@@ -45,22 +57,20 @@ final case class ContainerSchema(
       update.copy(centreId = centreId)
     }
 
-  def withPositions(positions: Set[ContainerSchemaPosition]): DomainValidation[ContainerSchema] = {
-    val positionsWithSchemaId = positions.map { _.copy(schemaId = id) }
-    update.copy(positions = positionsWithSchemaId).successNel[String]
-  }
+  def withLabels(labels: Set[String]): DomainValidation[ContainerSchema] =
+    labels
+      .map { validateNonEmptyString(_, ContainerSchemaLabelInvalid) }
+      .toList.sequenceU
+      .map { l =>
+        update.copy(labels = labels)
+      }
 
-  //@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def getPosition(label: String): DomainValidation[ContainerSchemaPosition] =
-    positions
-      .find(_.label == label)
-      .toSuccessNel(s"invalid position label: $label --> $id")
+  def isLabelValid(label: String): Boolean = labels.exists(_ == label)
 
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def getPosition(positionId: ContainerSchemaPositionId): DomainValidation[ContainerSchemaPosition] =
-    positions
-      .find(_.id == positionId)
-      .toSuccessNel(s"invalid position id: $positionId")
+  def getLabel(label: String): DomainValidation[ContainerSchemaLabel] =
+    labels
+      .find(_ == label).map(l => ContainerSchemaLabel(schemaId = id, label = l))
+      .toSuccessNel(s"label in invalid on schema with name $name")
 
   private def update(): ContainerSchema =
     copy(version = nextVersion, timeModified = Some(OffsetDateTime.now))
@@ -75,7 +85,7 @@ final case class ContainerSchema(
         |  name:            $name,
         |  description:     $description,
         |  centreId:        $centreId,
-        |  positions:       $positions""".stripMargin
+        |  labels:          $labels""".stripMargin
 }
 
 /**
@@ -113,8 +123,16 @@ object ContainerSchema {
                         description  = description,
                         shared       = shared,
                         centreId     = centreId,
-                        positions    = Set.empty[ContainerSchemaPosition])
+                        labels       = Set.empty[String])
     }
+
+  type ContainerSchemasCompare = (ContainerSchema, ContainerSchema) => Boolean
+
+  val sort2Compare: Map[String, ContainerSchemasCompare] =
+    Map[String, ContainerSchemasCompare]("name" -> ContainerSchema.compareByName)
+
+  def compareByName(a: ContainerSchema, b: ContainerSchema): Boolean =
+    (a.name compareToIgnoreCase b.name) < 0
 
   implicit val containerSchemaFormat: Format[ContainerSchema] = Json.format[ContainerSchema]
 }

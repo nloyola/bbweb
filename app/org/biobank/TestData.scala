@@ -861,7 +861,7 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
                                originLocationId     = locationId,
                                locationId           = locationId,
                                containerId          = None,
-                               position             = None,
+                               schemaLabel          = None,
                                timeCreated          = OffsetDateTime.now.minusDays(1),
                                amount               = BigDecimal(0.1))
             }
@@ -934,14 +934,17 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
     }
 
   def testContainerSchemas(): List[ContainerSchema] =
-    CbsrTestData.schemaData.map { name =>
-      val schema = addContainerSchema(name, Some(name))
-      val positions = name match {
-        case "96 Well Microplate"  => microplatePositions96Wells
-        case "384 Well Microplate" => microplatePositions384Wells
-        case _                     => Set.empty[ContainerSchemaPosition]
+    if (loadTestData) {
+      CbsrTestData.schemaData.map { name =>
+        val labels = name match {
+          case "96 Well Microplate"  => microplateLabels96Wells
+          case "384 Well Microplate" => microplateLabels384Wells
+          case _                     => Set.empty[String]
+        }
+        addContainerSchema(name, Some(name), labels)
       }
-      schema.copy(positions = positions.map { _.copy(schemaId = schema.id) })
+    } else {
+      List.empty[ContainerSchema]
     }
 
   def testContainerTypes(): List[ContainerType] =
@@ -950,7 +953,11 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
   def testContainers(): List[Container] =
     ???
 
-  private def addContainerSchema(name: String, description: Option[String]): ContainerSchema = {
+  private def addContainerSchema(
+      name:        String,
+      description: Option[String],
+      labels:      Set[String]
+    ): ContainerSchema = {
     val slug = Slug(name)
     ContainerSchema(id           = ContainerSchemaId(slug.id),
                     version      = 0L,
@@ -961,22 +968,20 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
                     description  = description,
                     shared       = true,
                     centreId     = centreIdCBSR,
-                    positions    = Set.empty[ContainerSchemaPosition])
+                    labels       = labels)
   }
 
-  private def microplatePositions96Wells(): Set[ContainerSchemaPosition] =
+  private def microplateLabels96Wells(): Set[String] =
     "ABCDEFGH".flatMap { row =>
       (1 to 12).map { col =>
-        val label = s"$row$col"
-        ContainerSchemaPosition(id = ContainerSchemaPositionId(Slug(label).id), ContainerSchemaId(""), label)
+        s"$row$col"
       }
     }.toSet
 
-  private def microplatePositions384Wells(): Set[ContainerSchemaPosition] =
+  private def microplateLabels384Wells(): Set[String] =
     "ABCDEFGHIJKLMNOP".flatMap { row =>
       (1 to 24).map { col =>
-        val label = s"$row$col"
-        ContainerSchemaPosition(id = ContainerSchemaPositionId(Slug(label).id), ContainerSchemaId(""), label)
+        s"$row$col"
       }
     }.toSet
 

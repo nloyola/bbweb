@@ -1,0 +1,108 @@
+package org.biobank.services.centres
+
+import akka.actor._
+import akka.pattern._
+import javax.inject.{Inject, Named}
+import org.biobank.fixtures._
+import org.biobank.domain.centres.CentreRepository
+import org.biobank.domain.containers.{ContainerSchemaRepository, ContainerTypeRepository}
+import org.biobank.infrastructure.commands.ContainerSchemaCommands._
+import org.biobank.infrastructure.events.ContainerSchemaEvents._
+import org.biobank.services._
+import org.mockito.ArgumentMatchers._
+import org.mockito.Mockito
+import play.api.libs.json._
+import scala.concurrent.duration._
+import scala.concurrent.Await
+
+case class NamedContainerSchemasProcessor @Inject()(@Named("containerSchemasProcessor") processor: ActorRef)
+
+class ContainerSchemasProcessorSpec extends ProcessorTestFixture with PresistenceQueryEvents {
+
+  import org.biobank.TestUtils._
+
+  private var schemaProcessor = app.injector.instanceOf[NamedContainerSchemasProcessor].processor
+
+  private val schemaRepository = app.injector.instanceOf[ContainerSchemaRepository]
+
+  private val centreRepository = app.injector.instanceOf[CentreRepository]
+
+  private val containerTypeRepository = app.injector.instanceOf[ContainerTypeRepository]
+
+  private val nameGenerator = new NameGenerator(this.getClass)
+
+  override def beforeEach() {
+    schemaRepository.removeAll
+    super.beforeEach()
+  }
+
+  private def restartProcessor(processor: ActorRef) = {
+    val stopped = gracefulStop(processor, 5 seconds, PoisonPill)
+    Await.result(stopped, 6 seconds)
+
+    val actor = system.actorOf(
+      Props(
+        new ContainerSchemasProcessor(schemaRepository,
+                                      centreRepository,
+                                      containerTypeRepository,
+                                      app.injector.instanceOf[SnapshotWriter])
+      ),
+      "containerSchemas"
+    )
+    Thread.sleep(250)
+    actor
+  }
+
+  describe("A containerSchema processor must") {
+
+    it("allow recovery from journal", PersistenceTest) {
+      val schema = factory.createContainerSchema
+      val cmd = AddContainerSchemaCmd(sessionUserId = nameGenerator.next[String],
+                                      name        = schema.name,
+                                      description = schema.description,
+                                      shared      = schema.shared,
+                                      centreId    = schema.centreId.id,
+                                      labels      = schema.labels.toList)
+      val v = ask(schemaProcessor, cmd).mapTo[ServiceValidation[ContainerSchemaEvent]].futureValue
+      v.isSuccess must be(true)
+      schemaRepository.getValues.map { c =>
+        c.name
+      } must contain(schema.name)
+
+      schemaRepository.removeAll
+      schemaProcessor = restartProcessor(schemaProcessor)
+
+      schemaRepository.getValues.map { c =>
+        c.name
+      } must contain(schema.name)
+    }
+
+    it("accept a snapshot offer", PersistenceTest) {
+      val snapshotFilename = "testfilename"
+      val schemas = (1 to 2).map { _ =>
+        factory.createContainerSchema
+      }
+      val snapshotContainerSchema = schemas(1)
+      val snapshotState           = ContainerSchemasProcessor.SnapshotState(Set(snapshotContainerSchema))
+
+      Mockito.when(snapshotWriterMock.save(anyString, anyString)).thenReturn(snapshotFilename);
+      val snapshotStateJson = Json.toJson(snapshotState).toString
+      Mockito
+        .when(snapshotWriterMock.load(snapshotFilename))
+        .thenReturn(snapshotStateJson);
+
+      schemas.foreach(schemaRepository.put)
+      (schemaProcessor ? "snap").mapTo[String].futureValue
+
+      schemaRepository.removeAll
+      schemaProcessor = restartProcessor(schemaProcessor)
+
+      schemaRepository.getByKey(snapshotContainerSchema.id) mustSucceed { repoContainerSchema =>
+        repoContainerSchema.name must be(snapshotContainerSchema.name)
+        ()
+      }
+    }
+
+  }
+
+}

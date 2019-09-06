@@ -149,7 +149,7 @@ wartremoverErrors in (Compile, compile) ++= Warts
 
 wartremoverExcluded ++= Seq(sourceManaged.value, crossTarget.value / "routes" / "main")
 
-scalacOptions in Compile ++=
+scalacOptions ++=
   Seq("-target:jvm-1.8",
       "-encoding",
       "UTF-8",

@@ -274,7 +274,7 @@ class CollectionEventsProcessor @Inject()(
                                                              _.annotationRemoved.version          := cmd.expectedVersion,
                                                              _.annotationRemoved.annotationTypeId := cmd.annotationTypeId)
 
-  @silent private def removeCmdToEvent(
+  private def removeCmdToEvent(
       cmd:                 RemoveCollectionEventCmd,
       participant:         Participant,
       collectionEventType: CollectionEventType,

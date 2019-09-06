@@ -8,21 +8,22 @@ object ContainerSchemaCommands {
 
   trait ContainerSchemaCommand extends Command with HasSessionUserId
 
-  trait ContainerSchemaModifyCommand extends ContainerSchemaCommand
+  trait ContainerSchemaModifyCommand extends ContainerSchemaCommand with HasIdentity with HasExpectedVersion
 
   final case class AddContainerSchemaCmd(
       sessionUserId: String,
       name:          String,
       description:   Option[String],
       shared:        Boolean,
-      centreId:      String)
+      centreId:      String,
+      labels:        List[String])
       extends ContainerSchemaCommand
 
   final case class UpdateContainerSchemaNameCmd(
       sessionUserId:   String,
       id:              String, // shipment ID
       expectedVersion: Long,
-      courierName:     String)
+      name:            String)
       extends ContainerSchemaModifyCommand
 
   final case class UpdateContainerSchemaDescriptionCmd(
@@ -46,12 +47,15 @@ object ContainerSchemaCommands {
       centreId:        String)
       extends ContainerSchemaModifyCommand
 
-  final case class UpdateContainerSchemaPositionsCmd(
+  final case class UpdateContainerSchemaLabelsCmd(
       sessionUserId:   String,
       id:              String,
       expectedVersion: Long,
       labels:          List[String])
       extends ContainerSchemaModifyCommand
+
+  final case class RemoveContainerSchemaCmd(sessionUserId: String, id: String, expectedVersion: Long)
+      extends ContainerSchemaCommand
 
   implicit val addContainerSchemaCmdReads: Reads[AddContainerSchemaCmd] = Json.reads[AddContainerSchemaCmd]
   implicit val updateContainerSchemaNameCmdReads: Reads[UpdateContainerSchemaNameCmd] =
@@ -62,7 +66,9 @@ object ContainerSchemaCommands {
     Json.reads[UpdateContainerSchemaSharedCmd]
   implicit val updateContainerSchemaCentreCmdReads: Reads[UpdateContainerSchemaCentreCmd] =
     Json.reads[UpdateContainerSchemaCentreCmd]
-  implicit val updateContainerSchemaPositionsCmdReads: Reads[UpdateContainerSchemaPositionsCmd] =
-    Json.reads[UpdateContainerSchemaPositionsCmd]
+  implicit val updateContainerSchemaLabelsCmdReads: Reads[UpdateContainerSchemaLabelsCmd] =
+    Json.reads[UpdateContainerSchemaLabelsCmd]
+  implicit val removeContainerSchemaCmdReads: Reads[RemoveContainerSchemaCmd] =
+    Json.reads[RemoveContainerSchemaCmd]
 
 }

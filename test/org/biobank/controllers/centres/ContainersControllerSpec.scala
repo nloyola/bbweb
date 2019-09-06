@@ -23,7 +23,7 @@ class ContainersControllerSpec
 
   protected val basePath = "centres/containers"
 
-  describe("Centre REST API") {
+  describe("Containers REST API") {
 
     describe("POST /api/containers") {
 
@@ -327,7 +327,7 @@ class ContainersControllerSpec
     val centre   = factory.defaultEnabledCentre.copy(locations = Set(location))
 
     val containerSchema =
-      factory.createContainerSchema.copy(positions = Set(factory.createContainerSchemaPosition))
+      factory.createContainerSchema.copy(labels = Set(factory.createContainerSchemaLabel.label))
 
     val containerType = factory.createStorageContainerType
     val container     = factory.createRootContainer(centre, containerType)
@@ -341,13 +341,15 @@ class ContainersControllerSpec
     val centre              = f.centre
 
     val storageContainerSchema =
-      factory.createContainerSchema.copy(positions = Set(factory.createContainerSchemaPosition))
+      factory.createContainerSchema.copy(labels = Set(factory.createContainerSchemaLabel.label))
 
     val storageContainerType = factory.createStorageContainerType(centre, storageContainerSchema)
 
-    val storageContainer = factory.createStorageContainer(storageContainerType,
-                                                          rootContainer,
-                                                          rootContainerSchema.positions.headOption.value)
+    val storageContainer = factory.createStorageContainer(
+      storageContainerType,
+      rootContainer,
+      ContainerSchemaLabel(rootContainerSchema.id, rootContainerSchema.labels.headOption.value)
+    )
   }
 
   private class SpecimenContainerFixtures {
@@ -361,13 +363,15 @@ class ContainersControllerSpec
     val storageContainer       = f.storageContainer
 
     val specimenContainerSchema =
-      factory.createContainerSchema.copy(positions = Set(factory.createContainerSchemaPosition))
+      factory.createContainerSchema.copy(labels = Set(factory.createContainerSchemaLabel.label))
 
     val specimenContainerType = factory.createSpecimenContainerType(specimenContainerSchema)
 
-    val specimenContainer = factory.createSpecimenContainer(specimenContainerType,
-                                                            storageContainer,
-                                                            storageContainerSchema.positions.headOption.value)
+    val specimenContainer = factory.createSpecimenContainer(
+      specimenContainerType,
+      storageContainer,
+      ContainerSchemaLabel(storageContainerSchema.id, storageContainerSchema.labels.headOption.value)
+    )
   }
 
   def validateContainer[T <: Container, D <: ContainerDto](
@@ -429,6 +433,6 @@ class ContainersControllerSpec
     Json.obj("inventoryId"     -> container.inventoryId,
              "containerTypeId" -> containerType.id,
              "parentId"        -> container.parentId,
-             "label"           -> container.position.label)
+             "label"           -> container.schemaLabel.label)
 
 }

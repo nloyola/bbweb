@@ -3,7 +3,7 @@ package org.biobank.domain.participants
 import java.time.OffsetDateTime
 import org.biobank.fixtures.NameGenerator
 import org.biobank.domain._
-import org.biobank.domain.containers.{ContainerId, ContainerSchemaPositionId}
+import org.biobank.domain.containers.{ContainerId, ContainerSchemaId}
 import org.biobank.domain.studies.SpecimenDefinitionId
 import org.slf4j.LoggerFactory
 
@@ -26,7 +26,7 @@ class SpecimenSpec extends DomainSpec {
                           originLocationId     = specimen.originLocationId,
                           locationId           = specimen.locationId,
                           containerId          = specimen.containerId,
-                          position             = specimen.position,
+                          schemaLabel          = specimen.schemaLabel,
                           amount               = specimen.amount)
 
   describe("A usable specimen") {
@@ -43,7 +43,7 @@ class SpecimenSpec extends DomainSpec {
                         'originLocationId (specimen.originLocationId),
                         'locationId (specimen.locationId),
                         'containerId (specimen.containerId),
-                        'position (specimen.position),
+                        'schemaLabel (specimen.schemaLabel),
                         'amount (specimen.amount))
 
           spc must beEntityWithTimeStamps(OffsetDateTime.now, None, 5L)
@@ -101,12 +101,12 @@ class SpecimenSpec extends DomainSpec {
         }
       }
 
-      it("with a new position") {
-        val specimen    = factory.createUsableSpecimen
-        val newPosition = Some(factory.createContainerSchemaPosition)
+      it("with a new container label") {
+        val specimen = factory.createUsableSpecimen
+        val newLabel = Some(factory.createContainerSchemaLabel)
 
-        specimen.withPosition(newPosition) mustSucceed { s =>
-          s.position mustBe newPosition
+        specimen.withContainerLabel(newLabel) mustSucceed { s =>
+          s.schemaLabel mustBe newLabel
           s.version must be(specimen.version + 1)
           s must beEntityWithTimeStamps(specimen.timeAdded, Some(OffsetDateTime.now), 5L)
         }
@@ -164,11 +164,11 @@ class SpecimenSpec extends DomainSpec {
         createFrom(specimen) mustFail "ContainerIdInvalid"
       }
 
-      it("with an empty position id") {
-        val position =
-          Some(factory.createContainerSchemaPosition.copy(id = ContainerSchemaPositionId("")))
-        val specimen = factory.createUsableSpecimen.copy(position = position)
-        createFrom(specimen) mustFail "IdRequired"
+      it("with an empty invalid schema label id") {
+        val schemaLabel =
+          Some(factory.createContainerSchemaLabel.copy(schemaId = ContainerSchemaId("")))
+        val specimen = factory.createUsableSpecimen.copy(schemaLabel = schemaLabel)
+        createFrom(specimen) mustFail "InvalidContainerSchemaId"
       }
 
       it("with a negative amount") {
@@ -204,11 +204,11 @@ class SpecimenSpec extends DomainSpec {
       specimen.withLocation(newLocation.id) mustFail "LocationIdInvalid"
     }
 
-    it("with an invalid position") {
-      val specimen    = factory.createUsableSpecimen
-      val newPosition = factory.createContainerSchemaPosition.copy(id = ContainerSchemaPositionId(""))
+    it("with an invalid schema label") {
+      val specimen = factory.createUsableSpecimen
+      val newLabel = factory.createContainerSchemaLabel.copy(schemaId = ContainerSchemaId(""))
 
-      specimen.withPosition(Some(newPosition)) mustFail "IdRequired"
+      specimen.withContainerLabel(Some(newLabel)) mustFail "InvalidContainerSchemaId"
     }
   }
 
@@ -226,20 +226,16 @@ class SpecimenSpec extends DomainSpec {
 
   }
 
-  describe("A usable specimen") {
+  describe("A usable specimen can be made usable") {
 
-    describe("can be made usable") {
+    it("from a unusable specimen") {
+      val specimen = factory.createUnusableSpecimen
 
-      it("from a unusable specimen") {
-        val specimen = factory.createUnusableSpecimen
-
-        specimen.makeUsable mustSucceed { s =>
-          s mustBe a[UsableSpecimen]
-          s.version must be(specimen.version + 1)
-          s must beEntityWithTimeStamps(specimen.timeAdded, Some(OffsetDateTime.now), 5L)
-        }
+      specimen.makeUsable mustSucceed { s =>
+        s mustBe a[UsableSpecimen]
+        s.version must be(specimen.version + 1)
+        s must beEntityWithTimeStamps(specimen.timeAdded, Some(OffsetDateTime.now), 5L)
       }
-
     }
 
   }

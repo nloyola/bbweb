@@ -6,14 +6,11 @@ package org.biobank.infrastructure.events;
 
 message ContainerSchemaEvent {
 
-  message Position {
-    optional string positionId = 1;
-    optional string label      = 2;
-  }
-
   message Added {
     optional string name        = 1;
     optional string description = 2;
+    optional bool   shared      = 3;
+    optional string centreId    = 4;
   }
 
   message NameUpdated {
@@ -36,9 +33,13 @@ message ContainerSchemaEvent {
     optional string centreId = 2;
   }
 
-  message PositionsUpdated {
-    optional int64    version  = 1;
-    repeated Position position = 2;
+  message LabelsUpdated {
+    optional int64  version = 1;
+    repeated string labels  = 2;
+  }
+
+  message Removed {
+    optional int64 version = 1;
   }
 
   required string id            = 1;
@@ -51,6 +52,7 @@ message ContainerSchemaEvent {
     DescriptionUpdated descriptionUpdated = 6;
     SharedUpdated      sharedUpdated      = 7;
     CentreUpdated      centreUpdated      = 8;
-    PositionsUpdated   positionsUpdated   = 9;
+    LabelsUpdated      labelsUpdated      = 9;
+    Removed            removed            = 10;
   }
 }

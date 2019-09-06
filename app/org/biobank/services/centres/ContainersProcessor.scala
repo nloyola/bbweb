@@ -29,7 +29,6 @@ object ContainersProcessor {
 final case class AddChildRequest(
     containerType:  ContainerType,
     schema:         ContainerSchema,
-    position:       ContainerSchemaPosition,
     parent:         Container,
     newContainerId: ContainerId)
 
@@ -158,7 +157,7 @@ class ContainersProcessor @Inject()(
                                inventoryId     = cmd.inventoryId,
                                containerTypeId = values.containerType.id,
                                parentId        = values.parent.id,
-                               position        = values.position,
+                               schemaLabel     = ContainerSchemaLabel(values.schema.id, cmd.label),
                                constraints     = None)
     } yield ContainerEvent(newContainer.id.id)
       .update(_.sessionUserId                := cmd.sessionUserId,
@@ -167,7 +166,7 @@ class ContainersProcessor @Inject()(
               _.storageAdded.containerTypeId := cmd.containerTypeId,
               _.storageAdded.parentId        := cmd.parentId,
               _.storageAdded.schemaId        := values.schema.id.id,
-              _.storageAdded.positionId      := values.position.id.id)
+              _.storageAdded.label           := cmd.label)
 
   private def addSpecimenContainerCmdToEvent(
       cmd: AddSpecimenContainerCmd
@@ -181,7 +180,7 @@ class ContainersProcessor @Inject()(
                                inventoryId     = cmd.inventoryId,
                                containerTypeId = values.containerType.id,
                                parentId        = values.parent.id,
-                               position        = values.position)
+                               schemaLabel     = ContainerSchemaLabel(values.schema.id, cmd.label))
     } yield ContainerEvent(newContainer.id.id)
       .update(_.sessionUserId                 := cmd.sessionUserId,
               _.time                          := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
@@ -189,7 +188,7 @@ class ContainersProcessor @Inject()(
               _.specimenAdded.containerTypeId := cmd.containerTypeId,
               _.specimenAdded.parentId        := cmd.parentId,
               _.specimenAdded.schemaId        := values.schema.id.id,
-              _.specimenAdded.positionId      := values.position.id.id)
+              _.specimenAdded.label           := cmd.label)
 
   private def addChildValidate(cmd: AddSubContainerCommand): ServiceValidation[AddChildRequest] =
     for {
@@ -201,10 +200,10 @@ class ContainersProcessor @Inject()(
                  )
       parentCType <- containerTypeRepository.getByKey(parent.containerTypeId)
       schema      <- containerSchemaRepository.getByKey(parentCType.schemaId)
-      position    <- containerSchemaRepository.getPosition(schema.id, cmd.label)
-      posEmpty    <- containerRepository.positionEmpty(parent.id, position.label)
+      labelValid  <- containerSchemaRepository.isLabelValid(schema.id, cmd.label)
+      posEmpty    <- containerRepository.positionEmpty(parent.id, cmd.label)
       containerId <- validNewIdentity(containerRepository.nextIdentity, containerRepository)
-    } yield AddChildRequest(containerType, schema, position, parent, containerId)
+    } yield AddChildRequest(containerType, schema, parent, containerId)
 
   private def applyRootAddedEvent(event: ContainerEvent): Unit =
     if (!event.eventType.isRootAdded) {
@@ -239,19 +238,19 @@ class ContainersProcessor @Inject()(
       log.error(s"invalid event type: $event")
     } else {
       val addedEvent = event.getStorageAdded
+      val schemaId   = ContainerSchemaId(addedEvent.getSchemaId)
       val validation = for {
-        position <- containerSchemaRepository
-                     .getPosition(ContainerSchemaId(addedEvent.getSchemaId),
-                                  ContainerSchemaPositionId(addedEvent.getPositionId))
+        labelValid <- containerSchemaRepository.isLabelValid(schemaId, addedEvent.getLabel)
+        schemaLabel = ContainerSchemaLabel(schemaId, addedEvent.getLabel)
         container <- StorageContainer
                       .create(id              = ContainerId(event.id),
                               version         = 0L,
                               inventoryId     = addedEvent.getInventoryId,
                               containerTypeId = ContainerTypeId(addedEvent.getContainerTypeId),
                               parentId        = ContainerId(addedEvent.getParentId),
-                              position        = position,
+                              schemaLabel     = schemaLabel,
                               constraints     = None).map { c =>
-                        c.copy(slug      = containerRepository.uniqueSlugFromStr(c.position.label),
+                        c.copy(slug      = containerRepository.uniqueSlugFromStr(addedEvent.getLabel),
                                timeAdded = OffsetDateTime.parse(event.getTime))
                       }
       } yield container
@@ -268,17 +267,18 @@ class ContainersProcessor @Inject()(
       log.error(s"invalid event type: $event")
     } else {
       val addedEvent = event.getSpecimenAdded
+      val schemaId   = ContainerSchemaId(addedEvent.getSchemaId)
       val validation = for {
-        position <- containerSchemaRepository.getPosition(ContainerSchemaId(addedEvent.getSchemaId),
-                                                          ContainerSchemaPositionId(addedEvent.getPositionId))
+        labelValid <- containerSchemaRepository.isLabelValid(schemaId, addedEvent.getLabel)
+        schemaLabel = ContainerSchemaLabel(schemaId, addedEvent.getLabel)
         container <- SpecimenContainer
                       .create(id              = ContainerId(event.id),
                               version         = 0L,
                               inventoryId     = addedEvent.getInventoryId,
                               containerTypeId = ContainerTypeId(addedEvent.getContainerTypeId),
                               parentId        = ContainerId(addedEvent.getParentId),
-                              position        = position).map { c =>
-                        c.copy(slug      = containerRepository.uniqueSlugFromStr(c.position.label),
+                              schemaLabel     = schemaLabel).map { c =>
+                        c.copy(slug      = containerRepository.uniqueSlugFromStr(addedEvent.getLabel),
                                timeAdded = OffsetDateTime.parse(event.getTime))
                       }
       } yield container
@@ -299,4 +299,5 @@ class ContainersProcessor @Inject()(
       EntityCriteriaError(s"container with inventory ID already exists: $inventoryId").failureNel[Unit]
     else ().successNel[String]
   }
+
 }

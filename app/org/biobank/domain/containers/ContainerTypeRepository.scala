@@ -17,6 +17,8 @@ trait ContainerTypeRepository extends ReadWriteRepositoryWithSlug[ContainerTypeI
 
   def withCentre(centreId: CentreId): Set[ContainerType]
 
+  def schemaInUse(schemaId: ContainerSchemaId): Boolean
+
 }
 
 @Singleton
@@ -61,5 +63,8 @@ class ContainerTypeRepositoryImpl @Inject()(val testData: TestData)
     getValues.filter { ct =>
       (ct.centreId == centreId) || ct.shared
     }.toSet
+
+  def schemaInUse(schemaId: ContainerSchemaId): Boolean =
+    getValues.exists { ct => (ct.schemaId == schemaId) }
 
 }

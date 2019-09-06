@@ -378,7 +378,7 @@ class Factory {
                                   originLocationId     = location.id,
                                   locationId           = location.id,
                                   containerId          = None,
-                                  position             = None,
+                                  schemaLabel          = None,
                                   timeCreated          = OffsetDateTime.now,
                                   amount               = BigDecimal(1.0))
     domainObjects = domainObjects + (classOf[UsableSpecimen] -> specimen)
@@ -400,7 +400,7 @@ class Factory {
                                     originLocationId     = location.id,
                                     locationId           = location.id,
                                     containerId          = None,
-                                    position             = None,
+                                    schemaLabel          = None,
                                     timeCreated          = OffsetDateTime.now,
                                     amount               = BigDecimal(1.0))
     domainObjects = domainObjects + (classOf[UnusableSpecimen] -> specimen)
@@ -596,7 +596,7 @@ class Factory {
   def createSpecimenContainerType(): SpecimenContainerType =
     createSpecimenContainerType(defaultContainerSchema)
 
-  def createContainerSchema(positions: Set[ContainerSchemaPosition]): ContainerSchema = {
+  def createContainerSchema(labels: Set[String]): ContainerSchema = {
     val name = faker.Lorem.sentence(3)
     val id   = ContainerSchemaId(nextIdentityAsString[ContainerSchema])
     val containerSchema = ContainerSchema(version = 0L,
@@ -606,20 +606,19 @@ class Factory {
                                           slug         = Slug(name),
                                           name         = name,
                                           description  = Some(nameGenerator.next[ContainerSchema]),
-                                          shared       = true,
-                                          centreId     = defaultDisabledCentre.id,
-                                          positions    = positions.map(_.copy(schemaId = id)))
+                                          shared       = false,
+                                          centreId     = defaultEnabledCentre.id,
+                                          labels       = labels)
     domainObjects = domainObjects + (classOf[ContainerSchema] -> containerSchema)
     containerSchema
   }
 
   def createContainerSchema(): ContainerSchema =
-    createContainerSchema(Set.empty[ContainerSchemaPosition])
+    createContainerSchema(Set.empty[String])
 
-  def createContainerSchemaPosition(): ContainerSchemaPosition =
-    ContainerSchemaPosition(id       = ContainerSchemaPositionId(nextIdentityAsString[ContainerSchemaPosition]),
-                            schemaId = defaultContainerSchema.id,
-                            label    = nextIdentityAsString[ContainerSchemaPosition])
+  def createContainerSchemaLabel(): ContainerSchemaLabel =
+    ContainerSchemaLabel(schemaId = defaultContainerSchema.id,
+                         label    = nextIdentityAsString[ContainerSchemaLabel])
 
   def createContainerConstraints(): ContainerConstraints = {
     val name = nameGenerator.next[ContainerConstraints]
@@ -663,51 +662,53 @@ class Factory {
   def createStorageContainer(
       containerType: StorageContainerType,
       parent:        Container,
-      position:      ContainerSchemaPosition
+      schemaLabel:   ContainerSchemaLabel
     ): StorageContainer = {
     val inventoryId = nameGenerator.next[Container]
     val container = StorageContainer(id = ContainerId(nextIdentityAsString[Container]),
                                      version         = 0L,
                                      timeAdded       = OffsetDateTime.now,
                                      timeModified    = None,
-                                     slug            = Slug(position.label),
+                                     slug            = Slug(schemaLabel.label),
                                      inventoryId     = inventoryId,
                                      enabled         = false,
                                      containerTypeId = containerType.id,
                                      parentId        = parent.id,
-                                     position        = position,
+                                     schemaLabel     = schemaLabel,
                                      constraints     = None)
     domainObjects = domainObjects + (classOf[StorageContainer] -> container)
     container
   }
 
   def createStorageContainer(): StorageContainer = {
-    val position = defaultContainerSchema.positions.headOption.value
-    createStorageContainer(defaultStorageContainerType, defaultRootContainer, position)
+    val schemaLabel =
+      ContainerSchemaLabel(defaultContainerSchema.id, defaultContainerSchema.labels.headOption.value)
+    createStorageContainer(defaultStorageContainerType, defaultRootContainer, schemaLabel)
   }
 
   def createSpecimenContainer(
       containerType: SpecimenContainerType,
       parent:        StorageContainer,
-      position:      ContainerSchemaPosition
+      schemaLabel:   ContainerSchemaLabel
     ): SpecimenContainer = {
     val inventoryId = nameGenerator.next[ContainerType]
     val container = SpecimenContainer(id = ContainerId(nextIdentityAsString[Container]),
                                       version         = 0L,
                                       timeAdded       = OffsetDateTime.now,
                                       timeModified    = None,
-                                      slug            = Slug(position.label),
+                                      slug            = Slug(schemaLabel.label),
                                       inventoryId     = inventoryId,
                                       containerTypeId = containerType.id,
                                       parentId        = parent.id,
-                                      position        = position)
+                                      schemaLabel     = schemaLabel)
     domainObjects = domainObjects + (classOf[SpecimenContainer] -> container)
     container
   }
 
   def createSpecimenContainer(): SpecimenContainer = {
-    val position = defaultContainerSchema.positions.headOption.value
-    createSpecimenContainer(defaultSpecimenContainerType, defaultStorageContainer, position)
+    val schemaLabel =
+      ContainerSchemaLabel(defaultContainerSchema.id, defaultContainerSchema.labels.headOption.value)
+    createSpecimenContainer(defaultSpecimenContainerType, defaultStorageContainer, schemaLabel)
   }
 
   // def defaultRegisteredUser: RegisteredUser = {

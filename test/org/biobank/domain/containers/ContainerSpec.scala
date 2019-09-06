@@ -30,7 +30,7 @@ trait ContainerSharedSpec[T <: Container] { this: FunSpec =>
 
   protected def createWithParentId(id: ContainerId): T
 
-  protected def createWithPosition(id: ContainerSchemaPosition): T
+  protected def createwithLabel(label: String): T
 
   describe("(container shared behaviour)") {
 
@@ -80,10 +80,9 @@ trait ContainerSharedSpec[T <: Container] { this: FunSpec =>
       createFrom(container) mustFail "ContainerParentIdInvalid"
     }
 
-    it("not be created with an invalid position") {
-      val position  = factory.createContainerSchemaPosition.copy(schemaId = ContainerSchemaId(""))
-      val container = createWithPosition(position)
-      createFrom(container) mustFail ("ContainerSchemaPositionInvalid")
+    it("not be created with an invalid label") {
+      val container = createwithLabel("")
+      createFrom(container) mustFail ("ContainerSchemaLabelInvalid")
     }
   }
 }
@@ -104,7 +103,7 @@ class StorageContainerSpec extends DomainSpec with ContainerSharedSpec[StorageCo
                                 inventoryId     = c.inventoryId,
                                 containerTypeId = c.containerTypeId,
                                 parentId        = c.parentId,
-                                position        = c.position,
+                                schemaLabel     = c.schemaLabel,
                                 constraints     = c.constraints)
       case _ => DomainError("invalid container").failureNel[StorageContainer]
     }
@@ -113,12 +112,12 @@ class StorageContainerSpec extends DomainSpec with ContainerSharedSpec[StorageCo
     val location = factory.createLocation()
     val centre   = factory.createEnabledCentre().copy(locations = Set(location))
 
-    val position = factory.createContainerSchemaPosition
-    val schema   = factory.createContainerSchema(Set(position))
+    val label  = nameGenerator.next[ContainerSchema]
+    val schema = factory.createContainerSchema(Set(label))
 
     val ctype  = factory.createStorageContainerType(centre, schema)
     val parent = factory.createRootContainer(centre, ctype)
-    factory.createStorageContainer(ctype, parent, position)
+    factory.createStorageContainer(ctype, parent, ContainerSchemaLabel(schema.id, label))
   }
 
   protected def createWithId(id: ContainerId): StorageContainer =
@@ -136,8 +135,10 @@ class StorageContainerSpec extends DomainSpec with ContainerSharedSpec[StorageCo
   protected def createWithParentId(id: ContainerId): StorageContainer =
     createEntity.copy(parentId = id)
 
-  protected def createWithPosition(position: ContainerSchemaPosition): StorageContainer =
-    createEntity.copy(position = position)
+  protected def createwithLabel(label: String): StorageContainer = {
+    val entity = createEntity
+    entity.copy(schemaLabel = entity.schemaLabel.copy(label = label))
+  }
 
   describe("A StorageContainer") {
 
@@ -196,26 +197,28 @@ class SpecimenContainerSpec extends DomainSpec with ContainerSharedSpec[Specimen
                              inventoryId     = container.inventoryId,
                              containerTypeId = container.containerTypeId,
                              parentId        = container.parentId,
-                             position        = container.position)
+                             schemaLabel     = container.schemaLabel)
 
   protected def createEntity(): SpecimenContainer = {
     val location = factory.createLocation()
     val centre   = factory.createEnabledCentre().copy(locations = Set(location))
 
-    val rootPosition = factory.createContainerSchemaPosition
-    val rootSchema   = factory.createContainerSchema(Set(rootPosition))
+    val rootLabel  = nameGenerator.next[ContainerSchema]
+    val rootSchema = factory.createContainerSchema(Set(rootLabel))
 
     val rootCType     = factory.createStorageContainerType(centre, rootSchema)
     val rootContainer = factory.createRootContainer(centre, rootCType)
 
-    val storagePosition = factory.createContainerSchemaPosition
-    val storageSchema   = factory.createContainerSchema(Set(rootPosition))
+    val storageLabel  = nameGenerator.next[ContainerSchema]
+    val storageSchema = factory.createContainerSchema(Set(storageLabel))
 
-    val storageCType  = factory.createStorageContainerType(centre, storageSchema)
-    val storageParent = factory.createStorageContainer(storageCType, rootContainer, rootPosition)
+    val storageCType = factory.createStorageContainerType(centre, storageSchema)
+    val storageParent = factory
+      .createStorageContainer(storageCType, rootContainer, ContainerSchemaLabel(rootSchema.id, rootLabel))
 
     val ctype = factory.createSpecimenContainerType(factory.createContainerSchema)
-    factory.createSpecimenContainer(ctype, storageParent, storagePosition)
+    factory
+      .createSpecimenContainer(ctype, storageParent, ContainerSchemaLabel(storageSchema.id, storageLabel))
   }
 
   protected def createWithId(id: ContainerId): SpecimenContainer =
@@ -233,8 +236,10 @@ class SpecimenContainerSpec extends DomainSpec with ContainerSharedSpec[Specimen
   protected def createWithParentId(id: ContainerId): SpecimenContainer =
     createEntity.copy(parentId = id)
 
-  protected def createWithPosition(position: ContainerSchemaPosition): SpecimenContainer =
-    createEntity.copy(position = position)
+  protected def createwithLabel(label: String): SpecimenContainer = {
+    val entity = createEntity
+    entity.copy(schemaLabel = entity.schemaLabel.copy(label = label))
+  }
 
   describe("A SpecimenContainer") {
 

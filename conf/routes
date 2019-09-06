@@ -11,6 +11,7 @@
 ->      /api/participants/cevents               org.biobank.controllers.participants.CollectionEventsRouter
 ->      /api/participants                       org.biobank.controllers.participants.ParticipantsRouter
 ->      /api/centres                            org.biobank.controllers.centres.CentresRouter
+->      /api/centres/containers/schemas         org.biobank.controllers.centres.ContainerSchemasRouter
 ->      /api/centres/containers                 org.biobank.controllers.centres.ContainersRouter
 ->      /api/shipments                          org.biobank.controllers.centres.ShipmentsRouter
 ->      /api/users                              org.biobank.controllers.users.UsersRouter

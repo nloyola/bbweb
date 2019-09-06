@@ -68,17 +68,14 @@ class ContainersServiceImpl @Inject()(
 
   def processCommand(cmd: ContainerCommand): Future[ServiceValidation[ContainerDto]] = {
     val validCentreId = cmd match {
-      case c: AddRootContainerCmd =>
-        for {
-          centre <- centreRepository.getByKey(CentreId(c.centreId))
-        } yield centre.id
+      case c: AddRootContainerCmd    => centreRepository.getByKey(CentreId(c.centreId)).map(_.id)
       case c: AddSubContainerCommand => getContainerCentreId(ContainerId(c.parentId))
       case c: ContainerModifyCommand => getContainerCentreId(ContainerId(c.id))
     }
 
     val permission = cmd match {
       case c: AddContainerCommand => PermissionId.ContainerCreate
-      case c => PermissionId.ContainerUpdate
+      case _ => PermissionId.ContainerUpdate
     }
 
     val requestUserId = UserId(cmd.sessionUserId)

@@ -133,7 +133,7 @@ trait DtoMatchers {
                            ("originLocationInfo"   -> (left.originLocationInfo.locationId equals specimen.originLocationId.id)),
                            ("locationInfo"         -> (left.locationInfo.locationId equals specimen.locationId.id)),
                            ("containerId"          -> (left.containerId equals specimen.containerId)),
-                           ("position"             -> (left.position equals specimen.position)),
+                           ("label"                -> (left.label equals specimen.schemaLabel.map(_.label))),
                            ("timeCreated"          -> timeCreatedMatcher.matches))
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
@@ -467,6 +467,36 @@ trait DtoMatchers {
       }
     }
 
+  def matchDtoToContainerSchema(schema: ContainerSchema) =
+    new Matcher[ContainerSchemaDto] {
+
+      def apply(left: ContainerSchemaDto) = {
+        val timeAddedMatcher =
+          beTimeWithinSeconds(schema.timeAdded, 5L)(OffsetDateTime.parse(left.timeAdded))
+
+        val timeModifiedMatcher = beOptionalTimeWithinSeconds(schema.timeModified, 5L)
+          .apply(left.timeModified.map(OffsetDateTime.parse))
+
+        val matchers =
+          Map(("id"           -> (left.id equals schema.id.id)),
+              ("version"      -> (left.version equals schema.version)),
+              ("timeAdded"    -> (timeAddedMatcher.matches)),
+              ("timeModified" -> (timeModifiedMatcher.matches)),
+              ("slug"         -> (left.slug equals schema.slug)),
+              ("name"         -> (left.name equals schema.name)),
+              ("description"  -> (left.description equals schema.description)),
+              ("shared"       -> (left.shared equals schema.shared)),
+              ("centreId"     -> (left.centre.id equals schema.centreId.id)))
+
+        val nonMatching = matchers filter { case (k, v) => !v } keys
+
+        MatchResult(nonMatching.size <= 0,
+                    "dto does not match entity for the following attributes: {0},\ndto: {1},\nentity: {2}",
+                    "dto matches entity: dto: {1},\nentity: {2}",
+                    IndexedSeq(nonMatching.mkString(", "), left, schema))
+      }
+    }
+
   def matchDtoToContainer(container: Container) =
     new Matcher[ContainerDto] {
 
@@ -508,7 +538,7 @@ trait DtoMatchers {
           Map(("enabled"     -> (left.enabled equals container.enabled)),
               ("constraints" -> (left.constraints equals container.constraints)),
               ("parentId"    -> (left.parent.id equals container.parentId.id)),
-              ("label"       -> (left.label equals container.position.label))) ++
+              ("label"       -> (left.label equals container.schemaLabel.label))) ++
             dtoAndContainerMatches(left, container)
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
@@ -526,7 +556,7 @@ trait DtoMatchers {
       def apply(left: SpecimenContainerDto) = {
         val nonMatching =
           Map(("parentId" -> (left.parent.id equals container.parentId.id)),
-              ("label"    -> (left.label equals container.position.label))) ++
+              ("label"    -> (left.label equals container.schemaLabel.label))) ++
             dtoAndContainerMatches(left, container) filter { case (k, v) => !v } keys
 
         MatchResult(nonMatching.size <= 0,
@@ -543,13 +573,13 @@ trait DtoMatchers {
     val timeModifiedMatcher = beOptionalTimeWithinSeconds(container.timeModified, 5L)
       .apply(left.timeModified.map(OffsetDateTime.parse))
 
-    Map(("id"              -> (left.id equals container.id.id)),
-        ("version"         -> (left.version equals container.version)),
-        ("timeAdded"       -> (timeAddedMatcher.matches)),
-        ("timeModified"    -> (timeModifiedMatcher.matches)),
-        ("slug"            -> (left.slug equals container.slug)),
-        ("inventoryId"     -> (left.inventoryId equals container.inventoryId)),
-        ("containerTypeId" -> (left.containerType.id equals container.containerTypeId.id)))
+    Map(("id"           -> (left.id equals container.id.id)),
+        ("version"      -> (left.version equals container.version)),
+        ("timeAdded"    -> (timeAddedMatcher.matches)),
+        ("timeModified" -> (timeModifiedMatcher.matches)),
+        ("slug"         -> (left.slug equals container.slug)),
+        ("inventoryId"  -> (left.inventoryId equals container.inventoryId)),
+        ("description"  -> (left.containerType.id equals container.containerTypeId.id)))
   }
 
 }

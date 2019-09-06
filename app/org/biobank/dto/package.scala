@@ -145,7 +145,22 @@ package dto {
       description:  Option[String],
       shared:       Boolean,
       centre:       EntityInfoDto,
-      labels:       Set[String])
+      labels:       Set[String]) {
+
+    override def toString: String =
+      s"""|${this.getClass.getSimpleName}: {
+          |  id:           $id,
+          |  version:      $version,
+          |  timeAdded:    $timeAdded,
+          |  timeModified: $timeModified,
+          |  slug:         $slug,
+          |  name:         $name,
+          |  description:  $description,
+          |  shared:       $shared,
+          |  centre:       $centre,
+          |  labels:       $labels
+          |}""".stripMargin
+  }
 
   object ContainerSchemaDto {
 
@@ -161,7 +176,7 @@ package dto {
                          description = schema.description,
                          shared      = schema.shared,
                          centre      = EntityInfoDto(centre),
-                         labels      = schema.positions.map(_.label))
+                         labels      = schema.labels)
 
     implicit val containerSchemaDtoFormat: Format[ContainerSchemaDto] = Json.format[ContainerSchemaDto]
 
@@ -329,11 +344,11 @@ package dto {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def apply(container: StorageContainer): ContainerInfoDto =
-      ContainerInfoDto(id = container.id.id, slug = container.slug.id, label = container.position.label)
+      ContainerInfoDto(id = container.id.id, slug = container.slug.id, label = container.schemaLabel.label)
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def apply(container: SpecimenContainer): ContainerInfoDto =
-      ContainerInfoDto(id = container.id.id, slug = container.slug.id, label = container.position.label)
+      ContainerInfoDto(id = container.id.id, slug = container.slug.id, label = container.schemaLabel.label)
 
     implicit val containerInfoDtoFormat: Format[ContainerInfoDto] = Json.format[ContainerInfoDto]
 
@@ -392,7 +407,7 @@ package dto {
                           enabled       = c.enabled,
                           containerType = EntityInfoDto(containerType),
                           parent        = ContainerInfoDto(parent),
-                          label         = c.position.label,
+                          label         = c.schemaLabel.label,
                           constraints   = constraintsDto)
     }
 
@@ -438,7 +453,7 @@ package dto {
                            inventoryId   = c.inventoryId,
                            containerType = EntityInfoDto(containerType),
                            parent        = ContainerInfoDto(parent),
-                           label         = c.position.label)
+                           label         = c.schemaLabel.label)
 
     implicit val specimenContainerDtoFormat: Format[SpecimenContainerDto] = Json.format[SpecimenContainerDto]
 
@@ -593,12 +608,13 @@ package dto {
       originLocationInfo:      CentreLocationInfo,
       locationInfo:            CentreLocationInfo,
       containerId:             Option[String],
-      position:                Option[String],
+      label:                   Option[String],
       timeCreated:             String,
       amount:                  BigDecimal,
       units:                   String,
       isDefaultAmount:         Boolean,
       eventTypeName:           String) {
+
     override def toString: String =
       s"""|${this.getClass.getSimpleName}: {
           |  id:                      $id,
@@ -615,7 +631,7 @@ package dto {
           |  originLocationInfo:      $originLocationInfo,
           |  locationInfo:            $locationInfo,
           |  containerId:             $containerId,
-          |  position:                $position,
+          |  label:                   $label,
           |  timeCreated:             $timeCreated,
           |  amount:                  $amount,
           |  units:                   $units,

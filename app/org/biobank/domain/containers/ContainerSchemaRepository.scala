@@ -4,26 +4,20 @@ import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Singleton}
 import org.biobank.TestData
 import org.biobank.domain._
-//import org.biobank.domain.centres.CentreId
-import scalaz.Scalaz._
-import scalaz.Validation.FlatMap._
+import org.biobank.domain.centres.CentreId
 
 @ImplementedBy(classOf[ContainerSchemaRepositoryImpl])
-trait ContainerSchemaRepository extends ReadWriteRepository[ContainerSchemaId, ContainerSchema] {
+trait ContainerSchemaRepository extends ReadWriteRepositoryWithSlug[ContainerSchemaId, ContainerSchema] {
 
-  def getPosition(schemaId: ContainerSchemaId, label: String): DomainValidation[ContainerSchemaPosition]
+  def allForCentre(centreId: CentreId): Set[ContainerSchema]
 
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def getPosition(
-      schemaId:   ContainerSchemaId,
-      positionId: ContainerSchemaPositionId
-    ): DomainValidation[ContainerSchemaPosition]
+  def isLabelValid(schemaId: ContainerSchemaId, label: String): DomainValidation[Boolean]
 
 }
 
 @Singleton
 class ContainerSchemaRepositoryImpl @Inject()(val testData: TestData)
-    extends ReadWriteRepositoryRefImpl[ContainerSchemaId, ContainerSchema](v => v.id)
+    extends ReadWriteRepositoryRefImplWithSlug[ContainerSchemaId, ContainerSchema](v => v.id)
     with ContainerSchemaRepository {
   import org.biobank.CommonValidations._
 
@@ -31,23 +25,19 @@ class ContainerSchemaRepositoryImpl @Inject()(val testData: TestData)
 
   protected def notFound(id: ContainerSchemaId): IdNotFound = IdNotFound(s"container schema id: $id")
 
+  protected def slugNotFound(slug: Slug): EntityCriteriaNotFound =
+    EntityCriteriaNotFound(s"container schema slug: $slug")
+
   override def init(): Unit = {
     super.init()
     testData.testContainerSchemas.foreach(put)
   }
 
-  def getPosition(schemaId: ContainerSchemaId, label: String): DomainValidation[ContainerSchemaPosition] =
-    for {
-      schema   <- getByKey(schemaId)
-      position <- schema.getPosition(label)
-    } yield position
+  def allForCentre(centreId: CentreId): Set[ContainerSchema] =
+    getValues.filter { s =>
+      s.centreId == centreId || s.shared
+    }.toSet
 
-  def getPosition(
-      schemaId:   ContainerSchemaId,
-      positionId: ContainerSchemaPositionId
-    ): DomainValidation[ContainerSchemaPosition] =
-    for {
-      schema   <- getByKey(schemaId)
-      position <- schema.getPosition(positionId)
-    } yield position
+  def isLabelValid(schemaId: ContainerSchemaId, label: String): DomainValidation[Boolean] =
+    getByKey(schemaId).map(_.isLabelValid(label))
 }

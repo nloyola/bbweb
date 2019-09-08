@@ -1,6 +1,6 @@
 package org.biobank.services
 
-import com.trueaccord.scalapb.GeneratedMessage
+import scalapb.GeneratedMessage
 import scala.concurrent._
 import scala.util.Random
 

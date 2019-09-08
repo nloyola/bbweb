@@ -2,7 +2,7 @@ package org.biobank.services
 
 import akka.actor.ActorLogging
 import akka.persistence.PersistentActor
-import com.trueaccord.scalapb.GeneratedMessage
+import scalapb.GeneratedMessage
 import org.biobank.domain._
 import scalaz.Scalaz._
 

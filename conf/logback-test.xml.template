@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration>
+<configuration debug="false">
   <conversionRule conversionWord="coloredLevel" converterClass="play.api.libs.logback.ColoredLevel" />
 
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <immediateFlush>true</immediateFlush>
     <encoder>
       <pattern>%coloredLevel %logger{15} %method - %message%n%xException{10}</pattern>
     </encoder>
@@ -27,6 +28,7 @@
       <logger name="io.netty" level="INFO" />
   -->
 
+  <logger name="akka.event.slf4j" level="WARN" />
   <logger name="com.gargoylesoftware.htmlunit.javascript" level="OFF" />
 
   <root level="INFO">

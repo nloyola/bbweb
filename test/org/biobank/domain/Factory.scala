@@ -433,7 +433,7 @@ class Factory {
                                name         = name,
                                description  = Some(nameGenerator.next[Centre]),
                                studyIds     = Set.empty,
-                               locations    = Set.empty)
+                               locations    = Set(createLocation))
     domainObjects = domainObjects + (classOf[EnabledCentre] -> centre)
     centre
   }
@@ -565,9 +565,9 @@ class Factory {
                                              slug         = Slug(name),
                                              name         = name,
                                              description  = Some(nameGenerator.next[ContainerType]),
-                                             centreId     = Some(centre.id),
+                                             centreId     = centre.id,
                                              schemaId     = schema.id,
-                                             shared       = true,
+                                             shared       = false,
                                              enabled      = false)
     domainObjects = domainObjects + (classOf[StorageContainerType] -> containerType)
     containerType
@@ -585,7 +585,7 @@ class Factory {
                                               slug         = Slug(name),
                                               name         = name,
                                               description  = Some(nameGenerator.next[ContainerType]),
-                                              centreId     = Some(defaultEnabledCentre.id),
+                                              centreId     = defaultEnabledCentre.id,
                                               schemaId     = schema.id,
                                               shared       = true,
                                               enabled      = false)
@@ -614,7 +614,7 @@ class Factory {
   }
 
   def createContainerSchema(): ContainerSchema =
-    createContainerSchema(Set.empty[String])
+    createContainerSchema(Set(nameGenerator.next[ContainerSchemaLabel]))
 
   def createContainerSchemaLabel(): ContainerSchemaLabel =
     ContainerSchemaLabel(schemaId = defaultContainerSchema.id,

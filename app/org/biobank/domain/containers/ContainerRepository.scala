@@ -27,6 +27,8 @@ trait ContainerRepository extends ReadWriteRepositoryWithSlug[ContainerId, Conta
 
   def getRootContainer(id: ContainerId): DomainValidation[RootContainer]
 
+  def containerTypeInUse(schemaId: ContainerTypeId): Boolean
+
 }
 
 @Singleton
@@ -101,6 +103,12 @@ class ContainerRepositoryImpl @Inject()(val testData: TestData)
         case c: RootContainer  => c.successNel[String]
         case c: ChildContainer => EntityCriteriaError("parent not found").failureNel[RootContainer]
       }
+    }
+  }
+
+  def containerTypeInUse(containerTypeId: ContainerTypeId): Boolean = {
+    getValues.exists { ct =>
+      (ct.containerTypeId == containerTypeId)
     }
   }
 

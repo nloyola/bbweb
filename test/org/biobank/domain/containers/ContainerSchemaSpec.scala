@@ -26,7 +26,7 @@ class ContainerSchemaSpec extends DomainSpec {
   describe("A container schema can") {
 
     it("be created") {
-      val containerSchema = factory.createContainerSchema
+      val containerSchema = factory.createContainerSchema.copy(labels = Set.empty[String])
       createFrom(containerSchema) mustSucceed { s =>
         s mustBe a[ContainerSchema]
         s must matchContainerSchema(containerSchema)

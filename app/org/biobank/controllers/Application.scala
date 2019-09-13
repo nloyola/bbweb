@@ -2,7 +2,6 @@ package org.biobank.controllers
 
 import javax.inject._
 import org.biobank.dto.AggregateCountsDto
-import org.biobank.domain.access.PermissionId
 import org.biobank.services.access.AccessService
 import org.biobank.services.centres.CentresService
 import org.biobank.services.studies.StudiesService
@@ -31,8 +30,6 @@ class Application @Inject()(
     val ec: ExecutionContext)
     extends CommandController(controllerComponents) {
 
-  import org.biobank.domain.access.AccessItem._
-
   val log: Logger = Logger(this.getClass)
 
   def aggregateCounts: Action[Unit] =
@@ -40,24 +37,9 @@ class Application @Inject()(
       val userId = request.identity.user.id
       Future {
         val counts = for {
-          studyCounts <- {
-            accessService.hasPermission(userId, PermissionId.StudyRead).flatMap { p =>
-              if (p) studiesService.getStudyCount(userId)
-              else 0L.successNel[String]
-            }
-          }
-          centreCounts <- {
-            accessService.hasPermission(userId, PermissionId.CentreRead).flatMap { p =>
-              if (p) centresService.getCentresCount(userId)
-              else 0L.successNel[String]
-            }
-          }
-          userCounts <- {
-            accessService.hasPermission(userId, PermissionId.UserRead).flatMap { p =>
-              if (p) usersService.getCountsByStatus(userId).map(c => c.total)
-              else 0L.successNel[String]
-            }
-          }
+          studyCounts  <- studiesService.getStudyCount(userId)
+          centreCounts <- centresService.getCentresCount(userId)
+          userCounts   <- usersService.getCountsByStatus(userId).map(c => c.total)
         } yield AggregateCountsDto(studyCounts, centreCounts, userCounts)
         validationReply(counts)
       }

@@ -497,6 +497,39 @@ trait DtoMatchers {
       }
     }
 
+  def matchDtoToContainerType(containerType: ContainerType) =
+    new Matcher[ContainerTypeDto] {
+
+      def apply(left: ContainerTypeDto) = {
+        val timeAddedMatcher =
+          beTimeWithinSeconds(containerType.timeAdded, 5L)(OffsetDateTime.parse(left.timeAdded))
+
+        val timeModifiedMatcher = beOptionalTimeWithinSeconds(containerType.timeModified, 5L)
+          .apply(left.timeModified.map(OffsetDateTime.parse))
+
+        val matchers =
+          Map(("id"           -> (left.id equals containerType.id.id)),
+              ("version"      -> (left.version equals containerType.version)),
+              ("timeAdded"    -> (timeAddedMatcher.matches)),
+              ("timeModified" -> (timeModifiedMatcher.matches)),
+              ("slug"         -> (left.slug equals containerType.slug)),
+              ("name"         -> (left.name equals containerType.name)),
+              ("description"  -> (left.description equals containerType.description)),
+              ("centreId"     -> (left.centre.id equals containerType.centreId.id)),
+              ("schemaId"     -> (left.schema.id equals containerType.schemaId.id)),
+              ("shared"       -> (left.shared equals containerType.shared)),
+              ("enabled"      -> (left.enabled equals containerType.enabled)),
+              ("storageType"  -> (left.storageType equals containerType.storageType.id)))
+
+        val nonMatching = matchers filter { case (k, v) => !v } keys
+
+        MatchResult(nonMatching.size <= 0,
+                    "dto does not match entity for the following attributes: {0},\ndto: {1},\nentity: {2}",
+                    "dto matches entity: dto: {1},\nentity: {2}",
+                    IndexedSeq(nonMatching.mkString(", "), left, containerType))
+      }
+    }
+
   def matchDtoToContainer(container: Container) =
     new Matcher[ContainerDto] {
 
@@ -505,7 +538,7 @@ trait DtoMatchers {
           case (l: RootContainerDto, c:     RootContainer)     => matchDtoToRootContainer(c).apply(l)
           case (l: StorageContainerDto, c:  StorageContainer)  => matchDtoToStorageContainer(c).apply(l)
           case (l: SpecimenContainerDto, c: SpecimenContainer) => matchDtoToSpecimenContainer(c).apply(l)
-          case _ => MatchResult(false, "dto and containers do not have maching scala types", "")
+          case _ => MatchResult(false, "dto and container do not have maching scala types", "")
         }
     }
 
@@ -573,13 +606,13 @@ trait DtoMatchers {
     val timeModifiedMatcher = beOptionalTimeWithinSeconds(container.timeModified, 5L)
       .apply(left.timeModified.map(OffsetDateTime.parse))
 
-    Map(("id"           -> (left.id equals container.id.id)),
-        ("version"      -> (left.version equals container.version)),
-        ("timeAdded"    -> (timeAddedMatcher.matches)),
-        ("timeModified" -> (timeModifiedMatcher.matches)),
-        ("slug"         -> (left.slug equals container.slug)),
-        ("inventoryId"  -> (left.inventoryId equals container.inventoryId)),
-        ("description"  -> (left.containerType.id equals container.containerTypeId.id)))
+    Map(("id"              -> (left.id equals container.id.id)),
+        ("version"         -> (left.version equals container.version)),
+        ("timeAdded"       -> (timeAddedMatcher.matches)),
+        ("timeModified"    -> (timeModifiedMatcher.matches)),
+        ("slug"            -> (left.slug equals container.slug)),
+        ("inventoryId"     -> (left.inventoryId equals container.inventoryId)),
+        ("containerTypeId" -> (left.containerType.id equals container.containerTypeId.id)))
   }
 
 }

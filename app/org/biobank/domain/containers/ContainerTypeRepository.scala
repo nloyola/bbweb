@@ -15,7 +15,7 @@ trait ContainerTypeRepository extends ReadWriteRepositoryWithSlug[ContainerTypeI
 
   def getSpecimenContainerType(id: ContainerTypeId): DomainValidation[SpecimenContainerType]
 
-  def withCentre(centreId: CentreId): Set[ContainerType]
+  def allForCentre(centreId: CentreId): Set[ContainerType]
 
   def schemaInUse(schemaId: ContainerSchemaId): Boolean
 
@@ -29,7 +29,7 @@ class ContainerTypeRepositoryImpl @Inject()(val testData: TestData)
 
   override def init(): Unit = {
     super.init()
-    testData.testContainerTypes.foreach(put)
+    //testData.testContainerTypes.foreach(put)
   }
 
   def nextIdentity: ContainerTypeId = new ContainerTypeId(nextIdentityAsString)
@@ -37,7 +37,7 @@ class ContainerTypeRepositoryImpl @Inject()(val testData: TestData)
   protected def notFound(id: ContainerTypeId): IdNotFound = IdNotFound(s"container type id: $id")
 
   protected def slugNotFound(slug: Slug): EntityCriteriaNotFound =
-    EntityCriteriaNotFound(s"containerType slug: $slug")
+    EntityCriteriaNotFound(s"container type slug: $slug")
 
   def getStorageContainerType(id: ContainerTypeId): DomainValidation[StorageContainerType] =
     for {
@@ -59,12 +59,14 @@ class ContainerTypeRepositoryImpl @Inject()(val testData: TestData)
                    }
     } yield specimenCt
 
-  def withCentre(centreId: CentreId): Set[ContainerType] =
+  def allForCentre(centreId: CentreId): Set[ContainerType] =
     getValues.filter { ct =>
       (ct.centreId == centreId) || ct.shared
     }.toSet
 
   def schemaInUse(schemaId: ContainerSchemaId): Boolean =
-    getValues.exists { ct => (ct.schemaId == schemaId) }
+    getValues.exists { ct =>
+      (ct.schemaId == schemaId)
+    }
 
 }

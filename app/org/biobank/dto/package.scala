@@ -190,10 +190,29 @@ package dto {
       slug:         Slug,
       name:         String,
       description:  Option[String],
-      centre:       Option[EntityInfoAndStateDto],
+      centre:       EntityInfoAndStateDto,
       schema:       EntityInfoDto,
       shared:       Boolean,
-      enabled:      Boolean)
+      enabled:      Boolean,
+      storageType:  String) {
+
+    override def toString: String =
+      s"""|${this.getClass.getSimpleName}: {
+          |  id:           $id,
+          |  version:      $version,
+          |  timeAdded:    $timeAdded,
+          |  timeModified: $timeModified,
+          |  slug:         $slug,
+          |  name:         $name,
+          |  description:  $description,
+          |  centre:       $centre,
+          |  schema:       $schema,
+          |  shared:       $shared,
+          |  enabled       $enabled,
+          |  storageType   $storageType
+          |}""".stripMargin
+
+  }
 
   object ContainerTypeDto {
 
@@ -207,10 +226,11 @@ package dto {
                        slug        = containerType.slug,
                        name        = containerType.name,
                        description = containerType.description,
-                       centre      = containerType.centreId.map(_ => EntityInfoAndStateDto(centre)),
+                       centre      = EntityInfoAndStateDto(centre),
                        schema      = EntityInfoDto(schema),
                        shared      = containerType.shared,
-                       enabled     = containerType.enabled)
+                       enabled     = containerType.enabled,
+                       storageType = containerType.storageType.id)
 
     implicit val containerTypeDtoFormat: Format[ContainerTypeDto] = Json.format[ContainerTypeDto]
 

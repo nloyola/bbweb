@@ -19,8 +19,8 @@ class SpecimensServiceSpec extends ProcessorTestFixture with ParticipantsService
   import org.biobank.infrastructure.commands.SpecimenCommands._
 
   class UsersWithSpecimenAccessFixture extends UsersWithCeventAccessFixture {
-    val location = factory.createLocation
-    val centre   = factory.createEnabledCentre.copy(studyIds = Set(enabledStudy.id), locations = Set(location))
+    val centre   = factory.createEnabledCentre.copy(studyIds = Set(enabledStudy.id))
+    val location = centre.locations.headOption.value
 
     val specimen = factory.createUsableSpecimen
       .copy(specimenDefinitionId = specimenDefinition.id, locationId = location.id)

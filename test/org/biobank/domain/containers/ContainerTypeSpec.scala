@@ -28,7 +28,7 @@ trait ContainerTypeSharedSpec { this: FunSpec =>
 
   protected def createWithDescription(description: Option[String]): ContainerType
 
-  protected def createWithCentreId(id: Option[CentreId]): ContainerType
+  protected def createWithCentreId(id: CentreId): ContainerType
 
   protected def createWithSchemaId(id: ContainerSchemaId): ContainerType
 
@@ -112,7 +112,7 @@ trait ContainerTypeSharedSpec { this: FunSpec =>
     }
 
     it("not be created with an invalid centre id") {
-      createFrom(createWithCentreId(Some(CentreId("")))) mustFail "CentreIdRequired"
+      createFrom(createWithCentreId(CentreId(""))) mustFail "CentreIdRequired"
     }
 
     it("not be created with an invalid schema id") {
@@ -155,7 +155,7 @@ class StorageContainerTypeSpec extends DomainSpec with ContainerTypeSharedSpec {
   protected def createWithDescription(description: Option[String]): ContainerType =
     factory.createStorageContainerType.copy(description = description)
 
-  protected def createWithCentreId(id: Option[CentreId]): ContainerType =
+  protected def createWithCentreId(id: CentreId): ContainerType =
     factory.createStorageContainerType.copy(centreId = id)
 
   protected def createWithSchemaId(id: ContainerSchemaId): ContainerType =
@@ -212,7 +212,7 @@ class SpecimenContainerTypeSpec extends DomainSpec with ContainerTypeSharedSpec 
   protected def createWithDescription(description: Option[String]): ContainerType =
     factory.createSpecimenContainerType.copy(description = description)
 
-  protected def createWithCentreId(id: Option[CentreId]): ContainerType =
+  protected def createWithCentreId(id: CentreId): ContainerType =
     factory.createSpecimenContainerType.copy(centreId = id)
 
   protected def createWithSchemaId(id: ContainerSchemaId): ContainerType =

@@ -76,12 +76,16 @@ sealed trait Container
   /** The ID of the container type that classifiies this [[Container]]. */
   val containerTypeId: ContainerTypeId
 
+  val storageType: ContainerStorageType
+
   def getLabel(): String
 
   protected def validateInventoryId[T](inventoryId: String): DomainValidation[String] =
     validateNonEmptyString(inventoryId, ContainerInventoryIdInvalid)
 
   def withInventoryId(inventoryId: String): DomainValidation[Container]
+
+  def withContainerType(containerTypeId: ContainerTypeId): DomainValidation[Container]
 
   override def toString: String =
     s"""|${this.getClass.getSimpleName}: {
@@ -135,13 +139,9 @@ object Container extends ContainerValidations {
       case _ => false
     }
 
-  class StorageType(val id: String) extends AnyVal {
-    override def toString: String = id
-  }
-
-  val rootStorage:      StorageType = new StorageType("root-container")
-  val containerStorage: StorageType = new StorageType("storage-container")
-  val specimenStorage:  StorageType = new StorageType("specimen-container")
+  val rootStorage:      ContainerStorageType = new ContainerStorageType("root-container")
+  val containerStorage: ContainerStorageType = new ContainerStorageType("storage-container")
+  val specimenStorage:  ContainerStorageType = new ContainerStorageType("specimen-container")
 
   implicit val containerFormat: Format[Container] = new Format[Container] {
     override def writes(container: Container): JsValue =
@@ -191,7 +191,7 @@ final case class RootContainer(
     locationId:      LocationId,
     temperature:     PreservationTemperature,
     constraints:     Option[ContainerConstraints])
-    extends Container with ContainerValidations {
+    extends { val storageType = Container.rootStorage } with Container with ContainerValidations {
 
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
@@ -206,6 +206,11 @@ final case class RootContainer(
   def withLabel(inventoryId: String): DomainValidation[Container] =
     validateNonEmptyString(label) map { _ =>
       update.copy(label = label)
+    }
+
+  def withContainerType(containerTypeId: ContainerTypeId): DomainValidation[RootContainer] =
+    validateId(containerTypeId, ContainerTypeIdInvalid) map { _ =>
+      update.copy(containerTypeId = containerTypeId)
     }
 
   def withEnabled(enabled: Boolean): DomainValidation[RootContainer] =
@@ -293,7 +298,8 @@ final case class StorageContainer(
     parentId:        ContainerId,
     schemaLabel:     ContainerSchemaLabel,
     constraints:     Option[ContainerConstraints])
-    extends Container with ChildContainer with ContainerValidations {
+    extends { val storageType = Container.containerStorage } with Container with ChildContainer
+with ContainerValidations {
 
   import org.biobank.domain.DomainValidations._
 
@@ -308,6 +314,11 @@ final case class StorageContainer(
   def withLabel(schemaLabel: ContainerSchemaLabel): DomainValidation[Container] =
     ContainerSchemaLabel.validate(schemaLabel) map { _ =>
       update.copy(schemaLabel = schemaLabel)
+    }
+
+  def withContainerType(containerTypeId: ContainerTypeId): DomainValidation[Container] =
+    validateId(containerTypeId, ContainerTypeIdInvalid) map { _ =>
+      update.copy(containerTypeId = containerTypeId)
     }
 
   def withParentLabel(parentId: ContainerId, schemaLabel: ContainerSchemaLabel): DomainValidation[Container] =
@@ -382,7 +393,8 @@ final case class SpecimenContainer(
     containerTypeId: ContainerTypeId,
     parentId:        ContainerId,
     schemaLabel:     ContainerSchemaLabel)
-    extends Container with ChildContainer with ContainerValidations {
+    extends { val storageType = Container.specimenStorage } with Container with ChildContainer
+with ContainerValidations {
   import org.biobank.domain.DomainValidations._
 
   def withInventoryId(inventoryId: String): DomainValidation[Container] =
@@ -393,6 +405,11 @@ final case class SpecimenContainer(
   def withSchemaLabel(schemaLabel: ContainerSchemaLabel): DomainValidation[Container] =
     ContainerSchemaLabel.validate(schemaLabel) map { _ =>
       update.copy(schemaLabel = schemaLabel)
+    }
+
+  def withContainerType(containerTypeId: ContainerTypeId): DomainValidation[Container] =
+    validateId(containerTypeId, ContainerTypeIdInvalid) map { _ =>
+      update.copy(containerTypeId = containerTypeId)
     }
 
   def withParentLabel(parentId: ContainerId, schemaLabel: ContainerSchemaLabel): DomainValidation[Container] =

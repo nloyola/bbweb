@@ -1,7 +1,7 @@
 package org.biobank.controllers.centres
 
 import org.biobank.domain.centres.{CentreId, ShipmentId}
-import org.biobank.domain.containers.{ContainerId, ContainerSchemaId}
+import org.biobank.domain.containers.{ContainerId, ContainerSchemaId, ContainerTypeId}
 import play.api.mvc.PathBindable.Parsing
 import play.api.routing.sird._
 
@@ -28,6 +28,12 @@ object CentreRouting {
                                          (key: String, e: Exception) =>
                                            s"$key is not a valid container schema Id")
 
+  implicit object bindableContainerTypeId
+      extends Parsing[ContainerTypeId](ContainerTypeId.apply,
+                                       _.id,
+                                       (key: String, e: Exception) =>
+                                         s"$key is not a valid container schema Id")
+
   val centreId:    PathBindableExtractor[CentreId]    = new PathBindableExtractor[CentreId]
   val shipmentId:  PathBindableExtractor[ShipmentId]  = new PathBindableExtractor[ShipmentId]
   val containerId: PathBindableExtractor[ContainerId] = new PathBindableExtractor[ContainerId]
@@ -35,4 +41,6 @@ object CentreRouting {
   val containerSchemaId: PathBindableExtractor[ContainerSchemaId] =
     new PathBindableExtractor[ContainerSchemaId]
 
+  val containerTypeId: PathBindableExtractor[ContainerTypeId] =
+    new PathBindableExtractor[ContainerTypeId]
 }

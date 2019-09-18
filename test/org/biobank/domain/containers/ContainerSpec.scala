@@ -1,7 +1,6 @@
 package org.biobank.domain.containers
 
 import java.time.OffsetDateTime
-import org.biobank.domain.DomainValidation
 import org.biobank.domain._
 import org.biobank.fixtures.NameGenerator
 import org.scalatest.FunSpec
@@ -44,10 +43,10 @@ trait ContainerSharedSpec[T <: Container] { this: FunSpec =>
     it("can have it's inventory ID updated") {
       val container   = createEntity
       val inventoryId = nameGenerator.next[Container]
-      container.withInventoryId(inventoryId) mustSucceed { c =>
+      container.withInventoryId(inventoryId, Slug(inventoryId)) mustSucceed { c =>
         c must have('id (container.id),
                     'version (container.version + 1),
-                    'slug (container.slug.id),
+                    'slug (Slug(inventoryId).id),
                     'inventoryId (inventoryId),
                     'containerTypeId (container.containerTypeId))
 
@@ -153,7 +152,7 @@ class StorageContainerSpec extends DomainSpec with ContainerSharedSpec[StorageCo
     it("can be enabled and disabled") {
       Set(true, false).foreach { enabled =>
         val container = createEntity
-        container.withEnabled(enabled) mustSucceed { c =>
+        container.withEnabled(enabled, OffsetDateTime.now) mustSucceed { c =>
           c must matchContainer(
             container.copy(enabled      = enabled,
                            version      = container.version + 1L,
@@ -166,7 +165,7 @@ class StorageContainerSpec extends DomainSpec with ContainerSharedSpec[StorageCo
     it("can have it's constraints updated") {
       val container   = createEntity
       val constraints = Some(factory.createContainerConstraints)
-      container.withConstraints(constraints) mustSucceed {
+      container.withConstraints(constraints, OffsetDateTime.now) mustSucceed {
         _ must matchContainer(
           container.copy(constraints  = constraints,
                          version      = container.version + 1L,
@@ -176,9 +175,9 @@ class StorageContainerSpec extends DomainSpec with ContainerSharedSpec[StorageCo
     }
 
     it("not be created with an invalid constraints") {
-      val constraints = Some(factory.createContainerConstraints.copy(id = ContainerConstraintsId("")))
+      val constraints = Some(factory.createContainerConstraints.copy(name = ""))
       val container   = factory.createStorageContainer().copy(constraints = constraints)
-      createFrom(container) mustFail ("ContainerConstraintsInvalid", "IdRequired")
+      createFrom(container) mustFail ("ContainerConstraintsInvalid")
     }
   }
 

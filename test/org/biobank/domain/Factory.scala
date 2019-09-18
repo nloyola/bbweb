@@ -2,9 +2,6 @@ package org.biobank.domain
 
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
-import org.biobank.domain.AnatomicalSourceType._
-import org.biobank.domain.PreservationType._
-import org.biobank.domain.SpecimenType._
 import org.biobank.domain.access._
 import org.biobank.domain.annotations.AnnotationValueType._
 import org.biobank.domain.annotations._
@@ -622,30 +619,26 @@ class Factory {
 
   def createContainerConstraints(): ContainerConstraints = {
     val name = nameGenerator.next[ContainerConstraints]
-    val containerConstraints = ContainerConstraints(
-      id                    = ContainerConstraintsId(nextIdentityAsString[ContainerConstraints]),
-      slug                  = Slug(name),
-      name                  = name,
-      description           = Some(nameGenerator.next[ContainerConstraints]),
-      centreId              = defaultDisabledCentre.id,
-      anatomicalSourceTypes = Set.empty[AnatomicalSourceType],
-      preservationTypes     = Set.empty[PreservationType],
-      specimenTypes         = Set.empty[SpecimenType]
-    )
+    val containerConstraints =
+      ContainerConstraints(name              = name,
+                           description       = Some(nameGenerator.next[ContainerConstraints]),
+                           anatomicalSources = Set(AnatomicalSourceType.Blood),
+                           preservationTypes = Set(PreservationType.FrozenSpecimen),
+                           specimenTypes     = Set(SpecimenType.BuffyCoat))
     domainObjects = domainObjects + (classOf[ContainerConstraints] -> containerConstraints)
     containerConstraints
   }
 
   def createRootContainer(centre: Centre, containerType: StorageContainerType): RootContainer = {
-    val label      = nameGenerator.next[Container]
-    val locationId = centre.locations.headOption.value.id
+    val inventoryId = nameGenerator.next[Container]
+    val locationId  = centre.locations.headOption.value.id
     val container = RootContainer(id = ContainerId(nextIdentityAsString[Container]),
                                   version         = 0L,
                                   timeAdded       = OffsetDateTime.now,
                                   timeModified    = None,
-                                  slug            = Slug(label),
-                                  inventoryId     = nameGenerator.next[Container],
-                                  label           = label,
+                                  slug            = Slug(inventoryId),
+                                  inventoryId     = inventoryId,
+                                  label           = nameGenerator.next[Container],
                                   enabled         = false,
                                   containerTypeId = containerType.id,
                                   centreId        = centre.id,
@@ -669,7 +662,7 @@ class Factory {
                                      version         = 0L,
                                      timeAdded       = OffsetDateTime.now,
                                      timeModified    = None,
-                                     slug            = Slug(schemaLabel.label),
+                                     slug            = Slug(inventoryId),
                                      inventoryId     = inventoryId,
                                      enabled         = false,
                                      containerTypeId = containerType.id,
@@ -696,7 +689,7 @@ class Factory {
                                       version         = 0L,
                                       timeAdded       = OffsetDateTime.now,
                                       timeModified    = None,
-                                      slug            = Slug(schemaLabel.label),
+                                      slug            = Slug(inventoryId),
                                       inventoryId     = inventoryId,
                                       containerTypeId = containerType.id,
                                       parentId        = parent.id,

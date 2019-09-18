@@ -22,16 +22,9 @@ trait DtoMatchers {
     new Matcher[CentreDto] {
 
       def apply(left: CentreDto) = {
-        val dtoStudyIds = left.studyNames
-          .map { s =>
-            StudyId(s.id)
-          }
-          .toList
-          .sortBy(_.id)
-
+        val dtoStudyIds = left.studyNames.map(sn => StudyId(sn.id)).toList.sortBy(_.id)
         val timeAddedMatcher =
           beTimeWithinSeconds(centre.timeAdded, 5L)(OffsetDateTime.parse(left.timeAdded))
-
         val timeModifiedMatcher = beOptionalTimeWithinSeconds(centre.timeModified, 5L)
           .apply(left.timeModified.map(OffsetDateTime.parse))
 
@@ -55,13 +48,6 @@ trait DtoMatchers {
       }
     }
 
-  private def optionalTimeWithinSeconds(
-      expected: Option[String],
-      actual:   Option[OffsetDateTime],
-      seconds:  Long
-    ) =
-    beOptionalTimeWithinSeconds(actual, seconds).apply(expected.map(OffsetDateTime.parse))
-
   def matchDtoToShipment(shipment: Shipment) =
     new Matcher[ShipmentDto] {
 
@@ -77,30 +63,21 @@ trait DtoMatchers {
           matchCentreLocationInfo(shipment.toCentreId, shipment.toLocationId)
             .apply(left.toLocationInfo)
 
-        val matchers = Map(("id" -> (left.id equals shipment.id.id)),
-                           ("version"   -> (left.version equals shipment.version)),
-                           ("timeAdded" -> (timeAddedMatcher.matches)),
-                           ("timeModified" -> optionalTimeWithinSeconds(left.timeModified,
-                                                                        shipment.timeModified,
-                                                                        5L).matches),
-                           ("state"            -> (left.state equals shipment.state.id)),
-                           ("courierName"      -> (left.courierName equals shipment.courierName)),
-                           ("trackingNumber"   -> (left.trackingNumber equals shipment.trackingNumber)),
-                           ("fromLocationInfo" -> (fromLocationInfoMatcher.matches)),
-                           ("toLocationInfo"   -> (toLocationInfoMatcher.matches)),
-                           ("timePacked" -> optionalTimeWithinSeconds(left.timePacked,
-                                                                      shipment.timePacked,
-                                                                      5L).matches),
-                           ("timeSent" -> optionalTimeWithinSeconds(left.timeSent, shipment.timeSent, 5L).matches),
-                           ("timeReceived" -> optionalTimeWithinSeconds(left.timeReceived,
-                                                                        shipment.timeReceived,
-                                                                        5L).matches),
-                           ("timeUnpacked" -> optionalTimeWithinSeconds(left.timeUnpacked,
-                                                                        shipment.timeUnpacked,
-                                                                        5L).matches),
-                           ("timeCompleted" -> optionalTimeWithinSeconds(left.timeCompleted,
-                                                                         shipment.timeCompleted,
-                                                                         5L).matches))
+        val matchers =
+          Map(("id"               -> (left.id equals shipment.id.id)),
+              ("version"          -> (left.version equals shipment.version)),
+              ("timeAdded"        -> (timeAddedMatcher.matches)),
+              ("timeModified"     -> optionalTimeWithinSeconds(left.timeModified, shipment.timeModified, 5L).matches),
+              ("state"            -> (left.state equals shipment.state.id)),
+              ("courierName"      -> (left.courierName equals shipment.courierName)),
+              ("trackingNumber"   -> (left.trackingNumber equals shipment.trackingNumber)),
+              ("fromLocationInfo" -> (fromLocationInfoMatcher.matches)),
+              ("toLocationInfo"   -> (toLocationInfoMatcher.matches)),
+              ("timePacked"       -> optionalTimeWithinSeconds(left.timePacked, shipment.timePacked, 5L).matches),
+              ("timeSent"         -> optionalTimeWithinSeconds(left.timeSent, shipment.timeSent, 5L).matches),
+              ("timeReceived"     -> optionalTimeWithinSeconds(left.timeReceived, shipment.timeReceived, 5L).matches),
+              ("timeUnpacked"     -> optionalTimeWithinSeconds(left.timeUnpacked, shipment.timeUnpacked, 5L).matches),
+              ("timeCompleted"    -> optionalTimeWithinSeconds(left.timeCompleted, shipment.timeCompleted, 5L).matches))
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
@@ -121,20 +98,19 @@ trait DtoMatchers {
         val timeCreatedMatcher =
           beTimeWithinSeconds(specimen.timeCreated, 5L)(OffsetDateTime.parse(left.timeCreated))
 
-        val matchers = Map(("id" -> (left.id equals specimen.id.id)),
-                           ("version"   -> (left.version equals specimen.version)),
-                           ("timeAdded" -> timeAddedMatcher.matches),
-                           ("timeModified" -> optionalTimeWithinSeconds(left.timeModified,
-                                                                        specimen.timeModified,
-                                                                        5L).matches),
-                           ("state"                -> (left.state equals specimen.state.id)),
-                           ("inventoryId"          -> (left.inventoryId equals specimen.inventoryId)),
-                           ("specimenDefinitionId" -> (left.specimenDefinitionId equals specimen.specimenDefinitionId.id)),
-                           ("originLocationInfo"   -> (left.originLocationInfo.locationId equals specimen.originLocationId.id)),
-                           ("locationInfo"         -> (left.locationInfo.locationId equals specimen.locationId.id)),
-                           ("containerId"          -> (left.containerId equals specimen.containerId)),
-                           ("label"                -> (left.label equals specimen.schemaLabel.map(_.label))),
-                           ("timeCreated"          -> timeCreatedMatcher.matches))
+        val matchers =
+          Map(("id"                   -> (left.id equals specimen.id.id)),
+              ("version"              -> (left.version equals specimen.version)),
+              ("timeAdded"            -> timeAddedMatcher.matches),
+              ("timeModified"         -> optionalTimeWithinSeconds(left.timeModified, specimen.timeModified, 5L).matches),
+              ("state"                -> (left.state equals specimen.state.id)),
+              ("inventoryId"          -> (left.inventoryId equals specimen.inventoryId)),
+              ("specimenDefinitionId" -> (left.specimenDefinitionId equals specimen.specimenDefinitionId.id)),
+              ("originLocationInfo"   -> (left.originLocationInfo.locationId equals specimen.originLocationId.id)),
+              ("locationInfo"         -> (left.locationInfo.locationId equals specimen.locationId.id)),
+              ("containerId"          -> (left.containerId equals specimen.containerId)),
+              ("label"                -> (left.label equals specimen.schemaLabel.map(_.label))),
+              ("timeCreated"          -> timeCreatedMatcher.matches))
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
@@ -152,17 +128,18 @@ trait DtoMatchers {
         val timeAddedMatcher =
           beTimeWithinSeconds(shipmentSpecimen.timeAdded, 5L)(OffsetDateTime.parse(left.timeAdded))
 
-        val matchers = Map(("id" -> (left.id equals shipmentSpecimen.id.id)),
-                           ("version"   -> (left.version equals shipmentSpecimen.version)),
-                           ("timeAdded" -> (timeAddedMatcher.matches)),
-                           ("timeModified" -> optionalTimeWithinSeconds(left.timeModified,
-                                                                        shipmentSpecimen.timeModified,
-                                                                        5L).matches),
-                           ("state"      -> (left.state equals shipmentSpecimen.state.toString)),
-                           ("shipmentId" -> (left.shipmentId equals shipmentSpecimen.shipmentId.id)),
-                           ("shipmentContainerId" -> (left.shipmentContainerId equals
-                             shipmentSpecimen.shipmentContainerId.map(_.toString))),
-                           ("specimenId" -> (left.specimen.id equals shipmentSpecimen.specimenId.id)))
+        val matchers =
+          Map(("id"        -> (left.id equals shipmentSpecimen.id.id)),
+              ("version"   -> (left.version equals shipmentSpecimen.version)),
+              ("timeAdded" -> (timeAddedMatcher.matches)),
+              ("timeModified" -> optionalTimeWithinSeconds(left.timeModified,
+                                                           shipmentSpecimen.timeModified,
+                                                           5L).matches),
+              ("state"      -> (left.state equals shipmentSpecimen.state.toString)),
+              ("shipmentId" -> (left.shipmentId equals shipmentSpecimen.shipmentId.id)),
+              ("shipmentContainerId" -> (left.shipmentContainerId equals
+                shipmentSpecimen.shipmentContainerId.map(_.toString))),
+              ("specimenId" -> (left.specimen.id equals shipmentSpecimen.specimenId.id)))
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
@@ -206,21 +183,9 @@ trait DtoMatchers {
     new Matcher[RoleDto] {
 
       def apply(left: RoleDto) = {
-        val dtoUserIds = left.userData.toList
-          .map { ud =>
-            UserId(ud.id)
-          }
-          .sortBy(_.id)
-        val dtoParentIds = left.parentData.toList
-          .map { pd =>
-            AccessItemId(pd.id)
-          }
-          .sortBy(_.id)
-        val dtoChildrenIds = left.childData.toList
-          .map { cd =>
-            AccessItemId(cd.id)
-          }
-          .sortBy(_.id)
+        val dtoUserIds     = left.userData.toList.map(ud   => UserId(ud.id)).sortBy(_.id)
+        val dtoParentIds   = left.parentData.toList.map(pd => AccessItemId(pd.id)).sortBy(_.id)
+        val dtoChildrenIds = left.childData.toList.map(cd  => AccessItemId(cd.id)).sortBy(_.id)
 
         val matchers = Map(("id" -> (left.id equals role.id.id)),
                            ("version"     -> (left.version equals role.version)),
@@ -538,7 +503,12 @@ trait DtoMatchers {
           case (l: RootContainerDto, c:     RootContainer)     => matchDtoToRootContainer(c).apply(l)
           case (l: StorageContainerDto, c:  StorageContainer)  => matchDtoToStorageContainer(c).apply(l)
           case (l: SpecimenContainerDto, c: SpecimenContainer) => matchDtoToSpecimenContainer(c).apply(l)
-          case _ => MatchResult(false, "dto and container do not have maching scala types", "")
+          case _ =>
+            MatchResult(
+              false,
+              s"dto and container do not have maching scala types: ${left.getClass.getSimpleName}, ${container.getClass.getSimpleName}",
+              ""
+            )
         }
     }
 
@@ -546,12 +516,13 @@ trait DtoMatchers {
     new Matcher[RootContainerDto] {
 
       def apply(left: RootContainerDto) = {
+        val constraintsMatcher = matchContainerConstraints(container.constraints).apply(left.constraints)
         val matchers =
           Map(("label"              -> (left.label equals container.label)),
               ("enabled"            -> (left.enabled equals container.enabled)),
               ("centreLocationInfo" -> (left.centreLocationInfo.locationId equals container.locationId.id)),
               ("temperature"        -> (left.temperature equals container.temperature)),
-              ("constraints"        -> (left.constraints equals container.constraints))) ++
+              ("constraints"        -> (constraintsMatcher.matches))) ++
             dtoAndContainerMatches(left, container)
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
@@ -567,9 +538,10 @@ trait DtoMatchers {
     new Matcher[StorageContainerDto] {
 
       def apply(left: StorageContainerDto) = {
+        val constraintsMatcher = matchContainerConstraints(container.constraints).apply(left.constraints)
         val matchers =
           Map(("enabled"     -> (left.enabled equals container.enabled)),
-              ("constraints" -> (left.constraints equals container.constraints)),
+              ("constraints" -> (constraintsMatcher.matches)),
               ("parentId"    -> (left.parent.id equals container.parentId.id)),
               ("label"       -> (left.label equals container.schemaLabel.label))) ++
             dtoAndContainerMatches(left, container)
@@ -614,6 +586,71 @@ trait DtoMatchers {
         ("inventoryId"     -> (left.inventoryId equals container.inventoryId)),
         ("containerTypeId" -> (left.containerType.id equals container.containerTypeId.id)))
   }
+
+  def matchContainerConstraints(constraints: ContainerConstraints) =
+    new Matcher[ContainerConstraintsDto] {
+
+      def apply(left: ContainerConstraintsDto) = {
+        val matchers =
+          Map(("name"        -> (left.name equals constraints.name)),
+              ("description" -> (left.description equals constraints.description)),
+              ("anatomicalSources" -> (left.anatomicalSources.map(_.toString).toSeq.sorted
+                equals constraints.anatomicalSources.map(_.toString).toSeq.sorted)),
+              ("preservationTypes" -> (left.preservationTypes.map(_.toString).toSeq.sorted
+                equals constraints.preservationTypes.map(_.toString).toSeq.sorted)),
+              ("specimenTypes" -> (left.specimenTypes.map(_.toString).toSeq.sorted
+                equals constraints.specimenTypes.map(_.toString).toSeq.sorted)))
+
+        val nonMatching = matchers filter { case (k, v) => !v } keys
+
+        MatchResult(nonMatching.size <= 0,
+                    "dto does not match entity for the following attributes: {0},\ndto: {1},\nentity: {2}",
+                    "dto matches entity: dto: {1},\nentity: {2}",
+                    IndexedSeq(nonMatching.mkString(", "), left, constraints))
+      }
+    }
+
+  def matchDtoToContainerInfo(container: Container) =
+    new Matcher[ContainerInfo] {
+
+      def apply(left: ContainerInfo) = {
+        val matchers =
+          Map(("id"          -> (left.id equals container.id.id)),
+              ("slug"        -> (left.slug equals container.slug.id)),
+              ("inventoryId" -> (left.inventoryId equals container.inventoryId)),
+              ("label"       -> (left.label equals container.getLabel)))
+
+        val nonMatching = matchers filter { case (k, v) => !v } keys
+
+        MatchResult(nonMatching.size <= 0,
+                    "dto does not match entity for the following attributes: {0},\ndto: {1},\nentity: {2}",
+                    "dto matches entity: dto: {1},\nentity: {2}",
+                    IndexedSeq(nonMatching.mkString(", "), left, container))
+      }
+    }
+
+  private def matchContainerConstraints(
+      constraints: Option[ContainerConstraints]
+    ): Matcher[Option[ContainerConstraintsDto]] =
+    new Matcher[Option[ContainerConstraintsDto]] {
+
+      def apply(left: Option[ContainerConstraintsDto]) = {
+        (left, constraints) match {
+          case (Some(l), Some(c)) => matchContainerConstraints(c).apply(l)
+          case (None, Some(c)) =>
+            MatchResult(false, "dto does not have constraints when container does", "", "")
+          case (Some(c), None) => MatchResult(false, "dto has constraints when container does not", "", "")
+          case (None, None)    => MatchResult(true, "", "", "")
+        }
+      }
+    }
+
+  private def optionalTimeWithinSeconds(
+      expected: Option[String],
+      actual:   Option[OffsetDateTime],
+      seconds:  Long
+    ) =
+    beOptionalTimeWithinSeconds(actual, seconds).apply(expected.map(OffsetDateTime.parse))
 
 }
 

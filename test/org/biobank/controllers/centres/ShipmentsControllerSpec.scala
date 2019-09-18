@@ -164,7 +164,7 @@ class ShipmentsControllerSpec
       it("fail when using an invalid state filter") {
         val invalidStateName = nameGenerator.next[Shipment]
         val reply            = makeAuthRequest(GET, uri("list").addQueryString(s"filter=state::$invalidStateName")).value
-        reply must beNotFoundWithMessage("shipment state does not exist:")
+        reply must beBadRequestWithMessage("shipment state does not exist:")
       }
 
       describe("list a single shipment when filtered by courier name") {
@@ -493,7 +493,7 @@ class ShipmentsControllerSpec
         shipmentRepository.put(f.shipment)
         val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "locationId" -> "")
         val reply      = makeAuthRequest(POST, uri("fromlocation", f.shipment.id.id), updateJson).value
-        reply must beNotFoundWithMessage("IdNotfound: centre with location id")
+        reply must beNotFoundWithMessage("IdNotFound: centre with location id")
       }
 
       it("not allow updating the from location to an invalid id") {
@@ -504,7 +504,7 @@ class ShipmentsControllerSpec
 
         val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "locationId" -> badLocation.id.id)
         val reply      = makeAuthRequest(POST, uri("fromlocation", f.shipment.id.id), updateJson).value
-        reply must beNotFoundWithMessage("IdNotfound: centre with location id")
+        reply must beNotFoundWithMessage("IdNotFound: centre with location id")
       }
 
       it("must not allow updating the from location on a shipment not in created state") {

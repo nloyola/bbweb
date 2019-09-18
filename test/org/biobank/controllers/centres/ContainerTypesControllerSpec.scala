@@ -15,6 +15,9 @@ case class ContainerTypeFixture[T <: ContainerType](
     containerTypes: List[T],
     containerType:  T)
 
+/**
+ * Tests the REST API for [[StorageContainerType StorageContainerTypes]].
+ */
 class StorageContainerTypesControllerSpec extends ContainerTypesControllerSpec[StorageContainerType] {
 
   protected def addUri() = uri("storage")
@@ -57,6 +60,9 @@ class StorageContainerTypesControllerSpec extends ContainerTypesControllerSpec[S
   }
 }
 
+/**
+ * Tests the REST API for [[SpecimenContainerType SpecimenContainerTypes]].
+ */
 class SpecimenContainerTypesControllerSpec extends ContainerTypesControllerSpec[SpecimenContainerType] {
 
   protected def addUri() = uri("specimen")
@@ -99,9 +105,6 @@ class SpecimenContainerTypesControllerSpec extends ContainerTypesControllerSpec[
   }
 }
 
-/**
- * Tests the REST API for [[Container]]s.
- */
 trait ContainerTypesControllerSpec[T <: ContainerType]
     extends ControllerFixture with PagedResultsSharedSpec with PagedResultsMatchers {
 
@@ -223,7 +226,7 @@ trait ContainerTypesControllerSpec[T <: ContainerType]
 
     describe("POST /api/containers/types/name/:id") {
 
-      it("update a schema's name") {
+      it("update a container type's name") {
         val newName    = nameGenerator.next[ContainerSchema]
         val f          = fixtureAddAll()
         val updateJson = Json.obj("expectedVersion" -> Some(f.containerType.version), "name" -> newName)
@@ -537,7 +540,7 @@ trait ContainerTypesControllerSpec[T <: ContainerType]
       val replyContainerTypes = (json \ "data" \ "items").validate[List[ContainerTypeDto]]
       replyContainerTypes must be(jsSuccess)
 
-      (replyContainerTypes.get.sortWith(_.id < _.id) zip expectedTypes.sortWith(_.id.id < _.id.id)).foreach {
+      (replyContainerTypes.get zip expectedTypes).foreach {
         case (replyType, expectedType) =>
           replyType must matchDtoToContainerType(expectedType)
       }

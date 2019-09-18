@@ -65,6 +65,21 @@ trait HasInventoryId {
 
 }
 
+trait HasEnabled {
+  val enabled: Boolean
+
+  def withEnabled(enabled: Boolean, timeModified: OffsetDateTime): DomainValidation[Container]
+}
+
+trait HasConstraints {
+  val constraints: Option[ContainerConstraints]
+
+  def withConstraints(
+      constraints:  Option[ContainerConstraints],
+      timeModified: OffsetDateTime
+    ): DomainValidation[Container]
+}
+
 /**
  * A specifically built physical unit that can hold child containers, or can be contained in a parent
  * container.
@@ -80,22 +95,32 @@ sealed trait Container
 
   def getLabel(): String
 
+  def withLabel(label: String, timeModified: OffsetDateTime): DomainValidation[Container]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  def withLabel(label: String): DomainValidation[Container] =
+    withLabel(label, OffsetDateTime.now)
+
+  def withInventoryId(
+      inventoryId:  String,
+      slug:         Slug,
+      timeModified: OffsetDateTime
+    ): DomainValidation[Container]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  def withInventoryId(inventoryId: String, slug: Slug): DomainValidation[Container] =
+    withInventoryId(inventoryId, slug, OffsetDateTime.now)
+
+  def withContainerType(
+      containerTypeId: ContainerTypeId,
+      timeModified:    OffsetDateTime
+    ): DomainValidation[Container]
+
   protected def validateInventoryId[T](inventoryId: String): DomainValidation[String] =
     validateNonEmptyString(inventoryId, ContainerInventoryIdInvalid)
 
-  def withInventoryId(inventoryId: String): DomainValidation[Container]
+  override def toString: String = Json.prettyPrint(Json.toJson(this))
 
-  def withContainerType(containerTypeId: ContainerTypeId): DomainValidation[Container]
-
-  override def toString: String =
-    s"""|${this.getClass.getSimpleName}: {
-        |  id:              $id,
-        |  version:         $version,
-        |  timeAdded:       $timeAdded,
-        |  timeModified:    $timeModified,
-        |  slug:            $slug,
-        |  inventoryId:     $inventoryId,
-        |  containerTypeId: $containerTypeId""".stripMargin
 }
 
 object Container extends ContainerValidations {
@@ -165,13 +190,19 @@ object Container extends ContainerValidations {
 
 }
 
-sealed trait ChildContainer extends HasInventoryId {
+sealed trait ChildContainer extends Container with HasInventoryId {
 
   val parentId: ContainerId
 
   val schemaLabel: ContainerSchemaLabel
 
   def getLabel(): String = schemaLabel.label
+
+  def withPosition(
+      parentId:     ContainerId,
+      label:        String,
+      timeModified: OffsetDateTime
+    ): DomainValidation[Container]
 }
 
 /**
@@ -191,59 +222,69 @@ final case class RootContainer(
     locationId:      LocationId,
     temperature:     PreservationTemperature,
     constraints:     Option[ContainerConstraints])
-    extends { val storageType = Container.rootStorage } with Container with ContainerValidations {
+    extends { val storageType = Container.rootStorage } with Container with HasEnabled with HasConstraints
+with ContainerValidations {
 
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
   def getLabel(): String = label
 
-  def withInventoryId(inventoryId: String): DomainValidation[Container] =
-    validateInventoryId(inventoryId) map { _ =>
-      update.copy(inventoryId = inventoryId)
-    }
-
-  def withLabel(inventoryId: String): DomainValidation[Container] =
+  def withLabel(label: String, timeModified: OffsetDateTime): DomainValidation[Container] =
     validateNonEmptyString(label) map { _ =>
-      update.copy(label = label)
+      update.copy(label = label, version = nextVersion, timeModified = Some(timeModified))
     }
 
-  def withContainerType(containerTypeId: ContainerTypeId): DomainValidation[RootContainer] =
+  def withInventoryId(
+      inventoryId:  String,
+      slug:         Slug,
+      timeModified: OffsetDateTime
+    ): DomainValidation[Container] =
+    validateInventoryId(inventoryId) map { _ =>
+      copy(inventoryId = inventoryId, slug = slug, version = nextVersion, timeModified = Some(timeModified))
+    }
+
+  def withContainerType(
+      containerTypeId: ContainerTypeId,
+      timeModified:    OffsetDateTime
+    ): DomainValidation[RootContainer] =
     validateId(containerTypeId, ContainerTypeIdInvalid) map { _ =>
-      update.copy(containerTypeId = containerTypeId)
+      copy(containerTypeId = containerTypeId, version = nextVersion, timeModified = Some(timeModified))
     }
 
-  def withEnabled(enabled: Boolean): DomainValidation[RootContainer] =
-    update.copy(enabled = enabled).success
+  def withEnabled(enabled: Boolean, timeModified: OffsetDateTime): DomainValidation[RootContainer] =
+    copy(enabled = enabled, version = nextVersion, timeModified = Some(timeModified)).success
 
-  def withConstraints(constraints: Option[ContainerConstraints]): DomainValidation[RootContainer] =
+  def withConstraints(
+      constraints:  Option[ContainerConstraints],
+      timeModified: OffsetDateTime
+    ): DomainValidation[RootContainer] =
     ContainerConstraints.validate(constraints) map { _ =>
-      update.copy(constraints = constraints)
+      copy(constraints = constraints, version = nextVersion, timeModified = Some(timeModified))
     }
 
-  def withCentreLocation(centreId: CentreId, locationId: LocationId): DomainValidation[RootContainer] =
+  def withCentreLocation(
+      centreId:     CentreId,
+      locationId:   LocationId,
+      timeModified: OffsetDateTime
+    ): DomainValidation[RootContainer] =
     (validateId(centreId, CentreIdInvalid) |@|
       (validateId(locationId, LocationIdInvalid))) {
       case _ =>
-        update.copy(centreId = centreId, locationId = locationId)
+        copy(centreId     = centreId,
+             locationId   = locationId,
+             version      = nextVersion,
+             timeModified = Some(timeModified))
     }
 
-  def withTemperature(temperature: PreservationTemperature): DomainValidation[RootContainer] =
-    update.copy(temperature = temperature).successNel[String]
+  def withTemperature(
+      temperature:  PreservationTemperature,
+      timeModified: OffsetDateTime
+    ): DomainValidation[RootContainer] =
+    copy(temperature = temperature, version = nextVersion, timeModified = Some(timeModified)).success
 
   private def update() =
     copy(version = nextVersion, timeModified = Some(OffsetDateTime.now))
-
-  override def toString: String =
-    super.toString +
-      s"""|,
-          |  label:           $label,
-          |  enabled          $enabled,
-          |  centreId:        $centreId,
-          |  locationId:      $locationId,
-          |  temperature:     $temperature,
-          |  constraints      $constraints
-          |}""".stripMargin
 
 }
 
@@ -293,57 +334,69 @@ final case class StorageContainer(
     timeModified:    Option[OffsetDateTime],
     slug:            Slug,
     inventoryId:     String,
+    schemaLabel:     ContainerSchemaLabel,
     enabled:         Boolean,
     containerTypeId: ContainerTypeId,
     parentId:        ContainerId,
-    schemaLabel:     ContainerSchemaLabel,
     constraints:     Option[ContainerConstraints])
-    extends { val storageType = Container.containerStorage } with Container with ChildContainer
-with ContainerValidations {
+    extends { val storageType = Container.containerStorage } with Container with HasEnabled
+with HasConstraints with ChildContainer with ContainerValidations {
 
   import org.biobank.domain.DomainValidations._
 
-  def withInventoryId(inventoryId: String): DomainValidation[Container] =
+  def withLabel(label: String, timeModified: OffsetDateTime): DomainValidation[Container] = {
+    val newLabel = schemaLabel.copy(label = label)
+    ContainerSchemaLabel.validate(newLabel) map { _ =>
+      update.copy(schemaLabel = newLabel, version = nextVersion, timeModified = Some(timeModified))
+    }
+  }
+
+  def withInventoryId(
+      inventoryId:  String,
+      slug:         Slug,
+      timeModified: OffsetDateTime
+    ): DomainValidation[Container] =
     validateInventoryId(inventoryId) map { _ =>
-      update.copy(inventoryId = inventoryId)
+      copy(inventoryId = inventoryId, slug = slug, version = nextVersion, timeModified = Some(timeModified))
     }
 
-  def withEnabled(enabled: Boolean): DomainValidation[StorageContainer] =
-    update.copy(enabled = enabled).success
+  def withEnabled(enabled: Boolean, timeModified: OffsetDateTime): DomainValidation[StorageContainer] =
+    copy(enabled = enabled, version = nextVersion, timeModified = Some(timeModified)).success
 
-  def withLabel(schemaLabel: ContainerSchemaLabel): DomainValidation[Container] =
-    ContainerSchemaLabel.validate(schemaLabel) map { _ =>
-      update.copy(schemaLabel = schemaLabel)
-    }
-
-  def withContainerType(containerTypeId: ContainerTypeId): DomainValidation[Container] =
+  def withContainerType(
+      containerTypeId: ContainerTypeId,
+      timeModified:    OffsetDateTime
+    ): DomainValidation[StorageContainer] =
     validateId(containerTypeId, ContainerTypeIdInvalid) map { _ =>
-      update.copy(containerTypeId = containerTypeId)
+      copy(containerTypeId = containerTypeId, version = nextVersion, timeModified = Some(timeModified))
     }
 
-  def withParentLabel(parentId: ContainerId, schemaLabel: ContainerSchemaLabel): DomainValidation[Container] =
+  def withPosition(
+      parentId:     ContainerId,
+      label:        String,
+      timeModified: OffsetDateTime
+    ): DomainValidation[StorageContainer] = {
+    val newPosition = ContainerSchemaLabel(schemaLabel.schemaId, label)
     (validateId(parentId, ContainerParentIdInvalid) |@|
-      ContainerSchemaLabel.validate(schemaLabel)) {
+      ContainerSchemaLabel.validate(newPosition)) {
       case _ =>
-        update.copy(parentId = parentId, schemaLabel = schemaLabel)
+        copy(parentId     = parentId,
+             schemaLabel  = newPosition,
+             version      = nextVersion,
+             timeModified = Some(timeModified))
     }
+  }
 
-  def withConstraints(constraints: Option[ContainerConstraints]): DomainValidation[StorageContainer] =
+  def withConstraints(
+      constraints:  Option[ContainerConstraints],
+      timeModified: OffsetDateTime
+    ): DomainValidation[StorageContainer] =
     ContainerConstraints.validate(constraints) map { _ =>
-      update.copy(constraints = constraints)
+      copy(constraints = constraints, version = nextVersion, timeModified = Some(timeModified))
     }
 
   private def update() =
     copy(version = nextVersion, timeModified = Some(OffsetDateTime.now))
-
-  override def toString: String =
-    super.toString +
-      s"""|,
-          |  parentId:        $parentId,
-          |  schemaLabel:     $schemaLabel,
-          |  enabled          $enabled,
-          |  constraints      $constraints
-          |}""".stripMargin
 
 }
 
@@ -368,7 +421,7 @@ object StorageContainer extends ContainerValidations {
                          version         = version,
                          timeAdded       = OffsetDateTime.now,
                          timeModified    = None,
-                         slug            = Slug(schemaLabel.label),
+                         slug            = Slug(inventoryId),
                          inventoryId     = inventoryId,
                          enabled         = false,
                          containerTypeId = containerTypeId,
@@ -390,44 +443,67 @@ final case class SpecimenContainer(
     timeModified:    Option[OffsetDateTime],
     slug:            Slug,
     inventoryId:     String,
+    schemaLabel:     ContainerSchemaLabel,
     containerTypeId: ContainerTypeId,
-    parentId:        ContainerId,
-    schemaLabel:     ContainerSchemaLabel)
+    parentId:        ContainerId)
     extends { val storageType = Container.specimenStorage } with Container with ChildContainer
 with ContainerValidations {
   import org.biobank.domain.DomainValidations._
 
-  def withInventoryId(inventoryId: String): DomainValidation[Container] =
+  def withLabel(label: String, timeModified: OffsetDateTime): DomainValidation[Container] = {
+    val newLabel = schemaLabel.copy(label = label)
+    ContainerSchemaLabel.validate(newLabel) map { _ =>
+      update.copy(schemaLabel = newLabel, version = nextVersion, timeModified = Some(timeModified))
+    }
+  }
+
+  def withInventoryId(
+      inventoryId:  String,
+      slug:         Slug,
+      timeModified: OffsetDateTime
+    ): DomainValidation[Container] =
     validateInventoryId(inventoryId) map { _ =>
-      update.copy(inventoryId = inventoryId)
+      copy(inventoryId = inventoryId, slug = slug, version = nextVersion, timeModified = Some(timeModified))
     }
 
-  def withSchemaLabel(schemaLabel: ContainerSchemaLabel): DomainValidation[Container] =
+  def withSchemaLabel(schemaLabel: ContainerSchemaLabel): DomainValidation[SpecimenContainer] =
     ContainerSchemaLabel.validate(schemaLabel) map { _ =>
       update.copy(schemaLabel = schemaLabel)
     }
 
-  def withContainerType(containerTypeId: ContainerTypeId): DomainValidation[Container] =
+  def withContainerType(
+      containerTypeId: ContainerTypeId,
+      timeModified:    OffsetDateTime
+    ): DomainValidation[SpecimenContainer] =
     validateId(containerTypeId, ContainerTypeIdInvalid) map { _ =>
-      update.copy(containerTypeId = containerTypeId)
+      copy(containerTypeId = containerTypeId, version = nextVersion, timeModified = Some(timeModified))
     }
 
-  def withParentLabel(parentId: ContainerId, schemaLabel: ContainerSchemaLabel): DomainValidation[Container] =
+  def withPosition(
+      parentId:     ContainerId,
+      label:        String,
+      timeModified: OffsetDateTime
+    ): DomainValidation[SpecimenContainer] = {
+    val newPosition = ContainerSchemaLabel(schemaLabel.schemaId, label)
     (validateId(parentId, ContainerParentIdInvalid) |@|
-      ContainerSchemaLabel.validate(schemaLabel)) {
+      ContainerSchemaLabel.validate(newPosition)) {
       case _ =>
-        update.copy(parentId = parentId, schemaLabel = schemaLabel)
+        copy(parentId     = parentId,
+             schemaLabel  = newPosition,
+             version      = nextVersion,
+             timeModified = Some(timeModified))
     }
+  }
+
+  def withConstraints(
+      constraints:  Option[ContainerConstraints],
+      timeModified: OffsetDateTime
+    ): DomainValidation[SpecimenContainer] =
+    DomainError("cannot add constraints to a specimen container").failureNel[SpecimenContainer]
 
   private def update(): SpecimenContainer =
     copy(version = nextVersion, timeModified = Some(OffsetDateTime.now))
 
-  override def toString: String =
-    super.toString +
-      s"""|,
-          |  parentId:        $parentId,
-          |  schemaLabel:     $schemaLabel,
-          |}""".stripMargin
 }
 
 object SpecimenContainer extends ContainerValidations {
@@ -449,7 +525,7 @@ object SpecimenContainer extends ContainerValidations {
                           version         = version,
                           timeAdded       = OffsetDateTime.now,
                           timeModified    = None,
-                          slug            = Slug(schemaLabel.label),
+                          slug            = Slug(inventoryId),
                           inventoryId     = inventoryId,
                           containerTypeId = containerTypeId,
                           parentId        = parentId,

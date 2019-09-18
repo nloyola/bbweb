@@ -237,27 +237,21 @@ package dto {
   }
 
   final case class ContainerConstraintsDto(
-      id:                    String,
-      slug:                  String,
-      name:                  String,
-      description:           Option[String],
-      centre:                EntityInfoAndStateDto,
-      anatomicalSourceTypes: Set[AnatomicalSourceType],
-      preservationTypes:     Set[PreservationType],
-      specimenTypes:         Set[SpecimenType])
+      name:              String,
+      description:       Option[String],
+      anatomicalSources: Set[AnatomicalSourceType],
+      preservationTypes: Set[PreservationType],
+      specimenTypes:     Set[SpecimenType])
 
   object ContainerConstraintsDto {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply(constraints: ContainerConstraints, centre: Centre): ContainerConstraintsDto =
-      ContainerConstraintsDto(id                    = constraints.id.id,
-                              slug                  = constraints.slug.id,
-                              name                  = constraints.name,
-                              description           = constraints.description,
-                              centre                = EntityInfoAndStateDto(centre),
-                              anatomicalSourceTypes = constraints.anatomicalSourceTypes,
-                              preservationTypes     = constraints.preservationTypes,
-                              specimenTypes         = constraints.specimenTypes)
+    def apply(constraints: ContainerConstraints): ContainerConstraintsDto =
+      ContainerConstraintsDto(name              = constraints.name,
+                              description       = constraints.description,
+                              anatomicalSources = constraints.anatomicalSources,
+                              preservationTypes = constraints.preservationTypes,
+                              specimenTypes     = constraints.specimenTypes)
 
     implicit val containerConstraintsDtoFormat: Format[ContainerConstraintsDto] =
       Json.format[ContainerConstraintsDto]
@@ -272,18 +266,29 @@ package dto {
     val slug:          Slug
     val inventoryId:   String
     val containerType: EntityInfoDto
+    val storageType:   String
+
+    override def toString: String = Json.prettyPrint(Json.toJson(this))
+
   }
 
   object ContainerDto {
 
-    implicit val containerDtoWrites: Writes[ContainerDto] = new Writes[ContainerDto] {
+    implicit val containerDtoWrites: Format[ContainerDto] = new Format[ContainerDto] {
 
-      def writes(container: ContainerDto): JsValue =
+      override def writes(container: ContainerDto): JsValue =
         container match {
           case c: RootContainerDto     => Json.toJson(c)(RootContainerDto.rootContainerDtoFormat)
           case c: StorageContainerDto  => Json.toJson(c)(StorageContainerDto.storageContainerDtoFormat)
           case c: SpecimenContainerDto => Json.toJson(c)(SpecimenContainerDto.specimenContainerDtoFormat)
         }
+
+      override def reads(json: JsValue): JsResult[ContainerDto] = (json \ "storageType") match {
+        case JsDefined(JsString(Container.rootStorage.id))      => json.validate[RootContainerDto]
+        case JsDefined(JsString(Container.containerStorage.id)) => json.validate[StorageContainerDto]
+        case JsDefined(JsString(Container.specimenStorage.id))  => json.validate[SpecimenContainerDto]
+        case _                                                  => JsError("error")
+      }
     }
 
   }
@@ -300,25 +305,9 @@ package dto {
       containerType:      EntityInfoDto,
       centreLocationInfo: CentreLocationInfo,
       temperature:        PreservationTemperature,
-      constraints:        Option[ContainerConstraintsDto])
-      extends ContainerDto {
-
-    override def toString: String =
-      s"""|${this.getClass.getSimpleName}: {
-          |  id:                 $id,
-          |  version:            $version,
-          |  timeAdded:          $timeAdded,
-          |  timeModified:       $timeModified,
-          |  slug:               $slug,
-          |  label:              $label,
-          |  inventoryId:        $inventoryId,
-          |  enabled             $enabled,
-          |  containerType:      $containerType,
-          |  centreLocationInfo: $centreLocationInfo,
-          |  temperature:        $temperature,
-          |  constraints         $constraints
-          |}""".stripMargin
-  }
+      constraints:        Option[ContainerConstraintsDto],
+      storageType:        String)
+      extends ContainerDto {}
 
   object RootContainerDto {
 
@@ -340,7 +329,8 @@ package dto {
                        containerType      = EntityInfoDto(containerType),
                        centreLocationInfo = CentreLocationInfo(centre, location),
                        temperature        = c.temperature,
-                       constraints        = c.constraints.map(ContainerConstraintsDto(_, centre)))
+                       constraints        = c.constraints.map(ContainerConstraintsDto(_)),
+                       storageType        = c.storageType.id)
 
     implicit val rootContainerDtoFormat: Format[RootContainerDto] = Json.format[RootContainerDto]
 
@@ -385,37 +375,17 @@ package dto {
       containerType: EntityInfoDto,
       parent:        ContainerInfoDto,
       label:         String,
-      constraints:   Option[ContainerConstraintsDto])
-      extends ContainerDto {
-
-    override def toString: String =
-      s"""|${this.getClass.getSimpleName}: {
-          |  id:              $id,
-          |  version:         $version,
-          |  timeAdded:       $timeAdded,
-          |  timeModified:    $timeModified,
-          |  slug:            $slug,
-          |  inventoryId:     $inventoryId,
-          |  enabled          $enabled,
-          |  containerType:   $containerType,
-          |  parent:          $parent,
-          |  label:           $label,
-          |  constraints      $constraints
-          |}""".stripMargin
-  }
+      constraints:   Option[ContainerConstraintsDto],
+      storageType:   String)
+      extends ContainerDto {}
 
   object StorageContainerDto {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply(
-        c:                 StorageContainer,
-        containerType:     ContainerType,
-        parent:            Container,
-        constraintsCentre: Option[Centre]
-      ): StorageContainerDto = {
-      val constraintsDto = (c.constraints, constraintsCentre) match {
-        case (Some(constraints), Some(centre)) => Some(ContainerConstraintsDto(constraints, centre))
-        case _                                 => None
+    def apply(c: StorageContainer, containerType: ContainerType, parent: Container): StorageContainerDto = {
+      val constraintsDto = c.constraints match {
+        case Some(constraints) => Some(ContainerConstraintsDto(constraints))
+        case _                 => None
       }
 
       StorageContainerDto(id            = c.id.id,
@@ -428,7 +398,8 @@ package dto {
                           containerType = EntityInfoDto(containerType),
                           parent        = ContainerInfoDto(parent),
                           label         = c.schemaLabel.label,
-                          constraints   = constraintsDto)
+                          constraints   = constraintsDto,
+                          storageType   = c.storageType.id)
     }
 
     implicit val storageContainerDtoFormat: Format[StorageContainerDto] = Json.format[StorageContainerDto]
@@ -444,22 +415,9 @@ package dto {
       inventoryId:   String,
       containerType: EntityInfoDto,
       parent:        ContainerInfoDto,
-      label:         String)
-      extends ContainerDto {
-
-    override def toString: String =
-      s"""|${this.getClass.getSimpleName}: {
-          |  id:              $id,
-          |  version:         $version,
-          |  timeAdded:       $timeAdded,
-          |  timeModified:    $timeModified,
-          |  slug:            $slug,
-          |  inventoryId:     $inventoryId,
-          |  containerType:   $containerType,
-          |  parent:          $parent,
-          |  label:           $label,
-          |}""".stripMargin
-  }
+      label:         String,
+      storageType:   String)
+      extends ContainerDto {}
 
   object SpecimenContainerDto {
 
@@ -473,9 +431,37 @@ package dto {
                            inventoryId   = c.inventoryId,
                            containerType = EntityInfoDto(containerType),
                            parent        = ContainerInfoDto(parent),
-                           label         = c.schemaLabel.label)
+                           label         = c.schemaLabel.label,
+                           storageType   = c.storageType.id)
 
     implicit val specimenContainerDtoFormat: Format[SpecimenContainerDto] = Json.format[SpecimenContainerDto]
+
+  }
+
+  final case class ContainerInfo(id: String, slug: String, inventoryId: String, label: String)
+
+  object ContainerInfo {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(container: Container): ContainerInfo = {
+      ContainerInfo(container.id.id, container.slug.id, container.inventoryId, container.getLabel)
+    }
+
+    implicit val containerInfoFormat: Format[ContainerInfo] = Json.format[ContainerInfo]
+
+  }
+
+  final case class ContainerChildrenInfo(container: ContainerInfo, children: Set[ContainerInfo])
+
+  object ContainerChildrenInfo {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(container: Container, children: Set[ContainerInfo]): ContainerChildrenInfo = {
+      ContainerChildrenInfo(ContainerInfo(container), children)
+    }
+
+    implicit val containerChildrenInfoFormat: Format[ContainerChildrenInfo] =
+      Json.format[ContainerChildrenInfo]
 
   }
 

@@ -30,9 +30,6 @@ class ContainerTypesRouter @Inject()(controller: ContainerTypesController) exten
     case POST(p"/description/${containerTypeId(id)}") =>
       controller.updateDescription(id)
 
-    case POST(p"/shared/${containerTypeId(id)}") =>
-      controller.updateShared(id)
-
     case POST(p"/centre/${containerTypeId(id)}") =>
       controller.updateCentre(id)
 

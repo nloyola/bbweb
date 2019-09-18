@@ -25,7 +25,7 @@ package biobank {
 
   object CommonValidations {
 
-    final case class SystemError(msg: String) extends ValidationMsgKey
+    final case class SystemErrorMsg(msg: String) extends ValidationMsgKey
 
     final case class InvalidVersion(msg: String) extends ValidationMsgKey
 

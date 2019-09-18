@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Named}
+import org.biobank.domain.Slug
 import org.biobank.domain.access.PermissionId
 import org.biobank.domain.centres.{CentreId, CentreRepository}
 import org.biobank.domain.containers._
@@ -23,16 +24,22 @@ import scalaz.Validation.FlatMap._
 @ImplementedBy(classOf[ContainersServiceImpl])
 trait ContainersService extends BbwebService {
 
-  def getContainer(requestUserId: UserId, id: ContainerId): ServiceValidation[ContainerDto]
+  def getBySlug(requestUserId: UserId, slug: Slug): Future[ServiceValidation[ContainerDto]]
 
-  /** All Top [[domain.containers.Container Containers]] for a [domain.centres.Centre Centre]. */
-  def getContainers(
+  /** Searches for Top [[domain.containers.Container Containers]] for a [domain.centres.Centre Centre]. */
+  def search(
       requestUserId: UserId,
       centreId:      CentreId,
       query:         PagedQuery
     ): Future[ServiceValidation[PagedResults[ContainerDto]]]
 
+  def getChildrenBySlug(requestUserId: UserId, slug: Slug): Future[ServiceValidation[ContainerChildrenInfo]]
+
   def processCommand(cmd: ContainerCommand): Future[ServiceValidation[ContainerDto]]
+
+  def processRemoveCommand(cmd: RemoveContainerCmd): Future[ServiceValidation[Boolean]]
+
+  def snapshotRequest(requestUserId: UserId): ServiceValidation[Unit]
 }
 
 class ContainersServiceImpl @Inject()(
@@ -47,10 +54,14 @@ class ContainersServiceImpl @Inject()(
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
-  def getContainer(requestUserId: UserId, id: ContainerId): ServiceValidation[ContainerDto] =
-    whenContainerPermitted(requestUserId, id)(container => containerToDto(container))
+  def getBySlug(requestUserId: UserId, slug: Slug): Future[ServiceValidation[ContainerDto]] =
+    Future {
+      whenContainerPermitted(requestUserId, slug) { container =>
+        containerToDto(container)
+      }
+    }
 
-  def getContainers(
+  def search(
       requestUserId: UserId,
       centreId:      CentreId,
       query:         PagedQuery
@@ -65,6 +76,19 @@ class ContainersServiceImpl @Inject()(
         result     <- PagedResults.create(dtos, query.page, query.limit)
       } yield result
     }
+
+  def getChildrenBySlug(
+      requestUserId: UserId,
+      slug:          Slug
+    ): Future[ServiceValidation[ContainerChildrenInfo]] = {
+    Future {
+      whenContainerPermitted(requestUserId, slug) { container =>
+        containerRepository.getChildren(container.id).map { children =>
+          ContainerChildrenInfo(container, children.map(ContainerInfo(_)))
+        }
+      }
+    }
+  }
 
   def processCommand(cmd: ContainerCommand): Future[ServiceValidation[ContainerDto]] = {
     val validCentreId = cmd match {
@@ -94,18 +118,35 @@ class ContainersServiceImpl @Inject()(
               })
   }
 
-  //
-  // Invokes function "block" if user that invoked this service has the permission and membership
-  // to do so.
-  //
+  def processRemoveCommand(cmd: RemoveContainerCmd): Future[ServiceValidation[Boolean]] = {
+    val validCentre = for {
+      container     <- containerRepository.getByKey(ContainerId(cmd.id))
+      containerType <- containerTypeRepository.getByKey(container.containerTypeId)
+      centre        <- centreRepository.getByKey(containerType.centreId)
+    } yield centre
+
+    validCentre
+      .fold(err => Future.successful((err.failure[Boolean])),
+            centre =>
+              whenPermittedAndIsMemberAsync(UserId(cmd.sessionUserId),
+                                            PermissionId.ContainerDelete,
+                                            None,
+                                            Some(centre.id)) { () =>
+                ask(processor, cmd)
+                  .mapTo[ServiceValidation[ContainerEvent]]
+                  .map { _.map(event => true) }
+              })
+  }
+
+  // Invokes function "block" if user that invoked this service has the permission and membership to do so.
   private def whenContainerPermitted[T](
       requestUserId: UserId,
-      containerId:   ContainerId
+      containerSlug: Slug
     )(block:         Container => ServiceValidation[T]
     ): ServiceValidation[T] =
     for {
-      container <- containerRepository.getByKey(containerId)
-      centreId  <- getContainerCentreId(containerId)
+      container <- containerRepository.getBySlug(containerSlug)
+      centreId  <- getContainerCentreId(container.id)
       permitted <- {
         whenPermittedAndIsMember(requestUserId, PermissionId.ContainerRead, None, Some(centreId))(
           () => block(container)
@@ -119,7 +160,7 @@ class ContainersServiceImpl @Inject()(
       sort:       SortString
     ): ServiceValidation[Seq[Container]] = {
     val sortStr =
-      if (sort.expression.isEmpty) new SortString("name")
+      if (sort.expression.isEmpty) new SortString("label")
       else sort
 
     for {
@@ -153,16 +194,8 @@ class ContainersServiceImpl @Inject()(
             parent <- containerRepository.getByKey(c.parentId)
           } yield {
             c match {
-              case c: StorageContainer =>
-                val constraintsCentre = c.constraints match {
-                  case Some(constraints) =>
-                    centreRepository.getByKey(constraints.centreId).toOption
-                  case None => None
-                }
-                StorageContainerDto(c, containerType, parent, constraintsCentre)
-
-              case c: SpecimenContainer =>
-                SpecimenContainerDto(c, containerType, parent)
+              case c: StorageContainer  => StorageContainerDto(c, containerType, parent)
+              case c: SpecimenContainer => SpecimenContainerDto(c, containerType, parent)
             }
           }
       }

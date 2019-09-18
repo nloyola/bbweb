@@ -17,7 +17,9 @@ trait EntityStateFilter[A <: HasState] extends PredicateHelper with HasStatePred
       .map { str =>
         validStates
           .find(_.id == str).toSuccessNel(InvalidState(s"entity state does not exist: $str").toString)
-      }.toList.sequenceU.flatMap { states =>
+      }
+      .toList.sequenceU
+      .flatMap { states =>
         val stateSet = states.toSet
         comparator match {
           case Equal | In =>

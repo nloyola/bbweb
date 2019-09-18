@@ -104,7 +104,7 @@ class ShipmentSpecimensControllerSpec
         val invalidStateName = "state::" + nameGenerator.next[ShipmentSpecimen]
         shipmentRepository.put(f.shipment)
         val reply = makeAuthRequest(GET, uri(f.shipment).addQueryString(s"filter=$invalidStateName")).value
-        reply must beNotFoundWithMessage("InvalidState: shipment specimen state does not exist")
+        reply must beBadRequestWithMessage("InvalidState: shipment specimen state does not exist")
       }
 
       describe("list a single specimen when using paged query") {

@@ -3,7 +3,6 @@ package org.biobank.domain.annotations
 import org.biobank._
 import org.biobank.domain._
 import org.biobank.domain.annotations.AnnotationValueType._
-
 import play.api.libs.json._
 import scalaz.Scalaz._
 
@@ -151,7 +150,7 @@ trait AnnotationTypeValidations {
       maxValueCount.fold {
         DomainError(s"max value count is invalid for select").failureNel[Unit]
       } { count =>
-        val countValidation = if ((count < 1) || (count > 2)) {
+        val countValidation: DomainValidation[Unit] = if ((count < 1) || (count > 2)) {
           DomainError(s"select annotation type with invalid maxValueCount: $count").failureNel[Unit]
         } else {
           ().successNel[String]
@@ -166,7 +165,7 @@ trait AnnotationTypeValidations {
         (countValidation |@| optionsValidation) { case _ => () }
       }
     } else {
-      val countValidation = maxValueCount.fold {
+      val countValidation: DomainValidation[Unit] = maxValueCount.fold {
         ().successNel[String]
       } { count =>
         DomainError(s"max value count is invalid for non-select").failureNel[Unit]

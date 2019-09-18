@@ -29,12 +29,7 @@ trait HasContainerSchemaLabel {
  */
 final case class ContainerSchemaLabel(schemaId: ContainerSchemaId, label: String) {
 
-  override def toString: String =
-    s"""|${this.getClass.getSimpleName}: {
-        |  id:       $id,
-        |  schemaId: $schemaId,
-        |  label:    $label
-        |}""".stripMargin
+  override def toString: String = Json.prettyPrint(Json.toJson(this))
 
 }
 

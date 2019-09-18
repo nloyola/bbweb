@@ -1,6 +1,6 @@
 package org.biobank.matchers
 
-import org.biobank.{SystemError, SystemValidation}
+import org.biobank.SystemValidation
 import org.biobank.fixtures.Url
 import org.scalatest.matchers._
 import play.api.libs.json._
@@ -9,6 +9,8 @@ import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 
 trait PagedResultsMatchers extends ApiResultMatchers { this: org.biobank.fixtures.ControllerFixture =>
+
+  import org.biobank.CommonValidations._
 
   def beEmptyResults: Matcher[Url] = new EmptyResultsMatcher
 
@@ -115,7 +117,7 @@ trait PagedResultsMatchers extends ApiResultMatchers { this: org.biobank.fixture
       okResponse <- {
         val replyCheck = beOkResponseWithJsonReply.apply(reply)
         if (!replyCheck.matches) {
-          SystemError(replyCheck.failureMessage).failureNel[MatchResult]
+          SystemErrorMsg(replyCheck.failureMessage).failureNel[MatchResult]
         } else {
           replyCheck.successNel[String]
         }

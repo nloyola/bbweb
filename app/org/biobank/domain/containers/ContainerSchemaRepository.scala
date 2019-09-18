@@ -5,6 +5,7 @@ import javax.inject.{Inject, Singleton}
 import org.biobank.TestData
 import org.biobank.domain._
 import org.biobank.domain.centres.CentreId
+import scalaz.Validation.FlatMap._
 
 @ImplementedBy(classOf[ContainerSchemaRepositoryImpl])
 trait ContainerSchemaRepository extends ReadWriteRepositoryWithSlug[ContainerSchemaId, ContainerSchema] {
@@ -13,6 +14,7 @@ trait ContainerSchemaRepository extends ReadWriteRepositoryWithSlug[ContainerSch
 
   def isLabelValid(schemaId: ContainerSchemaId, label: String): DomainValidation[Boolean]
 
+  def getLabel(schemaId: ContainerSchemaId, label: String): DomainValidation[ContainerSchemaLabel]
 }
 
 @Singleton
@@ -40,4 +42,7 @@ class ContainerSchemaRepositoryImpl @Inject()(val testData: TestData)
 
   def isLabelValid(schemaId: ContainerSchemaId, label: String): DomainValidation[Boolean] =
     getByKey(schemaId).map(_.isLabelValid(label))
+
+  def getLabel(schemaId: ContainerSchemaId, label: String): DomainValidation[ContainerSchemaLabel] =
+    getByKey(schemaId).flatMap(_.getLabel(label))
 }

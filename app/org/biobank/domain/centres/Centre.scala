@@ -35,6 +35,7 @@ trait CentrePredicates extends HasNamePredicates[Centre] {
 sealed trait Centre
     extends ConcurrencySafeEntity[CentreId] with HasState with HasUniqueName with HasSlug
     with HasOptionalDescription {
+  import org.biobank.CommonValidations._
 
   val state: EntityState
 
@@ -45,7 +46,7 @@ sealed trait Centre
   def locationWithId(locationId: LocationId): DomainValidation[Location] =
     locations
       .find(_.id == locationId)
-      .toSuccessNel(s"invalid location id: $locationId")
+      .toSuccessNel(IdNotFound(s"invalid location id: $locationId").toString)
 
   def locationName(locationId: LocationId): DomainValidation[String] =
     locationWithId(locationId).map(loc => s"${this.name}: ${loc.name}")

@@ -9,7 +9,6 @@ import org.biobank.services.users.UsersService
 import play.api.{Environment, Logger}
 import play.api.mvc._
 import scala.concurrent.{ExecutionContext, Future}
-import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 
 /**

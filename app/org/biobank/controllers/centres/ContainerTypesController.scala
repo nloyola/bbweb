@@ -6,13 +6,13 @@ import org.biobank.dto.ContainerTypeDto
 import org.biobank.domain.Slug
 import org.biobank.domain.centres.CentreId
 import org.biobank.domain.containers.ContainerTypeId
+import org.biobank.services.PagedResults
 import org.biobank.services.centres.ContainerTypesService
 import play.api.libs.json._
 import play.api.mvc._
 import play.api.{Environment, Logger}
 import scala.concurrent.{ExecutionContext, Future}
 import scalaz.Scalaz._
-import org.biobank.services.PagedResults
 
 /**
  *  Uses [[https://github.com/omniti-labs/jsend JSend]] format for JSon replies.

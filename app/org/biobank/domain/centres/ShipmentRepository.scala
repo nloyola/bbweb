@@ -5,7 +5,6 @@ import javax.inject.{Inject, Singleton}
 import org.biobank.TestData
 import org.biobank.domain._
 import org.slf4j.{Logger, LoggerFactory}
-import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 
 @ImplementedBy(classOf[ShipmentRepositoryImpl])

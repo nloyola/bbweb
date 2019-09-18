@@ -154,7 +154,7 @@ class CentresControllerSpec extends ControllerFixture with PagedResultsSharedSpe
         it("fail ith an invalid state name") {
           val invalidStateName = "state::" + nameGenerator.next[Study]
           val reply            = makeAuthRequest(GET, uri("search").addQueryString(s"filter=$invalidStateName")).value
-          reply must beNotFoundWithMessage("InvalidState: entity state does not exist")
+          reply must beBadRequestWithMessage("InvalidState: entity state does not exist")
         }
 
       }
@@ -217,7 +217,7 @@ class CentresControllerSpec extends ControllerFixture with PagedResultsSharedSpe
         it("fail on attempt to list centres filtered by an invalid state name") {
           val invalidStateName = "state::" + nameGenerator.next[Study]
           val reply            = makeAuthRequest(GET, uri("search").addQueryString(s"filter=$invalidStateName"))
-          reply.value must beNotFoundWithMessage("InvalidState: entity state does not exist")
+          reply.value must beBadRequestWithMessage("InvalidState: entity state does not exist")
         }
 
       }

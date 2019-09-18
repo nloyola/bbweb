@@ -23,13 +23,77 @@ message ContainerEvent {
     optional string label           = 5;
   }
 
+  message LabelUpdated {
+    optional int64  version = 1;
+    optional string label   = 2;
+  }
+
+  message InventoryIdUpdated {
+    optional int64  version     = 1;
+    optional string inventoryId = 2;
+  }
+
+  message EnabledUpdated {
+    optional int64 version = 1;
+    optional bool  enabled = 2;
+  }
+
+  message ContainerTypeUpdated {
+    optional int64  version         = 1;
+    optional string containerTypeId = 2;
+  }
+
+  message CentreLocationUpdated {
+    optional int64  version    = 1;
+    optional string centreId   = 2;
+    optional string locationId = 3;
+  }
+
+  message TemperatureUpdated {
+    optional int64  version     = 1;
+    optional string temperature = 2;
+  }
+
+  message ConstraintsUpdated {
+    optional int64  version           = 1;
+    optional string name              = 2;
+    optional string description       = 3;
+    repeated string anatomicalSources = 4;
+    repeated string preservationTypes = 5;
+    repeated string specimenTypes     = 6;
+  }
+
+  message ConstraintsRemoved {
+    optional int64  version = 1;
+  }
+
+  message PositionUpdated {
+    optional int64  version  = 1;
+    optional string parentId = 2;
+    optional string label    = 3;
+  }
+
+  message Removed {
+    optional int64 version = 1;
+  }
+
   required string id            = 1;
   optional string sessionUserId = 2;
   optional string time          = 3;
 
   oneof event_type {
-    RootAdded rootAdded = 4;
-    ChildAdded storageAdded = 5;
-    ChildAdded specimenAdded = 6;
+    RootAdded             rootAdded             = 4;
+    ChildAdded            storageAdded          = 5;
+    ChildAdded            specimenAdded         = 6;
+    LabelUpdated          labelUpdated          = 7;
+    InventoryIdUpdated    inventoryIdUpdated    = 8;
+    EnabledUpdated        enabledUpdated        = 9;
+    ContainerTypeUpdated  containerTypeUpdated  = 10;
+    CentreLocationUpdated centreLocationUpdated = 11;
+    TemperatureUpdated    temperatureUpdated    = 12;
+    ConstraintsUpdated    constraintsUpdated    = 13;
+    ConstraintsRemoved    constraintsRemoved    = 14;
+    PositionUpdated       positionUpdated       = 15;
+    Removed               removed               = 16;
   }
 }

@@ -4,12 +4,15 @@ import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Singleton}
 import org.biobank.TestData
 import org.biobank.domain._
+import org.biobank.domain.containers.ContainerId
 import scalaz.Scalaz._
 
 @ImplementedBy(classOf[SpecimenRepositoryImpl])
 trait SpecimenRepository extends ReadWriteRepositoryWithSlug[SpecimenId, Specimen] {
 
   def getByInventoryId(inventoryId: String): DomainValidation[Specimen]
+
+  def containerInUse(containerId: ContainerId): Boolean
 
 }
 
@@ -37,5 +40,8 @@ class SpecimenRepositoryImpl @Inject()(val testData: TestData)
     getValues
       .find(s => s.inventoryId == inventoryId)
       .toSuccessNel(inventoryIdCriteriaError(inventoryId))
+
+  def containerInUse(containerId: ContainerId): Boolean =
+    getValues.exists(s => s.containerId == Some(containerId))
 
 }

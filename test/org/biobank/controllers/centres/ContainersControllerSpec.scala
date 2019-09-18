@@ -1,19 +1,645 @@
 package org.biobank.controllers.centres
 
+import java.time.OffsetDateTime
 import org.biobank.controllers.PagedResultsSharedSpec
 import org.biobank.domain._
 import org.biobank.domain.PreservationTemperature._
+import org.biobank.domain.centres.EnabledCentre
 import org.biobank.domain.containers._
 import org.biobank.dto._
 import org.biobank.fixtures.{ControllerFixture, Url}
 import org.biobank.matchers.PagedResultsMatchers
+import org.scalatest.OptionValues._
 import play.api.libs.json._
 import play.api.test.Helpers._
 
-/**
- * Tests the REST API for [[Container]]s.
- */
-class ContainersControllerSpec
+class RootContainersControllerSpec
+    extends CommonStorageContainerControllerSpec[RootContainer, StorageContainerType, RootContainerFixture] {
+
+  protected def addUrl(): Url = uri("root")
+
+  protected def fixture(): RootContainerFixture = RootContainerFixture(factory)
+
+  describe("GET /api/centres/containers/:centreId") {
+
+    describe("list a single root container") {
+      listSingle() { () =>
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+        (uri("search", f.getCentre.id.id), f.container)
+      }
+    }
+
+    describe("get all root contaniers for a centre") {
+      listMultiple() { () =>
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val sibling = f.createSiblingContainer(factory)
+        addToRepository(sibling)
+
+        (uri("search", f.centre.id.id), List(f.container, sibling))
+      }
+    }
+
+    describe("list root contaneirs sorted by label") {
+
+      describe("in ascending order") {
+        listMultiple() { () =>
+          val f = fixture
+          f.allEntities.foreach(addToRepository)
+          val sibling = f.createSiblingContainer(factory)
+          addToRepository(sibling)
+
+          val containers = List(f.container, sibling).sortWith(_.label < _.label)
+          (uri("search", f.centre.id.id).addQueryString("sort=label"), containers)
+        }
+      }
+
+      describe("in descending order") {
+        listMultiple() { () =>
+          val f = fixture
+          f.allEntities.foreach(addToRepository)
+          val sibling = f.createSiblingContainer(factory)
+          addToRepository(sibling)
+
+          val containers = List(f.container, sibling).sortWith(_.label > _.label)
+          (uri("search", f.centre.id.id).addQueryString("sort=-label"), containers)
+        }
+      }
+    }
+  }
+
+  describe("POST /api/containers") {
+
+    it("adding a root container fails if centre is not defined") {
+      val f       = fixture
+      val addJson = containerToAddJson(f)
+      val reply   = makeAuthRequest(POST, addUrl, addJson).value
+      reply must beNotFoundWithMessage("IdNotFound: centre id")
+    }
+
+    it("adding a root container fails if a container type is for a specimen container") {
+      val f = fixture
+      f.allEntitiesButContainer.foreach(addToRepository)
+
+      val specimenContainerType = factory.createSpecimenContainerType
+      addToRepository(specimenContainerType)
+
+      val container =
+        f.container.withContainerType(specimenContainerType.id, OffsetDateTime.now).toOption.value
+      val addJson = containerToAddJson(container, fixture)
+      val reply   = makeAuthRequest(POST, addUrl, addJson).value
+      reply must beBadRequestWithMessage("InvalidStatus: not a storage container type")
+    }
+
+  }
+
+  describe("POST /api/centres/containers/enabled/:id") {
+
+    it("update a container's enabled state") {
+      val f = fixture
+      f.allEntities.foreach(addToRepository)
+
+      val newValue   = !f.container.enabled
+      val updateJson = Json.obj("expectedVersion" -> Some(f.container.version), "enabled" -> newValue)
+
+      val reply = makeAuthRequest(POST, uri("enabled", f.container.id.id), updateJson).value
+      reply must beOkResponseWithJsonReply
+      val updatedContainer = f.container.withEnabled(newValue, OffsetDateTime.now).toOption.value
+      validateContainer(updatedContainer, contentAsJson(reply))
+    }
+
+    describe("fail when updating inventory ID with invalid version") {
+      updateWithInvalidVersionSharedBehaviour { container =>
+        (uri("enabled", container.id.id), Json.obj("enabled" -> !container.enabled))
+      }
+    }
+  }
+
+  describe("POST /api/centres/containers/location/:id") {
+
+    it("update a container's location") {
+      val f = fixture
+      f.allEntities.foreach(addToRepository)
+
+      val centre   = factory.createEnabledCentre
+      val location = centre.locations.headOption.value
+      addToRepository(centre)
+
+      val updateJson = Json.obj("expectedVersion" -> Some(f.container.version),
+                                "centreId"   -> centre.id.id,
+                                "locationId" -> location.id.id)
+
+      val reply = makeAuthRequest(POST, uri("location", f.container.id.id), updateJson).value
+      reply must beOkResponseWithJsonReply
+      val updatedContainer =
+        f.container.withCentreLocation(centre.id, location.id, OffsetDateTime.now).toOption.value
+      validateContainer(updatedContainer, contentAsJson(reply))
+    }
+
+    it("fail when updating a container's location and centre does not exist") {
+      val f = fixture
+      f.allEntities.foreach(addToRepository)
+
+      val centre   = factory.createEnabledCentre
+      val location = centre.locations.headOption.value
+
+      val updateJson = Json.obj("expectedVersion" -> Some(f.container.version),
+                                "centreId"   -> centre.id.id,
+                                "locationId" -> location.id.id)
+
+      val reply = makeAuthRequest(POST, uri("location", f.container.id.id), updateJson).value
+      reply must beNotFoundWithMessage("IdNotFound: centre id")
+    }
+
+    it("fail when updating a container's location and location is invalid") {
+      val f = fixture
+      f.allEntities.foreach(addToRepository)
+
+      val centre     = factory.createEnabledCentre
+      val locationId = nameGenerator.next[Container]
+      addToRepository(centre)
+
+      val updateJson = Json.obj("expectedVersion" -> Some(f.container.version),
+                                "centreId"   -> centre.id.id,
+                                "locationId" -> locationId)
+
+      val reply = makeAuthRequest(POST, uri("location", f.container.id.id), updateJson).value
+      reply must beNotFoundWithMessage("IdNotFound: invalid location id")
+    }
+
+    describe("fail when updating location with invalid version") {
+      updateWithInvalidVersionSharedBehaviour { container =>
+        val f = fixture
+        (uri("location", container.id.id),
+         Json.obj("centreId" -> f.centre.id.id, "locationId" -> f.centre.locations.headOption.value.id.id))
+      }
+    }
+  }
+
+  describe("POST /api/centres/containers/temperature/:id") {
+
+    it("update a container's temperature property") {
+      val f = fixture
+      f.allEntities.foreach(addToRepository)
+
+      val temperature = PreservationTemperature.Plus4celcius
+      val updateJson =
+        Json.obj("expectedVersion" -> Some(f.container.version), "temperature" -> temperature.toString)
+      val reply = makeAuthRequest(POST, uri("temperature", f.container.id.id), updateJson).value
+      reply must beOkResponseWithJsonReply
+      val updatedContainer =
+        f.container.withTemperature(temperature, OffsetDateTime.now).toOption.value
+      validateContainer(updatedContainer, contentAsJson(reply))
+    }
+  }
+
+  describe("POST /api/centres/containers/position/:id") {
+
+    it("changing position on a root container fails") {
+      val f = fixture
+      f.allEntities.foreach(addToRepository)
+
+      val updateJson = Json.obj("expectedVersion" -> Some(f.container.version),
+                                "parentId" -> nameGenerator.next[Container],
+                                "label"    -> nameGenerator.next[Container])
+      val reply = makeAuthRequest(POST, uri("position", f.container.id.id), updateJson).value
+      reply must beBadRequestWithMessage("EntityCriteriaError: cannot update position on a root container")
+    }
+
+  }
+
+  protected def containerToAddJson(container: RootContainer, fixture: RootContainerFixture): JsValue = {
+    val location = fixture.centre.locations.headOption.value
+    Json.obj("label"           -> container.label,
+             "inventoryId"     -> container.inventoryId,
+             "centreId"        -> fixture.containerType.centreId,
+             "locationId"      -> location.id,
+             "temperature"     -> container.temperature,
+             "containerTypeId" -> container.containerTypeId)
+  }
+}
+
+class StorageContainersControllerSpec
+    extends ChildContainerControllerSpec[StorageContainer,
+                                         StorageContainerType,
+                                         RootContainer,
+                                         StorageContainerFixture] with CommonStorageContainerControllerSpec[
+      StorageContainer,
+      StorageContainerType,
+      StorageContainerFixture
+    ] {
+
+  protected def addUrl(): Url = uri("storage")
+
+  protected def fixture(): StorageContainerFixture = StorageContainerFixture(factory)
+
+  describe("POST /api/containers") {
+
+    it("adding a child container fails if a container type is of the wrong type") {
+      val f = fixture
+      f.allEntitiesButContainer.foreach(addToRepository)
+
+      val specimenContainerType = factory.createSpecimenContainerType
+      addToRepository(specimenContainerType)
+
+      val container: StorageContainer =
+        f.container.withContainerType(specimenContainerType.id, OffsetDateTime.now).toOption.value
+
+      val addJson = containerToAddJson(container, f)
+      val reply   = makeAuthRequest(POST, addUrl, addJson).value
+      reply must beBadRequestWithMessage("InvalidStatus: not a storage container type")
+    }
+
+  }
+
+}
+
+class SpecimenContainersControllerSpec
+    extends ChildContainerControllerSpec[SpecimenContainer,
+                                         SpecimenContainerType,
+                                         StorageContainer,
+                                         SpecimenContainerFixture] {
+
+  protected def addUrl(): Url = uri("specimen")
+
+  protected def fixture(): SpecimenContainerFixture = SpecimenContainerFixture(factory)
+
+  describe("POST /api/containers") {
+
+    it("adding a child container fails if a container type is of the wrong type") {
+      val f = fixture
+      f.allEntitiesButContainer.foreach(addToRepository)
+
+      val storageContainerType = factory.createStorageContainerType
+      addToRepository(storageContainerType)
+
+      val container =
+        f.container.withContainerType(storageContainerType.id, OffsetDateTime.now).toOption.value
+
+      val addJson = containerToAddJson(container, f)
+      val reply   = makeAuthRequest(POST, addUrl, addJson).value
+      reply must beBadRequestWithMessage("InvalidStatus: not a specimen container type")
+    }
+
+  }
+
+  describe("POST /api/centres/containers/constraints/:id") {
+
+    it("fails when adding constraints to a specimen container") {
+      val f = fixture
+      f.allEntities.foreach(addToRepository)
+
+      val constraints = factory.createContainerConstraints
+      val updateJson =
+        Json.obj("expectedVersion" -> Some(f.container.version)) ++ constraintsToJson(constraints)
+      val reply = makeAuthRequest(POST, uri("constraints", f.container.id.id), updateJson).value
+      reply must beBadRequestWithMessage(
+        "EntityCriteriaError: cannot add constraints to a specimen container"
+      )
+    }
+
+    it("fails when removing constraints on a specimen container") {
+      val f = fixture
+      f.allEntities.foreach(addToRepository)
+
+      val updateJson =
+        Json.obj("expectedVersion" -> Some(f.container.version))
+      val reply = makeAuthRequest(POST, uri("constraints/remove", f.container.id.id), updateJson).value
+      reply must beBadRequestWithMessage(
+        "EntityCriteriaError: cannot remove constraints on a specimen container"
+      )
+    }
+
+  }
+
+}
+
+trait ChildContainerControllerSpec[
+    C <: ChildContainer,
+    T <: ContainerType,
+    PC <: Container,
+    F <: ChildContainerFixture[C, T, PC]]
+    extends CommonContainerControllerSpec[C, T, F] {
+
+  describe("(child common)") {
+
+    describe("POST /api/containers") {
+
+      it("adding a child container fails if parent container is not defined") {
+        val f = fixture
+        f.allEntitiesButContainer.foreach(addToRepository)
+        containerRepository.remove(f.parent.container)
+        val addJson = containerToAddJson(f)
+        val reply   = makeAuthRequest(POST, addUrl, addJson).value
+        reply must beNotFoundWithMessage("IdNotFound: container id")
+      }
+
+      it("adding a child container fails if the label is occupied") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+        val container = f.containerWithInventoryId(nameGenerator.next[Container])
+        val addJson   = containerToAddJson(container, f)
+        val reply     = makeAuthRequest(POST, addUrl, addJson).value
+        reply must beBadRequestWithMessage("EntityCriteriaError: position is occupied at label")
+      }
+
+      it("adding a child container fails if the label is invalid") {
+        val f = fixture
+        f.allEntitiesButContainer.foreach(addToRepository)
+        val container = f.containerWithLabel(nameGenerator.next[Container])
+        val addJson   = containerToAddJson(container, f)
+        val reply     = makeAuthRequest(POST, addUrl, addJson).value
+        reply must beBadRequestWithMessage("EntityCriteriaError: label is invalid")
+      }
+
+    }
+
+    describe("POST /api/centres/containers/label/:id") {
+
+      it("update a container's label") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val newLabel   = f.parent.schema.labels.toSeq(1)
+        val updateJson = Json.obj("expectedVersion" -> Some(f.container.version), "label" -> newLabel)
+        val reply      = makeAuthRequest(POST, uri("label", f.container.id.id), updateJson).value
+        reply must beOkResponseWithJsonReply
+        val updatedContainer = f.container.withLabel(newLabel).toOption.value
+
+        validateContainer(updatedContainer, contentAsJson(reply))
+      }
+
+      it("fail if new label is already occupied") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val sibling = f.createSiblingContainer(factory)
+        addToRepository(sibling)
+
+        val newLabel   = sibling.schemaLabel.label
+        val updateJson = Json.obj("expectedVersion" -> Some(f.container.version), "label" -> newLabel)
+        val reply      = makeAuthRequest(POST, uri("label", f.container.id.id), updateJson).value
+        reply must beBadRequestWithMessage("EntityCriteriaError: position is occupied at label")
+      }
+
+      it("fail if label is invalid") {
+        val newLabel = nameGenerator.next[Container]
+        val f        = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val updateJson = Json.obj("expectedVersion" -> Some(f.container.version), "label" -> newLabel)
+        val reply      = makeAuthRequest(POST, uri("label", f.container.id.id), updateJson).value
+        reply must beBadRequestWithMessage("EntityCriteriaError: label is invalid on schema")
+      }
+    }
+
+    describe("POST /api/centres/containers/location/:id") {
+
+      it("fail when updating a container's location") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val centre   = factory.createEnabledCentre
+        val location = centre.locations.headOption.value
+        addToRepository(centre)
+
+        val updateJson = Json.obj("expectedVersion" -> Some(f.container.version),
+                                  "centreId"   -> centre.id.id,
+                                  "locationId" -> location.id.id)
+
+        val reply = makeAuthRequest(POST, uri("location", f.container.id.id), updateJson).value
+        reply must beBadRequestWithMessage(
+          "EntityCriteriaError: cannot change the centre location on a non root container"
+        )
+      }
+    }
+
+    describe("POST /api/centres/containers/temperature/:id") {
+
+      it("fail when updating a container's temperature property") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val temperature = PreservationTemperature.Plus4celcius
+        val updateJson =
+          Json.obj("expectedVersion" -> Some(f.container.version), "temperature" -> temperature.toString)
+        val reply = makeAuthRequest(POST, uri("temperature", f.container.id.id), updateJson).value
+        reply must beBadRequestWithMessage(
+          "EntityCriteriaError: cannot change the temperature on a non root container"
+        )
+      }
+    }
+
+    describe("POST /api/centres/containers/position/:id") {
+
+      it("update a container's position") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val parent = f.createParentContainer(factory)
+        addToRepository(parent)
+
+        val updateJson = Json.obj("expectedVersion" -> Some(f.container.version),
+                                  "parentId" -> parent.id,
+                                  "label"    -> f.parent.schema.labels.toSeq(1))
+        val reply = makeAuthRequest(POST, uri("position", f.container.id.id), updateJson).value
+        reply must beOkResponseWithJsonReply
+        val updatedContainer = f.container
+          .withPosition(parent.id, f.parent.schema.labels.toSeq(1), OffsetDateTime.now).toOption.value
+
+        validateContainer(updatedContainer, contentAsJson(reply))
+      }
+
+      it("fails when poisiton is the same as current") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val updateJson = Json.obj("expectedVersion" -> Some(f.container.version),
+                                  "parentId" -> f.container.parentId,
+                                  "label"    -> f.container.schemaLabel.label)
+        val reply = makeAuthRequest(POST, uri("position", f.container.id.id), updateJson).value
+        reply must beBadRequestWithMessage(
+          "EntityCriteriaError: container already occupies requested position"
+        )
+      }
+
+      it("fails when position is occupied") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val sibling = f.createSiblingContainer(factory)
+        addToRepository(sibling)
+
+        val updateJson = Json.obj("expectedVersion" -> Some(f.container.version),
+                                  "parentId" -> sibling.parentId,
+                                  "label"    -> sibling.schemaLabel.label)
+        val reply = makeAuthRequest(POST, uri("position", f.container.id.id), updateJson).value
+        reply must beBadRequestWithMessage("EntityCriteriaError: position is occupied at label")
+      }
+
+      it("fails when position label is invalid") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val updateJson = Json.obj("expectedVersion" -> Some(f.container.version),
+                                  "parentId" -> f.container.parentId,
+                                  "label"    -> nameGenerator.next[Container])
+        val reply = makeAuthRequest(POST, uri("position", f.container.id.id), updateJson).value
+        reply must beBadRequestWithMessage("EntityCriteriaError: label is invalid on schema")
+      }
+
+    }
+
+  }
+
+  protected def containerToAddJson(container: C, fixture: F): JsValue = {
+    Json.obj("inventoryId"     -> container.inventoryId,
+             "containerTypeId" -> container.containerTypeId,
+             "parentId"        -> fixture.parent.container.id,
+             "label"           -> container.schemaLabel.label)
+  }
+
+}
+
+trait CommonStorageContainerControllerSpec[
+    C <: Container with HasEnabled with HasConstraints,
+    T <: ContainerType,
+    F <: ContainerFixture[C, T]]
+    extends CommonContainerControllerSpec[C, T, F] {
+
+  import org.biobank.matchers.JsonMatchers._
+  import org.biobank.matchers.DtoMatchers._
+
+  describe("(root and storage container common)") {
+
+    describe("GET /api/centres/containers/children/:slug") {
+
+      it("gets container's children ") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val children = (1 to 2)
+          .map { _ =>
+            val (childContainer, childContainerType, childSchema) = f.createChild(factory).value
+            Set(childContainer, childContainerType, childSchema).foreach(addToRepository)
+            childContainer
+          }.sortBy(_.id.id)
+
+        val reply = makeAuthRequest(GET, uri("children", f.container.slug.id)).value
+        reply must beOkResponseWithJsonReply
+
+        val json      = contentAsJson(reply)
+        val replyInfo = (json \ "data").validate[ContainerChildrenInfo]
+        replyInfo must be(jsSuccess)
+
+        replyInfo.get.container must matchDtoToContainerInfo(f.container)
+
+        (replyInfo.get.children.toList.sortBy(_.id) zip children).foreach {
+          case (replyChild, child) =>
+            replyChild must matchDtoToContainerInfo(child)
+        }
+      }
+
+      it("fails to get container's children if container does not exist") {
+        val f = fixture
+        f.allEntitiesButContainer.foreach(addToRepository)
+
+        val reply = makeAuthRequest(GET, uri("children", f.container.slug.id)).value
+        reply must beNotFoundWithMessage("EntityCriteriaNotFound: container slug")
+      }
+    }
+
+    describe("POST /api/centres/containers/enabled/:id") {
+
+      it("update a container's enabled state") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val newValue   = !f.container.enabled
+        val updateJson = Json.obj("expectedVersion" -> Some(f.container.version), "enabled" -> newValue)
+
+        val reply = makeAuthRequest(POST, uri("enabled", f.container.id.id), updateJson).value
+        reply must beOkResponseWithJsonReply
+        val updatedContainer = f.container.withEnabled(newValue, OffsetDateTime.now).toOption.value
+        validateContainer(updatedContainer, contentAsJson(reply))
+      }
+
+      describe("fail when updating enabled property with invalid version") {
+        updateWithInvalidVersionSharedBehaviour { container =>
+          (uri("enabled", container.id.id), Json.obj("enabled" -> !container.enabled))
+        }
+      }
+    }
+
+    describe("POST /api/centres/containers/constraints/:id") {
+
+      it("add constraints to a container") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val constraints = factory.createContainerConstraints
+        val updateJson =
+          Json.obj("expectedVersion" -> Some(f.container.version)) ++ constraintsToJson(constraints)
+        val reply = makeAuthRequest(POST, uri("constraints", f.container.id.id), updateJson).value
+        reply must beOkResponseWithJsonReply
+        val updatedContainer =
+          f.container.withConstraints(Some(constraints), OffsetDateTime.now).toOption.value
+        validateContainer(updatedContainer, contentAsJson(reply))
+      }
+
+      it("remove constraints on a container") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val updateJson =
+          Json.obj("expectedVersion" -> Some(f.container.version))
+        val reply = makeAuthRequest(POST, uri("constraints/remove", f.container.id.id), updateJson).value
+        reply must beOkResponseWithJsonReply
+        val updatedContainer = f.container.withConstraints(None, OffsetDateTime.now).toOption.value
+        validateContainer(updatedContainer, contentAsJson(reply))
+      }
+
+      it("fails when adding constraints to a container that does not exist") {
+        val f = fixture
+        f.allEntitiesButContainer.foreach(addToRepository)
+
+        val constraints = factory.createContainerConstraints
+        val updateJson =
+          Json.obj("expectedVersion" -> Some(f.container.version)) ++ constraintsToJson(constraints)
+        val reply = makeAuthRequest(POST, uri("constraints", f.container.id.id), updateJson).value
+        reply must beNotFoundWithMessage("IdNotFound: container id")
+      }
+
+      it("fails when removing constraints on a container that does not exit") {
+        val f = fixture
+        f.allEntitiesButContainer.foreach(addToRepository)
+
+        val updateJson =
+          Json.obj("expectedVersion" -> Some(f.container.version))
+        val reply = makeAuthRequest(POST, uri("constraints/remove", f.container.id.id), updateJson).value
+        reply must beNotFoundWithMessage("IdNotFound: container id")
+      }
+
+      describe("fail when updating constraints with invalid version") {
+        updateWithInvalidVersionSharedBehaviour { container =>
+          val constraints = factory.createContainerConstraints
+          (uri("constraints", container.id.id),
+           Json.obj("enabled" -> !container.enabled) ++ constraintsToJson(constraints))
+        }
+      }
+
+      describe("fail when removing constraints with invalid version") {
+        updateWithInvalidVersionSharedBehaviour { container =>
+          (uri("constraints/remove", container.id.id), Json.obj())
+        }
+      }
+    }
+  }
+}
+
+trait CommonContainerControllerSpec[C <: Container, T <: ContainerType, F <: ContainerFixture[C, T]]
     extends ControllerFixture with PagedResultsSharedSpec with PagedResultsMatchers {
 
   import org.biobank.TestUtils._
@@ -23,416 +649,510 @@ class ContainersControllerSpec
 
   protected val basePath = "centres/containers"
 
-  describe("Containers REST API") {
+  protected def addUrl(): Url
 
-    describe("POST /api/containers") {
+  protected def fixture(): F
 
-      describe("for root containers") {
+  protected def containerToAddJson(container: C, fixture: F): JsValue
 
-        val url = uri("")
+  protected def containerToAddJson(fixture: F): JsValue = containerToAddJson(fixture.container, fixture)
 
-        it("add a root container") {
-          val f = new RootContainerFixtures
-          Set(f.centre, f.containerType).foreach(addToRepository)
-          val addJson = containerToAddJson(f.container, f.containerType, f.centre.locations.toSeq(0))
-          val reply   = makeAuthRequest(POST, url, addJson).value
-          reply must beOkResponseWithJsonReply
+  describe("(common)") {
 
-          validateContainer(f.container, contentAsJson(reply))
-        }
+    describe("GET /api/centres/containers/:slug") {
 
-        it("adding a root container fails if centre is not defined") {
-          val f       = new RootContainerFixtures
-          val addJson = containerToAddJson(f.container, f.containerType, f.centre.locations.toSeq(0))
-          val reply   = makeAuthRequest(POST, url, addJson).value
-          reply must beNotFoundWithMessage("IdNotFound: centre id")
-        }
-
-        it("adding a root container fails if container type is not defined") {
-          val f = new RootContainerFixtures
-          centreRepository.put(f.centre)
-          val addJson = containerToAddJson(f.container, f.containerType, f.centre.locations.toSeq(0))
-          val reply   = makeAuthRequest(POST, url, addJson).value
-          reply must beNotFoundWithMessage("IdNotFound: container type id")
-        }
-
-        it("adding a root container fails if a container type is for a specimen container") {
-          val f = new SpecimenContainerFixtures
-          Set(f.centre,
-              f.rootContainerType,
-              f.storageContainerType,
-              f.specimenContainerType,
-              f.rootContainer,
-              f.storageContainer,
-              f.specimenContainer)
-            .foreach(addToRepository)
-          val addJson =
-            containerToAddJson(f.rootContainer, f.specimenContainerType, f.centre.locations.toSeq(0))
-          val reply = makeAuthRequest(POST, url, addJson).value
-          reply must beBadRequestWithMessage("InvalidStatus: not a storage container type")
-        }
-
-        it("adding a root container fails if a container with the inventory ID already exists") {
-          val f = new RootContainerFixtures
-          Set(f.centre, f.containerType, f.container).foreach(addToRepository)
-          val addJson = containerToAddJson(f.container, f.containerType, f.centre.locations.toSeq(0))
-          val reply   = makeAuthRequest(POST, url, addJson).value
-          reply must beForbiddenRequestWithMessage(
-            "EntityCriteriaError: container with inventory ID already exists"
-          )
-        }
-
+      it("get a single container by slug") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+        val reply = makeAuthRequest(GET, uri(f.container.slug.id)).value
+        reply must beOkResponseWithJsonReply
+        validateContainer(f.container, contentAsJson(reply))
       }
 
-      describe("for storage containers") {
-
-        val url = uri("add-storage")
-
-        val setupFull = () => {
-          val f = new StorageContainerFixtures
-          Set(f.centre, f.rootContainerSchema, f.rootContainerType, f.storageContainerType, f.rootContainer)
-            .foreach(addToRepository)
-          ChildContainerTestSetup(url, f.storageContainerType, f.storageContainer)
-        }
-
-        val setupMissingContainerType = () => {
-          val f = new StorageContainerFixtures
-          Set(f.centre, f.storageContainerSchema, f.rootContainerType, f.rootContainer)
-            .foreach(addToRepository)
-          ChildContainerTestSetup(url, f.storageContainerType, f.storageContainer)
-        }
-
-        val setupInvalidContainerType = () => {
-          val f = new SpecimenContainerFixtures
-          Set(f.centre,
-              f.rootContainerType,
-              f.rootContainerSchema,
-              f.specimenContainerSchema,
-              f.storageContainerType,
-              f.specimenContainerType,
-              f.rootContainer)
-            .foreach(addToRepository)
-          ChildContainerTestSetup(url, f.specimenContainerType, f.storageContainer)
-        }
-
-        val setupMissingParent = () => {
-          val f = new StorageContainerFixtures
-          Set(f.centre, f.rootContainerType, f.rootContainerType).foreach(addToRepository)
-          ChildContainerTestSetup(url, f.storageContainerType, f.storageContainer)
-        }
-
-        val setupInventoryIdExists = () => {
-          val f = new StorageContainerFixtures
-          Set(f.centre,
-              f.rootContainerType,
-              f.storageContainerSchema,
-              f.storageContainerType,
-              f.rootContainer,
-              f.storageContainer)
-            .foreach(addToRepository)
-          ChildContainerTestSetup(url, f.storageContainerType, f.storageContainer)
-        }
-
-        val setupPositionNotAvailable = () => {
-          val f = new StorageContainerFixtures
-          Set(f.centre,
-              f.rootContainerSchema,
-              f.storageContainerSchema,
-              f.rootContainerType,
-              f.storageContainerType,
-              f.rootContainer,
-              f.storageContainer)
-            .foreach(addToRepository)
-          val container = f.storageContainer.copy(inventoryId = nameGenerator.next[String])
-          ChildContainerTestSetup(url, f.storageContainerType, container)
-        }
-
-        childContainerSharedBehaviour(setupFull,
-                                      setupMissingContainerType,
-                                      setupInvalidContainerType,
-                                      setupMissingParent,
-                                      setupInventoryIdExists,
-                                      setupPositionNotAvailable)
+      it("fail when querying for a single container and slug is invalid") {
+        val f     = fixture
+        val reply = makeAuthRequest(GET, uri(f.container.slug.id)).value
+        reply must beNotFoundWithMessage("EntityCriteriaNotFound: container slug")
       }
+    }
 
-      describe("for specimen containers") {
+    describe("GET /api/centres/containers/:centreId") {
 
-        val url = uri("add-specimen")
-
-        val setupFull = () => {
-          val f = new SpecimenContainerFixtures
-          Set(f.centre,
-              f.rootContainerSchema,
-              f.storageContainerSchema,
-              f.rootContainerType,
-              f.storageContainerType,
-              f.specimenContainerType,
-              f.rootContainer,
-              f.storageContainer)
-            .foreach(addToRepository)
-          ChildContainerTestSetup(url, f.specimenContainerType, f.specimenContainer)
-        }
-
-        val setupMissingContainerType = () => {
-          val f = new SpecimenContainerFixtures
-          Set(f.centre,
-              f.rootContainerSchema,
-              f.storageContainerSchema,
-              f.rootContainerType,
-              f.storageContainerType,
-              f.rootContainer,
-              f.storageContainer)
-            .foreach(addToRepository)
-          ChildContainerTestSetup(url, f.specimenContainerType, f.specimenContainer)
-        }
-
-        val setupInvalidContainerType = () => {
-          val f = new SpecimenContainerFixtures
-          Set(f.centre,
-              f.rootContainerSchema,
-              f.storageContainerSchema,
-              f.specimenContainerSchema,
-              f.rootContainerType,
-              f.storageContainerType,
-              f.rootContainer,
-              f.storageContainer)
-            .foreach(addToRepository)
-          ChildContainerTestSetup(url, f.storageContainerType, f.specimenContainer)
-        }
-
-        val setupMissingParent = () => {
-          val f = new SpecimenContainerFixtures
-          Set(f.centre,
-              f.rootContainerSchema,
-              f.specimenContainerSchema,
-              f.rootContainerType,
-              f.storageContainerType,
-              f.rootContainer)
-            .foreach(addToRepository)
-          ChildContainerTestSetup(url, f.specimenContainerType, f.specimenContainer)
-        }
-
-        val setupInventoryIdExists = () => {
-          val f = new SpecimenContainerFixtures
-          Set(f.centre,
-              f.rootContainerSchema,
-              f.specimenContainerSchema,
-              f.rootContainerType,
-              f.storageContainerType,
-              f.specimenContainerType,
-              f.rootContainer,
-              f.storageContainer,
-              f.specimenContainer)
-            .foreach(addToRepository)
-          ChildContainerTestSetup(url, f.specimenContainerType, f.specimenContainer)
-        }
-
-        val setupPositionNotAvailable = () => {
-          val f = new SpecimenContainerFixtures
-          Set(f.centre,
-              f.rootContainerSchema,
-              f.storageContainerSchema,
-              f.specimenContainerSchema,
-              f.rootContainerType,
-              f.storageContainerType,
-              f.specimenContainerType,
-              f.rootContainer,
-              f.storageContainer,
-              f.specimenContainer)
-            .foreach(addToRepository)
-          val container = f.specimenContainer.copy(inventoryId = nameGenerator.next[String])
-          ChildContainerTestSetup(url, f.specimenContainerType, container)
-        }
-
-        childContainerSharedBehaviour(setupFull,
-                                      setupMissingContainerType,
-                                      setupInvalidContainerType,
-                                      setupMissingParent,
-                                      setupInventoryIdExists,
-                                      setupPositionNotAvailable)
-
+      it("list none") {
+        val centre = factory.createEnabledCentre
+        addToRepository(centre)
+        uri("search", centre.id.id) must beEmptyResults
       }
 
     }
 
-  }
+    describe("POST /api/containers") {
 
-  case class ChildContainerTestSetup(url: Url, containerType: ContainerType, container: ChildContainer)
-
-  def childContainerSharedBehaviour(
-      setupFull:                 () => ChildContainerTestSetup,
-      setupMissingContainerType: () => ChildContainerTestSetup,
-      setupInvalidContainerType: () => ChildContainerTestSetup,
-      setupMissingParent:        () => ChildContainerTestSetup,
-      setupInventoryIdExists:    () => ChildContainerTestSetup,
-      setupPositionNotAvailable: () => ChildContainerTestSetup
-    ) =
-    describe("child container (shared)") {
-
-      it("add a child container") {
-        val (url, containerType, container) = ChildContainerTestSetup.unapply(setupFull()).get
-        val addJson                         = containerToAddJson(container, containerType)
-        val reply                           = makeAuthRequest(POST, url, addJson).value
+      it("add a container") {
+        val f = fixture
+        f.allEntitiesButContainer.foreach(addToRepository)
+        val addJson = containerToAddJson(f)
+        val reply   = makeAuthRequest(POST, addUrl, addJson).value
         reply must beOkResponseWithJsonReply
 
-        validateContainer(container, contentAsJson(reply))
+        validateContainer(f.container, contentAsJson(reply))
       }
 
-      it("adding a child container fails if container type is not defined") {
-        val (url, containerType, container) = ChildContainerTestSetup.unapply(setupMissingContainerType()).get
-        val addJson                         = containerToAddJson(container, containerType)
-        val reply                           = makeAuthRequest(POST, url, addJson).value
+      it("adding a container fails if container type is not defined") {
+        val f = fixture
+        f.allEntitiesButContainer.foreach(addToRepository)
+        containerTypeRepository.remove(f.containerType)
+        val addJson = containerToAddJson(f)
+        val reply   = makeAuthRequest(POST, addUrl, addJson).value
         reply must beNotFoundWithMessage("IdNotFound: container type id")
       }
 
-      it("adding a child container fails if a container type is of the wrong type") {
-        val (url, containerType, container) = ChildContainerTestSetup.unapply(setupInvalidContainerType()).get
-        val addJson                         = containerToAddJson(container, containerType)
-        val reply                           = makeAuthRequest(POST, url, addJson).value
-
-        val expectedMsg = container match {
-          case c: StorageContainer  => "InvalidStatus: not a storage container type"
-          case c: SpecimenContainer => "InvalidStatus: not a specimen container type"
-        }
-        reply must beBadRequestWithMessage(expectedMsg)
-      }
-
-      it("adding a child container fails if parent container is not defined") {
-        val (url, containerType, container) = ChildContainerTestSetup.unapply(setupMissingParent()).get
-        val addJson                         = containerToAddJson(container, containerType)
-        val reply                           = makeAuthRequest(POST, url, addJson).value
-        reply must beNotFoundWithMessage("IdNotFound: container id")
-      }
-
-      it("adding a child container fails if a container with the inventory ID already exists") {
-        val (url, containerType, container) = ChildContainerTestSetup.unapply(setupInventoryIdExists()).get
-        val addJson                         = containerToAddJson(container, containerType)
-        val reply                           = makeAuthRequest(POST, url, addJson).value
+      it("adding a container fails if a container with the inventory ID already exists") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+        val addJson = containerToAddJson(f)
+        val reply   = makeAuthRequest(POST, addUrl, addJson).value
         reply must beForbiddenRequestWithMessage(
           "EntityCriteriaError: container with inventory ID already exists"
         )
       }
 
-      it("adding a child container fails if the position is not available") {
-        val (url, containerType, container) = ChildContainerTestSetup.unapply(setupPositionNotAvailable()).get
-        val addJson                         = containerToAddJson(container, containerType)
-        val reply                           = makeAuthRequest(POST, url, addJson).value
-        reply must beBadRequestWithMessage("EntityCriteriaError: position not empty at label")
+    }
+
+    describe("POST /api/centres/containers/inventoryId/:id") {
+
+      it("update a container's inventoryId") {
+        val newInventoryId = nameGenerator.next[Container]
+        val f              = fixture
+        f.allEntities.foreach(addToRepository)
+        val updateJson =
+          Json.obj("expectedVersion" -> Some(f.container.version), "inventoryId" -> newInventoryId)
+        val reply = makeAuthRequest(POST, uri("inventoryId", f.container.id.id), updateJson).value
+        reply must beOkResponseWithJsonReply
+        val updatedContainer =
+          f.container.withInventoryId(newInventoryId, Slug(newInventoryId)).toOption.value
+        validateContainer(updatedContainer, contentAsJson(reply))
+      }
+
+      describe("fail when updating inventory ID with invalid version") {
+        updateWithInvalidVersionSharedBehaviour { container =>
+          (uri("inventoryId", container.id.id), Json.obj("inventoryId" -> nameGenerator.next[Container]))
+        }
+      }
+    }
+
+    describe("POST /api/centres/containers/label/:id") {
+
+      describe("fail when updating label with invalid version") {
+        updateWithInvalidVersionSharedBehaviour { container =>
+          (uri("label", container.id.id), Json.obj("label" -> nameGenerator.next[Container]))
+        }
+      }
+    }
+
+    describe("POST /api/centres/containers/containerTypeId/:id") {
+
+      it("change a container's container type") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val containerType = f.createContainerType(factory)
+        addToRepository(containerType)
+
+        val updateJson =
+          Json.obj("expectedVersion" -> Some(f.container.version), "containerTypeId" -> containerType.id)
+        val reply = makeAuthRequest(POST, uri("containerType", f.container.id.id), updateJson).value
+        reply must beOkResponseWithJsonReply
+        val updatedContainer =
+          f.container.withContainerType(containerType.id, OffsetDateTime.now).toOption.value
+        validateContainer(updatedContainer, contentAsJson(reply))
+      }
+
+      it("fails when changing a container's container type to one that does not exist") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val containerType = f.createContainerType(factory)
+        val updateJson =
+          Json.obj("expectedVersion" -> Some(f.container.version), "containerTypeId" -> containerType.id)
+        val reply = makeAuthRequest(POST, uri("containerType", f.container.id.id), updateJson).value
+        reply must beNotFoundWithMessage("IdNotFound: container type id")
+      }
+
+      it("fails when changing a container's container type to one of the wrong type") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val containerType = f.container match {
+          case _: RootContainer | _: StorageContainer => factory.createSpecimenContainerType
+          case c: SpecimenContainer => factory.createStorageContainerType
+        }
+        addToRepository(containerType)
+
+        val updateJson =
+          Json.obj("expectedVersion" -> Some(f.container.version), "containerTypeId" -> containerType.id)
+        val reply = makeAuthRequest(POST, uri("containerType", f.container.id.id), updateJson).value
+        reply must beBadRequestWithMessage("EntityCriteriaError: container and containerTypes not compatible")
+      }
+
+      describe("fail when updating container type ID with invalid version") {
+        updateWithInvalidVersionSharedBehaviour { container =>
+          (uri("containerType", container.id.id),
+           Json.obj("containerTypeId" -> nameGenerator.next[Container]))
+        }
+      }
+    }
+
+    describe("DELETE /api/centres/containers/:id/:version") {
+
+      it("remove a container") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        val reply = makeAuthRequest(DELETE, uri(f.container.id.id, f.container.version.toString)).value
+        reply must beOkResponseWithJsonReply
+
+        val result = (contentAsJson(reply) \ "data").validate[Boolean]
+        result must be(jsSuccess)
+        result.get must be(true)
+        containerRepository.getByKey(f.container.id) mustFail ("IdNotFound: container")
+      }
+
+      it("fail when removing a container that does not exist") {
+        val f = fixture
+        f.allEntitiesButContainer.foreach(addToRepository)
+        val reply = makeAuthRequest(DELETE, uri(f.container.id.id, f.container.version.toString)).value
+        reply must beNotFoundWithMessage("IdNotFound: container id")
+      }
+
+      it("fail when container is being used by another container or specimen") {
+        val f = fixture
+        f.allEntities.foreach(addToRepository)
+
+        f.container match {
+          case _: RootContainer | _: StorageContainer =>
+            f.createChild(factory).map {
+              case (childContainer, childContainerType, childSchema) =>
+                Set(childContainer, childContainerType, childSchema).foreach(addToRepository)
+            }
+          case c: SpecimenContainer =>
+            val specimen = factory.createUsableSpecimen().copy(containerId = Some(f.container.id))
+            specimenRepository.put(specimen)
+        }
+        val reply = makeAuthRequest(DELETE, uri(f.container.id.id, f.container.version.toString)).value
+        reply must beBadRequestWithMessage("EntityInUse: container in use")
       }
 
     }
-
-  private class RootContainerFixtures {
-    val location = factory.createLocation
-    val centre   = factory.defaultEnabledCentre.copy(locations = Set(location))
-
-    val containerSchema =
-      factory.createContainerSchema.copy(labels = Set(factory.createContainerSchemaLabel.label))
-
-    val containerType = factory.createStorageContainerType
-    val container     = factory.createRootContainer(centre, containerType)
   }
 
-  private class StorageContainerFixtures {
-    private val f           = new RootContainerFixtures
-    val rootContainerSchema = f.containerSchema
-    val rootContainer       = f.container
-    val rootContainerType   = f.containerType
-    val centre              = f.centre
+  def validateContainer(container: Container, json: JsValue): Unit = {
+    val newContainerId = (json \ "data" \ "id").validate[ContainerId]
+    newContainerId must be(jsSuccess)
+    val newId = newContainerId.get
 
-    val storageContainerSchema =
-      factory.createContainerSchema.copy(labels = Set(factory.createContainerSchemaLabel.label))
-
-    val storageContainerType = factory.createStorageContainerType(centre, storageContainerSchema)
-
-    val storageContainer = factory.createStorageContainer(
-      storageContainerType,
-      rootContainer,
-      ContainerSchemaLabel(rootContainerSchema.id, rootContainerSchema.labels.headOption.value)
-    )
-  }
-
-  private class SpecimenContainerFixtures {
-    private val f              = new StorageContainerFixtures
-    val rootContainerSchema    = f.rootContainerSchema
-    val rootContainer          = f.rootContainer
-    val rootContainerType      = f.rootContainerType
-    val centre                 = f.centre
-    val storageContainerSchema = f.storageContainerSchema
-    val storageContainerType   = f.storageContainerType
-    val storageContainer       = f.storageContainer
-
-    val specimenContainerSchema =
-      factory.createContainerSchema.copy(labels = Set(factory.createContainerSchemaLabel.label))
-
-    val specimenContainerType = factory.createSpecimenContainerType(specimenContainerSchema)
-
-    val specimenContainer = factory.createSpecimenContainer(
-      specimenContainerType,
-      storageContainer,
-      ContainerSchemaLabel(storageContainerSchema.id, storageContainerSchema.labels.headOption.value)
-    )
-  }
-
-  def validateContainer[T <: Container, D <: ContainerDto](
-      jsonContainer:   JsResult[D],
-      container:       T
-    )(updateWithNewId: ContainerId => (T, DomainValidation[T])
-    ): Unit = {
+    val (jsonContainer, updatedContainer, repoContainer) = container match {
+      case c: RootContainer =>
+        ((json \ "data").validate[RootContainerDto],
+         c.copy(id = newId),
+         containerRepository.getRootContainer(newId))
+      case c: StorageContainer =>
+        ((json \ "data").validate[StorageContainerDto],
+         c.copy(id = newId),
+         containerRepository.getStorageContainer(newId))
+      case c: SpecimenContainer =>
+        ((json \ "data").validate[SpecimenContainerDto],
+         c.copy(id = newId),
+         containerRepository.getSpecimenContainer(newId))
+    }
     jsonContainer must be(jsSuccess)
-
-    val newContainerId                    = ContainerId(jsonContainer.get.id)
-    val (updatedContainer, repoContainer) = updateWithNewId(newContainerId)
-
     jsonContainer.get must matchDtoToContainer(updatedContainer)
     repoContainer mustSucceed { repoContainer =>
       repoContainer must matchContainer(updatedContainer)
     }
   }
 
-  def validateContainer(container: RootContainer, json: JsValue): Unit = {
-    val replyContainer = (json \ "data").validate[RootContainerDto]
-    validateContainer(replyContainer, container) { id =>
-      (container.copy(id = id), containerRepository.getRootContainer(id))
+  protected def updateWithInvalidVersionSharedBehaviour(func: C => (Url, JsObject)) =
+    it("should return bad request") {
+      val f = fixture
+      f.allEntities.foreach(addToRepository)
+      val (url, json) = func(f.container)
+
+      val reqJson = Json.obj("expectedVersion" -> Some(f.containerType.version + 1)) ++ json
+      val reply   = makeAuthRequest(POST, url, reqJson)
+      reply.value must beBadRequestWithMessage("expected version doesn't match current version")
     }
+
+  protected def constraintsToJson(constraints: ContainerConstraints): JsObject =
+    Json.obj("name"              -> constraints.name,
+             "description"       -> constraints.description,
+             "anatomicalSources" -> constraints.anatomicalSources,
+             "preservationTypes" -> constraints.preservationTypes,
+             "specimenTypes"     -> constraints.specimenTypes)
+
+  protected def listSingle(
+      offset:    Long = 0,
+      maybeNext: Option[Int] = None,
+      maybePrev: Option[Int] = None
+    )(setupFunc: () => (Url, C)
+    ) =
+    it("list single container") {
+      val (url, expectedContainer) = setupFunc()
+      val reply                    = makeAuthRequest(GET, url).value
+      reply must beOkResponseWithJsonReply
+
+      val json = contentAsJson(reply)
+      json must beSingleItemResults(offset, maybeNext, maybePrev)
+
+      val replyContainers = (json \ "data" \ "items").validate[List[ContainerDto]]
+      replyContainers must be(jsSuccess)
+      replyContainers.get.foreach { _ must matchDtoToContainer(expectedContainer) }
+    }
+
+  protected def listMultiple(
+      offset:    Long = 0,
+      maybeNext: Option[Int] = None,
+      maybePrev: Option[Int] = None
+    )(setupFunc: () => (Url, List[Container])
+    ) =
+    it("list multiple types") {
+      val (url, expectedContainers) = setupFunc()
+
+      val reply = makeAuthRequest(GET, url).value
+      reply must beOkResponseWithJsonReply
+
+      val json = contentAsJson(reply)
+      json must beMultipleItemResults(offset    = offset,
+                                      total     = expectedContainers.size.toLong,
+                                      maybeNext = maybeNext,
+                                      maybePrev = maybePrev)
+
+      val replyContainers = (json \ "data" \ "items").validate[List[ContainerDto]]
+      replyContainers must be(jsSuccess)
+
+      (replyContainers.get zip expectedContainers).foreach {
+        case (replyContainer, expectedContainer) =>
+          replyContainer must matchDtoToContainer(expectedContainer)
+      }
+    }
+
+}
+
+trait ContainerFixture[C <: Container, T <: ContainerType] {
+  val container:     C
+  val containerType: T
+  val schema:        ContainerSchema
+
+  def allEntities: Set[ConcurrencySafeEntity[_]]
+
+  def allEntitiesButContainer: Set[ConcurrencySafeEntity[_]]
+
+  def containerWithInventoryId(inventoryId: String): C
+
+  def containerWithLabel(label: String): C
+
+  def createSiblingContainer(factory: Factory): C
+
+  def createContainerType(factory: Factory): T
+
+  def createChild(factory: Factory): Option[(Container, ContainerType, ContainerSchema)]
+
+  def getCentre(): EnabledCentre
+
+}
+
+trait ChildContainerFixture[C <: Container, T <: ContainerType, PC <: Container]
+    extends ContainerFixture[C, T] {
+  val parent: ContainerFixture[PC, StorageContainerType]
+
+  def createParentContainer(factory: Factory): PC
+}
+
+// schemas need minimum 2 labels for some tests
+case class RootContainerFixture(
+    container:     RootContainer,
+    containerType: StorageContainerType,
+    schema:        ContainerSchema,
+    centre:        EnabledCentre)
+    extends ContainerFixture[RootContainer, StorageContainerType] {
+
+  def allEntities: Set[ConcurrencySafeEntity[_]] =
+    Set(container, containerType, schema, centre)
+
+  def allEntitiesButContainer: Set[ConcurrencySafeEntity[_]] =
+    Set(containerType, schema, centre)
+
+  def containerWithInventoryId(inventoryId: String) = container.copy(inventoryId = inventoryId)
+
+  def containerWithLabel(label: String) =
+    container.copy(label = label)
+
+  def createSiblingContainer(factory: Factory) = factory.createRootContainer(centre, containerType)
+
+  def createContainerType(factory: Factory) = factory.createStorageContainerType
+
+  def createChild(factory: Factory) = {
+    val childSchema        = factory.createContainerSchema.copy(labels = Set("A1", "B1"))
+    val childContainerType = factory.createStorageContainerType(centre, childSchema)
+    val childContainer = factory.createStorageContainer(
+      childContainerType,
+      container,
+      ContainerSchemaLabel(schema.id, schema.labels.toSeq(1))
+    )
+    Some((childContainer, childContainerType, childSchema))
   }
 
-  def validateContainer(container: ChildContainer, json: JsValue): Unit =
-    container match {
-      case c: StorageContainer  => validateContainer(c, json)
-      case c: SpecimenContainer => validateContainer(c, json)
-    }
+  def getCentre() = centre
 
-  def validateContainer(container: StorageContainer, json: JsValue): Unit = {
-    val replyContainer = (json \ "data").validate[StorageContainerDto]
-    validateContainer(replyContainer, container) { id =>
-      (container.copy(id = id), containerRepository.getStorageContainer(id))
-    }
+}
+
+object RootContainerFixture {
+
+  // schemas need minimum 2 labels for some tests
+  def apply(factory: Factory): RootContainerFixture = {
+    val location      = factory.createLocation
+    val centre        = factory.defaultEnabledCentre.copy(locations = Set(location))
+    val schema        = factory.createContainerSchema.copy(labels = Set("AA", "AB"))
+    val containerType = factory.createStorageContainerType
+    val container     = factory.createRootContainer(centre, containerType)
+
+    RootContainerFixture(container, containerType, schema, centre)
   }
 
-  def validateContainer(container: SpecimenContainer, json: JsValue): Unit = {
-    val replyContainer = (json \ "data").validate[SpecimenContainerDto]
-    validateContainer(replyContainer, container) { id =>
-      (container.copy(id = id), containerRepository.getSpecimenContainer(id))
-    }
+}
+
+// schemas need minimum 2 labels for some tests
+case class StorageContainerFixture(
+    container:     StorageContainer,
+    containerType: StorageContainerType,
+    schema:        ContainerSchema,
+    parent:        RootContainerFixture)
+    extends ChildContainerFixture[StorageContainer, StorageContainerType, RootContainer] {
+
+  def allEntities: Set[ConcurrencySafeEntity[_]] =
+    Set(container, containerType, schema) ++ parent.allEntities
+
+  def allEntitiesButContainer: Set[ConcurrencySafeEntity[_]] =
+    Set(containerType, schema) ++ parent.allEntities
+
+  def containerWithInventoryId(inventoryId: String) = container.copy(inventoryId = inventoryId)
+
+  def containerWithLabel(label: String) = {
+    val schemaLabel = container.schemaLabel.copy(label = label)
+    container.copy(schemaLabel = schemaLabel)
   }
 
-  private def containerToAddJson(
-      container:     RootContainer,
-      containerType: ContainerType,
-      location:      Location
-    ): JsValue =
-    Json.obj("label"           -> container.label,
-             "inventoryId"     -> container.inventoryId,
-             "centreId"        -> containerType.centreId,
-             "locationId"      -> location.id,
-             "temperature"     -> container.temperature,
-             "containerTypeId" -> containerType.id)
+  def createParentContainer(factory: Factory) =
+    factory.createRootContainer(parent.centre, parent.containerType)
 
-  private def containerToAddJson(container: ChildContainer, containerType: ContainerType): JsValue =
-    Json.obj("inventoryId"     -> container.inventoryId,
-             "containerTypeId" -> containerType.id,
-             "parentId"        -> container.parentId,
-             "label"           -> container.schemaLabel.label)
+  def createSiblingContainer(factory: Factory) = {
+    val labels = parent.schema.labels.toSeq
+    factory.createStorageContainer(containerType,
+                                   parent.container,
+                                   ContainerSchemaLabel(parent.schema.id, labels(1)))
+  }
 
+  def createContainerType(factory: Factory) = factory.createStorageContainerType
+
+  def createChild(factory: Factory) = {
+    val childSchema        = factory.createContainerSchema.copy(labels = Set("A1", "B1"))
+    val childContainerType = factory.createSpecimenContainerType(childSchema)
+    val childContainer = factory.createSpecimenContainer(
+      childContainerType,
+      container,
+      ContainerSchemaLabel(schema.id, schema.labels.toSeq(1))
+    )
+    Some((childContainer, childContainerType, childSchema))
+  }
+
+  def getCentre() = parent.centre
+}
+
+object StorageContainerFixture {
+
+  // schemas need minimum 2 labels for some tests
+  def apply(factory: Factory): StorageContainerFixture = {
+    val rootFixture          = RootContainerFixture(factory)
+    val storageSchema        = factory.createContainerSchema.copy(labels = Set("A1", "A2"))
+    val storageContainerType = factory.createStorageContainerType(rootFixture.centre, storageSchema)
+
+    val storageContainer = factory.createStorageContainer(
+      storageContainerType,
+      rootFixture.container,
+      ContainerSchemaLabel(rootFixture.schema.id, rootFixture.schema.labels.headOption.value)
+    )
+
+    StorageContainerFixture(container     = storageContainer,
+                            containerType = storageContainerType,
+                            schema        = storageSchema,
+                            parent        = rootFixture)
+  }
+
+  def createContainerType(factory: Factory) = factory.createSpecimenContainerType
+}
+
+// schemas need minimum 2 labels for some tests
+case class SpecimenContainerFixture(
+    container:     SpecimenContainer,
+    containerType: SpecimenContainerType,
+    schema:        ContainerSchema,
+    parent:        StorageContainerFixture)
+    extends ChildContainerFixture[SpecimenContainer, SpecimenContainerType, StorageContainer] {
+
+  def allEntities: Set[ConcurrencySafeEntity[_]] =
+    Set(container, containerType, schema) ++ parent.allEntities
+
+  def allEntitiesButContainer: Set[ConcurrencySafeEntity[_]] =
+    Set(containerType, schema) ++ parent.allEntities
+
+  def containerWithInventoryId(inventoryId: String) = container.copy(inventoryId = inventoryId)
+
+  def containerWithLabel(label: String) = {
+    val schemaLabel = container.schemaLabel.copy(label = label)
+    container.copy(schemaLabel = schemaLabel)
+  }
+
+  def createParentContainer(factory: Factory) =
+    factory.createStorageContainer(
+      parent.containerType,
+      parent.parent.container,
+      ContainerSchemaLabel(parent.parent.schema.id, parent.parent.schema.labels.toSeq(1))
+    )
+
+  def createSiblingContainer(factory: Factory) = {
+    val labels = parent.schema.labels.toSeq
+    factory.createSpecimenContainer(containerType,
+                                    parent.container,
+                                    ContainerSchemaLabel(parent.schema.id, labels(1)))
+  }
+
+  def createContainerType(factory: Factory) = factory.createSpecimenContainerType
+
+  def createChild(factory: Factory) = None
+
+  def getCentre() = parent.parent.centre
+
+}
+
+object SpecimenContainerFixture {
+
+  def apply(factory: Factory): SpecimenContainerFixture = {
+    val storageFixture = StorageContainerFixture(factory)
+
+    val specimenSchema =
+      factory.createContainerSchema.copy(labels = Set(factory.createContainerSchemaLabel.label))
+
+    val specimenContainerType = factory.createSpecimenContainerType(specimenSchema)
+
+    val specimenContainer = factory.createSpecimenContainer(
+      specimenContainerType,
+      storageFixture.container,
+      ContainerSchemaLabel(storageFixture.schema.id, storageFixture.schema.labels.headOption.value)
+    )
+
+    SpecimenContainerFixture(container     = specimenContainer,
+                             containerType = specimenContainerType,
+                             schema        = specimenSchema,
+                             parent        = storageFixture)
+  }
 }

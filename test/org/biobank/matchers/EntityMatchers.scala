@@ -579,14 +579,12 @@ trait EntityMatchers {
     new Matcher[ContainerConstraints] {
 
       def apply(left: ContainerConstraints) = {
-        val matchers = Map(("id" -> (left.id equals containerConstraints.id)),
-                           ("slug"                  -> (left.slug equals containerConstraints.slug)),
-                           ("name"                  -> (left.name equals containerConstraints.name)),
-                           ("description"           -> (left.description equals containerConstraints.description)),
-                           ("centreId"              -> (left.centreId equals containerConstraints.centreId)),
-                           ("anatomicalSourceTypes" -> (left.anatomicalSourceTypes equals containerConstraints.anatomicalSourceTypes)),
-                           ("preservationTypes"     -> (left.preservationTypes equals containerConstraints.preservationTypes)),
-                           ("specimenTypes"         -> (left.specimenTypes equals containerConstraints.specimenTypes)))
+        val matchers =
+          Map(("name"              -> (left.name equals containerConstraints.name)),
+              ("description"       -> (left.description equals containerConstraints.description)),
+              ("anatomicalSources" -> (left.anatomicalSources equals containerConstraints.anatomicalSources)),
+              ("preservationTypes" -> (left.preservationTypes equals containerConstraints.preservationTypes)),
+              ("specimenTypes"     -> (left.specimenTypes equals containerConstraints.specimenTypes)))
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
 

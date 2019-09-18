@@ -70,22 +70,12 @@ final case class ContainerSchema(
   def getLabel(label: String): DomainValidation[ContainerSchemaLabel] =
     labels
       .find(_ == label).map(l => ContainerSchemaLabel(schemaId = id, label = l))
-      .toSuccessNel(s"label in invalid on schema with name $name")
+      .toSuccessNel(EntityCriteriaError(s"label is invalid on schema with name $name").toString)
 
   private def update(): ContainerSchema =
     copy(version = nextVersion, timeModified = Some(OffsetDateTime.now))
 
-  override def toString: String =
-    s"""|${this.getClass.getSimpleName}: {
-        |  id:              $id,
-        |  version:         $version,
-        |  timeAdded:       $timeAdded,
-        |  timeModified:    $timeModified,
-        |  slug:            $slug,
-        |  name:            $name,
-        |  description:     $description,
-        |  centreId:        $centreId,
-        |  labels:          $labels""".stripMargin
+  override def toString: String = Json.prettyPrint(Json.toJson(this))
 }
 
 /**

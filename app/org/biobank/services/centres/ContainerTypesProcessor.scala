@@ -242,7 +242,7 @@ class ContainerTypesProcessor @Inject()(
 
   type ApplyEvent = (ContainerType, ContainerTypeEvent, OffsetDateTime) => ServiceValidation[ContainerType]
 
-  private def onValidEventAndVersion[T <: ContainerType](
+  private def onValidEventAndVersion(
       event:        ContainerTypeEvent,
       eventType:    Boolean,
       eventVersion: Long
@@ -253,18 +253,18 @@ class ContainerTypesProcessor @Inject()(
     } else {
       containerTypeRepository
         .getByKey(ContainerTypeId(event.id)).fold(
-          err => log.error(s"containerType from event does not exist: $err"),
+          err => log.error(s"container type from event does not exist: $err"),
           containerType => {
             if (containerType.version != eventVersion) {
               log.error(
-                s"event version check failed: containerType version: ${containerType.version}, event: $event"
+                s"event version check failed: container type version: ${containerType.version}, event: $event"
               )
             } else {
               val eventTime = OffsetDateTime.parse(event.getTime)
               val update    = applyEvent(containerType, event, eventTime)
 
               if (update.isFailure) {
-                log.error(s"containerType update from event failed: $update")
+                log.error(s"container type update from event failed: $update")
               }
             }
           }
@@ -334,10 +334,6 @@ class ContainerTypesProcessor @Inject()(
           case ct: SpecimenContainerType =>
             ct.withName(name).map(_.copy(slug = slug, timeModified = Some(eventTime)))
         }
-        if (v.isFailure) {
-          log.error(s"could not update containerType from event: $event")
-        }
-
         v.foreach(containerTypeRepository.put)
         v
     }
@@ -354,11 +350,6 @@ class ContainerTypesProcessor @Inject()(
         case ct: SpecimenContainerType =>
           ct.withDescription(description).map(_.copy(timeModified = Some(eventTime)))
       }
-
-      if (v.isFailure) {
-        log.error(s"could not update containerType from event: $event")
-      }
-
       v.foreach(containerTypeRepository.put)
       v
     }
@@ -373,9 +364,6 @@ class ContainerTypesProcessor @Inject()(
             ct.withCentre(centreId).map(_.copy(timeModified = Some(eventTime)))
           case ct: SpecimenContainerType =>
             ct.withCentre(centreId).map(_.copy(timeModified = Some(eventTime)))
-        }
-        if (v.isFailure) {
-          log.error(s"could not update containerType from event: $event")
         }
         v.foreach(containerTypeRepository.put)
         v
@@ -392,9 +380,6 @@ class ContainerTypesProcessor @Inject()(
           case ct: SpecimenContainerType =>
             ct.withSchema(schemaId).map(_.copy(timeModified = Some(eventTime)))
         }
-        if (v.isFailure) {
-          log.error(s"could not update containerType from event: $event")
-        }
         v.foreach(containerTypeRepository.put)
         v
     }
@@ -410,9 +395,6 @@ class ContainerTypesProcessor @Inject()(
           case ct: SpecimenContainerType =>
             ct.withShared(shared).map(_.copy(timeModified = Some(eventTime)))
         }
-        if (v.isFailure) {
-          log.error(s"could not update containerType from event: $event")
-        }
         v.foreach(containerTypeRepository.put)
         v
     }
@@ -427,9 +409,6 @@ class ContainerTypesProcessor @Inject()(
             ct.withEnabled(enabled).map(_.copy(timeModified = Some(eventTime)))
           case ct: SpecimenContainerType =>
             ct.withEnabled(enabled).map(_.copy(timeModified = Some(eventTime)))
-        }
-        if (v.isFailure) {
-          log.error(s"could not update containerType from event: $event")
         }
         v.foreach(containerTypeRepository.put)
         v

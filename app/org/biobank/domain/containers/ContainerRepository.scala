@@ -17,18 +17,21 @@ trait ContainerRepository extends ReadWriteRepositoryWithSlug[ContainerId, Conta
 
   def getSpecimenContainer(id: ContainerId): DomainValidation[SpecimenContainer]
 
+  def getChildren(id: ContainerId): DomainValidation[Set[Container]]
+
   def getChildContainer(id: ContainerId, label: String): DomainValidation[Container]
 
   def positionEmpty(id: ContainerId, label: String): DomainValidation[Unit]
 
   def containerSharedProperties(ids: ContainerId): ContainerSharedProperties
 
-  def rootContainers(centreId: CentreId): Set[StorageContainer]
+  def rootContainers(centreId: CentreId): Set[RootContainer]
 
   def getRootContainer(id: ContainerId): DomainValidation[RootContainer]
 
   def containerTypeInUse(schemaId: ContainerTypeId): Boolean
 
+  def containerInUse(containerId: ContainerId): Boolean
 }
 
 @Singleton
@@ -70,6 +73,14 @@ class ContainerRepositoryImpl @Inject()(val testData: TestData)
       }
     }
 
+  def getChildren(id: ContainerId): DomainValidation[Set[Container]] = {
+    getByKey(id).map { container =>
+      getValues
+        .collect { case c: ChildContainer => c }
+        .filter(_.parentId == id).toSet
+    }
+  }
+
   def getChildContainer(id: ContainerId, label: String): DomainValidation[Container] =
     getValues
       .collect { case c: ChildContainer => c }
@@ -82,14 +93,18 @@ class ContainerRepositoryImpl @Inject()(val testData: TestData)
     getChildContainer(id, label).fold(
       err => ().successNel[String],
       container =>
-        EntityCriteriaError(s"position not empty at label $label in container $id").failureNel[Unit]
+        EntityCriteriaError(s"position is occupied at label $label in container $id").failureNel[Unit]
     )
 
   def containerSharedProperties(ids: ContainerId): ContainerSharedProperties =
     ???
 
-  def rootContainers(centreId: CentreId): Set[StorageContainer] =
-    ???
+  def rootContainers(centreId: CentreId): Set[RootContainer] = {
+    getValues
+      .collect { case c: RootContainer => c }
+      .filter(c => (c.centreId == centreId))
+      .toSet
+  }
 
   def getRootContainer(id: ContainerId): DomainValidation[RootContainer] = {
     val parent = getByKey(id).flatMap { container =>
@@ -111,6 +126,12 @@ class ContainerRepositoryImpl @Inject()(val testData: TestData)
     getValues.exists { ct =>
       (ct.containerTypeId == containerTypeId)
     }
+  }
+
+  def containerInUse(containerId: ContainerId): Boolean = {
+    getValues
+      .collect { case c: ChildContainer => c }
+      .exists(c => (c.parentId == containerId))
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))

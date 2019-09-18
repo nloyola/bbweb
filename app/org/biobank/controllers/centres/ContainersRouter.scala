@@ -11,27 +11,57 @@ class ContainersRouter @Inject()(controller: ContainersController) extends Simpl
 
   override def routes: Routes = {
 
-    case GET(p"/search") =>
+    case GET(p"/search/${centreId(cId)}") =>
       // this action extracts parameters from the raw query string
-      controller.list
+      controller.search(cId)
 
     case GET(p"/${slug(s)}") =>
       controller.getBySlug(s)
 
-    case POST(p"/") =>
+    case GET(p"/children/${slug(s)}") =>
+      controller.getChildrenBySlug(s)
+
+    case POST(p"/root") =>
       controller.addRootContainer
 
-    case POST(p"/add-storage") =>
+    case POST(p"/storage") =>
       controller.addStorageContainer
 
-    case POST(p"/add-specimen") =>
+    case POST(p"/specimen") =>
       controller.addSpecimenContainer
+
+    case POST(p"/label/${containerId(id)}") =>
+      controller.updateLabel(id)
+
+    case POST(p"/inventoryId/${containerId(id)}") =>
+      controller.updateInventoryId(id)
+
+    case POST(p"/enabled/${containerId(id)}") =>
+      controller.updateEnabled(id)
+
+    case POST(p"/containerType/${containerId(id)}") =>
+      controller.updateContainerType(id)
+
+    case POST(p"/location/${containerId(id)}") =>
+      controller.updateCentreLocation(id)
+
+    case POST(p"/temperature/${containerId(id)}") =>
+      controller.updateTemperature(id)
+
+    case POST(p"/constraints/remove/${containerId(id)}") =>
+      controller.removeConstraints(id)
+
+    case POST(p"/constraints/${containerId(id)}") =>
+      controller.updateConstraints(id)
+
+    case POST(p"/position/${containerId(id)}") =>
+      controller.updatePosition(id)
 
     case POST(p"/snapshot") =>
       controller.snapshot
 
-    case POST(p"/update/${containerId(id)}") =>
-      controller.update(id)
+    case DELETE(p"/${containerId(id)}/${long(ver)}") =>
+      controller.remove(id, ver)
 
   }
 

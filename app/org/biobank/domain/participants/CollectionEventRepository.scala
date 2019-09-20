@@ -77,8 +77,8 @@ class CollectionEventRepositoryImpl @Inject()(val testData: TestData)
           (cevent.visitNumber == visitNumber) && (cevent.participantId == participantId)
       }
       .map { case (id, cevent) => cevent }
-      .toSuccessNel(EntityCriteriaNotFound {
-        s"collection event does not exist: participantId/$participantId, visitNumber/$visitNumber }"
+      .toSuccessNel(EntityNotFound {
+        s"collection event with: participantId/$participantId, visitNumber/$visitNumber }"
       }.toString)
 
   def allForParticipant(participantId: ParticipantId): Set[CollectionEvent] =

@@ -242,7 +242,7 @@ class CollectionEventsControllerSpec
         val f      = new Fixture
         val cevent = factory.createCollectionEvent
         val reply  = makeAuthRequest(GET, uriWithVisitNumber(f.participant, cevent)).value
-        reply must beNotFoundWithMessage("collection event does not exist")
+        reply must beNotFoundWithMessage("EntityNotFound: collection event with")
       }
     }
 

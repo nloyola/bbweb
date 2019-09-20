@@ -52,7 +52,7 @@ class ContainerRepositoryImpl @Inject()(val testData: TestData)
     getValues
       .find { c =>
         c.inventoryId == inventoryId
-      }.toSuccessNel(EntityCriteriaError(s"container with inventory ID not found: $inventoryId").toString)
+      }.toSuccessNel(IdNotFound(s"container with inventory ID: $inventoryId").toString)
 
   def getStorageContainer(id: ContainerId): DomainValidation[StorageContainer] =
     getByKey(id).flatMap {
@@ -76,7 +76,7 @@ class ContainerRepositoryImpl @Inject()(val testData: TestData)
       .find { c =>
         c.parentId == id && c.schemaLabel.label == label
       }
-      .toSuccessNel(EntityCriteriaError(s"container with parent $id and label $label not found").toString)
+      .toSuccessNel(EntityNotFound(s"container with parent $id and label $label").toString)
 
   def positionEmpty(id: ContainerId, label: String): DomainValidation[Unit] =
     getChildContainer(id, label).fold(
@@ -100,8 +100,9 @@ class ContainerRepositoryImpl @Inject()(val testData: TestData)
     }
     parent.flatMap { p =>
       p match {
-        case c: RootContainer  => c.successNel[String]
-        case c: ChildContainer => EntityCriteriaError("parent not found").failureNel[RootContainer]
+        case c: RootContainer => c.successNel[String]
+        case c: ChildContainer =>
+          EntityNotFound(s"parent for container ID ${id}").toString.failureNel[RootContainer]
       }
     }
   }

@@ -973,7 +973,7 @@ class ProcessingTypesControllerSpec
                       processingType.version.toString,
                       nameGenerator.next[AnnotationType])
         val reply = makeAuthRequest(DELETE, url).value
-        reply must beNotFoundWithMessage("annotation type does not exist")
+        reply must beNotFoundWithMessage("IdNotFound: annotation type ID")
       }
 
       it("not delete an annotation type when study is not disabled") {

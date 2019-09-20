@@ -102,10 +102,7 @@ abstract class CommandController(controllerComponents: ControllerComponents)
           val errMsgs = err.list.toList.mkString(", ")
           if (errMsgs.contains("Unauthorized")) {
             Unauthorized
-          } else if (("NotFound".r.findAllIn(errMsgs).length > 0)
-                     || ("not found".r.findAllIn(errMsgs).length > 0)
-                     || ("does not exist".r.findAllIn(errMsgs).length > 0)
-                     || ("invalid.*id".r.findAllIn(errMsgs).length > 0)) {
+          } else if (("NotFound".r.findAllIn(errMsgs).length > 0)) {
             NotFound(errMsgs)
           } else if (errMsgs.contains("already exists")) {
             Forbidden(errMsgs)

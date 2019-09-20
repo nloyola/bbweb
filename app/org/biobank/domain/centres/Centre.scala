@@ -217,7 +217,7 @@ final case class DisabledCentre(
       .find { x =>
         x.id == locationId
       }
-      .toSuccessNel(s"location does not exist: $locationId")
+      .toSuccessNel(IdNotFound(s"location id: $locationId").toString)
 
   protected def nameNotUsed(location: Location): DomainValidation[Unit] = {
     val nameLowerCase = location.name.toLowerCase

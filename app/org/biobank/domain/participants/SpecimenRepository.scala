@@ -31,7 +31,7 @@ class SpecimenRepositoryImpl @Inject()(val testData: TestData)
     EntityCriteriaNotFound(s"specimen slug: $slug")
 
   def inventoryIdCriteriaError(inventoryId: String): String =
-    EntityCriteriaError(s"specimen with inventory ID not found: $inventoryId").toString
+    IdNotFound(s"specimen inventory ID: $inventoryId").toString
 
   def getByInventoryId(inventoryId: String): DomainValidation[Specimen] =
     getValues

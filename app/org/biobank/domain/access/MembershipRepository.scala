@@ -60,5 +60,5 @@ class MembershipRepositoryImpl @Inject()(val testData: TestData)
       .map { m =>
         UserMembership.create(m, userId)
       }
-      .toSuccessNel(s"membership for user not found: $userId")
+      .toSuccessNel(IdNotFound(s"membership for user ID: $userId").toString)
 }

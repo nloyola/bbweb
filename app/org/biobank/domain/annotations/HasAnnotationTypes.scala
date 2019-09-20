@@ -21,7 +21,7 @@ trait HasAnnotationTypes extends AnnotationTypeValidations {
       .find { x =>
         x.id == annotationTypeId
       }
-      .toSuccessNel(s"annotation type does not exist: $annotationTypeId")
+      .toSuccessNel(IdNotFound(s"annotation type ID: $annotationTypeId").toString)
 
   protected def nameNotUsed(annotationType: AnnotationType): DomainValidation[Unit] = {
     val nameLowerCase = annotationType.name.toLowerCase

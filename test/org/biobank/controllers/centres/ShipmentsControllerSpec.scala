@@ -375,13 +375,13 @@ class ShipmentsControllerSpec
       it("fail when adding a shipment with no FROM location id") {
         val shipment = createdShipmentFixture.shipment.copy(fromLocationId = LocationId(""))
         val reply    = makeAuthRequest(POST, uri(""), shipmentToAddJson(shipment)).value
-        reply must beNotFoundWithMessage("EntityCriteriaError.*centre with location id")
+        reply must beNotFoundWithMessage("IdNotFound.*centre with location id")
       }
 
       it("fail when adding a shipment with no TO location id") {
         val shipment = createdShipmentFixture.shipment.copy(toLocationId = LocationId(""))
         val reply    = makeAuthRequest(POST, uri(""), shipmentToAddJson(shipment)).value
-        reply must beNotFoundWithMessage("EntityCriteriaError.*centre with location id")
+        reply must beNotFoundWithMessage("IdNotFound.*centre with location id")
       }
 
     }
@@ -493,7 +493,7 @@ class ShipmentsControllerSpec
         shipmentRepository.put(f.shipment)
         val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "locationId" -> "")
         val reply      = makeAuthRequest(POST, uri("fromlocation", f.shipment.id.id), updateJson).value
-        reply must beNotFoundWithMessage("EntityCriteriaError.*centre with location id")
+        reply must beNotFoundWithMessage("IdNotfound: centre with location id")
       }
 
       it("not allow updating the from location to an invalid id") {
@@ -504,7 +504,7 @@ class ShipmentsControllerSpec
 
         val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "locationId" -> badLocation.id.id)
         val reply      = makeAuthRequest(POST, uri("fromlocation", f.shipment.id.id), updateJson).value
-        reply must beNotFoundWithMessage("EntityCriteriaError.*centre with location id")
+        reply must beNotFoundWithMessage("IdNotfound: centre with location id")
       }
 
       it("must not allow updating the from location on a shipment not in created state") {
@@ -549,7 +549,7 @@ class ShipmentsControllerSpec
         shipmentRepository.put(f.shipment)
         val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "locationId" -> "")
         val reply      = makeAuthRequest(POST, uri("tolocation", f.shipment.id.id), updateJson).value
-        reply must beNotFoundWithMessage("EntityCriteriaError.*centre with location id")
+        reply must beNotFoundWithMessage("IdNotFound.*centre with location id")
       }
 
       it("not allow updating the TO location to an invalid id") {
@@ -560,7 +560,7 @@ class ShipmentsControllerSpec
 
         val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "locationId" -> badLocation.id.id)
         val reply      = makeAuthRequest(POST, uri("tolocation", f.shipment.id.id), updateJson).value
-        reply must beNotFoundWithMessage("EntityCriteriaError.*centre with location id")
+        reply must beNotFoundWithMessage("IdNotFound.*centre with location id")
       }
 
       it("must not allow updating the TO location on a shipment not in created state") {

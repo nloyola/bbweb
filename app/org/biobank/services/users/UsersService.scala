@@ -149,7 +149,7 @@ class UsersServiceImpl @javax.inject.Inject()(
   def getUser(id: UserId): ServiceValidation[User] =
     userRepository
       .getByKey(id)
-      .leftMap(_ => IdNotFound(s"user with id does not exist: $id").nel)
+      .leftMap(_ => IdNotFound(s"user with id: $id").nel)
 
   def getUsers(requestUserId: UserId, query: PagedQuery): Future[ServiceValidation[PagedResults[UserDto]]] =
     Future {

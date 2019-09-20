@@ -724,7 +724,7 @@ class CeventTypesControllerSpec
 
         val url   = uri("annottype", f.study.id.id, cet.id.id, cet.version.toString, badUniqueId)
         val reply = makeAuthRequest(DELETE, url).value
-        reply must beNotFoundWithMessage("annotation type does not exist")
+        reply must beNotFoundWithMessage("IdNotFound: annotation type ID")
       }
 
       it("fail when removing an annotation type on a non disabled study") {
@@ -928,7 +928,7 @@ class CeventTypesControllerSpec
 
         val url   = uri("spcdef", f.study.id.id, cet.id.id, cet.version.toString, badUniqueId)
         val reply = makeAuthRequest(DELETE, url).value
-        reply must beNotFoundWithMessage("specimen definition does not exist")
+        reply must beNotFoundWithMessage("IdNotFound: specimen definition ID")
       }
 
       it("fail when removing an specimen spec on a non disabled study") {

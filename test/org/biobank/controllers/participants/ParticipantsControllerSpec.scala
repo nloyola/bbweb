@@ -98,7 +98,7 @@ class ParticipantsControllerSpec extends StudyAnnotationsControllerSharedSpec[Pa
         val f = new Fixture
         participantRepository.remove(f.participant)
         val reply = makeAuthRequest(GET, uri("uniqueId", f.participant.slug.id)).value
-        reply must beNotFoundWithMessage("EntityCriteriaNotFound.*participant.*unique.*ID")
+        reply must beNotFoundWithMessage("IdNotFound.*participant with unique ID")
       }
 
     }

@@ -54,8 +54,8 @@ class ParticipantRepositoryImpl @Inject()(val testData: TestData)
 
   def withUniqueId(uniqueId: String): DomainValidation[Participant] =
     getValues
-      .find(p => p.uniqueId == uniqueId).toSuccess(
-        EntityCriteriaNotFound(s"participant with unique ID does not exist: $uniqueId").nel
+      .find(p => p.uniqueId == uniqueId).toSuccessNel(
+        IdNotFound(s"participant with unique ID does not exist: $uniqueId").toString
       )
 
   def allForStudy(studyId: StudyId): Set[Participant] =

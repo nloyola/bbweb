@@ -31,7 +31,7 @@ class CeventSpecimenRepositoryImpl @Inject()(val testData: TestData)
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   protected def notFound(id: SpecimenId): IdNotFound =
-    IdNotFound(s"specimen not found: $id")
+    IdNotFound(s"specimen with ID: $id")
 
   override def init(): Unit = {
     super.init()
@@ -44,7 +44,7 @@ class CeventSpecimenRepositoryImpl @Inject()(val testData: TestData)
   def withSpecimenId(specimenId: SpecimenId): DomainValidation[CeventSpecimen] = {
     val ceventSpecimens = getValues.filter(x => x.specimenId == specimenId).toSet
     if (ceventSpecimens.isEmpty) {
-      DomainError(s"cevent specimen repository: specimen id not found: ${specimenId.id}")
+      IdNotFound(s"cevent specimen repository: specimen id: ${specimenId.id}")
         .failureNel[CeventSpecimen]
     } else if (ceventSpecimens.size > 1) {
       DomainError(s"cevent specimen repository: more than one entry found for scpecimen: ${specimenId.id}")

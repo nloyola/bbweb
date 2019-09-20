@@ -214,7 +214,7 @@ class ShipmentSpecimensControllerSpec
         val invalidInventoryId = nameGenerator.next[Specimen]
         val url                = uri("canadd", f.shipment.id.id, invalidInventoryId)
         val reply              = makeAuthRequest(GET, url).value
-        reply must beNotFoundWithMessage("EntityCriteriaError: specimen with inventory ID not found")
+        reply must beNotFoundWithMessage("IdNotFound: specimen inventory ID")
       }
 
       it("not add a specimen inventory Id that not present at shipment's from centre") {

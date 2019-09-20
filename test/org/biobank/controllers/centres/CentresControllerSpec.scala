@@ -648,7 +648,7 @@ class CentresControllerSpec extends ControllerFixture with PagedResultsSharedSpe
 
         val url   = uri("locations", centre.id.id, centre.version.toString, location.id.id)
         val reply = makeAuthRequest(DELETE, url).value
-        reply must beNotFoundWithMessage("location.*does not exist")
+        reply must beNotFoundWithMessage("IdNotFound: location id")
       }
 
     }

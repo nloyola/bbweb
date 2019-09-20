@@ -164,20 +164,17 @@ class CollectionEventsProcessor @Inject()(
                                                    cmd.timeCompleted,
                                                    cmd.visitNumber,
                                                    annotationsSet)
-    } yield CollectionEventEvent(newCollectionEvent.id.id).update(_.participantId         := cmd.participantId,
-                                                                  _.collectionEventTypeId := newCollectionEvent.collectionEventTypeId.id,
-                                                                  _.sessionUserId         := cmd.sessionUserId,
-                                                                  _.time := OffsetDateTime.now.format(
-                                                                    DateTimeFormatter.ISO_OFFSET_DATE_TIME
-                                                                  ),
-                                                                  _.added.timeCompleted := cmd.timeCompleted
-                                                                    .format(
-                                                                      DateTimeFormatter.ISO_OFFSET_DATE_TIME
-                                                                    ),
-                                                                  _.added.visitNumber := cmd.visitNumber,
-                                                                  _.added.annotations := cmd.annotations.map {
-                                                                    annotationToEvent(_)
-                                                                  })
+    } yield CollectionEventEvent(newCollectionEvent.id.id)
+      .update(_.participantId         := cmd.participantId,
+              _.collectionEventTypeId := newCollectionEvent.collectionEventTypeId.id,
+              _.sessionUserId         := cmd.sessionUserId,
+              _.time                  := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+              _.added.timeCompleted := cmd.timeCompleted
+                .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+              _.added.visitNumber := cmd.visitNumber,
+              _.added.annotations := cmd.annotations.map {
+                annotationToEvent(_)
+              })
   }
 
   @silent private def updateVisitNumberCmdToEvent(
@@ -189,14 +186,13 @@ class CollectionEventsProcessor @Inject()(
     for {
       visitNumberAvailable <- visitNumberAvailable(participant.id, cmd.visitNumber, cevent.id)
       updatedCevent        <- cevent.withVisitNumber(cmd.visitNumber)
-    } yield CollectionEventEvent(updatedCevent.id.id).update(_.participantId         := participant.id.id,
-                                                             _.collectionEventTypeId := updatedCevent.collectionEventTypeId.id,
-                                                             _.sessionUserId         := cmd.sessionUserId,
-                                                             _.time := OffsetDateTime.now.format(
-                                                               DateTimeFormatter.ISO_OFFSET_DATE_TIME
-                                                             ),
-                                                             _.visitNumberUpdated.version     := cmd.expectedVersion,
-                                                             _.visitNumberUpdated.visitNumber := updatedCevent.visitNumber)
+    } yield CollectionEventEvent(updatedCevent.id.id)
+      .update(_.participantId                  := participant.id.id,
+              _.collectionEventTypeId          := updatedCevent.collectionEventTypeId.id,
+              _.sessionUserId                  := cmd.sessionUserId,
+              _.time                           := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+              _.visitNumberUpdated.version     := cmd.expectedVersion,
+              _.visitNumberUpdated.visitNumber := updatedCevent.visitNumber)
 
   @silent private def updateTimeCompletedCmdToEvent(
       cmd:                 UpdateCollectionEventTimeCompletedCmd,
@@ -234,16 +230,13 @@ class CollectionEventsProcessor @Inject()(
                                       cmd.numberValue,
                                       cmd.selectedValues)
       updatedCevent <- cevent.withAnnotation(annotation)
-    } yield CollectionEventEvent(updatedCevent.id.id).update(_.participantId         := participant.id.id,
-                                                             _.collectionEventTypeId := updatedCevent.collectionEventTypeId.id,
-                                                             _.sessionUserId         := cmd.sessionUserId,
-                                                             _.time := OffsetDateTime.now.format(
-                                                               DateTimeFormatter.ISO_OFFSET_DATE_TIME
-                                                             ),
-                                                             _.annotationUpdated.version := cmd.expectedVersion,
-                                                             _.annotationUpdated.annotation := annotationToEvent(
-                                                               annotation
-                                                             ))
+    } yield CollectionEventEvent(updatedCevent.id.id)
+      .update(_.participantId                := participant.id.id,
+              _.collectionEventTypeId        := updatedCevent.collectionEventTypeId.id,
+              _.sessionUserId                := cmd.sessionUserId,
+              _.time                         := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+              _.annotationUpdated.version    := cmd.expectedVersion,
+              _.annotationUpdated.annotation := annotationToEvent(annotation))
   }
 
   private def removeAnnotationCmdToEvent(
@@ -258,21 +251,20 @@ class CollectionEventsProcessor @Inject()(
           .find { x =>
             x.id.id == cmd.annotationTypeId
           }
-          .toSuccessNel(s"annotation type with ID does not exist: ${cmd.annotationTypeId}")
+          .toSuccessNel(IdNotFound(s"annotation type ID: ${cmd.annotationTypeId}").toString)
       }
       notRequired <- {
         if (annotType.required) EntityRequired(s"annotation is required").failureNel[Unit]
         else ().successNel[String]
       }
       updatedCevent <- cevent.withoutAnnotation(AnnotationTypeId(cmd.annotationTypeId))
-    } yield CollectionEventEvent(updatedCevent.id.id).update(_.participantId         := participant.id.id,
-                                                             _.collectionEventTypeId := updatedCevent.collectionEventTypeId.id,
-                                                             _.sessionUserId         := cmd.sessionUserId,
-                                                             _.time := OffsetDateTime.now.format(
-                                                               DateTimeFormatter.ISO_OFFSET_DATE_TIME
-                                                             ),
-                                                             _.annotationRemoved.version          := cmd.expectedVersion,
-                                                             _.annotationRemoved.annotationTypeId := cmd.annotationTypeId)
+    } yield CollectionEventEvent(updatedCevent.id.id)
+      .update(_.participantId                      := participant.id.id,
+              _.collectionEventTypeId              := updatedCevent.collectionEventTypeId.id,
+              _.sessionUserId                      := cmd.sessionUserId,
+              _.time                               := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+              _.annotationRemoved.version          := cmd.expectedVersion,
+              _.annotationRemoved.annotationTypeId := cmd.annotationTypeId)
 
   private def removeCmdToEvent(
       cmd:                 RemoveCollectionEventCmd,

@@ -26,6 +26,7 @@ class ShipmentFilterImpl @Inject()(
     val shipmentRepository: ShipmentRepository,
     val centreRepository:   CentreRepository)
     extends ShipmentFilter with EntityFilter[Shipment] with PredicateHelper with ShipmentPredicates {
+  import org.biobank.CommonValidations._
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
@@ -115,8 +116,12 @@ class ShipmentFilterImpl @Inject()(
   private def stateFilter(comparator: Comparator, stateNames: List[String]) =
     stateNames
       .map { str =>
-        Shipment.shipmentStates.find(_.id == str).toSuccessNel(s"shipment state does not exist: $str")
-      }.toList.sequenceU.flatMap { states =>
+        Shipment.shipmentStates
+          .find(_.id == str)
+          .toSuccessNel(EntityCriteriaError(s"shipment state does not exist: $str").toString)
+      }
+      .toList.sequenceU
+      .flatMap { states =>
         val stateSet = states.toSet
 
         comparator match {

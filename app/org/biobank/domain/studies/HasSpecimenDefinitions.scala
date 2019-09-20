@@ -10,7 +10,7 @@ trait HasSpecimenDefinitions[T <: SpecimenDefinition] {
   val specimenDefinitions: Set[T]
 
   def specimenDefinition(id: SpecimenDefinitionId): DomainValidation[T] =
-    specimenDefinitions.find(_.id == id).toSuccessNel(s"IdNotFound: specimen definition not found: $id")
+    specimenDefinitions.find(_.id == id).toSuccessNel(IdNotFound(s"specimen definition: $id").toString)
 
   protected def checkAddSpecimenDefinition(specimenDefinition: T): DomainValidation[Unit] =
     nameNotUsed(specimenDefinition).map { _ =>
@@ -24,7 +24,7 @@ trait HasSpecimenDefinitions[T <: SpecimenDefinition] {
       .find { x =>
         x.id == specimenDefinitionId
       }
-      .toSuccessNel(s"specimen definition does not exist: $specimenDefinitionId")
+      .toSuccessNel(IdNotFound(s"specimen definition ID: $specimenDefinitionId").toString)
 
   protected def nameNotUsed(specimenDefinition: SpecimenDefinition): DomainValidation[Unit] = {
     val nameLowerCase = specimenDefinition.name.toLowerCase

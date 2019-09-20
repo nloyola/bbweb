@@ -636,7 +636,7 @@ class StudiesControllerSpec
         studyRepository.put(study)
 
         val reply = makeAuthRequest(DELETE, uri("pannottype", study.id.id, s"${study.version}/$badUniqueId"))
-        reply.value must beNotFoundWithMessage("annotation type does not exist")
+        reply.value must beNotFoundWithMessage("IdNotFound: annotation type ID")
       }
 
       it("fail when removing an annotation type on a non disabled study") {

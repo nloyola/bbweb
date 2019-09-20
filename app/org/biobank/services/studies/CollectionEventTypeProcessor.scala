@@ -169,13 +169,14 @@ class CollectionEventTypeProcessor @javax.inject.Inject()(
       nameValid <- nameAvailable(cmd.name, studyId)
       newItem <- CollectionEventType
                   .create(studyId, cetId, 0L, cmd.name, cmd.description, cmd.recurring, Set.empty, Set.empty)
-    } yield CollectionEventTypeEvent(cetId.id).update(_.studyId       := studyId.id,
-                                                      _.sessionUserId := cmd.sessionUserId,
-                                                      _.time := OffsetDateTime.now
-                                                        .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                                                      _.added.name                := newItem.name,
-                                                      _.added.optionalDescription := newItem.description,
-                                                      _.added.recurring           := newItem.recurring)
+    } yield CollectionEventTypeEvent(cetId.id)
+      .update(_.studyId       := studyId.id,
+              _.sessionUserId := cmd.sessionUserId,
+              _.time := OffsetDateTime.now
+                .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+              _.added.name                := newItem.name,
+              _.added.optionalDescription := newItem.description,
+              _.added.recurring           := newItem.recurring)
   }
 
   private def removeCmdToEvent(
@@ -199,24 +200,24 @@ class CollectionEventTypeProcessor @javax.inject.Inject()(
     for {
       nameAvailable <- nameAvailable(cmd.name, cet.studyId, CollectionEventTypeId(cmd.id))
       newItem       <- cet.withName(cmd.name)
-    } yield CollectionEventTypeEvent(newItem.id.id).update(_.studyId       := newItem.studyId.id,
-                                                           _.sessionUserId := cmd.sessionUserId,
-                                                           _.time := OffsetDateTime.now
-                                                             .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                                                           _.nameUpdated.version := cmd.expectedVersion,
-                                                           _.nameUpdated.name    := newItem.name)
+    } yield CollectionEventTypeEvent(newItem.id.id)
+      .update(_.studyId             := newItem.studyId.id,
+              _.sessionUserId       := cmd.sessionUserId,
+              _.time                := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+              _.nameUpdated.version := cmd.expectedVersion,
+              _.nameUpdated.name    := newItem.name)
 
   private def updateDescriptionCmdToEvent(
       cmd: UpdateCollectionEventTypeDescriptionCmd,
       cet: CollectionEventType
     ): ServiceValidation[CollectionEventTypeEvent] =
     cet.withDescription(cmd.description).map { _ =>
-      CollectionEventTypeEvent(cet.id.id).update(_.studyId       := cet.studyId.id,
-                                                 _.sessionUserId := cmd.sessionUserId,
-                                                 _.time := OffsetDateTime.now
-                                                   .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                                                 _.descriptionUpdated.version             := cmd.expectedVersion,
-                                                 _.descriptionUpdated.optionalDescription := cmd.description)
+      CollectionEventTypeEvent(cet.id.id)
+        .update(_.studyId                                := cet.studyId.id,
+                _.sessionUserId                          := cmd.sessionUserId,
+                _.time                                   := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                _.descriptionUpdated.version             := cmd.expectedVersion,
+                _.descriptionUpdated.optionalDescription := cmd.description)
     }
 
   private def updateRecurringCmdToEvent(
@@ -224,12 +225,12 @@ class CollectionEventTypeProcessor @javax.inject.Inject()(
       cet: CollectionEventType
     ): ServiceValidation[CollectionEventTypeEvent] =
     cet.withRecurring(cmd.recurring).map { _ =>
-      CollectionEventTypeEvent(cet.id.id).update(_.studyId       := cet.studyId.id,
-                                                 _.sessionUserId := cmd.sessionUserId,
-                                                 _.time := OffsetDateTime.now
-                                                   .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                                                 _.recurringUpdated.version   := cmd.expectedVersion,
-                                                 _.recurringUpdated.recurring := cmd.recurring)
+      CollectionEventTypeEvent(cet.id.id)
+        .update(_.studyId                    := cet.studyId.id,
+                _.sessionUserId              := cmd.sessionUserId,
+                _.time                       := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                _.recurringUpdated.version   := cmd.expectedVersion,
+                _.recurringUpdated.recurring := cmd.recurring)
     }
 
   private def addAnnotationTypeCmdToEvent(
@@ -243,13 +244,12 @@ class CollectionEventTypeProcessor @javax.inject.Inject()(
           .create(cmd.name, cmd.description, cmd.valueType, cmd.maxValueCount, cmd.options, cmd.required)
       }
       updatedCet <- cet.withAnnotationType(annotationType)
-    } yield CollectionEventTypeEvent(cet.id.id).update(_.studyId       := cet.studyId.id,
-                                                       _.sessionUserId := cmd.sessionUserId,
-                                                       _.time := OffsetDateTime.now
-                                                         .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                                                       _.annotationTypeAdded.version := cmd.expectedVersion,
-                                                       _.annotationTypeAdded.annotationType := EventUtils
-                                                         .annotationTypeToEvent(annotationType))
+    } yield CollectionEventTypeEvent(cet.id.id)
+      .update(_.studyId                            := cet.studyId.id,
+              _.sessionUserId                      := cmd.sessionUserId,
+              _.time                               := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+              _.annotationTypeAdded.version        := cmd.expectedVersion,
+              _.annotationTypeAdded.annotationType := EventUtils.annotationTypeToEvent(annotationType))
 
   private def updateAnnotationTypeCmdToEvent(
       cmd: CollectionEventTypeUpdateAnnotationTypeCmd,
@@ -265,13 +265,12 @@ class CollectionEventTypeProcessor @javax.inject.Inject()(
       annotationType <- valid.copy(id = AnnotationTypeId(cmd.annotationTypeId)).successNel[String]
       updatedCet     <- cet.withAnnotationType(annotationType)
     } yield {
-      CollectionEventTypeEvent(cet.id.id).update(_.studyId       := cet.studyId.id,
-                                                 _.sessionUserId := cmd.sessionUserId,
-                                                 _.time := OffsetDateTime.now
-                                                   .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                                                 _.annotationTypeUpdated.version := cmd.expectedVersion,
-                                                 _.annotationTypeUpdated.annotationType := EventUtils
-                                                   .annotationTypeToEvent(annotationType))
+      CollectionEventTypeEvent(cet.id.id)
+        .update(_.studyId                              := cet.studyId.id,
+                _.sessionUserId                        := cmd.sessionUserId,
+                _.time                                 := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                _.annotationTypeUpdated.version        := cmd.expectedVersion,
+                _.annotationTypeUpdated.annotationType := EventUtils.annotationTypeToEvent(annotationType))
     }
 
   private def removeAnnotationTypeCmdToEvent(
@@ -279,12 +278,13 @@ class CollectionEventTypeProcessor @javax.inject.Inject()(
       cet: CollectionEventType
     ): ServiceValidation[CollectionEventTypeEvent] =
     cet.removeAnnotationType(AnnotationTypeId(cmd.annotationTypeId)) map { c =>
-      CollectionEventTypeEvent(cet.id.id).update(_.studyId       := cet.studyId.id,
-                                                 _.sessionUserId := cmd.sessionUserId,
-                                                 _.time := OffsetDateTime.now
-                                                   .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                                                 _.annotationTypeRemoved.version := cmd.expectedVersion,
-                                                 _.annotationTypeRemoved.id      := cmd.annotationTypeId)
+      CollectionEventTypeEvent(cet.id.id)
+        .update(_.studyId       := cet.studyId.id,
+                _.sessionUserId := cmd.sessionUserId,
+                _.time := OffsetDateTime.now
+                  .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                _.annotationTypeRemoved.version := cmd.expectedVersion,
+                _.annotationTypeRemoved.id      := cmd.annotationTypeId)
     }
 
   private def addSepcimenSpecCmdToEvent(

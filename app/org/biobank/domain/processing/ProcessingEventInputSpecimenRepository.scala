@@ -32,15 +32,6 @@ class ProcessingEventInputSpecimenRepositoryImpl
   protected def notFound(id: ProcessingEventInputSpecimenId): IdNotFound =
     IdNotFound(s"processing event input specimen type: $id")
 
-  // private def processingEventIdCriteriaError(processingEventId: ProcessingEventId) =
-  //   EntityCriteriaError(
-  //     s"no processing event input specimens with processing event ID not found: ${processingEventId.id}")
-  //     .toString
-
-  // private def specimenIdCriteriaError(specimenId: SpecimenId) =
-  //   EntityCriteriaError(
-  //     s"no processing event input specimens with specimen ID not found: ${specimenId.id}").toString
-
   def withProcessingEventId(processingEventId: ProcessingEventId): Set[ProcessingEventInputSpecimen] =
     getValues.filter(p => p.processingEventId == processingEventId).toSet
 

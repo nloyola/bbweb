@@ -67,7 +67,7 @@ class CentreRepositoryImpl @Inject()(val testData: TestData)
       !c.locations.filter(l => l.id == id).isEmpty
     }
     if (centres.isEmpty) {
-      EntityCriteriaError(s"centre with location id does not exist: $id").failureNel[Centre]
+      IdNotFound(s"centre with location id: $id").failureNel[Centre]
     } else if (centres.size > 1) {
       EntityCriteriaError(s"multiple centres with location id: $id").failureNel[Centre]
     } else {

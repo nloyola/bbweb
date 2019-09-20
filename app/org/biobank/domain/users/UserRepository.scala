@@ -88,7 +88,7 @@ class UserRepositoryImpl @Inject()(val config: Configuration, val env: Environme
   def getByEmail(email: String): DomainValidation[User] =
     getValues
       .find(_.email == email)
-      .toSuccess(EmailNotFound(s"user email not found: $email").nel)
+      .toSuccess(EmailNotFound(email).nel)
 
   /**
    * For new installations startup only:

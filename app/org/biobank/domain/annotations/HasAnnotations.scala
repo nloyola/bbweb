@@ -4,6 +4,7 @@ import org.biobank.domain._
 import scalaz.Scalaz._
 
 trait HasAnnotations[T <: ConcurrencySafeEntity[_]] {
+  import org.biobank.CommonValidations._
 
   val annotations: Set[Annotation]
 
@@ -17,6 +18,6 @@ trait HasAnnotations[T <: ConcurrencySafeEntity[_]] {
       .find { x =>
         x.annotationTypeId == annotationTypeId
       }
-      .toSuccessNel(s"annotation does not exist: $annotationTypeId")
+      .toSuccessNel(IdNotFound(s"annotation type ID: $annotationTypeId").toString)
 
 }

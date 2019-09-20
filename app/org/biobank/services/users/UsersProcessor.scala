@@ -387,21 +387,20 @@ class UsersProcessor @Inject()(
       log.error(s"invalid event type: $event")
     } else {
       userRepository
-        .getByKey(UserId(event.id)).fold(err => log.error(s"user from event does not exist: $err"),
-                                         user => {
-                                           if (user.version != eventVersion) {
-                                             log.error(
-                                               s"event version check failed: user version: ${user.version}, event: $event"
-                                             )
-                                           } else {
-                                             val eventTime = OffsetDateTime.parse(event.getTime)
-                                             val update    = applyEvent(user, eventTime)
+        .getByKey(UserId(event.id))
+        .fold(err => log.error(s"user from event does not exist: $err"),
+              user => {
+                if (user.version != eventVersion) {
+                  log.error(s"event version check failed: user version: ${user.version}, event: $event")
+                } else {
+                  val eventTime = OffsetDateTime.parse(event.getTime)
+                  val update    = applyEvent(user, eventTime)
 
-                                             if (update.isFailure) {
-                                               log.error(s"user update from event failed: $update")
-                                             }
-                                           }
-                                         })
+                  if (update.isFailure) {
+                    log.error(s"user update from event failed: $update")
+                  }
+                }
+              })
     }
 
   private def onValidEventRegisteredUserAndVersion(

@@ -360,21 +360,20 @@ class StudiesProcessor @Inject()(
       log.error(s"invalid event type: $event")
     } else {
       studyRepository
-        .getByKey(StudyId(event.id)).fold(err => log.error(s"study from event does not exist: $err"),
-                                          study => {
-                                            if (study.version != eventVersion) {
-                                              log.error(
-                                                s"event version check failed: study version: ${study.version}, event: $event"
-                                              )
-                                            } else {
-                                              val eventTime = OffsetDateTime.parse(event.getTime)
-                                              val update    = applyEvent(study, eventTime)
+        .getByKey(StudyId(event.id))
+        .fold(err => log.error(s"study from event does not exist: $err"),
+              study => {
+                if (study.version != eventVersion) {
+                  log.error(s"event version check failed: study version: ${study.version}, event: $event")
+                } else {
+                  val eventTime = OffsetDateTime.parse(event.getTime)
+                  val update    = applyEvent(study, eventTime)
 
-                                              if (update.isFailure) {
-                                                log.error(s"study update from event failed: $update")
-                                              }
-                                            }
-                                          })
+                  if (update.isFailure) {
+                    log.error(s"study update from event failed: $update")
+                  }
+                }
+              })
     }
 
   private def onValidEventDisabledStudyAndVersion(

@@ -117,7 +117,7 @@ class ParticipantSpec extends DomainSpec {
       val participant = factory.createParticipant
       participant
         .withoutAnnotation(AnnotationTypeId(nameGenerator.next[Participant]))
-        .mustFail("annotation does not exist:.*")
+        .mustFail("IdNotFound: annotation type ID:.*")
     }
 
   }

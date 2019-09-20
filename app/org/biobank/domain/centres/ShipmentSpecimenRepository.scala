@@ -39,7 +39,7 @@ class ShipmentSpecimenRepositoryImpl @Inject()(val testData: TestData)
     IdNotFound(s"shipment id: $shipmentId, specimen id: $specimenId")
 
   def specimenNotFound(specimen: Specimen): String =
-    EntityCriteriaError(s"shipment specimen with inventory ID not found: ${specimen.inventoryId}").toString
+    IdNotFound(s"shipment specimen with inventory ID: ${specimen.inventoryId}").toString
 
   def allForShipment(id: ShipmentId): Set[ShipmentSpecimen] =
     getValues.filter { ss =>

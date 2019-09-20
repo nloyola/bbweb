@@ -1008,22 +1008,21 @@ class ShipmentsProcessor @Inject()(
       log.error(s"invalid event type: $event")
     } else {
       shipmentRepository
-        .getByKey(ShipmentId(event.id)).fold(err => log.error(s"shipment from event does not exist: $err"),
-                                             shipment => {
-                                               if (shipment.version != eventVersion) {
-                                                 log.error(
-                                                   s"event version check failed: shipment version: ${shipment.version}, event: $event"
-                                                 )
-                                               } else {
-                                                 val eventTime = OffsetDateTime.parse(event.getTime)
-                                                 val update    = applyEvent(shipment, event, eventTime)
-                                                 if (update.isFailure) {
-                                                   log.error(
-                                                     s"shipment update from event failed: event: $event, reason: $update"
-                                                   )
-                                                 }
-                                               }
-                                             })
+        .getByKey(ShipmentId(event.id))
+        .fold(err => log.error(s"shipment from event does not exist: $err"),
+              shipment => {
+                if (shipment.version != eventVersion) {
+                  log.error(
+                    s"event version check failed: shipment version: ${shipment.version}, event: $event"
+                  )
+                } else {
+                  val eventTime = OffsetDateTime.parse(event.getTime)
+                  val update    = applyEvent(shipment, event, eventTime)
+                  if (update.isFailure) {
+                    log.error(s"shipment update from event failed: event: $event, reason: $update")
+                  }
+                }
+              })
     }
 
   private def onValidSpecimenEvent(

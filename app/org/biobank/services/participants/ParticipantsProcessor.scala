@@ -38,6 +38,7 @@ class ParticipantsProcessor @Inject()(
 
   import ParticipantsProcessor._
   import ParticipantEvent.EventType
+  import org.biobank.CommonValidations._
   import org.biobank.infrastructure.events.EventUtils._
 
   override def persistenceId: String = "participant-processor-id"
@@ -144,14 +145,15 @@ class ParticipantsProcessor @Inject()(
                                            cmd.uniqueId,
                                            cmd.annotations.toSet,
                                            OffsetDateTime.now)
-    } yield ParticipantEvent(newParticipant.id.id).update(_.sessionUserId := cmd.sessionUserId,
-                                                          _.time := OffsetDateTime.now
-                                                            .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                                                          _.added.studyId  := newParticipant.studyId.id,
-                                                          _.added.uniqueId := cmd.uniqueId,
-                                                          _.added.annotations := cmd.annotations.map {
-                                                            annotationToEvent(_)
-                                                          })
+    } yield ParticipantEvent(newParticipant.id.id)
+      .update(_.sessionUserId := cmd.sessionUserId,
+              _.time := OffsetDateTime.now
+                .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+              _.added.studyId  := newParticipant.studyId.id,
+              _.added.uniqueId := cmd.uniqueId,
+              _.added.annotations := cmd.annotations.map {
+                annotationToEvent(_)
+              })
 
   @silent private def updateUniqueIdCmdToEvent(
       cmd:         UpdateParticipantUniqueIdCmd,
@@ -161,12 +163,11 @@ class ParticipantsProcessor @Inject()(
     for {
       uniqueIdAvailable  <- uniqueIdAvailable(cmd.uniqueId, participant.id)
       updatedParticipant <- participant.withUniqueId(cmd.uniqueId)
-    } yield ParticipantEvent(updatedParticipant.id.id).update(_.sessionUserId := cmd.sessionUserId,
-                                                              _.time := OffsetDateTime.now.format(
-                                                                DateTimeFormatter.ISO_OFFSET_DATE_TIME
-                                                              ),
-                                                              _.uniqueIdUpdated.version  := cmd.expectedVersion,
-                                                              _.uniqueIdUpdated.uniqueId := cmd.uniqueId)
+    } yield ParticipantEvent(updatedParticipant.id.id)
+      .update(_.sessionUserId            := cmd.sessionUserId,
+              _.time                     := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+              _.uniqueIdUpdated.version  := cmd.expectedVersion,
+              _.uniqueIdUpdated.uniqueId := cmd.uniqueId)
 
   private def updateAnnotationCmdToEvent(
       cmd:         ParticipantUpdateAnnotationCmd,
@@ -186,14 +187,11 @@ class ParticipantsProcessor @Inject()(
                                       cmd.numberValue,
                                       cmd.selectedValues)
       updatedParticipant <- participant.withAnnotation(annotation)
-    } yield ParticipantEvent(updatedParticipant.id.id).update(_.sessionUserId := cmd.sessionUserId,
-                                                              _.time := OffsetDateTime.now.format(
-                                                                DateTimeFormatter.ISO_OFFSET_DATE_TIME
-                                                              ),
-                                                              _.annotationUpdated.version := cmd.expectedVersion,
-                                                              _.annotationUpdated.annotation := annotationToEvent(
-                                                                annotation
-                                                              ))
+    } yield ParticipantEvent(updatedParticipant.id.id)
+      .update(_.sessionUserId                := cmd.sessionUserId,
+              _.time                         := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+              _.annotationUpdated.version    := cmd.expectedVersion,
+              _.annotationUpdated.annotation := annotationToEvent(annotation))
   }
 
   private def removeAnnotationCmdToEvent(
@@ -207,19 +205,18 @@ class ParticipantsProcessor @Inject()(
           .find { x =>
             x.id.id == cmd.annotationTypeId
           }
-          .toSuccessNel(s"annotation type with ID does not exist: ${cmd.annotationTypeId}")
+          .toSuccessNel(IdNotFound(s"annotation type ID : ${cmd.annotationTypeId}").toString)
       }
       notRequired <- {
         if (annotType.required) ServiceError(s"annotation is required").failureNel[Unit]
         else ().successNel[String]
       }
       updatedParticipant <- participant.withoutAnnotation(AnnotationTypeId(cmd.annotationTypeId))
-    } yield ParticipantEvent(updatedParticipant.id.id).update(_.sessionUserId := cmd.sessionUserId,
-                                                              _.time := OffsetDateTime.now.format(
-                                                                DateTimeFormatter.ISO_OFFSET_DATE_TIME
-                                                              ),
-                                                              _.annotationRemoved.version          := cmd.expectedVersion,
-                                                              _.annotationRemoved.annotationTypeId := cmd.annotationTypeId)
+    } yield ParticipantEvent(updatedParticipant.id.id)
+      .update(_.sessionUserId                      := cmd.sessionUserId,
+              _.time                               := OffsetDateTime.now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+              _.annotationRemoved.version          := cmd.expectedVersion,
+              _.annotationRemoved.annotationTypeId := cmd.annotationTypeId)
 
   private def processUpdateCmd[T <: ParticipantModifyCommand](
       cmd:        T,

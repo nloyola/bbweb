@@ -19,107 +19,65 @@ package biobank {
 
   trait ValidationMsgKey extends ValidationKey {
     val msg: String
-  }
 
-  /** Factory object to create a system error. */
-  object SystemError {
-    def apply(msg: String): SystemError = msg
+    override val toString: String = s"${this.getClass.getSimpleName}: $msg"
   }
 
   object CommonValidations {
+
+    final case class SystemError(msg: String) extends ValidationMsgKey
 
     final case class InvalidVersion(msg: String) extends ValidationMsgKey
 
     case object NonEmptyString extends ValidationKey
 
-    case object InternalServerError extends ValidationKey {
-      override val toString: String = "Internal Server Error"
-    }
+    case object InternalServerError extends ValidationKey
 
-    case object Unauthorized extends ValidationKey {
-      override val toString: String = "Unauthorized"
-    }
+    case object Unauthorized extends ValidationKey
 
-    final case class InvalidNumberString(msg: String) extends ValidationMsgKey {
-      override val toString: String = s"InvalidNumberString: $msg"
-    }
+    final case class InvalidNumberString(msg: String) extends ValidationMsgKey
 
-    final case class InvalidStringOfMininumLength(msg: String) extends ValidationMsgKey {
-      override val toString: String = s"InvalidNumberString: $msg"
-    }
+    final case class IdNotFound(msg: String) extends ValidationMsgKey
 
-    final case class IdNotFound(msg: String) extends ValidationMsgKey {
-      override val toString: String = s"IdNotFound: $msg"
-    }
+    final case class EntityNotFound(msg: String) extends ValidationMsgKey
 
-    final case class InvalidStatus(msg: String) extends ValidationMsgKey {
-      override val toString: String = s"InvalidStatus: $msg"
-    }
+    final case class InvalidStatus(msg: String) extends ValidationMsgKey
 
-    final case class InvalidState(msg: String) extends ValidationMsgKey {
-      override val toString: String = s"InvalidState: $msg"
-    }
+    final case class InvalidState(msg: String) extends ValidationMsgKey
 
-    case object InvalidToken extends ValidationKey {
-      override val toString: String = "InvalidToken"
-    }
+    case object InvalidToken extends ValidationKey
 
-    case object InvalidPassword extends ValidationKey {
-      override val toString: String = "InvalidPassword"
-    }
+    case object InvalidPassword extends ValidationKey
 
-    final case class EmailNotFound(msg: String) extends ValidationMsgKey {
-      override val toString: String = s"EmailNotFound: $msg"
-    }
+    final case class EmailNotFound(msg: String) extends ValidationMsgKey
 
-    final case class EmailNotAvailable(msg: String) extends ValidationMsgKey {
-      override val toString: String = s"EmailNotAvailable: $msg"
-    }
+    final case class EmailNotAvailable(msg: String) extends ValidationMsgKey
 
-    final case class EntityCriteriaNotFound(msg: String) extends ValidationMsgKey {
-      override val toString: String = s"EntityCriteriaNotFound: $msg"
-    }
+    final case class EntityCriteriaNotFound(msg: String) extends ValidationMsgKey
 
-    final case class EntityCriteriaError(msg: String) extends ValidationMsgKey {
-      override val toString: String = s"EntityCriteriaError: $msg"
-    }
+    final case class EntityCriteriaError(msg: String) extends ValidationMsgKey
 
-    final case class EntityRequired(msg: String) extends ValidationMsgKey {
-      override val toString: String = s"EntityRequired: $msg"
-    }
+    final case class EntityRequired(msg: String) extends ValidationMsgKey
 
-    case object LocationIdInvalid extends ValidationKey {
-      override val toString: String = "LocationIdInvalid"
-    }
+    case object LocationIdInvalid extends ValidationKey
 
-    case object ContainerIdInvalid extends ValidationKey {
-      override val toString: String = "ContainerIdInvalid"
-    }
+    case object ContainerIdInvalid extends ValidationKey
 
-    case object SpecimenIdRequired extends ValidationKey {
-      override val toString: String = "SpecimenIdRequired"
-    }
+    case object SpecimenIdRequired extends ValidationKey
 
-    final case class EntityInUse(msg: String) extends ValidationMsgKey {
-      override val toString: String = s"EntityInUse: $msg"
-    }
+    final case class EntityInUse(msg: String) extends ValidationMsgKey
 
-    case object InvalidAlphaString extends ValidationKey {
-      override val toString: String = "must contain only letters (a-z)"
-    }
+    case object InvalidAlphaString extends ValidationKey
 
-    case object InvalidAlnumString extends ValidationKey {
-      override val toString: String = "must contain only letters (a-z) and digits (0-9)"
-    }
+    case object InvalidAlnumString extends ValidationKey
 
     case object InvalidEmail extends ValidationKey
 
     case object InvalidUrl extends ValidationKey
 
-    case object InvalidName extends ValidationKey {
-      override val toString: String =
-        "InvalidName: must contain only letters (a-z), digits (0-9), period or quote"
-    }
+    case object InvalidName extends {
+      val msg = "must contain only letters (a-z), digits (0-9), period or quote"
+    } with ValidationMsgKey
 
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments", "org.wartremover.warts.Null"))
     def validateNonEmptyString(s: String, err: ValidationKey = NonEmptyString): SystemValidation[String] =

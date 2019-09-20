@@ -328,21 +328,20 @@ class CentresProcessor @Inject()(
       log.error(s"invalid event type: $event")
     } else {
       centreRepository
-        .getByKey(CentreId(event.id)).fold(err => log.error(s"centre from event does not exist: $err"),
-                                           centre => {
-                                             if (centre.version != eventVersion) {
-                                               log.error(
-                                                 s"event version check failed: centre version: ${centre.version}, event: $event"
-                                               )
-                                             } else {
-                                               val eventTime = OffsetDateTime.parse(event.getTime)
-                                               val update    = applyEvent(centre, event, eventTime)
+        .getByKey(CentreId(event.id))
+        .fold(err => log.error(s"centre from event does not exist: $err"),
+              centre => {
+                if (centre.version != eventVersion) {
+                  log.error(s"event version check failed: centre version: ${centre.version}, event: $event")
+                } else {
+                  val eventTime = OffsetDateTime.parse(event.getTime)
+                  val update    = applyEvent(centre, event, eventTime)
 
-                                               if (update.isFailure) {
-                                                 log.error(s"centre update from event failed: $update")
-                                               }
-                                             }
-                                           })
+                  if (update.isFailure) {
+                    log.error(s"centre update from event failed: $update")
+                  }
+                }
+              })
     }
 
   private def onValidEventDisabledCentreAndVersion(

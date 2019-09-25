@@ -35,10 +35,30 @@ project's root directory.
 Project [sbt-updated](https://github.com/rtimush/sbt-updates) is used to determine if any
 dependencies can be updated. Use command `dependencyUpdates` to display what can be updated.
 
-### GitHub Markdown
+#### Initialization
 
-*  [Grip]  (https://github.com/joeyespo/grip) - Preview GitHub Markdown files like Readme.md locally
-   before committing them
+Various configuration files need to be created and modified to run the server in development mode or
+production mode. Use the following commands to create the configuration files:
+
+```sh
+sbt developmentInit
+```
+
+#### Configuration
+
+##### Email
+
+The server sends emails for user registration and requires an Email server to be configured. Edit file
+`conf/email.conf` and add your emails server information.
+
+##### Test Data
+
+If you want the system to be populated with some test data, edit file `conf/testdata.conf` and choose the test
+data to be included on initialization.
+
+##### Testing
+
+See section [Server Logging](#server-logging) for more information.
 
 ## Application
 
@@ -47,38 +67,10 @@ dependencies can be updated. Use command `dependencyUpdates` to display what can
 * To start the server in production mode, use the following commands:
 
     ```sh
-    npm run dist-build
     APPLICATION_SECRET="abcdefghijklmnopqrstuvwxyz" sbt start
     ```
 
     In the browser open the following link: http://localhost:9000/#!/
-
-* To start the application in development mode, use the following commands:
-
-    ```sh
-    npm run dev-build
-    npm run dev-start-server
-    ```
-
-    In the browser open the following link: http://localhost:9000/#!/
-
-* When modifying code in the client application, use the following commands to start the server and build the
-  client side and also watch for changes in the client files (uses `webpack-dev-server`):
-
-    In one shell:
-
-    ```sh
-    npm run dev-start-server
-    ```
-
-    In another shell:
-
-    ```sh
-    npm run dev
-    ```
-
-    In the browser open the following link: http://localhost:8080/#!/. *Note that this link is for a
-    different port.*
 
 ### Testing
 
@@ -121,19 +113,17 @@ The report can be found in: `<proj_dir>/target/scala-<version>/scoverage-report`
 
 To prevent users being logged out when the application is restarted, EHCACHE is configured to cache
 to disk. This must be disabled for the production server (see [conf/ehcache.xml]
-(../conf/ehcache.xml), tags: `defaultCache -> diskPersistent`).
+(/conf/ehcache.xml), tags: `defaultCache -> diskPersistent`).
 
 ### Server Logging
 
-* To enable logging at the Domain or Service layers, edit the file [conf/logger.xml]
-  (../conf/logger.xml).
+* To enable logging in a production environment, edit the file `conf/logback-play-default.xml`.
 
-* To enable TEST logging at the Domain or Service layers, edit the file [conf/logback-test.xml]
-  (../conf/logback-test.xml).
+* To enable logging in a development environment, edit the file `conf/logback-play-dev.xml`.
 
-* The Akka logging configuration for the web application is in [conf/application.conf]
-  (../conf/application.conf). It is in [conf/reference.conf] (../conf/reference.conf) for the testing
-  environment.
+* To enable logging in a testing environment, edit the file `conf/logback-test.xml`.
+
+* The Akka logging configuration for the web application is in `conf/application.conf`.
 
 # Souce code documentation
 

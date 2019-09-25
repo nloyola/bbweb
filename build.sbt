@@ -3,7 +3,7 @@ import java.nio.file.{Files, StandardCopyOption}
 
 val conf = ConfigFactory.parseFile(new File("conf/application.conf")).resolve()
 
-name := """bbweb"""
+name := "bbweb"
 
 version := conf.getString("app.version")
 
@@ -25,6 +25,8 @@ lazy val forcedCopyLogbackTest = taskKey[Unit]("forcedCopyLogbackTest")
 lazy val copyTestData          = taskKey[Unit]("copyTestData")
 lazy val copyEmailConf         = taskKey[Unit]("copyEmailConf")
 lazy val developmentInit       = taskKey[Unit]("developmentInit")
+
+//val sourceRoot = new File(".").getAbsoluteFile.getParent
 
 def copyTemplate(templateName: String, destName: String): Unit = {
   val template = new File(templateName)
@@ -90,7 +92,7 @@ run / javaOptions += "-Xmx2G -Duser.timezone=GMT"
 
 // https://scalameta.org/metals/docs/build-tools/sbt.html
 addCompilerPlugin("com.github.ghik" %% "silencer-plugin" % "1.4.2")
-addCompilerPlugin(MetalsPlugin.semanticdbModule) // enable SemanticDB
+//addCompilerPlugin(MetalsPlugin.semanticdbModule) // enable SemanticDB
 
 resolvers += Resolver.sonatypeRepo("snapshots")
 resolvers += Resolver.jcenterRepo
@@ -168,4 +170,5 @@ scalacOptions ++=
       "-Ywarn-unused-import",
       "-Ywarn-value-discard", // Warn when non-Unit expression results are unused
       "-Yrangepos",
+      //s"-P:semanticdb:sourceroot:${sourceRoot}",
       "-P:silencer:pathFilters=main/controllers/ReverseRoutes;main/controllers/javascript/JavaScriptReverseRoutes;main/router/Routes")

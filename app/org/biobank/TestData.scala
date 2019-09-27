@@ -22,8 +22,8 @@ import scalaz.Scalaz._
 object TestData {
 
   val centreIdCBSR:    CentreId = CentreId("CBSR")
-  val centreIdCalgary: CentreId = CentreId("100-Calgary AB_id")
-  val centreIdLondon:  CentreId = CentreId("101-London ON_id")
+  val centreIdCalgary: CentreId = CentreId("100-Calgary AB")
+  val centreIdLondon:  CentreId = CentreId("101-London ON")
 
   val centreData: List[Tuple2[String, String]] =
     List(("CL1-Foothills", "CL1-Foothills"),

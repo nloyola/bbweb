@@ -9,51 +9,36 @@ import org.biobank.fixtures._
 import org.biobank.services.users.UserServiceFixtures
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
-trait CentresServiceFixtures extends ProcessorTestFixture with UserServiceFixtures {
+trait UserCentreAccessFixture {
+  val location:               Location
+  val centre:                 Centre
+  val allCentresAdminUser:    User
+  val centreOnlyAdminUser:    User
+  val centreUser:             User
+  val noMembershipUser:       User
+  val noCentrePermissionUser: User
+  val allCentresMembership:   Membership
+  val centreOnlyMembership:   Membership
+  val noCentresMembership:    Membership
 
-  class UsersWithCentreAccessFixture {
-    val location = factory.createLocation
-    val centre   = factory.createDisabledCentre.copy(locations = Set(location))
+  def usersCanReadTable() =
+    Table(("users with read access", "label"),
+          (allCentresAdminUser, "all centres admin user"),
+          (centreOnlyAdminUser, "centre only admin user"),
+          (centreUser, "non-admin centre user"))
 
-    val allCentresAdminUser    = factory.createActiveUser
-    val centreOnlyAdminUser    = factory.createActiveUser
-    val centreUser             = factory.createActiveUser
-    val noMembershipUser       = factory.createActiveUser
-    val noCentrePermissionUser = factory.createActiveUser
+  def usersCanAddOrUpdateTable() =
+    Table(("users with update access", "label"),
+          (allCentresAdminUser, "all centres admin user"),
+          (centreOnlyAdminUser, "centre only admin user"))
 
-    val allCentresMembership = factory.createMembership.copy(
-      userIds    = Set(allCentresAdminUser.id),
-      studyData  = MembershipEntitySet(true, Set.empty[StudyId]),
-      centreData = MembershipEntitySet(true, Set.empty[CentreId])
-    )
+  def usersCannotAddOrUpdateTable() =
+    Table(("users with update access", "label"),
+          (centreUser, "non-admin centre user"),
+          (noMembershipUser, "all centres admin user"),
+          (noCentrePermissionUser, "centre only admin user"))
 
-    val centreOnlyMembership = factory.createMembership.copy(
-      userIds    = Set(centreOnlyAdminUser.id, centreUser.id),
-      studyData  = MembershipEntitySet(true, Set.empty[StudyId]),
-      centreData = MembershipEntitySet(false, Set(centre.id))
-    )
-
-    val noCentresMembership = factory.createMembership.copy(
-      userIds    = Set(noMembershipUser.id, noCentrePermissionUser.id),
-      centreData = MembershipEntitySet(false, Set.empty[CentreId])
-    )
-
-    def usersCanReadTable() =
-      Table(("users with read access", "label"),
-            (allCentresAdminUser, "all centres admin user"),
-            (centreOnlyAdminUser, "centre only admin user"),
-            (centreUser, "non-admin centre user"))
-
-    def usersCanAddOrUpdateTable() =
-      Table(("users with update access", "label"),
-            (allCentresAdminUser, "all centres admin user"),
-            (centreOnlyAdminUser, "centre only admin user"))
-
-    def usersCannotAddOrUpdateTable() =
-      Table(("users with update access", "label"),
-            (centreUser, "non-admin centre user"),
-            (noMembershipUser, "all centres admin user"),
-            (noCentrePermissionUser, "centre only admin user"))
+  def allEntities(): Set[ConcurrencySafeEntity[_]] =
     Set(centre,
         allCentresAdminUser,
         centreOnlyAdminUser,
@@ -62,13 +47,38 @@ trait CentresServiceFixtures extends ProcessorTestFixture with UserServiceFixtur
         noCentrePermissionUser,
         allCentresMembership,
         centreOnlyMembership,
-        noCentresMembership).foreach(addToRepository)
+        noCentresMembership)
 
-    addUserToCentreAdminRole(allCentresAdminUser)
-    addUserToCentreAdminRole(centreOnlyAdminUser)
-    addUserToRole(centreUser, RoleId.CentreUser)
-    addUserToRole(noMembershipUser, RoleId.CentreUser)
-  }
+}
+
+class UsersWithCentreAccessFixture(factory: Factory) extends UserCentreAccessFixture {
+  val location               = factory.createLocation
+  val centre                 = factory.createDisabledCentre.copy(locations = Set(location))
+  val allCentresAdminUser    = factory.createActiveUser
+  val centreOnlyAdminUser    = factory.createActiveUser
+  val centreUser             = factory.createActiveUser
+  val noMembershipUser       = factory.createActiveUser
+  val noCentrePermissionUser = factory.createActiveUser
+
+  val allCentresMembership = factory.createMembership.copy(
+    userIds    = Set(allCentresAdminUser.id),
+    studyData  = MembershipEntitySet(true, Set.empty[StudyId]),
+    centreData = MembershipEntitySet(true, Set.empty[CentreId])
+  )
+
+  val centreOnlyMembership = factory.createMembership.copy(
+    userIds    = Set(centreOnlyAdminUser.id, centreUser.id),
+    studyData  = MembershipEntitySet(true, Set.empty[StudyId]),
+    centreData = MembershipEntitySet(false, Set(centre.id))
+  )
+
+  val noCentresMembership = factory.createMembership.copy(
+    userIds    = Set(noMembershipUser.id, noCentrePermissionUser.id),
+    centreData = MembershipEntitySet(false, Set.empty[CentreId])
+  )
+}
+
+trait CentresServiceFixtures extends ProcessorTestFixture with UserServiceFixtures {
 
   protected val factory: Factory
 
@@ -82,8 +92,22 @@ trait CentresServiceFixtures extends ProcessorTestFixture with UserServiceFixtur
 
   protected val studyRepository: StudyRepository
 
-  private def addUserToCentreAdminRole(user: User): Unit =
+  protected def addUserToCentreAdminRole(user: User): Unit =
     addUserToRole(user, RoleId.CentreAdministrator)
+
+  protected def createFixture(): UsersWithCentreAccessFixture = {
+    val f = new UsersWithCentreAccessFixture(factory)
+    f.allEntities.foreach(addToRepository)
+    persistRoles(f)
+    f
+  }
+
+  protected def persistRoles(f: UsersWithCentreAccessFixture): Unit = {
+    addUserToCentreAdminRole(f.allCentresAdminUser)
+    addUserToCentreAdminRole(f.centreOnlyAdminUser)
+    addUserToRole(f.centreUser, RoleId.CentreUser)
+    addUserToRole(f.noMembershipUser, RoleId.CentreUser)
+  }
 
   override protected def addToRepository[T <: ConcurrencySafeEntity[_]](entity: T): Unit =
     entity match {
@@ -92,7 +116,7 @@ trait CentresServiceFixtures extends ProcessorTestFixture with UserServiceFixtur
       case m: Membership => membershipRepository.put(m)
       case c: Centre     => centreRepository.put(c)
       case s: Study      => studyRepository.put(s)
-      case _ => fail("invalid entity")
+      case e => fail(s"invalid entity: $e")
     }
 
 }

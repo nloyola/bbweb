@@ -119,7 +119,7 @@ sealed trait Container
   protected def validateInventoryId[T](inventoryId: String): DomainValidation[String] =
     validateNonEmptyString(inventoryId, ContainerInventoryIdInvalid)
 
-  override def toString: String = Json.prettyPrint(Json.toJson(this))
+  override def toString: String = this.getClass.getSimpleName + ": " + Json.prettyPrint(Json.toJson(this))
 
 }
 

@@ -684,7 +684,7 @@ class Factory {
       parent:        StorageContainer,
       schemaLabel:   ContainerSchemaLabel
     ): SpecimenContainer = {
-    val inventoryId = nameGenerator.next[ContainerType]
+    val inventoryId = nameGenerator.next[Container]
     val container = SpecimenContainer(id = ContainerId(nextIdentityAsString[Container]),
                                       version         = 0L,
                                       timeAdded       = OffsetDateTime.now,

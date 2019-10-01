@@ -59,20 +59,7 @@ sealed trait User extends ConcurrencySafeEntity[UserId] with HasState with HasUn
     if (this.password == password) this.successNel[String]
     else DomainError("authentication failure").failureNel[User]
 
-  override def toString: String =
-    s"""|${this.getClass.getSimpleName}: {
-        |  id:           $id,
-        |  version:      $version,
-        |  timeAdded:    $timeAdded,
-        |  timeModified: $timeModified,
-        |  state:        $state,
-        |  slug:         $slug,
-        |  name:         $name,
-        |  email:        $email,
-        |  password:     $password,
-        |  salt:         $salt,
-        |  avatarUrl:    $avatarUrl,
-        |}""".stripMargin
+  override def toString: String = Json.prettyPrint(Json.toJson(this))
 }
 
 object User {

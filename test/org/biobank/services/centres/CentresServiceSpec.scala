@@ -18,17 +18,26 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.CentreCommands._
 
-  class CentresOfAllStatesFixure extends UsersWithCentreAccessFixture {
+  class CentresOfAllStatesFixure(factory: Factory) extends UsersWithCentreAccessFixture(factory) {
     val disabledCentre = centre
     val enabledCentre  = factory.createEnabledCentre
 
-    Set(disabledCentre, enabledCentre).foreach(addToRepository)
+    override def allEntities(): Set[ConcurrencySafeEntity[_]] =
+      Set(disabledCentre, enabledCentre) ++ super.allEntities
+
+  }
+
+  protected def createCentresOfAllStatesFixure(): CentresOfAllStatesFixure = {
+    val f = new CentresOfAllStatesFixure(factory)
+    f.allEntities.foreach(addToRepository)
+    persistRoles(f)
     addToRepository(
-      centreOnlyMembership.copy(
-        centreData = centreOnlyMembership.centreData.copy(ids = Set(disabledCentre.id, enabledCentre.id))
+      f.centreOnlyMembership.copy(
+        centreData =
+          f.centreOnlyMembership.centreData.copy(ids = Set(f.disabledCentre.id, f.enabledCentre.id))
       )
     )
-
+    f
   }
 
   protected val nameGenerator = new NameGenerator(this.getClass)
@@ -103,7 +112,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
     describe("when getting centre counts") {
 
       it("users can access") {
-        val f = new UsersWithCentreAccessFixture
+        val f = createFixture
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
           centresService.getCentresCount(user.id) mustSucceed { count =>
@@ -113,7 +122,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
       }
 
       it("users cannot access") {
-        val f = new UsersWithCentreAccessFixture
+        val f = createFixture
 
         info("no membership user")
         centresService.getCentresCount(f.noMembershipUser.id) mustSucceed { count =>
@@ -129,7 +138,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
     describe("when getting centre counts by status") {
 
       it("users can access") {
-        val f = new UsersWithCentreAccessFixture
+        val f = createFixture
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
           centresService.getCountsByStatus(user.id) mustSucceed { counts =>
@@ -139,7 +148,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
       }
 
       it("users cannot access") {
-        val f = new UsersWithCentreAccessFixture
+        val f = createFixture
         info("no membership user")
         centresService.getCountsByStatus(f.noMembershipUser.id) mustSucceed { counts =>
           counts.total must be(0)
@@ -154,7 +163,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
     describe("when getting centres") {
 
       it("users can access") {
-        val f     = new UsersWithCentreAccessFixture
+        val f     = createFixture
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
@@ -165,7 +174,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
       }
 
       it("users cannot access") {
-        val f     = new UsersWithCentreAccessFixture
+        val f     = createFixture
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
         info("no membership user")
         centresService.getCentres(f.noMembershipUser.id, query).futureValue.mustSucceed { pagedResults =>
@@ -181,7 +190,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
     describe("when getting a centre") {
 
       it("users can access") {
-        val f = new UsersWithCentreAccessFixture
+        val f = createFixture
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
           centresService.getCentre(user.id, f.centre.id) mustSucceed { result =>
@@ -191,7 +200,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
       }
 
       it("users cannot access") {
-        val f = new UsersWithCentreAccessFixture
+        val f = createFixture
 
         info("no membership user")
         centresService.getCentre(f.noMembershipUser.id, f.centre.id) mustFail "Unauthorized"
@@ -205,7 +214,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
     describe("search locations") {
 
       it("users can access") {
-        val f = new UsersWithCentreAccessFixture
+        val f = createFixture
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
           val cmd = SearchCentreLocationsCmd(sessionUserId = user.id.id, filter = "", limit = 10)
@@ -216,7 +225,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
       }
 
       it("users cannot access") {
-        val f   = new UsersWithCentreAccessFixture
+        val f   = createFixture
         var cmd = SearchCentreLocationsCmd(sessionUserId = f.noMembershipUser.id.id, filter = "", limit = 10)
 
         info("no membership user")
@@ -235,7 +244,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
     describe("when adding a centre") {
 
       it("users can access") {
-        val f = new UsersWithCentreAccessFixture
+        val f = createFixture
 
         forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           val cmd =
@@ -248,7 +257,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
       }
 
       it("users cannot access") {
-        val f = new UsersWithCentreAccessFixture
+        val f = createFixture
 
         forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           val cmd =
@@ -262,7 +271,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
     describe("update a centre") {
 
       it("users can access") {
-        val f     = new UsersWithCentreAccessFixture
+        val f     = createFixture
         val study = factory.createDisabledStudy
         studyRepository.put(study)
 
@@ -270,12 +279,9 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
           info(label)
           forAll(updateCommandsTable(user.id, f.centre, f.location, study)) { cmd =>
             val centre = cmd match {
-              case _: AddCentreLocationCmd =>
-                f.centre.copy(locations = Set.empty[Location])
-              case _: RemoveStudyFromCentreCmd =>
-                f.centre.copy(studyIds = Set(study.id))
-              case _ =>
-                f.centre
+              case _: AddCentreLocationCmd     => f.centre.copy(locations = Set.empty[Location])
+              case _: RemoveStudyFromCentreCmd => f.centre.copy(studyIds  = Set(study.id))
+              case _ => f.centre
             }
 
             centreRepository.put(centre) // restore the centre to it's previous state
@@ -287,7 +293,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
       }
 
       it("users cannot update") {
-        val f     = new UsersWithCentreAccessFixture
+        val f     = createFixture
         val study = factory.createDisabledStudy
         studyRepository.put(study)
 
@@ -303,7 +309,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
     describe("change a centre's state") {
 
       it("users can access") {
-        val f = new CentresOfAllStatesFixure
+        val f = createCentresOfAllStatesFixure
         forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           info(label)
           forAll(stateChangeCommandsTable(user.id, f.disabledCentre, f.enabledCentre)) { cmd =>
@@ -316,7 +322,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
       }
 
       it("users cannot update") {
-        val f = new CentresOfAllStatesFixure
+        val f = createCentresOfAllStatesFixure
         forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           info(label)
           forAll(stateChangeCommandsTable(user.id, f.disabledCentre, f.enabledCentre)) { cmd =>
@@ -333,7 +339,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
         val query        = PagedQuery(new FilterString(""), new SortString(""), 0, 10)
         addToRepository(secondCentre)
 
-        val f = new UsersWithCentreAccessFixture
+        val f = createFixture
         centresService.getCentres(f.allCentresAdminUser.id, query).futureValue.mustSucceed { reply =>
           reply.items must have size (2)
           val centreIds = reply.items.map(c => c.id).sorted
@@ -346,7 +352,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
         val query        = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
         addToRepository(secondCentre)
 
-        val f = new UsersWithCentreAccessFixture
+        val f = createFixture
         centresService.getCentres(f.centreOnlyAdminUser.id, query).futureValue.mustSucceed { reply =>
           reply.items must have size (1)
           reply.items.map(c => c.id) must contain(f.centre.id.id)
@@ -355,7 +361,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
 
       it("user does not have access to centre if not in membership") {
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
-        val f     = new UsersWithCentreAccessFixture
+        val f     = createFixture
 
         // remove all studies from membership
         val noCentresMembership = f.centreOnlyMembership.copy(

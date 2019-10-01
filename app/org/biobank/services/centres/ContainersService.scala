@@ -26,7 +26,7 @@ trait ContainersService extends BbwebService {
 
   def getBySlug(requestUserId: UserId, slug: Slug): Future[ServiceValidation[ContainerDto]]
 
-  /** Searches for Top [[domain.containers.Container Containers]] for a [domain.centres.Centre Centre]. */
+  /** Searches for [[domain.containers.RootContainer RootContainers]] for a [domain.centres.Centre Centre]. */
   def search(
       requestUserId: UserId,
       centreId:      CentreId,

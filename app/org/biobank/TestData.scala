@@ -21,9 +21,13 @@ import scalaz.Scalaz._
  */
 object TestData {
 
-  val centreIdCBSR:    CentreId = CentreId("CBSR")
-  val centreIdCalgary: CentreId = CentreId("100-Calgary AB")
-  val centreIdLondon:  CentreId = CentreId("101-London ON")
+  val centreCBSRName    = "CBSR"
+  val centreCalgaryName = "100-Calgary AB"
+  val centreLondonName  = "101-London ON"
+
+  val centreCBSRId    = CentreId(centreCBSRName + "_id")
+  val centreCalgaryId = CentreId(centreCalgaryName + "_id")
+  val centreLondonId  = CentreId(centreLondonName + "_id")
 
   val centreData: List[Tuple2[String, String]] =
     List(("CL1-Foothills", "CL1-Foothills"),
@@ -46,11 +50,11 @@ object TestData {
          ("WL1-Westlock Hosp", "WL1-Westlock Health Care Center"),
          ("WN1-Cancer Care", "WN1-Cancer Care Manitoba"),
          ("CL1-Foothills TRW", "CL1-Foothills TRW"),
-         (centreIdCBSR.id, "Canadian BioSample Repository"),
+         (centreCBSRName, "Canadian BioSample Repository"),
          ("Calgary-F", "Calgary Foothills"),
-         (centreIdCalgary.id, "100-Calgary Alberta Refine"),
+         (centreCalgaryName, "100-Calgary Alberta Refine"),
          ("College Plaza UofA", "College Plaza UofA"),
-         (centreIdLondon.id, "101-London Ontario Refine"),
+         (centreLondonName, "101-London Ontario Refine"),
          ("102-Newmarket ON", "102-Newmarket Ontario Refine"),
          ("103-Montreal QC", "103-Montreal Quebec Refine"),
          ("104-Montreal QC", "104-Montreal Quebec Refine"),
@@ -426,9 +430,9 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
       centreData.map {
         case (name, description) =>
           val locations = {
-            if (name == "100-Calgary AB") {
+            if (name == centreCalgaryName) {
               Set(
-                Location(id             = LocationId(s"${name}_id:Primary"),
+                Location(id             = LocationId(s"${centreCalgaryId.id}:Primary"),
                          slug           = Slug(""),
                          name           = "Primary",
                          street         = "1403 29 St NW",
@@ -438,9 +442,9 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
                          poBoxNumber    = None,
                          countryIsoCode = "CA")
               )
-            } else if (name == "101-London ON") {
+            } else if (name == centreLondonName) {
               Set(
-                Location(id   = LocationId(s"${name}_id:Primary"),
+                Location(id   = LocationId(s"${centreLondonId.id}:Primary"),
                          slug = Slug(""),
                          name = "Primary",
                          street =
@@ -458,8 +462,9 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
             l.copy(slug = Slug(l.id.id))
           }
 
-          if ((name == "100-Calgary AB") || (name == "101-London ON")) {
-            EnabledCentre(id           = CentreId(s"${name}_id"),
+          if ((name == centreCalgaryName) || (name == centreLondonName)) {
+            val id = if (name == centreCalgaryName) centreCalgaryId else centreLondonId
+            EnabledCentre(id           = id,
                           version      = 0L,
                           timeAdded    = Global.StartOfTime,
                           timeModified = None,
@@ -643,10 +648,10 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
       /*
        * - creates 3 shipments, each in a different state
        */
-      val fromCentreId   = centreIdCalgary
-      val fromLocationId = LocationId(s"${fromCentreId}:Primary")
-      val toCentreId     = centreIdLondon
-      val toLocationId   = LocationId(s"${toCentreId}:Primary")
+      val fromCentreId   = centreCalgaryId
+      val fromLocationId = LocationId(s"${fromCentreId.id}:Primary")
+      val toCentreId     = centreLondonId
+      val toLocationId   = LocationId(s"${toCentreId.id}:Primary")
 
       List[Shipment](
         CreatedShipment(id              = ShipmentId(s"test-shipment-created"),
@@ -755,7 +760,7 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
        *
        * - takes all the specimens at the second centre and assigns them to the shipment in PACKED state
        */
-      val fromCentreId      = centreIdCalgary
+      val fromCentreId      = centreCalgaryName
       val fromLocationId    = LocationId(s"${fromCentreId}:Primary")
       val specimens         = testSpecimens
       val halfSpecimenCount = specimens.filter(_.locationId == fromLocationId).size / 2
@@ -967,7 +972,7 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
                     name         = name,
                     description  = description,
                     shared       = true,
-                    centreId     = centreIdCBSR,
+                    centreId     = centreCBSRId,
                     labels       = labels)
   }
 

@@ -349,8 +349,7 @@ class ShipmentsControllerSpec
                  "timePacked"     -> shipment.timePacked)
 
       it("add a shipment") {
-        val f = createdShipmentFixture
-        shipmentRepository.put(f.shipment)
+        val f     = createdShipmentFixture
         val reply = makeAuthRequest(POST, uri(""), shipmentToAddJson(f.shipment)).value
         reply must beOkResponseWithJsonReply
 
@@ -358,6 +357,15 @@ class ShipmentsControllerSpec
         shipmentId must be(jsSuccess)
         val updatedShipment = f.shipment.copy(id = shipmentId.get)
         reply must matchUpdatedShipment(updatedShipment)
+      }
+
+      it("fail when adding a shipment with an existing tracking number") {
+        val f = createdShipmentFixture
+        shipmentRepository.put(f.shipment)
+        val reply = makeAuthRequest(POST, uri(""), shipmentToAddJson(f.shipment)).value
+        reply must beForbiddenRequestWithMessage(
+          "EntityCriteriaError: shipment with tracking number already exists"
+        )
       }
 
       it("fail when adding a shipment with no courier name") {
@@ -426,7 +434,7 @@ class ShipmentsControllerSpec
 
     }
 
-    describe("POST /api/shipments/trackingnumber/:id") {
+    describe("POST /api/shipments/tracking-number/:id") {
 
       it("allow updating the tracking number") {
         val f                 = createdShipmentFixture
@@ -434,7 +442,7 @@ class ShipmentsControllerSpec
         shipmentRepository.put(f.shipment)
         val updateJson =
           Json.obj("expectedVersion" -> f.shipment.version, "trackingNumber" -> newTrackingNumber)
-        val reply = makeAuthRequest(POST, uri("trackingnumber", f.shipment.id.id), updateJson).value
+        val reply = makeAuthRequest(POST, uri("tracking-number", f.shipment.id.id), updateJson).value
         reply must beOkResponseWithJsonReply
 
         val updatedShipment = f.shipment.copy(version = f.shipment.version + 1,
@@ -443,11 +451,23 @@ class ShipmentsControllerSpec
         reply must matchUpdatedShipment(updatedShipment)
       }
 
+      it("fails when updating the tracking number to one used by another shipment") {
+        val f         = createdShipmentsFixture(2)
+        val shipments = f.shipmentMap.values.toList
+        shipments.foreach(addToRepository)
+        val updateJson =
+          Json.obj("expectedVersion" -> shipments(0).version, "trackingNumber" -> shipments(1).trackingNumber)
+        val reply = makeAuthRequest(POST, uri("tracking-number", shipments(0).id.id), updateJson).value
+        reply must beForbiddenRequestWithMessage(
+          "EntityCriteriaError: shipment with tracking number already exists"
+        )
+      }
+
       it("not allow updating the tracking number to an empty string") {
         val f = createdShipmentFixture
         shipmentRepository.put(f.shipment)
         val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "trackingNumber" -> "")
-        val reply      = makeAuthRequest(POST, uri("trackingnumber", f.shipment.id.id), updateJson).value
+        val reply      = makeAuthRequest(POST, uri("tracking-number", f.shipment.id.id), updateJson).value
         reply must beBadRequestWithMessage("TrackingNumberInvalid")
       }
 
@@ -460,7 +480,7 @@ class ShipmentsControllerSpec
           val updateJson =
             Json.obj("expectedVersion" -> shipment.version, "trackingNumber" -> nameGenerator.next[String])
 
-          val reply = makeAuthRequest(POST, uri("trackingnumber", shipment.id.id), updateJson).value
+          val reply = makeAuthRequest(POST, uri("tracking-number", shipment.id.id), updateJson).value
           reply must beBadRequestWithMessage("InvalidState: shipment not created")
         }
       }

@@ -18,7 +18,7 @@ class ShipmentsRouter @Inject()(controller: ShipmentsController) extends SimpleR
     case POST(p"/courier/${shipmentId(id)}") =>
       controller.updateCourier(id)
 
-    case POST(p"/trackingnumber/${shipmentId(id)}") =>
+    case POST(p"/tracking-number/${shipmentId(id)}") =>
       controller.updateTrackingNumber(id)
 
     case POST(p"/fromlocation/${shipmentId(id)}") =>

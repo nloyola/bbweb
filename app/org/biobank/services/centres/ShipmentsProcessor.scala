@@ -208,6 +208,7 @@ class ShipmentsProcessor @Inject()(
       id         <- validNewIdentity(shipmentRepository.nextIdentity, shipmentRepository)
       fromCentre <- centreRepository.getByLocationId(LocationId(cmd.fromLocationId))
       toCentre   <- centreRepository.getByLocationId(LocationId(cmd.toLocationId))
+      trackingNo <- trackingNumberAvailable(cmd.trackingNumber)
       shipment <- CreatedShipment.create(id = id,
                                          version        = 0L,
                                          timeAdded      = OffsetDateTime.now,
@@ -242,14 +243,17 @@ class ShipmentsProcessor @Inject()(
   private def updateTrackingNumberCmdToEvent(
       cmd:      UpdateShipmentTrackingNumberCmd,
       shipment: CreatedShipment
-    ): ServiceValidation[ShipmentEvent] =
-    shipment.withTrackingNumber(cmd.trackingNumber).map { s =>
-      ShipmentEvent(shipment.id.id).update(_.sessionUserId := cmd.sessionUserId,
-                                           _.time := OffsetDateTime.now
-                                             .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                                           _.trackingNumberUpdated.version        := cmd.expectedVersion,
-                                           _.trackingNumberUpdated.trackingNumber := cmd.trackingNumber)
-    }
+  ): ServiceValidation[ShipmentEvent] =
+    for {
+      trackingNo <- trackingNumberAvailable(cmd.trackingNumber, shipment.id)
+      updated <- shipment.withTrackingNumber(cmd.trackingNumber)
+    } yield ShipmentEvent(shipment.id.id)
+      .update(_.sessionUserId := cmd.sessionUserId,
+              _.time := OffsetDateTime.now
+                .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+              _.trackingNumberUpdated.version        := cmd.expectedVersion,
+              _.trackingNumberUpdated.trackingNumber := cmd.trackingNumber)
+
 
   private def updateFromLocationCmdToEvent(
       cmd:      UpdateShipmentFromLocationCmd,
@@ -1068,6 +1072,22 @@ class ShipmentsProcessor @Inject()(
                             } yield ss
                           }.sequenceU
     } yield shipmentSpecimens
+
+  private def trakingNumberExistsError(trackingNumber: String): EntityCriteriaError =
+    EntityCriteriaError(s"shipment with tracking number already exists: $trackingNumber")
+
+  private def trackingNumberAvailable(trackingNumber: String): ServiceValidation[Unit] = {
+    val exists = shipmentRepository.exists(c => (c.trackingNumber == trackingNumber))
+    if (exists) trakingNumberExistsError(trackingNumber).failureNel[Unit]
+    else ().successNel[String]
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  private def trackingNumberAvailable(trackingNumber: String, excludeId: ShipmentId): ServiceValidation[Unit] = {
+    val exists = shipmentRepository.exists(c => (c.trackingNumber == trackingNumber) && (c.id != excludeId))
+    if (exists) trakingNumberExistsError(trackingNumber).failureNel[Unit]
+    else ().successNel[String]
+  }
 
   private def init(): Unit = {
     shipmentRepository.init

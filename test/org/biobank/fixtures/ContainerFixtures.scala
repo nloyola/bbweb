@@ -133,7 +133,7 @@ case class StorageContainerFixture(
 
   def createChild(factory: Factory) = {
     val childSchema        = factory.createContainerSchema.copy(labels = StorageContainerFixture.labels)
-    val childContainerType = factory.createSpecimenContainerType(childSchema)
+    val childContainerType = factory.createSpecimenContainerType(parent.centre, childSchema)
     val childContainer = factory.createSpecimenContainer(
       childContainerType,
       container,
@@ -237,7 +237,8 @@ object SpecimenContainerFixture {
     val specimenSchema =
       factory.createContainerSchema.copy(labels = Set(factory.createContainerSchemaLabel.label))
 
-    val specimenContainerType = factory.createSpecimenContainerType(specimenSchema)
+    val specimenContainerType =
+      factory.createSpecimenContainerType(storageFixture.parent.centre, specimenSchema)
 
     val specimenContainer = factory.createSpecimenContainer(
       specimenContainerType,
@@ -257,7 +258,8 @@ object SpecimenContainerFixture {
     val specimenSchema =
       factory.createContainerSchema.copy(labels = Set(factory.createContainerSchemaLabel.label))
 
-    val specimenContainerType = factory.createSpecimenContainerType(specimenSchema)
+    val specimenContainerType =
+      factory.createSpecimenContainerType(storageFixture.parent.centre, specimenSchema)
 
     val specimenContainer = factory.createSpecimenContainer(
       specimenContainerType,

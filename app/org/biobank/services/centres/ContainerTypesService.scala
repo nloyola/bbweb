@@ -6,7 +6,7 @@ import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Named}
 import org.biobank.domain.Slug
 import org.biobank.domain.access.PermissionId
-import org.biobank.domain.centres.{Centre, CentreId, CentreRepository}
+import org.biobank.domain.centres.{CentreId, CentreRepository}
 import org.biobank.domain.containers._
 import org.biobank.domain.users.UserId
 import org.biobank.dto._
@@ -43,24 +43,19 @@ trait ContainerTypesService extends BbwebService {
 class ContainerTypesServiceImpl @Inject()(
     @Named("containerTypesProcessor") val processor: ActorRef,
     val accessService:                               AccessService,
+    val centresService:                              CentresService,
     val centreRepository:                            CentreRepository,
     val containerTypeRepository:                     ContainerTypeRepository,
     val schemaRepository:                            ContainerSchemaRepository)
     extends ContainerTypesService with AccessChecksSerivce with ServicePermissionChecks {
-  import org.biobank.domain.access.AccessItem._
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
   def getBySlug(requestUserId: UserId, slug: Slug): Future[ServiceValidation[ContainerTypeDto]] =
     Future {
-      for {
-        containerType <- containerTypeRepository.getBySlug(slug)
-        permitted <- accessService.hasPermissionAndIsMember(requestUserId,
-                                                            PermissionId.ContainerRead,
-                                                            None,
-                                                            Some(containerType.centreId))
-        dto <- containerTypeToDto(containerType)
-      } yield dto
+      whenContainerTypePermitted(requestUserId, slug) { containerType =>
+        containerTypeToDto(containerType)
+      }
     }
 
   /** All [[domain.containers.ContainerType ContainerTypes]] for a [domain.centres.Centre Centre], and all
@@ -72,15 +67,14 @@ class ContainerTypesServiceImpl @Inject()(
       query:         PagedQuery
     ): Future[ServiceValidation[PagedResults[ContainerTypeDto]]] =
     Future {
-      whenCentrePermitted(requestUserId, centreId) { centre =>
-        val allContainerTypes = containerTypeRepository.allForCentre(centre.id)
-        for {
-          containerTypes <- filterContainerTypesInternal(allContainerTypes, query.filter, query.sort)
-          validPage      <- query.validPage(containerTypes.size)
-          dtos           <- containerTypes.map(ct => containerTypeToDto(ct)).toList.sequenceU
-          results        <- PagedResults.create(dtos, query.page, query.limit)
-        } yield results
-      }
+      for {
+        centre <- centresService.getCentre(requestUserId, centreId)
+        allContainerTypes = containerTypeRepository.allForCentre(centre.id)
+        containerTypes <- filterContainerTypesInternal(allContainerTypes, query.filter, query.sort)
+        validPage      <- query.validPage(containerTypes.size)
+        dtos           <- containerTypes.map(ct => containerTypeToDto(ct)).toList.sequenceU
+        results        <- PagedResults.create(dtos, query.page, query.limit)
+      } yield results
     }
 
   def processCommand(cmd: ContainerTypeCommand): Future[ServiceValidation[ContainerTypeDto]] = {
@@ -138,17 +132,19 @@ class ContainerTypesServiceImpl @Inject()(
               })
   }
 
-  private def whenCentrePermitted[T](
-      requestUserId: UserId,
-      centreId:      CentreId
-    )(block:         Centre => ServiceValidation[T]
-    ): ServiceValidation[T] =
+  private def whenContainerTypePermitted[T](
+      requestUserId:     UserId,
+      containerTypeSlug: Slug
+    )(block:             ContainerType => ServiceValidation[T]
+    ): ServiceValidation[T] = {
     for {
-      centre <- centreRepository.getByKey(centreId)
+      containerType <- containerTypeRepository.getBySlug(containerTypeSlug)
+      centre        <- centreRepository.getByKey(containerType.centreId)
       result <- whenPermittedAndIsMember(requestUserId, PermissionId.ContainerRead, None, Some(centre.id))(
-                 () => block(centre)
+                 () => block(containerType)
                )
     } yield result
+  }
 
   private def filterContainerTypesInternal(
       unfilteredContainerTypes: Set[ContainerType],

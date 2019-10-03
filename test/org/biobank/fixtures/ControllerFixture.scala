@@ -153,6 +153,9 @@ abstract class ControllerFixture
       case _ => fail("invalid entity")
     }
 
+  protected def addAllToRepository(entities: Set[ConcurrencySafeEntity[_]]): Unit =
+    entities.foreach(addToRepository)
+
   protected def makeAuthRequest(method: String, url: Url, json: JsValue = JsNull): Option[Future[Result]] = {
     val fakeRequest = FakeRequest(method, url.path)
       .withJsonBody(json)

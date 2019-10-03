@@ -414,7 +414,7 @@ class Factory {
                                 name         = name,
                                 description  = Some(nameGenerator.next[Centre]),
                                 studyIds     = Set.empty,
-                                locations    = Set.empty)
+                                locations    = Set(createLocation))
 
     domainObjects = domainObjects + (classOf[DisabledCentre] -> centre)
     centre
@@ -573,7 +573,7 @@ class Factory {
   def createStorageContainerType(): StorageContainerType =
     createStorageContainerType(defaultEnabledCentre, defaultContainerSchema)
 
-  def createSpecimenContainerType(schema: ContainerSchema): SpecimenContainerType = {
+  def createSpecimenContainerType(centre: Centre, schema: ContainerSchema): SpecimenContainerType = {
     val name = nameGenerator.next[ContainerType]
     val containerType = SpecimenContainerType(id = ContainerTypeId(nextIdentityAsString[ContainerType]),
                                               version      = 0L,
@@ -582,7 +582,7 @@ class Factory {
                                               slug         = Slug(name),
                                               name         = name,
                                               description  = Some(nameGenerator.next[ContainerType]),
-                                              centreId     = defaultEnabledCentre.id,
+                                              centreId     = centre.id,
                                               schemaId     = schema.id,
                                               shared       = true,
                                               enabled      = false)
@@ -591,7 +591,7 @@ class Factory {
   }
 
   def createSpecimenContainerType(): SpecimenContainerType =
-    createSpecimenContainerType(defaultContainerSchema)
+    createSpecimenContainerType(defaultEnabledCentre, defaultContainerSchema)
 
   def createContainerSchema(labels: Set[String]): ContainerSchema = {
     val name = faker.Lorem.sentence(3)

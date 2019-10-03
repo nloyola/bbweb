@@ -215,7 +215,8 @@ class SpecimenContainerSpec extends DomainSpec with ContainerSharedSpec[Specimen
     val storageParent = factory
       .createStorageContainer(storageCType, rootContainer, ContainerSchemaLabel(rootSchema.id, rootLabel))
 
-    val ctype = factory.createSpecimenContainerType(factory.createContainerSchema)
+    val ctype = factory.createSpecimenContainerType(centre, factory.createContainerSchema)
+
     factory
       .createSpecimenContainer(ctype, storageParent, ContainerSchemaLabel(storageSchema.id, storageLabel))
   }

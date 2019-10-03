@@ -202,7 +202,7 @@ class ContainerTypesProcessor @Inject()(
     ): ServiceValidation[ContainerTypeEvent] = {
     val centreId = CentreId(cmd.centreId)
     for {
-      centre       <- centreRepository.getEnabled(centreId)
+      centre       <- centreRepository.getByKey(centreId)
       updatedCtype <- ctype.withCentre(centreId)
     } yield ContainerTypeEvent(ctype.id.id)
       .update(_.sessionUserId          := cmd.sessionUserId,
@@ -516,6 +516,7 @@ class ContainerTypesProcessor @Inject()(
     val centreId = CentreId(cmd.centreId)
     for {
       newId         <- validNewIdentity(containerTypeRepository.nextIdentity, containerTypeRepository)
+      centre        <- centreRepository.getByKey(centreId)
       nameAvailable <- nameAvailable(cmd.name, centreId)
       newCtype      <- cmdToCtype(cmd, newId)
     } yield ctypeToEvent(cmd, newId)

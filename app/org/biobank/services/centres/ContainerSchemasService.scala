@@ -24,9 +24,9 @@ import scalaz.Validation.FlatMap._
 @ImplementedBy(classOf[ContainerSchemasServiceImpl])
 trait ContainerSchemasService extends BbwebService {
 
-  def getSchemaBySlug(requestUserId: UserId, slug: Slug): Future[ServiceValidation[ContainerSchemaDto]]
+  def getBySlug(requestUserId: UserId, slug: Slug): Future[ServiceValidation[ContainerSchemaDto]]
 
-  def searchSchemas(
+  def search(
       requestUserId: UserId,
       centreId:      CentreId,
       query:         PagedQuery
@@ -46,26 +46,20 @@ class ContainerSchemasServiceImpl @Inject()(
     val centreRepository:                              CentreRepository,
     val schemaRepository:                              ContainerSchemaRepository)
     extends ContainerSchemasService with AccessChecksSerivce with ServicePermissionChecks {
-  import org.biobank.domain.access.AccessItem._
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
-  def getSchemaBySlug(requestUserId: UserId, slug: Slug): Future[ServiceValidation[ContainerSchemaDto]] =
+  def getBySlug(requestUserId: UserId, slug: Slug): Future[ServiceValidation[ContainerSchemaDto]] =
     Future {
-      for {
-        schema <- schemaRepository.getBySlug(slug)
-        permission <- accessService.hasPermissionAndIsMember(requestUserId,
-                                                             PermissionId.ContainerRead,
-                                                             None,
-                                                             Some(schema.centreId))
-        centre <- centreRepository.getByKey(schema.centreId)
-      } yield ContainerSchemaDto(schema, centre)
+      whenSchemaPermitted(requestUserId, slug) { (centre, schema) =>
+        ContainerSchemaDto(schema, centre).successNel[String]
+      }
     }
 
   /** All [[domain.containers.ContainerSchema ContainerSchemas]] for a [domain.centres.Centre Centre], and all
    * shared [[domain.containers.ContainerSchema ContainerSchemas]] for other [domain.centres.Centre Centres].
    */
-  def searchSchemas(
+  def search(
       requestUserId: UserId,
       centreId:      CentreId,
       query:         PagedQuery
@@ -146,6 +140,20 @@ class ContainerSchemasServiceImpl @Inject()(
                  () => block(centre)
                )
     } yield result
+
+  private def whenSchemaPermitted[T](
+      requestUserId: UserId,
+      schemaSlug:    Slug
+    )(block:         (Centre, ContainerSchema) => ServiceValidation[T]
+    ): ServiceValidation[T] = {
+    for {
+      schema <- schemaRepository.getBySlug(schemaSlug)
+      centre <- centreRepository.getByKey(schema.centreId)
+      result <- whenPermittedAndIsMember(requestUserId, PermissionId.ContainerRead, None, Some(centre.id))(
+                 () => block(centre, schema)
+               )
+    } yield result
+  }
 
   private def filterSchemasInternal(
       unfilteredSchemas: Set[ContainerSchema],

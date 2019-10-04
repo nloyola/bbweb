@@ -192,7 +192,7 @@ class ContainerSchemasProcessor @Inject()(
     ): ServiceValidation[ContainerSchemaEvent] = {
     val centreId = CentreId(cmd.centreId)
     for {
-      centre        <- centreRepository.getEnabled(centreId)
+      centre        <- centreRepository.getByKey(centreId)
       updatedSchema <- schema.withCentre(centreId)
     } yield ContainerSchemaEvent(schema.id.id)
       .update(_.sessionUserId          := cmd.sessionUserId,

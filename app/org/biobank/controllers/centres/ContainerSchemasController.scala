@@ -37,7 +37,7 @@ class ContainerSchemasController @Inject()(
 
   def getBySlug(slug: Slug): Action[Unit] =
     action.async(parse.empty) { implicit request =>
-      val v = service.getSchemaBySlug(request.identity.user.id, slug)
+      val v = service.getBySlug(request.identity.user.id, slug)
       validationReply(v)
     }
 
@@ -46,7 +46,7 @@ class ContainerSchemasController @Inject()(
       PagedQueryHelper(request.rawQueryString, PageSizeMax).fold(err => {
         validationReply(Future.successful(err.failure[PagedResults[ContainerSchemaDto]]))
       }, pagedQuery => {
-        validationReply(service.searchSchemas(request.identity.user.id, centreId, pagedQuery))
+        validationReply(service.search(request.identity.user.id, centreId, pagedQuery))
       })
     }
 

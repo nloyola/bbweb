@@ -169,21 +169,6 @@ class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceF
         }
       }
 
-      it("user has access only to container schemas corresponding his membership") {
-        val f = fixtureAddAll
-        persistRoles(f)
-
-        val sibling = f.createSibling(factory) // should show up in results
-        addToRepository(sibling)
-
-        val query = PagedQuery(new FilterString(""), new SortString(""), 0, 10)
-
-        schemasService.search(f.centreOnlyAdminUser.id, f.centre.id, query).futureValue.mustSucceed { reply =>
-          reply.items.length must be > 1
-          reply.items.map(c => c.id) must contain(f.schema.id.id)
-        }
-      }
-
       it("user does not have access to container schema if centre not in membership") {
         val f = fixtureAddAll
         persistRoles(f)

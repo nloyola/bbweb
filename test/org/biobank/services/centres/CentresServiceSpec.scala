@@ -107,277 +107,272 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
     centreRepository.removeAll
   }
 
-  describe("CentresService") {
+  describe("when getting centre counts") {
 
-    describe("when getting centre counts") {
-
-      it("users can access") {
-        val f = createFixture
-        forAll(f.usersCanReadTable) { (user, label) =>
-          info(label)
-          centresService.getCentresCount(user.id) mustSucceed { count =>
-            count must be(1)
-          }
+    it("users can access") {
+      val f = createFixture
+      forAll(f.usersCanReadTable) { (user, label) =>
+        info(label)
+        centresService.getCentresCount(user.id) mustSucceed { count =>
+          count must be(1)
         }
       }
-
-      it("users cannot access") {
-        val f = createFixture
-
-        info("no membership user")
-        centresService.getCentresCount(f.noMembershipUser.id) mustSucceed { count =>
-          count must be(0)
-        }
-
-        info("no permission user")
-        centresService.getCentresCount(f.noCentrePermissionUser.id) mustFail "Unauthorized"
-      }
-
     }
 
-    describe("when getting centre counts by status") {
+    it("users cannot access") {
+      val f = createFixture
 
-      it("users can access") {
-        val f = createFixture
-        forAll(f.usersCanReadTable) { (user, label) =>
-          info(label)
-          centresService.getCountsByStatus(user.id) mustSucceed { counts =>
-            counts.total must be(1)
-          }
-        }
+      info("no membership user")
+      centresService.getCentresCount(f.noMembershipUser.id) mustSucceed { count =>
+        count must be(0)
       }
 
-      it("users cannot access") {
-        val f = createFixture
-        info("no membership user")
-        centresService.getCountsByStatus(f.noMembershipUser.id) mustSucceed { counts =>
-          counts.total must be(0)
-        }
-
-        info("no permission user")
-        centresService.getCountsByStatus(f.noCentrePermissionUser.id) mustFail "Unauthorized"
-      }
-
+      info("no permission user")
+      centresService.getCentresCount(f.noCentrePermissionUser.id) mustFail "Unauthorized"
     }
 
-    describe("when getting centres") {
+  }
 
-      it("users can access") {
-        val f     = createFixture
-        val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
-        forAll(f.usersCanReadTable) { (user, label) =>
-          info(label)
-          centresService.getCentres(user.id, query).futureValue.mustSucceed { pagedResults =>
-            pagedResults.items must have length (1)
-          }
+  describe("when getting centre counts by status") {
+
+    it("users can access") {
+      val f = createFixture
+      forAll(f.usersCanReadTable) { (user, label) =>
+        info(label)
+        centresService.getCountsByStatus(user.id) mustSucceed { counts =>
+          counts.total must be(1)
         }
       }
-
-      it("users cannot access") {
-        val f     = createFixture
-        val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
-        info("no membership user")
-        centresService.getCentres(f.noMembershipUser.id, query).futureValue.mustSucceed { pagedResults =>
-          pagedResults.items must have length (0)
-        }
-
-        info("no permission user")
-        centresService.getCentres(f.noCentrePermissionUser.id, query).futureValue.mustFail("Unauthorized")
-      }
-
     }
 
-    describe("when getting a centre") {
-
-      it("users can access") {
-        val f = createFixture
-        forAll(f.usersCanReadTable) { (user, label) =>
-          info(label)
-          centresService.getCentre(user.id, f.centre.id) mustSucceed { result =>
-            result.id must be(f.centre.id)
-          }
-        }
+    it("users cannot access") {
+      val f = createFixture
+      info("no membership user")
+      centresService.getCountsByStatus(f.noMembershipUser.id) mustSucceed { counts =>
+        counts.total must be(0)
       }
 
-      it("users cannot access") {
-        val f = createFixture
-
-        info("no membership user")
-        centresService.getCentre(f.noMembershipUser.id, f.centre.id) mustFail "Unauthorized"
-
-        info("no permission user")
-        centresService.getCentre(f.noCentrePermissionUser.id, f.centre.id) mustFail "Unauthorized"
-      }
-
+      info("no permission user")
+      centresService.getCountsByStatus(f.noCentrePermissionUser.id) mustFail "Unauthorized"
     }
 
-    describe("search locations") {
+  }
 
-      it("users can access") {
-        val f = createFixture
-        forAll(f.usersCanReadTable) { (user, label) =>
-          info(label)
-          val cmd = SearchCentreLocationsCmd(sessionUserId = user.id.id, filter = "", limit = 10)
-          centresService.searchLocations(cmd).mustSucceed { centres =>
-            centres must have size (1)
-          }
+  describe("when getting centres") {
+
+    it("users can access") {
+      val f     = createFixture
+      val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
+      forAll(f.usersCanReadTable) { (user, label) =>
+        info(label)
+        centresService.getCentres(user.id, query).futureValue.mustSucceed { pagedResults =>
+          pagedResults.items must have length (1)
         }
       }
+    }
 
-      it("users cannot access") {
-        val f   = createFixture
-        var cmd = SearchCentreLocationsCmd(sessionUserId = f.noMembershipUser.id.id, filter = "", limit = 10)
+    it("users cannot access") {
+      val f     = createFixture
+      val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
+      info("no membership user")
+      centresService.getCentres(f.noMembershipUser.id, query).futureValue.mustSucceed { pagedResults =>
+        pagedResults.items must have length (0)
+      }
 
-        info("no membership user")
+      info("no permission user")
+      centresService.getCentres(f.noCentrePermissionUser.id, query).futureValue.mustFail("Unauthorized")
+    }
+
+  }
+
+  describe("when getting a centre") {
+
+    it("users can access") {
+      val f = createFixture
+      forAll(f.usersCanReadTable) { (user, label) =>
+        info(label)
+        centresService.getCentre(user.id, f.centre.id) mustSucceed { result =>
+          result.id must be(f.centre.id)
+        }
+      }
+    }
+
+    it("users cannot access") {
+      val f = createFixture
+
+      info("no membership user")
+      centresService.getCentre(f.noMembershipUser.id, f.centre.id) mustFail "Unauthorized"
+
+      info("no permission user")
+      centresService.getCentre(f.noCentrePermissionUser.id, f.centre.id) mustFail "Unauthorized"
+    }
+
+  }
+
+  describe("search locations") {
+
+    it("users can access") {
+      val f = createFixture
+      forAll(f.usersCanReadTable) { (user, label) =>
+        info(label)
+        val cmd = SearchCentreLocationsCmd(sessionUserId = user.id.id, filter = "", limit = 10)
         centresService.searchLocations(cmd).mustSucceed { centres =>
-          centres must have size (0)
+          centres must have size (1)
         }
-
-        cmd =
-          SearchCentreLocationsCmd(sessionUserId = f.noCentrePermissionUser.id.id, filter = "", limit = 10)
-        info("no permission user")
-        centresService.searchLocations(cmd) mustFail "Unauthorized"
       }
-
     }
 
-    describe("when adding a centre") {
+    it("users cannot access") {
+      val f   = createFixture
+      var cmd = SearchCentreLocationsCmd(sessionUserId = f.noMembershipUser.id.id, filter = "", limit = 10)
 
-      it("users can access") {
-        val f = createFixture
+      info("no membership user")
+      centresService.searchLocations(cmd).mustSucceed { centres =>
+        centres must have size (0)
+      }
 
-        forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
-          val cmd =
-            AddCentreCmd(sessionUserId = user.id.id, name = f.centre.name, description = f.centre.description)
-          centreRepository.removeAll
-          centresService.processCommand(cmd).futureValue mustSucceed { s =>
-            s.name must be(f.centre.name)
+      cmd = SearchCentreLocationsCmd(sessionUserId = f.noCentrePermissionUser.id.id, filter = "", limit = 10)
+      info("no permission user")
+      centresService.searchLocations(cmd) mustFail "Unauthorized"
+    }
+
+  }
+
+  describe("when adding a centre") {
+
+    it("users can access") {
+      val f = createFixture
+
+      forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
+        val cmd =
+          AddCentreCmd(sessionUserId = user.id.id, name = f.centre.name, description = f.centre.description)
+        centreRepository.removeAll
+        centresService.processCommand(cmd).futureValue mustSucceed { s =>
+          s.name must be(f.centre.name)
+        }
+      }
+    }
+
+    it("users cannot access") {
+      val f = createFixture
+
+      forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
+        val cmd =
+          AddCentreCmd(sessionUserId = user.id.id, name = f.centre.name, description = f.centre.description)
+        centresService.processCommand(cmd).futureValue mustFail "Unauthorized"
+      }
+    }
+
+  }
+
+  describe("update a centre") {
+
+    it("users can access") {
+      val f     = createFixture
+      val study = factory.createDisabledStudy
+      studyRepository.put(study)
+
+      forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
+        info(label)
+        forAll(updateCommandsTable(user.id, f.centre, f.location, study)) { cmd =>
+          val centre = cmd match {
+            case _: AddCentreLocationCmd     => f.centre.copy(locations = Set.empty[Location])
+            case _: RemoveStudyFromCentreCmd => f.centre.copy(studyIds  = Set(study.id))
+            case _ => f.centre
+          }
+
+          centreRepository.put(centre) // restore the centre to it's previous state
+          centresService.processCommand(cmd).futureValue mustSucceed { c =>
+            c.id must be(centre.id.id)
           }
         }
       }
+    }
 
-      it("users cannot access") {
-        val f = createFixture
+    it("users cannot update") {
+      val f     = createFixture
+      val study = factory.createDisabledStudy
+      studyRepository.put(study)
 
-        forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
-          val cmd =
-            AddCentreCmd(sessionUserId = user.id.id, name = f.centre.name, description = f.centre.description)
+      forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
+        forAll(updateCommandsTable(user.id, f.centre, f.location, study)) { cmd =>
           centresService.processCommand(cmd).futureValue mustFail "Unauthorized"
         }
       }
-
     }
 
-    describe("update a centre") {
+  }
 
-      it("users can access") {
-        val f     = createFixture
-        val study = factory.createDisabledStudy
-        studyRepository.put(study)
+  describe("change a centre's state") {
 
-        forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
-          info(label)
-          forAll(updateCommandsTable(user.id, f.centre, f.location, study)) { cmd =>
-            val centre = cmd match {
-              case _: AddCentreLocationCmd     => f.centre.copy(locations = Set.empty[Location])
-              case _: RemoveStudyFromCentreCmd => f.centre.copy(studyIds  = Set(study.id))
-              case _ => f.centre
-            }
-
-            centreRepository.put(centre) // restore the centre to it's previous state
-            centresService.processCommand(cmd).futureValue mustSucceed { c =>
-              c.id must be(centre.id.id)
-            }
-          }
-        }
-      }
-
-      it("users cannot update") {
-        val f     = createFixture
-        val study = factory.createDisabledStudy
-        studyRepository.put(study)
-
-        forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
-          forAll(updateCommandsTable(user.id, f.centre, f.location, study)) { cmd =>
-            centresService.processCommand(cmd).futureValue mustFail "Unauthorized"
-          }
-        }
-      }
-
-    }
-
-    describe("change a centre's state") {
-
-      it("users can access") {
-        val f = createCentresOfAllStatesFixure
-        forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
-          info(label)
-          forAll(stateChangeCommandsTable(user.id, f.disabledCentre, f.enabledCentre)) { cmd =>
-            Set(f.disabledCentre, f.enabledCentre).foreach(addToRepository)
-            centresService.processCommand(cmd).futureValue mustSucceed { c =>
-              c.id must be(cmd.id)
-            }
-          }
-        }
-      }
-
-      it("users cannot update") {
-        val f = createCentresOfAllStatesFixure
-        forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
-          info(label)
-          forAll(stateChangeCommandsTable(user.id, f.disabledCentre, f.enabledCentre)) { cmd =>
-            centresService.processCommand(cmd).futureValue mustFail "Unauthorized"
+    it("users can access") {
+      val f = createCentresOfAllStatesFixure
+      forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
+        info(label)
+        forAll(stateChangeCommandsTable(user.id, f.disabledCentre, f.enabledCentre)) { cmd =>
+          Set(f.disabledCentre, f.enabledCentre).foreach(addToRepository)
+          centresService.processCommand(cmd).futureValue mustSucceed { c =>
+            c.id must be(cmd.id)
           }
         }
       }
     }
 
-    describe("centres membership") {
-
-      it("user has access to all centres corresponding his membership") {
-        val secondCentre = factory.createDisabledCentre // should show up in results
-        val query        = PagedQuery(new FilterString(""), new SortString(""), 0, 10)
-        addToRepository(secondCentre)
-
-        val f = createFixture
-        centresService.getCentres(f.allCentresAdminUser.id, query).futureValue.mustSucceed { reply =>
-          reply.items must have size (2)
-          val centreIds = reply.items.map(c => c.id).sorted
-          centreIds must equal(List(f.centre.id.id, secondCentre.id.id).sorted)
+    it("users cannot update") {
+      val f = createCentresOfAllStatesFixure
+      forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
+        info(label)
+        forAll(stateChangeCommandsTable(user.id, f.disabledCentre, f.enabledCentre)) { cmd =>
+          centresService.processCommand(cmd).futureValue mustFail "Unauthorized"
         }
       }
+    }
+  }
 
-      it("user has access only to centres corresponding his membership") {
-        val secondCentre = factory.createDisabledCentre // should show up in results
-        val query        = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
-        addToRepository(secondCentre)
+  describe("centres membership") {
 
-        val f = createFixture
-        centresService.getCentres(f.centreOnlyAdminUser.id, query).futureValue.mustSucceed { reply =>
-          reply.items must have size (1)
-          reply.items.map(c => c.id) must contain(f.centre.id.id)
-        }
+    it("user has access to all centres corresponding his membership") {
+      val f            = createFixture
+      val secondCentre = factory.createDisabledCentre // should show up in results
+      addToRepository(secondCentre)
+
+      val query = PagedQuery(new FilterString(""), new SortString(""), 0, 10)
+      centresService.getCentres(f.allCentresAdminUser.id, query).futureValue.mustSucceed { reply =>
+        reply.items.length must be > 1
+        val centreIds = reply.items.map(c => c.id).sorted
+        centreIds must equal(List(f.centre.id.id, secondCentre.id.id).sorted)
       }
+    }
 
-      it("user does not have access to centre if not in membership") {
-        val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
-        val f     = createFixture
+    it("user has access only to centres corresponding his membership") {
+      val f            = createFixture
+      val secondCentre = factory.createDisabledCentre // should show up in results
+      addToRepository(secondCentre)
 
-        // remove all studies from membership
-        val noCentresMembership = f.centreOnlyMembership.copy(
-          centreData = f.centreOnlyMembership.centreData.copy(ids = Set.empty[CentreId])
-        )
-        addToRepository(noCentresMembership)
-
-        // should not show up in results
-        val secondStudy = factory.createDisabledStudy
-        addToRepository(secondStudy)
-
-        centresService.getCentres(f.centreUser.id, query).futureValue.mustSucceed { reply =>
-          reply.items must have size (0)
-        }
+      val query = PagedQuery(new FilterString(""), new SortString(""), 0, 10)
+      centresService.getCentres(f.centreOnlyAdminUser.id, query).futureValue.mustSucceed { reply =>
+        reply.items must have size (1)
+        reply.items.map(c => c.id) must contain(f.centre.id.id)
       }
+    }
 
+    it("user does not have access to centre if not in membership") {
+      val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
+      val f     = createFixture
+
+      // remove all studies from membership
+      val noCentresMembership = f.centreOnlyMembership.copy(
+        centreData = f.centreOnlyMembership.centreData.copy(ids = Set.empty[CentreId])
+      )
+      addToRepository(noCentresMembership)
+
+      // should not show up in results
+      val secondStudy = factory.createDisabledStudy
+      addToRepository(secondStudy)
+
+      centresService.getCentres(f.centreUser.id, query).futureValue.mustSucceed { reply =>
+        reply.items must have size (0)
+      }
     }
 
   }

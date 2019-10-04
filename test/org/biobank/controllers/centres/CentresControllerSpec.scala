@@ -287,7 +287,7 @@ class CentresControllerSpec extends ControllerFixture with PagedResultsSharedSpe
     describe("POST /api/centres") {
 
       it("add a centre") {
-        val centre  = factory.createDisabledCentre
+        val centre  = factory.createDisabledCentre.copy(locations = Set.empty[Location])
         val addJson = Json.obj("name" -> centre.name, "description" -> centre.description)
         val reply   = makeAuthRequest(POST, uri(""), addJson).value
         reply must beOkResponseWithJsonReply
@@ -445,7 +445,7 @@ class CentresControllerSpec extends ControllerFixture with PagedResultsSharedSpe
       }
 
       it("not enable a centre without locations") {
-        val centre = factory.createDisabledCentre
+        val centre = factory.createDisabledCentre.copy(locations = Set.empty[Location])
         centreRepository.put(centre)
 
         val updateJson = Json.obj("expectedVersion" -> Some(centre.version))
@@ -515,7 +515,7 @@ class CentresControllerSpec extends ControllerFixture with PagedResultsSharedSpe
     describe("POST /api/centres/locations/:id") {
 
       it("add a location to a disabled centre") {
-        val centre = factory.createDisabledCentre
+        val centre = factory.createDisabledCentre.copy(locations = Set.empty[Location])
         centreRepository.put(centre)
 
         val location = factory.createLocation

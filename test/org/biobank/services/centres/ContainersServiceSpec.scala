@@ -117,23 +117,6 @@ class RootContainersServiceSpec
         }
       }
 
-      it("user has access only to containers corresponding his membership") {
-        val f = fixture
-        f.allEntities.foreach(addToRepository)
-        persistRoles(f)
-
-        val siblingContainer = f.createSiblingContainer(factory) // should show up in results
-        addToRepository(siblingContainer)
-
-        val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
-
-        containersService.search(f.centreOnlyAdminUser.id, f.centre.id, query).futureValue.mustSucceed {
-          reply =>
-            reply.items must have size (1)
-            reply.items.map(c => c.id) must contain(f.container.id.id)
-        }
-      }
-
       it("user does not have access to container if centre not in membership") {
         val f = fixture
         f.allEntities.foreach(addToRepository)

@@ -1,7 +1,7 @@
 package org.biobank.domain.centres
 
 import java.time.OffsetDateTime
-import org.biobank.domain.DomainSpec
+import org.biobank.domain.{DomainSpec, Location}
 import org.biobank.fixtures.NameGenerator
 import org.slf4j.LoggerFactory
 import scalaz.Scalaz._
@@ -17,7 +17,7 @@ class CentreSpec extends DomainSpec {
   describe("A centre") {
 
     it("be created") {
-      val centre = factory.createDisabledCentre
+      val centre = factory.createDisabledCentre.copy(locations = Set.empty[Location])
       DisabledCentre
         .create(id          = centre.id,
                 version     = 0,
@@ -37,7 +37,7 @@ class CentreSpec extends DomainSpec {
     }
 
     it("have it's name updated") {
-      val centre = factory.createDisabledCentre
+      val centre = factory.createDisabledCentre.copy(locations = Set.empty[Location])
       val name   = nameGenerator.next[Centre]
 
       centre.withName(name) mustSucceed { updatedCentre =>
@@ -54,7 +54,7 @@ class CentreSpec extends DomainSpec {
     }
 
     it("have it's description updated") {
-      val centre      = factory.createDisabledCentre
+      val centre      = factory.createDisabledCentre.copy(locations = Set.empty[Location])
       val description = Some(nameGenerator.next[Centre])
 
       centre.withDescription(description) mustSucceed { updatedCentre =>
@@ -82,7 +82,7 @@ class CentreSpec extends DomainSpec {
     }
 
     it("not be enabled if it has no locations") {
-      val centre = factory.createDisabledCentre
+      val centre = factory.createDisabledCentre.copy(locations = Set.empty[Location])
       centre.enable() mustFail ".*centre does not have locations.*"
     }
 

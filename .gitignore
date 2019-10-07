@@ -53,3 +53,5 @@ logback-test.xml
 /public
 .metals/
 .bloop/
+
+project/metals.sbt

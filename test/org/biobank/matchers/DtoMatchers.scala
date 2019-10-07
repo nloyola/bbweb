@@ -106,8 +106,8 @@ trait DtoMatchers {
               ("state"                -> (left.state equals specimen.state.id)),
               ("inventoryId"          -> (left.inventoryId equals specimen.inventoryId)),
               ("specimenDefinitionId" -> (left.specimenDefinitionId equals specimen.specimenDefinitionId.id)),
-              ("originLocationInfo"   -> (left.originLocationInfo.locationId equals specimen.originLocationId.id)),
-              ("locationInfo"         -> (left.locationInfo.locationId equals specimen.locationId.id)),
+              ("originLocationInfo"   -> (left.originLocationInfo.location.id equals specimen.originLocationId.id)),
+              ("locationInfo"         -> (left.locationInfo.location.id equals specimen.locationId.id)),
               ("containerId"          -> (left.containerId equals specimen.containerId)),
               ("label"                -> (left.label equals specimen.schemaLabel.map(_.label))),
               ("timeCreated"          -> timeCreatedMatcher.matches))
@@ -421,13 +421,13 @@ trait DtoMatchers {
     new Matcher[CentreLocationInfo] {
 
       def apply(left: CentreLocationInfo) = {
-        val centreIdsMatch = left.centreId equals centreId.id
+        val centreIdsMatch = left.id equals centreId.id
         if (!centreIdsMatch) {
-          MatchResult(false, s"centreIds do not match: expected: $centreId, actual ${left.centreId}", "")
+          MatchResult(false, s"centreIds do not match: expected: $centreId, actual ${left.id}", "")
         } else {
-          MatchResult(left.locationId equals locationId.id,
-                      s"locationIds do not match: expected: $locationId, actual ${left.locationId}",
-                      s"locationIds match: expected: $locationId, actual ${left.locationId}")
+          MatchResult(left.location.id equals locationId.id,
+                      s"locationIds do not match: expected: $locationId, actual ${left.location.id}",
+                      s"locationIds match: expected: $locationId, actual ${left.location.id}")
         }
       }
     }
@@ -520,7 +520,7 @@ trait DtoMatchers {
         val matchers =
           Map(("label"              -> (left.label equals container.label)),
               ("enabled"            -> (left.enabled equals container.enabled)),
-              ("centreLocationInfo" -> (left.centreLocationInfo.locationId equals container.locationId.id)),
+              ("centreLocationInfo" -> (left.centreLocationInfo.location.id equals container.locationId.id)),
               ("temperature"        -> (left.temperature equals container.temperature)),
               ("constraints"        -> (constraintsMatcher.matches))) ++
             dtoAndContainerMatches(left, container)

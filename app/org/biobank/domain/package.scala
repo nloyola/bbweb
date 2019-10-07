@@ -20,17 +20,17 @@ package domain {
     val state: EntityState
   }
 
-  trait HasName {
-
-    /** A short identifying name. */
-    val name: String
-  }
-
   trait HasSlug {
 
     /** A unique string that can be used in a URL to identify a domain entity. */
     val slug: Slug
 
+  }
+
+  trait HasName {
+
+    /** A short identifying name. */
+    val name: String
   }
 
   trait HasUniqueName extends HasName

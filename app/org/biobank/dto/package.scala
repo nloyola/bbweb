@@ -18,52 +18,23 @@ package dto {
 
   trait Dto
 
-  trait IdentifiedDomainObjectDto {
+  trait EntityInfo {
     val id:   String
     val slug: Slug
     val name: String
   }
 
-  final case class IdentifiedValueObjectInfoDto(id: String, slug: Slug, name: String)
-      extends IdentifiedDomainObjectDto {
-
-    override def toString: String =
-      s"""|${this.getClass.getSimpleName}: {
-          |  id:   $id,
-          |  slug: $slug,
-          |  name: $name
-          |}""".stripMargin
-  }
-
-  object IdentifiedValueObjectInfoDto {
-
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply[T <: IdentifiedDomainObject[_] with HasSlug with HasName](
-        entity: T
-      ): IdentifiedValueObjectInfoDto =
-      IdentifiedValueObjectInfoDto(entity.id.toString, entity.slug, entity.name)
-
-    def compareByName(a: IdentifiedValueObjectInfoDto, b: IdentifiedValueObjectInfoDto): Boolean =
-      (a.name compareToIgnoreCase b.name) < 0
-
-    implicit val identifiedValueObjectInfoDtoFormat: Format[IdentifiedValueObjectInfoDto] =
-      Json.format[IdentifiedValueObjectInfoDto]
-
-  }
-
-  final case class EntityInfoDto(id: String, slug: Slug, name: String) extends IdentifiedDomainObjectDto
+  final case class EntityInfoDto(id: String, slug: Slug, name: String) extends EntityInfo
 
   object EntityInfoDto {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply[T <: ConcurrencySafeEntity[_] with HasSlug with HasName](entity: T): EntityInfoDto =
+    def apply[T <: IdentifiedDomainObject[_] with HasSlug with HasName](entity: T): EntityInfoDto =
       EntityInfoDto(entity.id.toString, entity.slug, entity.name)
 
-    def compareByName(a: EntityInfoDto, b: EntityInfoDto): Boolean =
-      (a.name compareToIgnoreCase b.name) < 0
+    def compareByName(a: EntityInfoDto, b: EntityInfoDto): Boolean = (a.name compareToIgnoreCase b.name) < 0
 
-    implicit val entityInfoDtoFormat: Format[EntityInfoDto] =
-      Json.format[EntityInfoDto]
+    implicit val entityInfoDtoFormat: Format[EntityInfoDto] = Json.format[EntityInfoDto]
 
   }
 
@@ -123,13 +94,23 @@ package dto {
 
   }
 
-  final case class CentreLocationInfo(centreId: String, locationId: String, name: String)
+  final case class CentreLocationInfo(
+      id:           String,
+      slug:         Slug,
+      name:         String,
+      location:     EntityInfoDto,
+      combinedName: String)
+      extends EntityInfo
 
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   object CentreLocationInfo {
 
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def apply(centre: Centre, location: Location): CentreLocationInfo =
-      CentreLocationInfo(centre.id.id, location.id.id, s"${centre.name}: ${location.name}")
+      CentreLocationInfo(id           = centre.id.id,
+                         slug         = centre.slug,
+                         name         = centre.name,
+                         location     = EntityInfoDto(location),
+                         combinedName = s"${centre.name}: ${location.name}")
 
     implicit val centreLocationInfoFormat: Format[CentreLocationInfo] = Json.format[CentreLocationInfo]
 
@@ -477,13 +458,13 @@ package dto {
       id:                      String,
       slug:                    Slug,
       name:                    String,
-      specimenDefinitionNames: Set[IdentifiedValueObjectInfoDto])
+      specimenDefinitionNames: Set[EntityInfoDto])
 
   object CollectedSpecimenDefinitionNames {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def apply(eventType: CollectionEventType): CollectedSpecimenDefinitionNames = {
-      val definitionNames = eventType.specimenDefinitions.map(sd => IdentifiedValueObjectInfoDto(sd))
+      val definitionNames = eventType.specimenDefinitions.map(sd => EntityInfoDto(sd))
       CollectedSpecimenDefinitionNames(eventType.id.id, eventType.slug, eventType.name, definitionNames)
     }
 
@@ -496,7 +477,7 @@ package dto {
       id:                     String,
       slug:                   Slug,
       name:                   String,
-      specimenDefinitionName: IdentifiedValueObjectInfoDto)
+      specimenDefinitionName: EntityInfoDto)
 
   object ProcessedSpecimenDefinitionName {
 
@@ -505,7 +486,7 @@ package dto {
       ProcessedSpecimenDefinitionName(processingType.id.id,
                                       processingType.slug,
                                       processingType.name,
-                                      IdentifiedValueObjectInfoDto(processingType.output.specimenDefinition))
+                                      EntityInfoDto(processingType.output.specimenDefinition))
 
     implicit val specimenDefinitionNamesFormat: Format[ProcessedSpecimenDefinitionName] =
       Json.format[ProcessedSpecimenDefinitionName]

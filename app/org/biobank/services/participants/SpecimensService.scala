@@ -253,13 +253,12 @@ class SpecimensServiceImpl @Inject()(
       ceventType         <- collectionEventTypeRepository.getByKey(cevent.collectionEventTypeId)
       specimenDefinition <- ceventType.specimenDefinition(specimen.specimenDefinitionId)
       originCentre       <- centreRepository.getByLocationId(specimen.originLocationId)
-      originLocationName <- originCentre.locationName(specimen.originLocationId)
+      originLocation     <- originCentre.locationWithId(specimen.originLocationId)
       centre             <- centreRepository.getByLocationId(specimen.locationId)
-      locationName       <- centre.locationName(specimen.locationId)
+      location           <- centre.locationWithId(specimen.locationId)
     } yield {
-      val originLocationInfo =
-        CentreLocationInfo(originCentre.id.id, specimen.originLocationId.id, originLocationName)
-      val locationInfo = CentreLocationInfo(centre.id.id, specimen.locationId.id, locationName)
+      val originLocationInfo = CentreLocationInfo(originCentre, originLocation)
+      val locationInfo       = CentreLocationInfo(centre, location)
       specimen.createDto(cevent, ceventType.name, specimenDefinition, originLocationInfo, locationInfo)
     }
 

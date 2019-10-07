@@ -53,7 +53,7 @@ final case class Location(
     postalCode:     String,
     poBoxNumber:    Option[String],
     countryIsoCode: String)
-    extends IdentifiedValueObject[LocationId] with HasName {
+    extends IdentifiedValueObject[LocationId] with HasSlug with HasName {
 
   override def toString: String =
     s"""|${this.getClass.getSimpleName}: {

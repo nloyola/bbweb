@@ -819,8 +819,9 @@ class CentresControllerSpec extends ControllerFixture with PagedResultsSharedSpe
       }
 
       it("return centre locations filtered by name") {
-        val centres = (1 to 2).map { _ =>
-          factory.createDisabledCentre.copy(locations = Set(factory.createLocation))
+        val centres = faker.Lorem.words(2).map { name =>
+          val location = factory.createLocation.copy(name = name)
+          factory.createDisabledCentre.copy(locations = Set(location))
         }
         val centre   = centres(0)
         val location = centre.locations.head

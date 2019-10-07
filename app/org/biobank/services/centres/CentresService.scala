@@ -160,7 +160,7 @@ class CentresServiceImpl @Inject()(
           allLocationInfos
         } else {
           allLocationInfos.filter { l =>
-            l.name.toLowerCase contains filterLowerCase
+            l.location.name.toLowerCase contains filterLowerCase
           }
         }
 

@@ -33,7 +33,7 @@ trait CentrePredicates extends HasNamePredicates[Centre] {
  *
  */
 sealed trait Centre
-    extends ConcurrencySafeEntity[CentreId] with HasState with HasUniqueName with HasSlug
+    extends ConcurrencySafeEntity[CentreId] with HasState with HasSlug with HasUniqueName
     with HasOptionalDescription {
   import org.biobank.CommonValidations._
 

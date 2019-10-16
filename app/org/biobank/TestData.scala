@@ -189,11 +189,12 @@ object TestData {
 object BbpspTestData {
   import TestData._
 
-  val BbpspStudyId:        StudyId      = StudyId("BBPSP_id")
-  val CentreNames:         List[String] = List("100-Calgary AB", "101-London ON")
-  val NumParticipants:     Int          = 3
-  val EventTypeNames:      List[String] = List("1 - Default Event", "2 - Second Event")
-  val ProcessingTypeNames: List[String] = List("1 - Step 1", "2 - Step 2")
+  val BbpspStudyId:        StudyId        = StudyId("BBPSP_id")
+  val CentreNames:         List[String]   = List(TestData.centreCalgaryName, TestData.centreLondonName)
+  val CentreIds:           List[CentreId] = List(TestData.centreCalgaryId, TestData.centreLondonId)
+  val NumParticipants:     Int            = 3
+  val EventTypeNames:      List[String]   = List("1 - Default Event", "2 - Second Event")
+  val ProcessingTypeNames: List[String]   = List("1 - Step 1", "2 - Step 2")
 
   val ParticipantAnnotationTypeHashids: Hashids = Hashids("bbpsp-participant-annotation-types")
   val EventTypeAnnotationTypeHashids:   Hashids = Hashids("bbpsp-collection-event-annotation-types")
@@ -760,7 +761,7 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
        *
        * - takes all the specimens at the second centre and assigns them to the shipment in PACKED state
        */
-      val originCentreId    = centreCalgaryName
+      val originCentreId    = centreCalgaryId
       val originLocationId  = LocationId(s"${originCentreId}:Primary")
       val specimens         = testSpecimens
       val halfSpecimenCount = specimens.filter(_.locationId == originLocationId).size / 2
@@ -840,9 +841,8 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
     if (!loadSpecimenTestData) {
       List.empty[Specimen]
     } else {
-      BbpspTestData.CentreNames.zipWithIndex.flatMap {
-        case (centreName, centreIndex) =>
-          val centreId   = CentreId(s"${centreName}_id")
+      BbpspTestData.CentreIds.zipWithIndex.flatMap {
+        case (centreId, centreIndex) =>
           val locationId = LocationId(s"${centreId}:Primary")
 
           BbpspTestData.CollectedSpecimenDefinitions.zipWithIndex

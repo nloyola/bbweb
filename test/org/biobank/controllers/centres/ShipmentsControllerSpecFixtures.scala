@@ -9,16 +9,16 @@ abstract private[centres] class ShipmentsControllerSpecFixtures
 
   override def centresFixture = {
     val fixture = super.centresFixture
-    centreRepository.put(fixture.fromCentre)
-    centreRepository.put(fixture.toCentre)
+    centreRepository.put(fixture.originCentre)
+    centreRepository.put(fixture.destinationCentre)
     fixture
   }
 
   override def specimensFixture(numSpecimens: Int) = {
     val f = super.specimensFixture(numSpecimens)
 
-    centreRepository.put(f.fromCentre)
-    centreRepository.put(f.toCentre)
+    centreRepository.put(f.originCentre)
+    centreRepository.put(f.destinationCentre)
     studyRepository.put(f.study)
     collectionEventTypeRepository.put(f.ceventType)
     participantRepository.put(f.participant)
@@ -40,8 +40,8 @@ abstract private[centres] class ShipmentsControllerSpecFixtures
     f
   }
 
-  override def addSpecimenToShipment(shipment: Shipment, fromCentre: Centre) = {
-    val f = super.addSpecimenToShipment(shipment, fromCentre)
+  override def addSpecimenToShipment(shipment: Shipment, originCentre: Centre) = {
+    val f = super.addSpecimenToShipment(shipment, originCentre)
     specimenRepository.put(f.specimen)
     shipmentSpecimenRepository.put(f.shipmentSpecimen)
     f

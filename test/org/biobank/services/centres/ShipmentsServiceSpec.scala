@@ -22,11 +22,11 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
   import org.biobank.infrastructure.commands.ShipmentSpecimenCommands._
 
   class UsersWithShipmentAccessFixture {
-    val fromLocation = factory.createLocation
-    val toLocation   = factory.createLocation
-    val fromCentre   = factory.createEnabledCentre.copy(locations = Set(fromLocation))
-    val toCentre     = factory.createEnabledCentre.copy(locations = Set(toLocation))
-    val shipment     = factory.createShipment(fromCentre, toCentre)
+    val originLocation      = factory.createLocation
+    val destinationLocation = factory.createLocation
+    val originCentre        = factory.createEnabledCentre.copy(locations = Set(originLocation))
+    val destinationCentre   = factory.createEnabledCentre.copy(locations = Set(destinationLocation))
+    val shipment            = factory.createShipment(originCentre, destinationCentre)
 
     val allCentresAdminUser         = factory.createActiveUser
     val centreOnlyShippingAdminUser = factory.createActiveUser
@@ -40,7 +40,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
 
     val centreOnlyMembership = factory.createMembership.copy(
       userIds    = Set(centreOnlyShippingAdminUser.id, shippingUser.id),
-      centreData = MembershipEntitySet(false, Set(fromCentre.id, toCentre.id))
+      centreData = MembershipEntitySet(false, Set(originCentre.id, destinationCentre.id))
     )
 
     val noCentresMembership = factory.createMembership.copy(
@@ -66,8 +66,8 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
                                    (noMembershipUser, "no memberships user"),
                                    (noShippingPermissionUser, "no shipping permission user"))
 
-    Set(fromCentre,
-        toCentre,
+    Set(originCentre,
+        destinationCentre,
         shipment,
         allCentresAdminUser,
         centreOnlyShippingAdminUser,
@@ -124,11 +124,11 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
     }
 
   private def getAddShipmentCmd(userId: UserId, shipment: CreatedShipment) =
-    AddShipmentCmd(sessionUserId  = userId.id,
-                   courierName    = shipment.courierName,
-                   trackingNumber = shipment.trackingNumber,
-                   fromLocationId = shipment.fromLocationId.id,
-                   toLocationId   = shipment.toLocationId.id)
+    AddShipmentCmd(sessionUserId         = userId.id,
+                   courierName           = shipment.courierName,
+                   trackingNumber        = shipment.trackingNumber,
+                   originLocationId      = shipment.originLocationId.id,
+                   destinationLocationId = shipment.destinationLocationId.id)
 
   private def getRemoveShipmentCmd(userId: UserId, shipment: CreatedShipment) =
     ShipmentRemoveCmd(sessionUserId = userId.id, id = shipment.id.id, expectedVersion = shipment.version)
@@ -137,7 +137,8 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
     val f             = new UsersWithShipmentAccessFixture
     val ceventFixture = new CollectionEventFixture
     val specimen =
-      factory.createUsableSpecimen.copy(originLocationId = f.fromLocation.id, locationId = f.fromLocation.id)
+      factory.createUsableSpecimen
+        .copy(originLocationId = f.originLocation.id, locationId = f.originLocation.id)
     val shipmentSpecimen =
       factory.createShipmentSpecimen.copy(shipmentId = f.shipment.id, specimenId = specimen.id)
 
@@ -166,14 +167,14 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
                                           id              = shipment.id.id,
                                           expectedVersion = shipment.version,
                                           trackingNumber  = shipment.trackingNumber),
-          UpdateShipmentFromLocationCmd(sessionUserId     = sessionUserId.id,
-                                        id                = shipment.id.id,
-                                        expectedVersion   = shipment.version,
-                                        locationId        = shipment.fromLocationId.id),
-          UpdateShipmentToLocationCmd(sessionUserId       = sessionUserId.id,
-                                      id                  = shipment.id.id,
-                                      expectedVersion     = shipment.version,
-                                      locationId          = shipment.toLocationId.id))
+          UpdateShipmentOriginCmd(sessionUserId           = sessionUserId.id,
+                                  id                      = shipment.id.id,
+                                  expectedVersion         = shipment.version,
+                                  locationId              = shipment.originLocationId.id),
+          UpdateShipmentDestinationCmd(sessionUserId      = sessionUserId.id,
+                                       id                 = shipment.id.id,
+                                       expectedVersion    = shipment.version,
+                                       locationId         = shipment.destinationLocationId.id))
 
   private def changeStateCommandsTable(sessionUserId: UserId, shipment: Shipment) = {
     val shipments = Map((Shipment.createdState, shipment),

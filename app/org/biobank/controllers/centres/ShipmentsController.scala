@@ -107,11 +107,11 @@ class ShipmentsController @Inject()(
   def updateTrackingNumber(id: ShipmentId): Action[JsValue] =
     commandAction[UpdateShipmentTrackingNumberCmd](Json.obj("id" -> id))(processCommand)
 
-  def updateFromLocation(id: ShipmentId): Action[JsValue] =
-    commandAction[UpdateShipmentFromLocationCmd](Json.obj("id" -> id))(processCommand)
+  def updateOrigin(id: ShipmentId): Action[JsValue] =
+    commandAction[UpdateShipmentOriginCmd](Json.obj("id" -> id))(processCommand)
 
-  def updateToLocation(id: ShipmentId): Action[JsValue] =
-    commandAction[UpdateShipmentToLocationCmd](Json.obj("id" -> id))(processCommand)
+  def updateDestination(id: ShipmentId): Action[JsValue] =
+    commandAction[UpdateShipmentDestinationCmd](Json.obj("id" -> id))(processCommand)
 
   def created(id: ShipmentId): Action[JsValue] =
     commandAction[CreatedShipmentCmd](Json.obj("id" -> id))(processCommand)

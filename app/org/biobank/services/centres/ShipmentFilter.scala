@@ -39,8 +39,8 @@ class ShipmentFilterImpl @Inject()(
       args:       List[String]
     ): ServiceValidation[Shipment => Boolean] =
     selector match {
-      case "fromCentre"     => fromCentreFilter(comparator, args)
-      case "toCentre"       => toCentreFilter(comparator, args)
+      case "origin"         => originCentreFilter(comparator, args)
+      case "destination"    => destinationCentreFilter(comparator, args)
       case "withCentre"     => withCentreFilter(comparator, args)
       case "courierName"    => courierNameFilter(comparator, args)
       case "trackingNumber" => trackingNumberFilter(comparator, args)
@@ -49,15 +49,15 @@ class ShipmentFilterImpl @Inject()(
         ServiceError(s"invalid filter selector: $selector").failureNel[ShipmentFilter]
     }
 
-  private def fromCentreFilter(comparator: Comparator, names: List[String]) =
+  private def originCentreFilter(comparator: Comparator, names: List[String]) =
     centreIdsFilter(comparator,
-                    fromCentreIdIsOneOf,
+                    originCentreIdIsOneOf,
                     names,
                     ServiceError(s"invalid filter on 'from centre' name: $comparator"))
 
-  private def toCentreFilter(comparator: Comparator, names: List[String]) =
+  private def destinationCentreFilter(comparator: Comparator, names: List[String]) =
     centreIdsFilter(comparator,
-                    toCentreIdIsOneOf,
+                    destinationCentreIdIsOneOf,
                     names,
                     ServiceError(s"invalid filter on 'to centre' name: $comparator"))
 

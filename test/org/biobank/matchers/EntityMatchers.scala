@@ -207,18 +207,18 @@ trait EntityMatchers {
 
       def apply(left: Shipment) = {
         val matchers = Map(("id" -> (left.id equals shipment.id)),
-                           ("state"          -> (left.state equals shipment.state)),
-                           ("courierName"    -> (left.courierName equals shipment.courierName)),
-                           ("trackingNumber" -> (left.trackingNumber equals shipment.trackingNumber)),
-                           ("fromCentreId"   -> (left.fromCentreId equals shipment.fromCentreId)),
-                           ("fromLocationId" -> (left.fromLocationId equals shipment.fromLocationId)),
-                           ("toCentreId"     -> (left.toCentreId equals shipment.toCentreId)),
-                           ("toLocationId"   -> (left.toLocationId equals shipment.toLocationId)),
-                           ("timePacked"     -> (left.timePacked equals shipment.timePacked)),
-                           ("timeSent"       -> (left.timeSent equals shipment.timeSent)),
-                           ("timeReceived"   -> (left.timeReceived equals shipment.timeReceived)),
-                           ("timeUnpacked"   -> (left.timeUnpacked equals shipment.timeUnpacked)),
-                           ("timeCompleted"  -> (left.timeCompleted equals shipment.timeCompleted))) ++
+                           ("state"                 -> (left.state equals shipment.state)),
+                           ("courierName"           -> (left.courierName equals shipment.courierName)),
+                           ("trackingNumber"        -> (left.trackingNumber equals shipment.trackingNumber)),
+                           ("originCentreId"        -> (left.originCentreId equals shipment.originCentreId)),
+                           ("originLocationId"      -> (left.originLocationId equals shipment.originLocationId)),
+                           ("destinationCentreId"   -> (left.destinationCentreId equals shipment.destinationCentreId)),
+                           ("destinationLocationId" -> (left.destinationLocationId equals shipment.destinationLocationId)),
+                           ("timePacked"            -> (left.timePacked equals shipment.timePacked)),
+                           ("timeSent"              -> (left.timeSent equals shipment.timeSent)),
+                           ("timeReceived"          -> (left.timeReceived equals shipment.timeReceived)),
+                           ("timeUnpacked"          -> (left.timeUnpacked equals shipment.timeUnpacked)),
+                           ("timeCompleted"         -> (left.timeCompleted equals shipment.timeCompleted))) ++
           entityAttrsMatch(shipment, left)
 
         val nonMatching = matchers filter { case (k, v) => !v } keys

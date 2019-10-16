@@ -55,29 +55,28 @@ trait DtoMatchers {
         val timeAddedMatcher =
           beTimeWithinSeconds(shipment.timeAdded, 5L)(OffsetDateTime.parse(left.timeAdded))
 
-        val fromLocationInfoMatcher =
-          matchCentreLocationInfo(shipment.fromCentreId, shipment.fromLocationId)
-            .apply(left.fromLocationInfo)
+        val originInfoMatcher =
+          matchCentreLocationInfo(shipment.originCentreId, shipment.originLocationId).apply(left.origin)
 
-        val toLocationInfoMatcher =
-          matchCentreLocationInfo(shipment.toCentreId, shipment.toLocationId)
-            .apply(left.toLocationInfo)
+        val destinationInfoMatcher =
+          matchCentreLocationInfo(shipment.destinationCentreId, shipment.destinationLocationId)
+            .apply(left.destination)
 
         val matchers =
-          Map(("id"               -> (left.id equals shipment.id.id)),
-              ("version"          -> (left.version equals shipment.version)),
-              ("timeAdded"        -> (timeAddedMatcher.matches)),
-              ("timeModified"     -> optionalTimeWithinSeconds(left.timeModified, shipment.timeModified, 5L).matches),
-              ("state"            -> (left.state equals shipment.state.id)),
-              ("courierName"      -> (left.courierName equals shipment.courierName)),
-              ("trackingNumber"   -> (left.trackingNumber equals shipment.trackingNumber)),
-              ("fromLocationInfo" -> (fromLocationInfoMatcher.matches)),
-              ("toLocationInfo"   -> (toLocationInfoMatcher.matches)),
-              ("timePacked"       -> optionalTimeWithinSeconds(left.timePacked, shipment.timePacked, 5L).matches),
-              ("timeSent"         -> optionalTimeWithinSeconds(left.timeSent, shipment.timeSent, 5L).matches),
-              ("timeReceived"     -> optionalTimeWithinSeconds(left.timeReceived, shipment.timeReceived, 5L).matches),
-              ("timeUnpacked"     -> optionalTimeWithinSeconds(left.timeUnpacked, shipment.timeUnpacked, 5L).matches),
-              ("timeCompleted"    -> optionalTimeWithinSeconds(left.timeCompleted, shipment.timeCompleted, 5L).matches))
+          Map(("id"                      -> (left.id equals shipment.id.id)),
+              ("version"                 -> (left.version equals shipment.version)),
+              ("timeAdded"               -> (timeAddedMatcher.matches)),
+              ("timeModified"            -> optionalTimeWithinSeconds(left.timeModified, shipment.timeModified, 5L).matches),
+              ("state"                   -> (left.state equals shipment.state.id)),
+              ("courierName"             -> (left.courierName equals shipment.courierName)),
+              ("trackingNumber"          -> (left.trackingNumber equals shipment.trackingNumber)),
+              ("originLocationInfo"      -> (originInfoMatcher.matches)),
+              ("destinationLocationInfo" -> (destinationInfoMatcher.matches)),
+              ("timePacked"              -> optionalTimeWithinSeconds(left.timePacked, shipment.timePacked, 5L).matches),
+              ("timeSent"                -> optionalTimeWithinSeconds(left.timeSent, shipment.timeSent, 5L).matches),
+              ("timeReceived"            -> optionalTimeWithinSeconds(left.timeReceived, shipment.timeReceived, 5L).matches),
+              ("timeUnpacked"            -> optionalTimeWithinSeconds(left.timeUnpacked, shipment.timeUnpacked, 5L).matches),
+              ("timeCompleted"           -> optionalTimeWithinSeconds(left.timeCompleted, shipment.timeCompleted, 5L).matches))
 
         val nonMatching = matchers filter { case (k, v) => !v } keys
 
@@ -183,9 +182,9 @@ trait DtoMatchers {
     new Matcher[RoleDto] {
 
       def apply(left: RoleDto) = {
-        val dtoUserIds     = left.userData.toList.map(ud   => UserId(ud.id)).sortBy(_.id)
+        val dtoUserIds     = left.userData.toList.map(ud => UserId(ud.id)).sortBy(_.id)
         val dtoParentIds   = left.parentData.toList.map(pd => AccessItemId(pd.id)).sortBy(_.id)
-        val dtoChildrenIds = left.childData.toList.map(cd  => AccessItemId(cd.id)).sortBy(_.id)
+        val dtoChildrenIds = left.childData.toList.map(cd => AccessItemId(cd.id)).sortBy(_.id)
 
         val matchers = Map(("id" -> (left.id equals role.id.id)),
                            ("version"     -> (left.version equals role.version)),

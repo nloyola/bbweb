@@ -41,8 +41,8 @@ class ShipmentsProcessorSpec extends ProcessorTestFixture with ShipmentSpecFixtu
 
   override def centresFixture = {
     val f = super.centresFixture
-    centreRepository.put(f.fromCentre)
-    centreRepository.put(f.toCentre)
+    centreRepository.put(f.originCentre)
+    centreRepository.put(f.destinationCentre)
     f
   }
 
@@ -75,10 +75,10 @@ class ShipmentsProcessorSpec extends ProcessorTestFixture with ShipmentSpecFixtu
     it("allow recovery from journal", PersistenceTest) {
       val f = createdShipmentFixture
       val cmd = AddShipmentCmd(sessionUserId = Global.DefaultUserId.id,
-                               courierName    = f.shipment.courierName,
-                               trackingNumber = f.shipment.trackingNumber,
-                               fromLocationId = f.shipment.fromLocationId.id,
-                               toLocationId   = f.shipment.toLocationId.id)
+                               courierName           = f.shipment.courierName,
+                               trackingNumber        = f.shipment.trackingNumber,
+                               originLocationId      = f.shipment.originLocationId.id,
+                               destinationLocationId = f.shipment.destinationLocationId.id)
 
       val v = ask(shipmentsProcessor, cmd).mapTo[ServiceValidation[ShipmentEvent]].futureValue
       v.isSuccess must be(true)

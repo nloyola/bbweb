@@ -198,7 +198,7 @@ with SpecimenValidations with ParticipantValidations with StudyValidations {
   /**
    * Location should belong to a centre.
    */
-  def withOriginLocation(id: LocationId): DomainValidation[Specimen] =
+  def withOrigin(id: LocationId): DomainValidation[Specimen] =
     validateId(id, LocationIdInvalid).map { s =>
       update.copy(originLocationId = id)
     }

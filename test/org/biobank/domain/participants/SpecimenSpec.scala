@@ -83,7 +83,7 @@ class SpecimenSpec extends DomainSpec {
         val specimen    = factory.createUsableSpecimen
         val newLocation = factory.createLocation
 
-        specimen.withOriginLocation(newLocation.id) mustSucceed { s =>
+        specimen.withOrigin(newLocation.id) mustSucceed { s =>
           s.originLocationId must be(newLocation.id)
           s.version must be(specimen.version + 1)
           s must beEntityWithTimeStamps(specimen.timeAdded, Some(OffsetDateTime.now), 5L)
@@ -195,7 +195,7 @@ class SpecimenSpec extends DomainSpec {
     it("with an invalid origin location") {
       val specimen    = factory.createUsableSpecimen
       val newLocation = factory.createLocation.copy(id = LocationId(""))
-      specimen.withOriginLocation(newLocation.id) mustFail "LocationIdInvalid"
+      specimen.withOrigin(newLocation.id) mustFail "LocationIdInvalid"
     }
 
     it("with an invalid location") {

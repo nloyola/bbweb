@@ -219,7 +219,7 @@ class ShipmentSpecimensControllerSpec
 
       it("not add a specimen inventory Id that not present at shipment's from centre") {
         val f        = specimensFixture(1)
-        val specimen = f.specimens.head.copy(locationId = f.toCentre.locations.head.id)
+        val specimen = f.specimens.head.copy(locationId = f.destinationCentre.locations.head.id)
         specimenRepository.put(specimen)
 
         val url   = uri("canadd", f.shipment.id.id, specimen.inventoryId)
@@ -230,7 +230,7 @@ class ShipmentSpecimensControllerSpec
       it("fails for a specimen already in another active shipment") {
         val f           = shipmentSpecimensFixture(1)
         val specimen    = f.shipmentSpecimenMap.values.head.specimen
-        val newShipment = factory.createShipment(f.fromCentre, f.toCentre)
+        val newShipment = factory.createShipment(f.originCentre, f.destinationCentre)
         shipmentRepository.put(newShipment)
 
         val url   = uri("canadd", newShipment.id.id, specimen.inventoryId)
@@ -297,7 +297,7 @@ class ShipmentSpecimensControllerSpec
       it("not add a specimen from a different centre to a shipment") {
         val f = specimensFixture(1)
         shipmentRepository.put(f.shipment)
-        val specimen = f.specimens.head.copy(locationId = f.toCentre.locations.head.id)
+        val specimen = f.specimens.head.copy(locationId = f.destinationCentre.locations.head.id)
         specimenRepository.put(specimen)
 
         val addJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
@@ -525,7 +525,7 @@ class ShipmentSpecimensControllerSpec
         val f        = specimensFixture(1)
         val shipment = makeUnpackedShipment(f.shipment)
         shipmentRepository.put(shipment)
-        val specimen = f.specimens.headOption.value.copy(locationId = f.toCentre.locations.head.id)
+        val specimen = f.specimens.headOption.value.copy(locationId = f.destinationCentre.locations.head.id)
         specimenRepository.put(specimen)
 
         val url     = uri(shipment, "extra")

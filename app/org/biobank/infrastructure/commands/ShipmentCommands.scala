@@ -11,11 +11,11 @@ object ShipmentCommands {
   trait ShipmentModifyCommand extends ShipmentCommand with HasIdentity with HasExpectedVersion
 
   final case class AddShipmentCmd(
-      sessionUserId:  String,
-      courierName:    String,
-      trackingNumber: String,
-      fromLocationId: String,
-      toLocationId:   String)
+      sessionUserId:         String,
+      courierName:           String,
+      trackingNumber:        String,
+      originLocationId:      String,
+      destinationLocationId: String)
       extends ShipmentCommand
 
   final case class UpdateShipmentCourierNameCmd(
@@ -32,14 +32,14 @@ object ShipmentCommands {
       trackingNumber:  String)
       extends ShipmentModifyCommand
 
-  final case class UpdateShipmentFromLocationCmd(
+  final case class UpdateShipmentOriginCmd(
       sessionUserId:   String,
       id:              String, // shipment ID
       expectedVersion: Long,
       locationId:      String)
       extends ShipmentModifyCommand
 
-  final case class UpdateShipmentToLocationCmd(
+  final case class UpdateShipmentDestinationCmd(
       sessionUserId:   String,
       id:              String, // shipment ID
       expectedVersion: Long,
@@ -126,11 +126,11 @@ object ShipmentCommands {
   implicit val updateShipmentTrackingNumberCmdReads: Reads[UpdateShipmentTrackingNumberCmd] =
     Json.reads[UpdateShipmentTrackingNumberCmd]
 
-  implicit val updateShipmentFromLocationCmdReads: Reads[UpdateShipmentFromLocationCmd] =
-    Json.reads[UpdateShipmentFromLocationCmd]
+  implicit val updateShipmentOriginLocationCmdReads: Reads[UpdateShipmentOriginCmd] =
+    Json.reads[UpdateShipmentOriginCmd]
 
-  implicit val updateShipmentToLocationCmdReads: Reads[UpdateShipmentToLocationCmd] =
-    Json.reads[UpdateShipmentToLocationCmd]
+  implicit val updateShipmentDestinationLocationCmdReads: Reads[UpdateShipmentDestinationCmd] =
+    Json.reads[UpdateShipmentDestinationCmd]
 
   implicit val createdShipmentCmdReads: Reads[CreatedShipmentCmd] =
     Json.reads[CreatedShipmentCmd]

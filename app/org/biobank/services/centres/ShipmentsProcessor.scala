@@ -53,11 +53,12 @@ class ShipmentsProcessor @Inject()(
     case event: ShipmentEvent =>
       log.debug(s"ShipmentsProcessor: receiveRecover: $event")
       event.eventType match {
-        case et: ShipmentEvent.EventType.Added                  => applyAddedEvent(event)
-        case et: ShipmentEvent.EventType.CourierNameUpdated     => applyCourierNameUpdatedEvent(event)
-        case et: ShipmentEvent.EventType.TrackingNumberUpdated  => applyTrackingNumberUpdatedEvent(event)
-        case et: ShipmentEvent.EventType.FromLocationUpdated    => applyFromLocationUpdatedEvent(event)
-        case et: ShipmentEvent.EventType.ToLocationUpdated      => applyToLocationUpdatedEvent(event)
+        case et: ShipmentEvent.EventType.Added => applyAddedEvent(event)
+        case et: ShipmentEvent.EventType.CourierNameUpdated => applyCourierNameUpdatedEvent(event)
+        case et: ShipmentEvent.EventType.TrackingNumberUpdated => applyTrackingNumberUpdatedEvent(event)
+        case et: ShipmentEvent.EventType.OriginLocationUpdated => applyOriginLocationUpdatedEvent(event)
+        case et: ShipmentEvent.EventType.DestinationLocationUpdated =>
+          applyDestinationLocationUpdatedEvent(event)
         case et: ShipmentEvent.EventType.Created                => applyCreatedEvent(event)
         case et: ShipmentEvent.EventType.Packed                 => applyPackedEvent(event)
         case et: ShipmentEvent.EventType.Sent                   => applySentEvent(event)
@@ -104,11 +105,13 @@ class ShipmentsProcessor @Inject()(
     case cmd: UpdateShipmentTrackingNumberCmd =>
       processUpdateCmdOnCreated(cmd, updateTrackingNumberCmdToEvent, applyTrackingNumberUpdatedEvent)
 
-    case cmd: UpdateShipmentFromLocationCmd =>
-      processUpdateCmdOnCreated(cmd, updateFromLocationCmdToEvent, applyFromLocationUpdatedEvent)
+    case cmd: UpdateShipmentOriginCmd =>
+      processUpdateCmdOnCreated(cmd, updateoriginLocationCmdToEvent, applyOriginLocationUpdatedEvent)
 
-    case cmd: UpdateShipmentToLocationCmd =>
-      processUpdateCmdOnCreated(cmd, updateToLocationCmdToEvent, applyToLocationUpdatedEvent)
+    case cmd: UpdateShipmentDestinationCmd =>
+      processUpdateCmdOnCreated(cmd,
+                                updatedestinationLocationCmdToEvent,
+                                applyDestinationLocationUpdatedEvent)
 
     case cmd: CreatedShipmentCmd =>
       processUpdateCmd(cmd, createdCmdToEvent, applyCreatedEvent)
@@ -205,28 +208,28 @@ class ShipmentsProcessor @Inject()(
 
   private def addCmdToEvent(cmd: AddShipmentCmd) =
     for {
-      id         <- validNewIdentity(shipmentRepository.nextIdentity, shipmentRepository)
-      fromCentre <- centreRepository.getByLocationId(LocationId(cmd.fromLocationId))
-      toCentre   <- centreRepository.getByLocationId(LocationId(cmd.toLocationId))
-      trackingNo <- trackingNumberAvailable(cmd.trackingNumber)
+      id                <- validNewIdentity(shipmentRepository.nextIdentity, shipmentRepository)
+      originCentre      <- centreRepository.getByLocationId(LocationId(cmd.originLocationId))
+      destinationCentre <- centreRepository.getByLocationId(LocationId(cmd.destinationLocationId))
+      trackingNo        <- trackingNumberAvailable(cmd.trackingNumber)
       shipment <- CreatedShipment.create(id = id,
-                                         version        = 0L,
-                                         timeAdded      = OffsetDateTime.now,
-                                         courierName    = cmd.courierName,
-                                         trackingNumber = cmd.trackingNumber,
-                                         fromCentreId   = fromCentre.id,
-                                         fromLocationId = LocationId(cmd.fromLocationId),
-                                         toCentreId     = toCentre.id,
-                                         toLocationId   = LocationId(cmd.toLocationId))
+                                         version               = 0L,
+                                         timeAdded             = OffsetDateTime.now,
+                                         courierName           = cmd.courierName,
+                                         trackingNumber        = cmd.trackingNumber,
+                                         originCentreId        = originCentre.id,
+                                         originLocationId      = LocationId(cmd.originLocationId),
+                                         destinationCentreId   = destinationCentre.id,
+                                         destinationLocationId = LocationId(cmd.destinationLocationId))
     } yield ShipmentEvent(id.id).update(_.sessionUserId := cmd.sessionUserId,
                                         _.time := OffsetDateTime.now
                                           .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                                        _.added.courierName    := shipment.courierName,
-                                        _.added.trackingNumber := shipment.trackingNumber,
-                                        _.added.fromCentreId   := shipment.fromCentreId.id,
-                                        _.added.fromLocationId := shipment.fromLocationId.id,
-                                        _.added.toCentreId     := shipment.toCentreId.id,
-                                        _.added.toLocationId   := shipment.toLocationId.id)
+                                        _.added.courierName           := shipment.courierName,
+                                        _.added.trackingNumber        := shipment.trackingNumber,
+                                        _.added.originCentreId        := shipment.originCentreId.id,
+                                        _.added.originLocationId      := shipment.originLocationId.id,
+                                        _.added.destinationCentreId   := shipment.destinationCentreId.id,
+                                        _.added.destinationLocationId := shipment.destinationLocationId.id)
 
   private def updateCourierNameCmdToEvent(
       cmd:      UpdateShipmentCourierNameCmd,
@@ -243,10 +246,10 @@ class ShipmentsProcessor @Inject()(
   private def updateTrackingNumberCmdToEvent(
       cmd:      UpdateShipmentTrackingNumberCmd,
       shipment: CreatedShipment
-  ): ServiceValidation[ShipmentEvent] =
+    ): ServiceValidation[ShipmentEvent] =
     for {
       trackingNo <- trackingNumberAvailable(cmd.trackingNumber, shipment.id)
-      updated <- shipment.withTrackingNumber(cmd.trackingNumber)
+      updated    <- shipment.withTrackingNumber(cmd.trackingNumber)
     } yield ShipmentEvent(shipment.id.id)
       .update(_.sessionUserId := cmd.sessionUserId,
               _.time := OffsetDateTime.now
@@ -254,36 +257,35 @@ class ShipmentsProcessor @Inject()(
               _.trackingNumberUpdated.version        := cmd.expectedVersion,
               _.trackingNumberUpdated.trackingNumber := cmd.trackingNumber)
 
-
-  private def updateFromLocationCmdToEvent(
-      cmd:      UpdateShipmentFromLocationCmd,
+  private def updateoriginLocationCmdToEvent(
+      cmd:      UpdateShipmentOriginCmd,
       shipment: CreatedShipment
     ): ServiceValidation[ShipmentEvent] =
     for {
       centre      <- centreRepository.getByLocationId(LocationId(cmd.locationId))
       location    <- centre.locationWithId(LocationId(cmd.locationId))
-      newShipment <- shipment.withFromLocation(centre.id, location.id)
+      newShipment <- shipment.withOrigin(centre.id, location.id)
     } yield ShipmentEvent(shipment.id.id).update(_.sessionUserId := cmd.sessionUserId,
                                                  _.time := OffsetDateTime.now
                                                    .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                                                 _.fromLocationUpdated.version    := cmd.expectedVersion,
-                                                 _.fromLocationUpdated.centreId   := centre.id.id,
-                                                 _.fromLocationUpdated.locationId := cmd.locationId)
+                                                 _.originLocationUpdated.version    := cmd.expectedVersion,
+                                                 _.originLocationUpdated.centreId   := centre.id.id,
+                                                 _.originLocationUpdated.locationId := cmd.locationId)
 
-  private def updateToLocationCmdToEvent(
-      cmd:      UpdateShipmentToLocationCmd,
+  private def updatedestinationLocationCmdToEvent(
+      cmd:      UpdateShipmentDestinationCmd,
       shipment: CreatedShipment
     ): ServiceValidation[ShipmentEvent] =
     for {
       centre      <- centreRepository.getByLocationId(LocationId(cmd.locationId))
       location    <- centre.locationWithId(LocationId(cmd.locationId))
-      newShipment <- shipment.withToLocation(centre.id, location.id)
+      newShipment <- shipment.withDestination(centre.id, location.id)
     } yield ShipmentEvent(shipment.id.id).update(_.sessionUserId := cmd.sessionUserId,
                                                  _.time := OffsetDateTime.now
                                                    .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                                                 _.toLocationUpdated.version    := cmd.expectedVersion,
-                                                 _.toLocationUpdated.centreId   := centre.id.id,
-                                                 _.toLocationUpdated.locationId := cmd.locationId)
+                                                 _.destinationLocationUpdated.version    := cmd.expectedVersion,
+                                                 _.destinationLocationUpdated.centreId   := centre.id.id,
+                                                 _.destinationLocationUpdated.locationId := cmd.locationId)
 
   private def createdCmdToEvent(
       cmd:      CreatedShipmentCmd,
@@ -651,14 +653,14 @@ class ShipmentsProcessor @Inject()(
       val addedEvent = event.getAdded
       val eventTime  = OffsetDateTime.parse(event.getTime)
       val add = CreatedShipment.create(id = ShipmentId(event.id),
-                                       version        = 0L,
-                                       timeAdded      = eventTime,
-                                       courierName    = addedEvent.getCourierName,
-                                       trackingNumber = addedEvent.getTrackingNumber,
-                                       fromCentreId   = CentreId(addedEvent.getFromCentreId),
-                                       fromLocationId = LocationId(addedEvent.getFromLocationId),
-                                       toCentreId     = CentreId(addedEvent.getToCentreId),
-                                       toLocationId   = LocationId(addedEvent.getToLocationId))
+                                       version               = 0L,
+                                       timeAdded             = eventTime,
+                                       courierName           = addedEvent.getCourierName,
+                                       trackingNumber        = addedEvent.getTrackingNumber,
+                                       originCentreId        = CentreId(addedEvent.getOriginCentreId),
+                                       originLocationId      = LocationId(addedEvent.getOriginLocationId),
+                                       destinationCentreId   = CentreId(addedEvent.getDestinationCentreId),
+                                       destinationLocationId = LocationId(addedEvent.getDestinationLocationId))
       add.foreach(shipmentRepository.put)
 
       if (add.isFailure) {
@@ -690,31 +692,32 @@ class ShipmentsProcessor @Inject()(
       v.map(_ => ())
     }
 
-  private def applyFromLocationUpdatedEvent(event: ShipmentEvent): Unit =
+  private def applyOriginLocationUpdatedEvent(event: ShipmentEvent): Unit =
     onValidEventAndVersion(event,
-                           event.eventType.isFromLocationUpdated,
-                           event.getFromLocationUpdated.getVersion) { (shipment, _, time) =>
-      val centreId   = CentreId(event.getFromLocationUpdated.getCentreId)
-      val locationId = LocationId(event.getFromLocationUpdated.getLocationId)
+                           event.eventType.isOriginLocationUpdated,
+                           event.getOriginLocationUpdated.getVersion) { (shipment, _, time) =>
+      val centreId   = CentreId(event.getOriginLocationUpdated.getCentreId)
+      val locationId = LocationId(event.getOriginLocationUpdated.getLocationId)
       val v = for {
         created <- shipment.isCreated
-        updated <- created.withFromLocation(centreId, locationId)
+        updated <- created.withOrigin(centreId, locationId)
       } yield updated.copy(timeModified = Some(time))
       v.foreach(shipmentRepository.put)
       v.map(_ => ())
     }
 
-  private def applyToLocationUpdatedEvent(event: ShipmentEvent): Unit =
-    onValidEventAndVersion(event, event.eventType.isToLocationUpdated, event.getToLocationUpdated.getVersion) {
-      (shipment, _, time) =>
-        val centreId   = CentreId(event.getToLocationUpdated.getCentreId)
-        val locationId = LocationId(event.getToLocationUpdated.getLocationId)
-        val v = for {
-          created <- shipment.isCreated
-          updated <- created.withToLocation(centreId, locationId)
-        } yield updated.copy(timeModified = Some(time))
-        v.foreach(shipmentRepository.put)
-        v.map(_ => ())
+  private def applyDestinationLocationUpdatedEvent(event: ShipmentEvent): Unit =
+    onValidEventAndVersion(event,
+                           event.eventType.isDestinationLocationUpdated,
+                           event.getDestinationLocationUpdated.getVersion) { (shipment, _, time) =>
+      val centreId   = CentreId(event.getDestinationLocationUpdated.getCentreId)
+      val locationId = LocationId(event.getDestinationLocationUpdated.getLocationId)
+      val v = for {
+        created <- shipment.isCreated
+        updated <- created.withDestination(centreId, locationId)
+      } yield updated.copy(timeModified = Some(time))
+      v.foreach(shipmentRepository.put)
+      v.map(_ => ())
     }
 
   private def applyCreatedEvent(event: ShipmentEvent): Unit =
@@ -1056,9 +1059,9 @@ class ShipmentsProcessor @Inject()(
       specimenInventoryIds: String*
     ): ServiceValidation[Seq[ShipmentSpecimen]] =
     for {
-      specimens    <- inventoryIdsToSpecimens(specimenInventoryIds:         _*)
-      validCentres <- specimensAtCentre(shipment.fromLocationId, specimens: _*)
-      canBeAdded   <- specimensNotPresentInShipment(specimens:              _*)
+      specimens    <- inventoryIdsToSpecimens(specimenInventoryIds:           _*)
+      validCentres <- specimensAtCentre(shipment.originLocationId, specimens: _*)
+      canBeAdded   <- specimensNotPresentInShipment(specimens:                _*)
       shipmentSpecimens <- specimens.map { specimen =>
                             for {
                               id <- validNewIdentity(shipmentSpecimenRepository.nextIdentity,
@@ -1083,7 +1086,10 @@ class ShipmentsProcessor @Inject()(
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  private def trackingNumberAvailable(trackingNumber: String, excludeId: ShipmentId): ServiceValidation[Unit] = {
+  private def trackingNumberAvailable(
+      trackingNumber: String,
+      excludeId:      ShipmentId
+    ): ServiceValidation[Unit] = {
     val exists = shipmentRepository.exists(c => (c.trackingNumber == trackingNumber) && (c.id != excludeId))
     if (exists) trakingNumberExistsError(trackingNumber).failureNel[Unit]
     else ().successNel[String]

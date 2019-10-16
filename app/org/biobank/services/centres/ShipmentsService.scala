@@ -163,7 +163,7 @@ class ShipmentsServiceImpl @Inject()(
       for {
         specimen <- specimenRepository.getByInventoryId(specimenInventoryId)
         sameLocation <- {
-          if (shipment.fromLocationId == specimen.locationId) {
+          if (shipment.originLocationId == specimen.locationId) {
             specimen.successNel[ServiceError]
           } else {
             ServiceError(s"specimen not at shipment's from location").failureNel[Specimen]
@@ -276,29 +276,30 @@ class ShipmentsServiceImpl @Inject()(
     )(block:         Shipment => ServiceValidation[T]
     ): ServiceValidation[T] =
     for {
-      shipment   <- shipmentRepository.getByKey(shipmentId)
-      fromCentre <- centreRepository.getByLocationId(shipment.fromLocationId)
-      toCentre   <- centreRepository.getByLocationId(shipment.toLocationId)
+      shipment          <- shipmentRepository.getByKey(shipmentId)
+      originCentre      <- centreRepository.getByLocationId(shipment.originLocationId)
+      destinationCentre <- centreRepository.getByLocationId(shipment.destinationLocationId)
       isMember <- accessService
-                   .isMember(requestUserId, None, Some(fromCentre.id)).fold(
+                   .isMember(requestUserId, None, Some(originCentre.id)).fold(
                      err => err.failure[Unit],
                      isMember =>
                        if (isMember) ().successNel[String]
                        else Unauthorized.failureNel[Unit]
                    )
-      result <- whenPermittedAndIsMember(requestUserId, PermissionId.ShipmentRead, None, Some(toCentre.id))(
-                 () => block(shipment)
-               )
+      result <- whenPermittedAndIsMember(requestUserId,
+                                         PermissionId.ShipmentRead,
+                                         None,
+                                         Some(destinationCentre.id))(() => block(shipment))
     } yield result
 
   case class ShipmentCentreIds(fromId: CentreId, toId: CentreId)
 
   private def validCentresIds(shipmentId: ShipmentId): ServiceValidation[ShipmentCentreIds] =
     for {
-      shipment   <- shipmentRepository.getByKey(shipmentId)
-      fromCentre <- centreRepository.getByKey(shipment.fromCentreId)
-      toCentre   <- centreRepository.getByKey(shipment.toCentreId)
-    } yield ShipmentCentreIds(fromCentre.id, toCentre.id)
+      shipment          <- shipmentRepository.getByKey(shipmentId)
+      originCentre      <- centreRepository.getByKey(shipment.originCentreId)
+      destinationCentre <- centreRepository.getByKey(shipment.destinationCentreId)
+    } yield ShipmentCentreIds(originCentre.id, destinationCentre.id)
 
   private def isMemberOfCentres(userId: UserId, validCentreIds: ServiceValidation[ShipmentCentreIds]) =
     for {
@@ -332,9 +333,9 @@ class ShipmentsServiceImpl @Inject()(
       case c: ShipmentModifyCommand => validCentresIds(ShipmentId(c.id))
       case c: AddShipmentCmd =>
         for {
-          fromCentre <- centreRepository.getByLocationId(LocationId(c.fromLocationId))
-          toCentre   <- centreRepository.getByLocationId(LocationId(c.toLocationId))
-        } yield ShipmentCentreIds(fromCentre.id, toCentre.id)
+          originCentre      <- centreRepository.getByLocationId(LocationId(c.originLocationId))
+          destinationCentre <- centreRepository.getByLocationId(LocationId(c.destinationLocationId))
+        } yield ShipmentCentreIds(originCentre.id, destinationCentre.id)
     }
 
     val permission = cmd match {
@@ -344,7 +345,7 @@ class ShipmentsServiceImpl @Inject()(
     }
 
     isMemberOfCentres(sessionUserId, validCentreIds).fold(
-      err    => Future.successful(err.failure[T]),
+      err => Future.successful(err.failure[T]),
       member => whenPermittedAsync(sessionUserId, permission)(block)
     )
   }
@@ -361,24 +362,24 @@ class ShipmentsServiceImpl @Inject()(
     val sessionUserId = UserId(cmd.sessionUserId)
     val shipmentId    = ShipmentId(cmd.shipmentId)
     isMemberOfCentres(sessionUserId, validCentresIds(shipmentId)).fold(
-      err    => Future.successful(err.failure[T]),
+      err => Future.successful(err.failure[T]),
       member => whenPermittedAsync(sessionUserId, PermissionId.ShipmentUpdate)(block)
     )
   }
 
   private def shipmentToDto(shipment: Shipment): ServiceValidation[ShipmentDto] =
     for {
-      fromCentre   <- centreRepository.getByLocationId(shipment.fromLocationId)
-      fromLocation <- fromCentre.locationWithId(shipment.fromLocationId)
-      toCentre     <- centreRepository.getByLocationId(shipment.toLocationId)
-      toLocation   <- toCentre.locationWithId(shipment.toLocationId)
+      originCentre        <- centreRepository.getByLocationId(shipment.originLocationId)
+      originLocation      <- originCentre.locationWithId(shipment.originLocationId)
+      destinationCentre   <- centreRepository.getByLocationId(shipment.destinationLocationId)
+      destinationLocation <- destinationCentre.locationWithId(shipment.destinationLocationId)
     } yield {
-      val fromLocationInfo = CentreLocationInfo(fromCentre, fromLocation)
-      val toLocationInfo   = CentreLocationInfo(toCentre, toLocation)
-      val specimens        = shipmentSpecimenRepository.allForShipment(shipment.id)
+      val originLocationInfo      = CentreLocationInfo(originCentre, originLocation)
+      val destinationLocationInfo = CentreLocationInfo(destinationCentre, destinationLocation)
+      val specimens               = shipmentSpecimenRepository.allForShipment(shipment.id)
 
       // TODO: update with container count when ready
-      ShipmentDto(shipment, fromLocationInfo, toLocationInfo, specimens.size, 0)
+      ShipmentDto(shipment, originLocationInfo, destinationLocationInfo, specimens.size, 0)
     }
 
   private def shipmentSpecimenToDto(

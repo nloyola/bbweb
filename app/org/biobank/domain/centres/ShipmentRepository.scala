@@ -39,7 +39,7 @@ class ShipmentRepositoryImpl @Inject()(val testData: TestData)
 
   def withCentre(centreId: CentreId): Set[Shipment] =
     getValues.filter { s =>
-      (s.fromCentreId == centreId) || (s.toCentreId == centreId)
+      (s.originCentreId == centreId) || (s.destinationCentreId == centreId)
     }.toSet
 
   def getCreated(id: ShipmentId): DomainValidation[CreatedShipment] =

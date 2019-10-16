@@ -22,39 +22,38 @@ class ShipmentSpec extends DomainSpec {
       factory.createEnabledCentre.copy(locations = Set(location))
     }
     new {
-      val fromCentre = centres(0)
-      val toCentre   = centres(1)
+      val originCentre      = centres(0)
+      val destinationCentre = centres(1)
     }
   }
 
   def allShipmentsFixture = {
     val f = centresFixture
     new {
-      val fromCentre = f.fromCentre
-      val toCentre   = f.toCentre
-      val shipments = Map[String, Shipment]("created" -> factory.createShipment(fromCentre, toCentre),
-                                            "packed" -> factory.createPackedShipment(fromCentre, toCentre),
-                                            "sent"   -> factory.createSentShipment(fromCentre, toCentre),
-                                            "received" -> factory.createReceivedShipment(fromCentre,
-                                                                                         toCentre),
-                                            "unpacked" -> factory.createUnpackedShipment(fromCentre,
-                                                                                         toCentre),
-                                            "completed" -> factory.createCompletedShipment(fromCentre,
-                                                                                           toCentre),
-                                            "lost" -> factory.createLostShipment(fromCentre, toCentre))
+      val originCentre      = f.originCentre
+      val destinationCentre = f.destinationCentre
+      val shipments = Map[String, Shipment](
+        "created"   -> factory.createShipment(originCentre, destinationCentre),
+        "packed"    -> factory.createPackedShipment(originCentre, destinationCentre),
+        "sent"      -> factory.createSentShipment(originCentre, destinationCentre),
+        "received"  -> factory.createReceivedShipment(originCentre, destinationCentre),
+        "unpacked"  -> factory.createUnpackedShipment(originCentre, destinationCentre),
+        "completed" -> factory.createCompletedShipment(originCentre, destinationCentre),
+        "lost"      -> factory.createLostShipment(originCentre, destinationCentre)
+      )
     }
   }
 
   def createFrom(shipment: Shipment): DomainValidation[CreatedShipment] =
-    CreatedShipment.create(id             = shipment.id,
-                           version        = shipment.version,
-                           timeAdded      = shipment.timeAdded,
-                           courierName    = shipment.courierName,
-                           trackingNumber = shipment.trackingNumber,
-                           fromCentreId   = shipment.fromCentreId,
-                           fromLocationId = shipment.fromLocationId,
-                           toCentreId     = shipment.toCentreId,
-                           toLocationId   = shipment.toLocationId)
+    CreatedShipment.create(id                    = shipment.id,
+                           version               = shipment.version,
+                           timeAdded             = shipment.timeAdded,
+                           courierName           = shipment.courierName,
+                           trackingNumber        = shipment.trackingNumber,
+                           originCentreId        = shipment.originCentreId,
+                           originLocationId      = shipment.originLocationId,
+                           destinationCentreId   = shipment.destinationCentreId,
+                           destinationLocationId = shipment.destinationLocationId)
 
   describe("A shipment") {
 
@@ -67,10 +66,10 @@ class ShipmentSpec extends DomainSpec {
                       'version (shipment.version),
                       'courierName (shipment.courierName),
                       'trackingNumber (shipment.trackingNumber),
-                      'fromCentreId (shipment.fromCentreId),
-                      'fromLocationId (shipment.fromLocationId),
-                      'toCentreId (shipment.toCentreId),
-                      'toLocationId (shipment.toLocationId),
+                      'originCentreId (shipment.originCentreId),
+                      'originLocationId (shipment.originLocationId),
+                      'destinationCentreId (shipment.destinationCentreId),
+                      'destinationLocationId (shipment.destinationLocationId),
                       'timePacked (shipment.timePacked),
                       'timeSent (shipment.timeSent),
                       'timeReceived (shipment.timeReceived),
@@ -99,7 +98,7 @@ class ShipmentSpec extends DomainSpec {
 
       it("to sent") {
         val f        = centresFixture
-        val shipment = factory.createPackedShipment(f.fromCentre, f.toCentre)
+        val shipment = factory.createPackedShipment(f.originCentre, f.destinationCentre)
         val timeSent = shipment.timePacked.get.plusDays(1)
         shipment.send(timeSent) mustSucceed { s =>
           s mustBe a[SentShipment]
@@ -113,7 +112,7 @@ class ShipmentSpec extends DomainSpec {
 
       it("to received") {
         val f            = centresFixture
-        val shipment     = factory.createSentShipment(f.fromCentre, f.toCentre)
+        val shipment     = factory.createSentShipment(f.originCentre, f.destinationCentre)
         val timeReceived = shipment.timeSent.get.plusDays(1)
         shipment.receive(timeReceived) mustSucceed { s =>
           s mustBe a[ReceivedShipment]
@@ -127,7 +126,7 @@ class ShipmentSpec extends DomainSpec {
 
       it("to unpacked") {
         val f            = centresFixture
-        val shipment     = factory.createReceivedShipment(f.fromCentre, f.toCentre)
+        val shipment     = factory.createReceivedShipment(f.originCentre, f.destinationCentre)
         val timeUnpacked = shipment.timeReceived.get.plusDays(1)
         shipment.unpack(timeUnpacked) mustSucceed { s =>
           s mustBe a[UnpackedShipment]
@@ -141,7 +140,7 @@ class ShipmentSpec extends DomainSpec {
 
       it("to completed") {
         val f             = centresFixture
-        val shipment      = factory.createUnpackedShipment(f.fromCentre, f.toCentre)
+        val shipment      = factory.createUnpackedShipment(f.originCentre, f.destinationCentre)
         val timeCompleted = shipment.timeUnpacked.get.plusDays(1)
         shipment.complete(timeCompleted) mustSucceed { s =>
           s mustBe a[CompletedShipment]
@@ -155,7 +154,7 @@ class ShipmentSpec extends DomainSpec {
 
       it("to lost") {
         val f            = centresFixture
-        val shipment     = factory.createSentShipment(f.fromCentre, f.toCentre)
+        val shipment     = factory.createSentShipment(f.originCentre, f.destinationCentre)
         val lostShipment = shipment.lost
 
         lostShipment mustBe a[LostShipment]
@@ -171,42 +170,42 @@ class ShipmentSpec extends DomainSpec {
 
       it("from packed to created") {
         val f               = centresFixture
-        val shipment        = factory.createPackedShipment(f.fromCentre, f.toCentre)
+        val shipment        = factory.createPackedShipment(f.originCentre, f.destinationCentre)
         val createdShipment = shipment.created
         createdShipment mustBe a[CreatedShipment]
       }
 
       it("from sent to packed") {
         val f              = centresFixture
-        val shipment       = factory.createSentShipment(f.fromCentre, f.toCentre)
+        val shipment       = factory.createSentShipment(f.originCentre, f.destinationCentre)
         val packedShipment = shipment.backToPacked
         packedShipment mustBe a[PackedShipment]
       }
 
       it("from received to sent") {
         val f            = centresFixture
-        val shipment     = factory.createReceivedShipment(f.fromCentre, f.toCentre)
+        val shipment     = factory.createReceivedShipment(f.originCentre, f.destinationCentre)
         val sentShipment = shipment.backToSent
         sentShipment mustBe a[SentShipment]
       }
 
       it("from unpacked to received") {
         val f                = centresFixture
-        val shipment         = factory.createUnpackedShipment(f.fromCentre, f.toCentre)
+        val shipment         = factory.createUnpackedShipment(f.originCentre, f.destinationCentre)
         val receivedShipment = shipment.backToReceived
         receivedShipment mustBe a[ReceivedShipment]
       }
 
       it("from completed to unpacked") {
         val f                = centresFixture
-        val shipment         = factory.createCompletedShipment(f.fromCentre, f.toCentre)
+        val shipment         = factory.createCompletedShipment(f.originCentre, f.destinationCentre)
         val unpackedShipment = shipment.backToUnpacked
         unpackedShipment mustBe a[UnpackedShipment]
       }
 
       it("from lost to sent") {
         val f            = centresFixture
-        val shipment     = factory.createLostShipment(f.fromCentre, f.toCentre)
+        val shipment     = factory.createLostShipment(f.originCentre, f.destinationCentre)
         val sentShipment = shipment.backToSent
         sentShipment mustBe a[SentShipment]
       }
@@ -231,7 +230,7 @@ class ShipmentSpec extends DomainSpec {
 
       it("from sent to unpacked") {
         val f        = centresFixture
-        val shipment = factory.createSentShipment(f.fromCentre, f.toCentre)
+        val shipment = factory.createSentShipment(f.originCentre, f.destinationCentre)
         val timeReceived = shipment.timeSent.fold { OffsetDateTime.now } { t =>
           t
         }
@@ -259,7 +258,7 @@ class ShipmentSpec extends DomainSpec {
 
       it("when time unpacked is before time received") {
         val f        = centresFixture
-        val shipment = factory.createSentShipment(f.fromCentre, f.toCentre)
+        val shipment = factory.createSentShipment(f.originCentre, f.destinationCentre)
         val timeReceived = shipment.timeSent.fold { OffsetDateTime.now } { t =>
           t
         }
@@ -269,7 +268,7 @@ class ShipmentSpec extends DomainSpec {
 
       it("when time received is before time sent") {
         val f        = centresFixture
-        val shipment = factory.createSentShipment(f.fromCentre, f.toCentre)
+        val shipment = factory.createSentShipment(f.originCentre, f.destinationCentre)
         val timeReceived = shipment.timeSent.fold { OffsetDateTime.now } { t =>
           t.minusDays(1)
         }
@@ -301,14 +300,14 @@ class ShipmentSpec extends DomainSpec {
         createFrom(shipment) mustFail "TrackingNumberInvalid"
       }
 
-      it("with an invalid from location") {
-        val shipment = factory.createShipment.copy(fromLocationId = LocationId(""))
-        createFrom(shipment) mustFail "FromLocationIdInvalid"
+      it("with an invalid origin location") {
+        val shipment = factory.createShipment.copy(originLocationId = LocationId(""))
+        createFrom(shipment) mustFail "OriginLocationIdInvalid"
       }
 
-      it("with an invalid to location") {
-        val shipment = factory.createShipment.copy(toLocationId = LocationId(""))
-        createFrom(shipment) mustFail "ToLocationIdInvalid"
+      it("with an invalid destination location") {
+        val shipment = factory.createShipment.copy(destinationLocationId = LocationId(""))
+        createFrom(shipment) mustFail "DestinationLocationIdInvalid"
       }
 
     }

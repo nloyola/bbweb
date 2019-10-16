@@ -21,11 +21,11 @@ class ShipmentsRouter @Inject()(controller: ShipmentsController) extends SimpleR
     case POST(p"/tracking-number/${shipmentId(id)}") =>
       controller.updateTrackingNumber(id)
 
-    case POST(p"/fromlocation/${shipmentId(id)}") =>
-      controller.updateFromLocation(id)
+    case POST(p"/origin/${shipmentId(id)}") =>
+      controller.updateOrigin(id)
 
-    case POST(p"/tolocation/${shipmentId(id)}") =>
-      controller.updateToLocation(id)
+    case POST(p"/destination/${shipmentId(id)}") =>
+      controller.updateDestination(id)
 
     case POST(p"/snapshot") =>
       controller.snapshot

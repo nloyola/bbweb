@@ -635,56 +635,56 @@ package dto {
   }
 
   final case class ShipmentDto(
-      id:               String,
-      version:          Long,
-      timeAdded:        String,
-      timeModified:     Option[String],
-      state:            String,
-      courierName:      String,
-      trackingNumber:   String,
-      fromLocationInfo: CentreLocationInfo,
-      toLocationInfo:   CentreLocationInfo,
-      timePacked:       Option[String],
-      timeSent:         Option[String],
-      timeReceived:     Option[String],
-      timeUnpacked:     Option[String],
-      timeCompleted:    Option[String],
-      specimenCount:    Int,
-      containerCount:   Int)
+      id:             String,
+      version:        Long,
+      timeAdded:      String,
+      timeModified:   Option[String],
+      state:          String,
+      courierName:    String,
+      trackingNumber: String,
+      origin:         CentreLocationInfo,
+      destination:    CentreLocationInfo,
+      timePacked:     Option[String],
+      timeSent:       Option[String],
+      timeReceived:   Option[String],
+      timeUnpacked:   Option[String],
+      timeCompleted:  Option[String],
+      specimenCount:  Int,
+      containerCount: Int)
 
   object ShipmentDto {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def apply(
-        shipment:         Shipment,
-        fromLocationInfo: CentreLocationInfo,
-        toLocationInfo:   CentreLocationInfo,
-        specimenCount:    Int,
-        containerCount:   Int
+        shipment:       Shipment,
+        origin:         CentreLocationInfo,
+        destination:    CentreLocationInfo,
+        specimenCount:  Int,
+        containerCount: Int
       ): ShipmentDto =
-      ShipmentDto(id               = shipment.id.id,
-                  version          = shipment.version,
-                  timeAdded        = shipment.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                  timeModified     = shipment.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                  courierName      = shipment.courierName,
-                  trackingNumber   = shipment.trackingNumber,
-                  fromLocationInfo = fromLocationInfo,
-                  toLocationInfo   = toLocationInfo,
-                  timePacked       = shipment.timePacked.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                  timeSent         = shipment.timeSent.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                  timeReceived     = shipment.timeReceived.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                  timeUnpacked     = shipment.timeUnpacked.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                  timeCompleted    = shipment.timeCompleted.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                  specimenCount    = specimenCount,
-                  containerCount   = containerCount,
-                  state            = shipment.state.id)
+      ShipmentDto(id             = shipment.id.id,
+                  version        = shipment.version,
+                  timeAdded      = shipment.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                  timeModified   = shipment.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                  courierName    = shipment.courierName,
+                  trackingNumber = shipment.trackingNumber,
+                  origin         = origin,
+                  destination    = destination,
+                  timePacked     = shipment.timePacked.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                  timeSent       = shipment.timeSent.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                  timeReceived   = shipment.timeReceived.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                  timeUnpacked   = shipment.timeUnpacked.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                  timeCompleted  = shipment.timeCompleted.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+                  specimenCount  = specimenCount,
+                  containerCount = containerCount,
+                  state          = shipment.state.id)
 
     val sort2Compare: Map[String, (ShipmentDto, ShipmentDto) => Boolean] =
-      Map[String, (ShipmentDto, ShipmentDto) => Boolean]("courierName" -> compareByCourier,
-                                                         "trackingNumber"   -> compareByTrackingNumber,
-                                                         "state"            -> compareByState,
-                                                         "fromLocationName" -> compareByFromLocation,
-                                                         "toLocationName"   -> compareByToLocation)
+      Map[String, (ShipmentDto, ShipmentDto) => Boolean]("courierName"    -> compareByCourier,
+                                                         "trackingNumber" -> compareByTrackingNumber,
+                                                         "state"          -> compareByState,
+                                                         "origin"         -> compareByOrigin,
+                                                         "destination"    -> compareByDestination)
 
     def compareByCourier(a: ShipmentDto, b: ShipmentDto): Boolean =
       (a.courierName compareToIgnoreCase b.courierName) < 0
@@ -695,11 +695,11 @@ package dto {
     def compareByState(a: ShipmentDto, b: ShipmentDto): Boolean =
       (a.state.toString compareToIgnoreCase b.state.toString) < 0
 
-    def compareByFromLocation(a: ShipmentDto, b: ShipmentDto): Boolean =
-      (a.fromLocationInfo.name compareToIgnoreCase b.fromLocationInfo.name) < 0
+    def compareByOrigin(a: ShipmentDto, b: ShipmentDto): Boolean =
+      (a.origin.combinedName compareToIgnoreCase b.origin.combinedName) < 0
 
-    def compareByToLocation(a: ShipmentDto, b: ShipmentDto): Boolean =
-      (a.toLocationInfo.name compareToIgnoreCase b.toLocationInfo.name) < 0
+    def compareByDestination(a: ShipmentDto, b: ShipmentDto): Boolean =
+      (a.destination.combinedName compareToIgnoreCase b.destination.combinedName) < 0
 
     implicit val shipmentDtoFormat: Format[ShipmentDto] = Json.format[ShipmentDto]
 

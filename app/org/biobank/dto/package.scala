@@ -588,7 +588,7 @@ package dto {
       state:                   String,
       slug:                    Slug,
       inventoryId:             String,
-      collectionEventId:       String,
+      collectionEvent:         EntityInfoDto,
       specimenDefinitionId:    String,
       specimenDefinitionName:  String,
       specimenDefinitionUnits: String,
@@ -600,31 +600,11 @@ package dto {
       amount:                  BigDecimal,
       units:                   String,
       isDefaultAmount:         Boolean,
-      eventTypeName:           String) {
+      study:                   EntityInfoDto,
+      participant:             EntityInfoDto,
+      eventType:               EntityInfoDto) {
 
-    override def toString: String =
-      s"""|${this.getClass.getSimpleName}: {
-          |  id:                      $id,
-          |  version:                 $version,
-          |  timeAdded:               $timeAdded,
-          |  timeModified:            $timeModified,
-          |  state:                   $state,
-          |  slug:                    $slug,
-          |  inventoryId:             $inventoryId,
-          |  collectionEventId:       $collectionEventId,
-          |  specimenDefinitionId:    $specimenDefinitionId,
-          |  specimenDefinitionName:  $specimenDefinitionName,
-          |  specimenDefinitionUnits: $specimenDefinitionUnits,
-          |  originLocationInfo:      $originLocationInfo,
-          |  locationInfo:            $locationInfo,
-          |  containerId:             $containerId,
-          |  label:                   $label,
-          |  timeCreated:             $timeCreated,
-          |  amount:                  $amount,
-          |  units:                   $units,
-          |  isDefaultAmount:         $isDefaultAmount,
-          |  eventTypeName:           $eventTypeName
-          |}""".stripMargin
+    override def toString: String = s"${this.getClass.getSimpleName}: ${Json.prettyPrint(Json.toJson(this))}"
 
   }
 
@@ -680,7 +660,7 @@ package dto {
                   state          = shipment.state.id)
 
     val sort2Compare: Map[String, (ShipmentDto, ShipmentDto) => Boolean] =
-      Map[String, (ShipmentDto, ShipmentDto) => Boolean]("courierName"    -> compareByCourier,
+      Map[String, (ShipmentDto, ShipmentDto) => Boolean]("courierName" -> compareByCourier,
                                                          "trackingNumber" -> compareByTrackingNumber,
                                                          "state"          -> compareByState,
                                                          "origin"         -> compareByOrigin,

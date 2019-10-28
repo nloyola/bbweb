@@ -3,10 +3,10 @@ package org.biobank.domain.participants
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import org.biobank.ValidationKey
-import org.biobank.dto.{CentreLocationInfo, SpecimenDto}
+import org.biobank.dto.{CentreLocationInfo, EntityInfoDto, SpecimenDto}
 import org.biobank.domain._
 import org.biobank.domain.containers._
-import org.biobank.domain.studies.{CollectedSpecimenDefinition, SpecimenDefinitionId, StudyValidations}
+import org.biobank.domain.studies._
 import org.biobank.domain.{ConcurrencySafeEntity, DomainValidation}
 import play.api.libs.json._
 import scalaz.Scalaz._
@@ -61,12 +61,16 @@ sealed trait Specimen extends ConcurrencySafeEntity[SpecimenId] with HasSlug {
   val amount: scala.math.BigDecimal
 
   def createDto(
-      collectionEvent:    CollectionEvent,
-      eventTypeName:      String,
+      event:              CollectionEvent,
+      eventType:          CollectionEventType,
       specimenDefinition: CollectedSpecimenDefinition,
       originLocationInfo: CentreLocationInfo,
-      locationInfo:       CentreLocationInfo
-    ): SpecimenDto =
+      locationInfo:       CentreLocationInfo,
+      study:              Study,
+      participant:        Participant
+    ): SpecimenDto = {
+    val eventInfoDto       = EntityInfoDto(event.id.toString, event.slug, event.visitNumber.toString)
+    val parcicipantInfoDto = EntityInfoDto(participant.id.toString, participant.slug, participant.uniqueId)
     SpecimenDto(id                      = this.id.id,
                 version                 = this.version,
                 timeAdded               = this.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
@@ -74,7 +78,7 @@ sealed trait Specimen extends ConcurrencySafeEntity[SpecimenId] with HasSlug {
                 state                   = this.state.id,
                 slug                    = this.slug,
                 inventoryId             = this.inventoryId,
-                collectionEventId       = collectionEvent.id.id,
+                collectionEvent         = eventInfoDto,
                 specimenDefinitionId    = this.specimenDefinitionId.id,
                 specimenDefinitionName  = specimenDefinition.name,
                 specimenDefinitionUnits = specimenDefinition.units,
@@ -86,24 +90,12 @@ sealed trait Specimen extends ConcurrencySafeEntity[SpecimenId] with HasSlug {
                 amount                  = this.amount,
                 units                   = specimenDefinition.units,
                 isDefaultAmount         = (this.amount == specimenDefinition.amount),
-                eventTypeName           = eventTypeName)
+                eventType               = EntityInfoDto(eventType),
+                study                   = EntityInfoDto(study),
+                participant             = parcicipantInfoDto)
+  }
 
-  override def toString: String =
-    s"""|${this.getClass.getSimpleName}: {
-        |  id:                   $id
-        |  version:              $version
-        |  timeAdded:            $timeAdded
-        |  timeModified:         $timeModified
-        |  slug:                 $slug,
-        |  inventoryId:          $inventoryId
-        |  specimenDefinitionId: $specimenDefinitionId
-        |  originLocationId:     $originLocationId
-        |  locationId:           $locationId
-        |  containerId:          $containerId
-        |  schemaLabel:          $schemaLabel
-        |  timeCreated:          $timeCreated
-        |  amount:               $amount
-        |}""".stripMargin
+  override def toString: String = s"${this.getClass.getSimpleName}: ${Json.prettyPrint(Json.toJson(this))}"
 }
 
 object Specimen {

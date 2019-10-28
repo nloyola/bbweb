@@ -3,7 +3,7 @@ package org.biobank.domain.participants
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import org.biobank.ValidationKey
-import org.biobank.dto.{CentreLocationInfo, EntityInfoDto, SpecimenDto}
+import org.biobank.dto._
 import org.biobank.domain._
 import org.biobank.domain.containers._
 import org.biobank.domain.studies._
@@ -69,8 +69,6 @@ sealed trait Specimen extends ConcurrencySafeEntity[SpecimenId] with HasSlug {
       study:              Study,
       participant:        Participant
     ): SpecimenDto = {
-    val eventInfoDto       = EntityInfoDto(event.id.toString, event.slug, event.visitNumber.toString)
-    val parcicipantInfoDto = EntityInfoDto(participant.id.toString, participant.slug, participant.uniqueId)
     SpecimenDto(id                      = this.id.id,
                 version                 = this.version,
                 timeAdded               = this.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
@@ -78,7 +76,7 @@ sealed trait Specimen extends ConcurrencySafeEntity[SpecimenId] with HasSlug {
                 state                   = this.state.id,
                 slug                    = this.slug,
                 inventoryId             = this.inventoryId,
-                collectionEvent         = eventInfoDto,
+                collectionEvent         = CollectionEventInfoDto(event),
                 specimenDefinitionId    = this.specimenDefinitionId.id,
                 specimenDefinitionName  = specimenDefinition.name,
                 specimenDefinitionUnits = specimenDefinition.units,
@@ -90,9 +88,9 @@ sealed trait Specimen extends ConcurrencySafeEntity[SpecimenId] with HasSlug {
                 amount                  = this.amount,
                 units                   = specimenDefinition.units,
                 isDefaultAmount         = (this.amount == specimenDefinition.amount),
-                eventType               = EntityInfoDto(eventType),
-                study                   = EntityInfoDto(study),
-                participant             = parcicipantInfoDto)
+                eventType               = NamedEntityInfoDto(eventType),
+                study                   = NamedEntityInfoDto(study),
+                participant             = ParticipantInfoDto(participant))
   }
 
   override def toString: String = s"${this.getClass.getSimpleName}: ${Json.prettyPrint(Json.toJson(this))}"

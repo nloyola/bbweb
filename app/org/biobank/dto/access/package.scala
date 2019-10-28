@@ -24,9 +24,9 @@ package access {
       slug:           Slug,
       name:           String,
       description:    Option[String],
-      userData:       Set[EntityInfoDto],
-      parentData:     Set[EntityInfoDto],
-      childData:      Set[EntityInfoDto])
+      userData:       Set[NamedEntityInfoDto],
+      parentData:     Set[NamedEntityInfoDto],
+      childData:      Set[NamedEntityInfoDto])
       extends Dto {
 
     override def toString: String =
@@ -56,7 +56,7 @@ package access {
       version:   Long,
       slug:      Slug,
       name:      String,
-      childData: Set[EntityInfoDto])
+      childData: Set[NamedEntityInfoDto])
       extends Dto
 
   object UserRoleDto {
@@ -73,7 +73,7 @@ package access {
       slug:         Slug,
       name:         String,
       description:  Option[String],
-      userData:     Set[EntityInfoDto],
+      userData:     Set[NamedEntityInfoDto],
       studyData:    EntitySetDto,
       centreData:   EntitySetDto)
       extends Dto {

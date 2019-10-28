@@ -236,10 +236,10 @@ class AccessControllerMembershipSpec
       val baseUrl      = uri("memberships", "names")
 
       it should behave like accessEntityNameSharedBehaviour(createEntity, baseUrl) {
-        (dtos: List[EntityInfoDto], memberships: List[Membership]) =>
+        (dtos: List[NamedEntityInfoDto], memberships: List[Membership]) =>
           (dtos zip memberships).foreach {
             case (dto, membership) =>
-              dto must matchEntityInfoDtoToMembership(membership)
+              dto must matchNamedEntityInfoDtoToMembership(membership)
           }
       }
     }

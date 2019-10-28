@@ -21,24 +21,28 @@ package dto {
   trait EntityInfo {
     val id:   String
     val slug: Slug
+  }
+
+  trait NamedEntityInfo extends EntityInfo {
     val name: String
   }
 
-  final case class EntityInfoDto(id: String, slug: Slug, name: String) extends EntityInfo
+  final case class NamedEntityInfoDto(id: String, slug: Slug, name: String) extends NamedEntityInfo
 
-  object EntityInfoDto {
+  object NamedEntityInfoDto {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply[T <: IdentifiedDomainObject[_] with HasSlug with HasName](entity: T): EntityInfoDto =
-      EntityInfoDto(entity.id.toString, entity.slug, entity.name)
+    def apply[T <: IdentifiedDomainObject[_] with HasSlug with HasName](entity: T): NamedEntityInfoDto =
+      NamedEntityInfoDto(entity.id.toString, entity.slug, entity.name)
 
-    def compareByName(a: EntityInfoDto, b: EntityInfoDto): Boolean = (a.name compareToIgnoreCase b.name) < 0
+    def compareByName(a: NamedEntityInfoDto, b: NamedEntityInfoDto): Boolean =
+      (a.name compareToIgnoreCase b.name) < 0
 
-    implicit val entityInfoDtoFormat: Format[EntityInfoDto] = Json.format[EntityInfoDto]
+    implicit val namedEntityInfoDtoFormat: Format[NamedEntityInfoDto] = Json.format[NamedEntityInfoDto]
 
   }
 
-  final case class EntitySetDto(allEntities: Boolean, entityData: Set[EntityInfoDto])
+  final case class EntitySetDto(allEntities: Boolean, entityData: Set[NamedEntityInfoDto])
 
   object EntitySetDto {
 
@@ -98,7 +102,7 @@ package dto {
       id:           String,
       slug:         Slug,
       name:         String,
-      location:     EntityInfoDto,
+      location:     NamedEntityInfoDto,
       combinedName: String)
       extends EntityInfo
 
@@ -109,7 +113,7 @@ package dto {
       CentreLocationInfo(id           = centre.id.id,
                          slug         = centre.slug,
                          name         = centre.name,
-                         location     = EntityInfoDto(location),
+                         location     = NamedEntityInfoDto(location),
                          combinedName = s"${centre.name}: ${location.name}")
 
     implicit val centreLocationInfoFormat: Format[CentreLocationInfo] = Json.format[CentreLocationInfo]
@@ -125,7 +129,7 @@ package dto {
       name:         String,
       description:  Option[String],
       shared:       Boolean,
-      centre:       EntityInfoDto,
+      centre:       NamedEntityInfoDto,
       labels:       Set[String]) {
 
     override def toString: String =
@@ -156,7 +160,7 @@ package dto {
                          name        = schema.name,
                          description = schema.description,
                          shared      = schema.shared,
-                         centre      = EntityInfoDto(centre),
+                         centre      = NamedEntityInfoDto(centre),
                          labels      = schema.labels)
 
     implicit val containerSchemaDtoFormat: Format[ContainerSchemaDto] = Json.format[ContainerSchemaDto]
@@ -172,7 +176,7 @@ package dto {
       name:         String,
       description:  Option[String],
       centre:       EntityInfoAndStateDto,
-      schema:       EntityInfoDto,
+      schema:       NamedEntityInfoDto,
       shared:       Boolean,
       enabled:      Boolean,
       storageType:  String) {
@@ -208,7 +212,7 @@ package dto {
                        name        = containerType.name,
                        description = containerType.description,
                        centre      = EntityInfoAndStateDto(centre),
-                       schema      = EntityInfoDto(schema),
+                       schema      = NamedEntityInfoDto(schema),
                        shared      = containerType.shared,
                        enabled     = containerType.enabled,
                        storageType = containerType.storageType.id)
@@ -246,7 +250,7 @@ package dto {
     val timeModified:  Option[String]
     val slug:          Slug
     val inventoryId:   String
-    val containerType: EntityInfoDto
+    val containerType: NamedEntityInfoDto
     val storageType:   String
 
     override def toString: String = Json.prettyPrint(Json.toJson(this))
@@ -283,7 +287,7 @@ package dto {
       label:              String,
       inventoryId:        String,
       enabled:            Boolean,
-      containerType:      EntityInfoDto,
+      containerType:      NamedEntityInfoDto,
       centreLocationInfo: CentreLocationInfo,
       temperature:        PreservationTemperature,
       constraints:        Option[ContainerConstraintsDto],
@@ -307,7 +311,7 @@ package dto {
                        label              = c.label,
                        inventoryId        = c.inventoryId,
                        enabled            = c.enabled,
-                       containerType      = EntityInfoDto(containerType),
+                       containerType      = NamedEntityInfoDto(containerType),
                        centreLocationInfo = CentreLocationInfo(centre, location),
                        temperature        = c.temperature,
                        constraints        = c.constraints.map(ContainerConstraintsDto(_)),
@@ -353,7 +357,7 @@ package dto {
       slug:          Slug,
       inventoryId:   String,
       enabled:       Boolean,
-      containerType: EntityInfoDto,
+      containerType: NamedEntityInfoDto,
       parent:        ContainerInfoDto,
       label:         String,
       constraints:   Option[ContainerConstraintsDto],
@@ -376,7 +380,7 @@ package dto {
                           slug          = c.slug,
                           inventoryId   = c.inventoryId,
                           enabled       = c.enabled,
-                          containerType = EntityInfoDto(containerType),
+                          containerType = NamedEntityInfoDto(containerType),
                           parent        = ContainerInfoDto(parent),
                           label         = c.schemaLabel.label,
                           constraints   = constraintsDto,
@@ -394,7 +398,7 @@ package dto {
       timeModified:  Option[String],
       slug:          Slug,
       inventoryId:   String,
-      containerType: EntityInfoDto,
+      containerType: NamedEntityInfoDto,
       parent:        ContainerInfoDto,
       label:         String,
       storageType:   String)
@@ -410,7 +414,7 @@ package dto {
                            timeModified  = c.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
                            slug          = c.slug,
                            inventoryId   = c.inventoryId,
-                           containerType = EntityInfoDto(containerType),
+                           containerType = NamedEntityInfoDto(containerType),
                            parent        = ContainerInfoDto(parent),
                            label         = c.schemaLabel.label,
                            storageType   = c.storageType.id)
@@ -458,13 +462,13 @@ package dto {
       id:                      String,
       slug:                    Slug,
       name:                    String,
-      specimenDefinitionNames: Set[EntityInfoDto])
+      specimenDefinitionNames: Set[NamedEntityInfoDto])
 
   object CollectedSpecimenDefinitionNames {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def apply(eventType: CollectionEventType): CollectedSpecimenDefinitionNames = {
-      val definitionNames = eventType.specimenDefinitions.map(sd => EntityInfoDto(sd))
+      val definitionNames = eventType.specimenDefinitions.map(sd => NamedEntityInfoDto(sd))
       CollectedSpecimenDefinitionNames(eventType.id.id, eventType.slug, eventType.name, definitionNames)
     }
 
@@ -477,7 +481,7 @@ package dto {
       id:                     String,
       slug:                   Slug,
       name:                   String,
-      specimenDefinitionName: EntityInfoDto)
+      specimenDefinitionName: NamedEntityInfoDto)
 
   object ProcessedSpecimenDefinitionName {
 
@@ -486,7 +490,7 @@ package dto {
       ProcessedSpecimenDefinitionName(processingType.id.id,
                                       processingType.slug,
                                       processingType.name,
-                                      EntityInfoDto(processingType.output.specimenDefinition))
+                                      NamedEntityInfoDto(processingType.output.specimenDefinition))
 
     implicit val specimenDefinitionNamesFormat: Format[ProcessedSpecimenDefinitionName] =
       Json.format[ProcessedSpecimenDefinitionName]
@@ -496,7 +500,7 @@ package dto {
   final case class ParticipantDto(
       id:           String,
       slug:         Slug,
-      study:        EntityInfoDto,
+      study:        NamedEntityInfoDto,
       version:      Long,
       timeAdded:    String,
       timeModified: Option[String],
@@ -509,7 +513,7 @@ package dto {
     def apply(participant: Participant, study: Study): ParticipantDto =
       ParticipantDto(id        = participant.id.id,
                      slug      = participant.slug,
-                     study     = EntityInfoDto(study),
+                     study     = NamedEntityInfoDto(study),
                      version   = participant.version,
                      timeAdded = participant.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
                      timeModified =
@@ -518,6 +522,18 @@ package dto {
                      annotations = participant.annotations)
 
     implicit val participantDtoForma: Format[ParticipantDto] = Json.format[ParticipantDto]
+
+  }
+
+  final case class ParticipantInfoDto(id: String, slug: Slug, uniqueId: String) extends EntityInfo
+
+  object ParticipantInfoDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(participant: Participant): ParticipantInfoDto =
+      ParticipantInfoDto(participant.id.toString, participant.slug, participant.uniqueId)
+
+    implicit val participantInfoDtoFormat: Format[ParticipantInfoDto] = Json.format[ParticipantInfoDto]
 
   }
 
@@ -561,6 +577,19 @@ package dto {
 
   }
 
+  final case class CollectionEventInfoDto(id: String, slug: Slug, visitNumber: Int) extends EntityInfo
+
+  object CollectionEventInfoDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(collectionEvent: CollectionEvent): CollectionEventInfoDto =
+      CollectionEventInfoDto(collectionEvent.id.toString, collectionEvent.slug, collectionEvent.visitNumber)
+
+    implicit val collectionEventInfoDtoFormat: Format[CollectionEventInfoDto] =
+      Json.format[CollectionEventInfoDto]
+
+  }
+
   final case class UserDto(
       id:           String,
       version:      Long,
@@ -588,7 +617,7 @@ package dto {
       state:                   String,
       slug:                    Slug,
       inventoryId:             String,
-      collectionEvent:         EntityInfoDto,
+      collectionEvent:         CollectionEventInfoDto,
       specimenDefinitionId:    String,
       specimenDefinitionName:  String,
       specimenDefinitionUnits: String,
@@ -600,9 +629,9 @@ package dto {
       amount:                  BigDecimal,
       units:                   String,
       isDefaultAmount:         Boolean,
-      study:                   EntityInfoDto,
-      participant:             EntityInfoDto,
-      eventType:               EntityInfoDto) {
+      study:                   NamedEntityInfoDto,
+      participant:             ParticipantInfoDto,
+      eventType:               NamedEntityInfoDto) {
 
     override def toString: String = s"${this.getClass.getSimpleName}: ${Json.prettyPrint(Json.toJson(this))}"
 
@@ -660,7 +689,7 @@ package dto {
                   state          = shipment.state.id)
 
     val sort2Compare: Map[String, (ShipmentDto, ShipmentDto) => Boolean] =
-      Map[String, (ShipmentDto, ShipmentDto) => Boolean]("courierName" -> compareByCourier,
+      Map[String, (ShipmentDto, ShipmentDto) => Boolean]("courierName"    -> compareByCourier,
                                                          "trackingNumber" -> compareByTrackingNumber,
                                                          "state"          -> compareByState,
                                                          "origin"         -> compareByOrigin,

@@ -196,13 +196,13 @@ class CeventTypesControllerSpec
         val f = new EventTypeFixture(2)
 
         val eventTypes = Seq(f.eventTypes(0).copy(name = "ET1"), f.eventTypes(1).copy(name = "ET2"))
-        val dtos       = eventTypes.sortWith(_.name < _.name).map(EntityInfoDto(_))
+        val dtos       = eventTypes.sortWith(_.name < _.name).map(NamedEntityInfoDto(_))
         eventTypes.foreach(addToRepository)
 
         val reply = makeAuthRequest(GET, uri("names", f.study.id.id).addQueryString("order=asc")).value
         reply must beOkResponseWithJsonReply
 
-        val replyDtos = (contentAsJson(reply) \ "data").validate[List[EntityInfoDto]]
+        val replyDtos = (contentAsJson(reply) \ "data").validate[List[NamedEntityInfoDto]]
         replyDtos must be(jsSuccess)
         replyDtos.get must equal(dtos)
       }
@@ -216,10 +216,10 @@ class CeventTypesControllerSpec
         val reply = makeAuthRequest(GET, uri("names", f.study.id.id).addQueryString("filter=name::ET1")).value
         reply must beOkResponseWithJsonReply
 
-        val replyDtos = (contentAsJson(reply) \ "data").validate[List[EntityInfoDto]]
+        val replyDtos = (contentAsJson(reply) \ "data").validate[List[NamedEntityInfoDto]]
         replyDtos must be(jsSuccess)
         replyDtos.get must have length (1)
-        replyDtos.get.foreach(_ must equal(EntityInfoDto(eventTypes(0))))
+        replyDtos.get.foreach(_ must equal(NamedEntityInfoDto(eventTypes(0))))
       }
 
       it("list nothing when using a name filter for name not in system") {
@@ -231,7 +231,7 @@ class CeventTypesControllerSpec
         val reply = makeAuthRequest(GET, uri("names", f.study.id.id).addQueryString("filter=name::xxx")).value
         reply must beOkResponseWithJsonReply
 
-        val replyDtos = (contentAsJson(reply) \ "data").validate[List[EntityInfoDto]]
+        val replyDtos = (contentAsJson(reply) \ "data").validate[List[NamedEntityInfoDto]]
         replyDtos must be(jsSuccess)
         replyDtos.get must have length (0)
       }

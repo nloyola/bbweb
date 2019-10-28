@@ -102,10 +102,10 @@ class AccessControllerSpec
       val createEntity = (name: String) => factory.createRole.copy(name = name)
       val baseUrl      = uri("roles", "names")
       it must behave like accessEntityNameSharedBehaviour(createEntity, baseUrl) {
-        (dtos: List[EntityInfoDto], roles: List[Role]) =>
+        (dtos: List[NamedEntityInfoDto], roles: List[Role]) =>
           (dtos zip roles).foreach {
             case (dto, role) =>
-              dto must matchEntityInfoDtoToRole(role)
+              dto must matchNamedEntityInfoDtoToRole(role)
           }
       }
     }

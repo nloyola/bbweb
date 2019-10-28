@@ -204,10 +204,10 @@ trait DtoMatchers {
       }
     }
 
-  def matchEntityInfoDtoToRole(role: Role) =
-    new Matcher[EntityInfoDto] {
+  def matchNamedEntityInfoDtoToRole(role: Role) =
+    new Matcher[NamedEntityInfoDto] {
 
-      def apply(left: EntityInfoDto) = {
+      def apply(left: NamedEntityInfoDto) = {
         val matchers = Map(("id" -> (left.id equals role.id.id)),
                            ("slug" -> (left.slug equals role.slug)),
                            ("name" -> (left.name equals role.name)))
@@ -241,10 +241,10 @@ trait DtoMatchers {
       }
     }
 
-  def matchEntityInfoDtoToMembership(role: Membership) =
-    new Matcher[EntityInfoDto] {
+  def matchNamedEntityInfoDtoToMembership(role: Membership) =
+    new Matcher[NamedEntityInfoDto] {
 
-      def apply(left: EntityInfoDto) = {
+      def apply(left: NamedEntityInfoDto) = {
         val matchers = Map(("id" -> (left.id equals role.id.id)),
                            ("slug" -> (left.slug equals role.slug)),
                            ("name" -> (left.name equals role.name)))

@@ -48,7 +48,7 @@ trait AccessService extends BbwebService {
   def getRoleNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[EntityInfoDto]]]
+    ): Future[ServiceValidation[Seq[NamedEntityInfoDto]]]
 
   def getUserRoles(userId: UserId): ServiceValidation[Set[UserRoleDto]]
 
@@ -81,7 +81,7 @@ trait AccessService extends BbwebService {
   def getMembershipNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[EntityInfoDto]]]
+    ): Future[ServiceValidation[Seq[NamedEntityInfoDto]]]
 
   def getUserMembership(userId: UserId): ServiceValidation[UserMembership]
 
@@ -191,11 +191,11 @@ class AccessServiceImpl @Inject()(
   def getRoleNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[EntityInfoDto]]] =
+    ): Future[ServiceValidation[Seq[NamedEntityInfoDto]]] =
     Future {
       getRolesInternal(query.filter, query.sort).map {
         _.map { r =>
-          EntityInfoDto(r.id.id, r.slug, r.name)
+          NamedEntityInfoDto(r.id.id, r.slug, r.name)
         }
       }
     }
@@ -292,11 +292,11 @@ class AccessServiceImpl @Inject()(
   def getMembershipNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[EntityInfoDto]]] =
+    ): Future[ServiceValidation[Seq[NamedEntityInfoDto]]] =
     Future {
       getMembershipsInternal(query.filter, query.sort).map {
         _.map { m =>
-          EntityInfoDto(m.id.id, m.slug, m.name)
+          NamedEntityInfoDto(m.id.id, m.slug, m.name)
         }
       }
     }
@@ -438,8 +438,8 @@ class AccessServiceImpl @Inject()(
         cmd match {
           case c: AddMembershipCmd => {
             for {
-              validUsers   <- c.userIds.map(id   => userRepository.getByKey(UserId(id))).toList.sequenceU
-              validStudies <- c.studyIds.map(id  => studyRepository.getByKey(StudyId(id))).toList.sequenceU
+              validUsers   <- c.userIds.map(id => userRepository.getByKey(UserId(id))).toList.sequenceU
+              validStudies <- c.studyIds.map(id => studyRepository.getByKey(StudyId(id))).toList.sequenceU
               validCentres <- c.centreIds.map(id => centreRepository.getByKey(CentreId(id))).toList.sequenceU
             } yield true
           }
@@ -687,9 +687,9 @@ class AccessServiceImpl @Inject()(
 
   private def entityInfoDto[T <: ConcurrencySafeEntity[_] with HasName with HasSlug](
       entities: Set[T]
-    ): Set[EntityInfoDto] =
+    ): Set[NamedEntityInfoDto] =
     entities.map { entity =>
-      EntityInfoDto(entity.id.toString, entity.slug, entity.name)
+      NamedEntityInfoDto(entity.id.toString, entity.slug, entity.name)
     }
 
   private def entitySetDto[T <: ConcurrencySafeEntity[_] with HasName with HasSlug](

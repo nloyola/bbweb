@@ -377,9 +377,17 @@ class ShipmentsServiceImpl @Inject()(
       val originLocationInfo      = CentreLocationInfo(originCentre, originLocation)
       val destinationLocationInfo = CentreLocationInfo(destinationCentre, destinationLocation)
       val specimens               = shipmentSpecimenRepository.allForShipment(shipment.id)
+      val presentSpecimens = specimens.filter { specimen =>
+        specimen.state == ShipmentItemState.Present
+      }
 
       // TODO: update with container count when ready
-      ShipmentDto(shipment, originLocationInfo, destinationLocationInfo, specimens.size, 0)
+      ShipmentDto(shipment,
+                  originLocationInfo,
+                  destinationLocationInfo,
+                  specimens.size,
+                  presentSpecimens.size,
+                  0)
     }
 
   private def shipmentSpecimenToDto(

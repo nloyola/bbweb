@@ -735,37 +735,25 @@ class ShipmentsProcessor @Inject()(
         val stateChangeTime = OffsetDateTime.parse(event.getPacked.getStateChangeTime)
 
         val updated = shipment match {
-          case created: CreatedShipment =>
-            created.pack(stateChangeTime).copy(timeModified = Some(time)).successNel[String]
-
-          case sent: SentShipment =>
-            sent.backToPacked.copy(timeModified = Some(time)).successNel[String]
-
-          case _ =>
-            InvalidState(s"cannot change to packed state: ${shipment.id}").failureNel[Shipment]
+          case created: CreatedShipment => created.pack(stateChangeTime).successNel[String]
+          case sent:    SentShipment    => sent.backToPacked.successNel[String]
+          case _ => InvalidState(s"cannot change to packed state: ${shipment.id}").failureNel[PackedShipment]
         }
 
-        updated.map(shipmentRepository.put)
+        updated.map(s => shipmentRepository.put(s.copy(timeModified = Some(time))))
     }
 
   private def applySentEvent(event: ShipmentEvent): Unit =
     onValidEventAndVersion(event, event.eventType.isSent, event.getSent.getVersion) { (shipment, _, time) =>
       val stateChangeTime = OffsetDateTime.parse(event.getSent.getStateChangeTime)
       val updated = shipment match {
-        case packed: PackedShipment =>
-          packed.send(stateChangeTime).map(_.copy(timeModified = Some(time)))
-
-        case received: ReceivedShipment =>
-          received.backToSent.copy(timeModified = Some(time)).successNel[String]
-
-        case lost: LostShipment =>
-          lost.backToSent.copy(timeModified = Some(time)).successNel[String]
-
-        case _ =>
-          InvalidState(s"cannot change to sent state: ${shipment.id}").failureNel[Shipment]
+        case packed:   PackedShipment   => packed.send(stateChangeTime)
+        case received: ReceivedShipment => received.backToSent.successNel[String]
+        case lost:     LostShipment     => lost.backToSent.successNel[String]
+        case _ => InvalidState(s"cannot change to sent state: ${shipment.id}").failureNel[SentShipment]
       }
 
-      updated.map(shipmentRepository.put)
+      updated.map(s => shipmentRepository.put(s.copy(timeModified = Some(time))))
     }
 
   private def applyReceivedEvent(event: ShipmentEvent): Unit =
@@ -773,17 +761,13 @@ class ShipmentsProcessor @Inject()(
       (shipment, _, time) =>
         val stateChangeTime = OffsetDateTime.parse(event.getReceived.getStateChangeTime)
         val updated = shipment match {
-          case sent: SentShipment =>
-            sent.receive(stateChangeTime).map(_.copy(timeModified = Some(time)))
-
-          case unpacked: UnpackedShipment =>
-            unpacked.backToReceived.copy(timeModified = Some(time)).successNel[String]
-
+          case sent:     SentShipment     => sent.receive(stateChangeTime)
+          case unpacked: UnpackedShipment => unpacked.backToReceived.successNel[String]
           case _ =>
-            InvalidState(s"cannot change to received state: ${shipment.id}").failureNel[Shipment]
+            InvalidState(s"cannot change to received state: ${shipment.id}").failureNel[ReceivedShipment]
         }
 
-        updated.map(shipmentRepository.put)
+        updated.map(s => shipmentRepository.put(s.copy(timeModified = Some(time))))
     }
 
   private def applyUnpackedEvent(event: ShipmentEvent): Unit =
@@ -792,17 +776,13 @@ class ShipmentsProcessor @Inject()(
         val stateChangeTime = OffsetDateTime.parse(event.getUnpacked.getStateChangeTime)
 
         val unpacked = shipment match {
-          case received: ReceivedShipment =>
-            received.unpack(stateChangeTime).map(_.copy(timeModified = Some(time)))
-
-          case completed: CompletedShipment =>
-            completed.backToUnpacked.copy(timeModified = Some(time)).successNel[String]
-
+          case received:  ReceivedShipment  => received.unpack(stateChangeTime)
+          case completed: CompletedShipment => completed.backToUnpacked.successNel[String]
           case _ =>
-            InvalidState(s"cannot change to received state: ${shipment.id}").failureNel[Shipment]
+            InvalidState(s"cannot change to received state: ${shipment.id}").failureNel[UnpackedShipment]
         }
 
-        unpacked.map(shipmentRepository.put)
+        unpacked.map(s => shipmentRepository.put(s.copy(timeModified = Some(time))))
     }
 
   private def applyCompletedEvent(event: ShipmentEvent): Unit =
@@ -811,8 +791,8 @@ class ShipmentsProcessor @Inject()(
         val stateChangeTime = OffsetDateTime.parse(event.getCompleted.getStateChangeTime)
         for {
           unpacked  <- shipment.isUnpacked
-          completed <- unpacked.copy(timeModified = Some(time)).complete(stateChangeTime)
-        } yield shipmentRepository.put(completed)
+          completed <- unpacked.complete(stateChangeTime)
+        } yield shipmentRepository.put(completed.copy(timeModified = Some(time)))
     }
 
   private def applyLostEvent(event: ShipmentEvent): Unit =

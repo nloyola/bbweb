@@ -441,30 +441,30 @@ final case class PackedShipment(
                     timeUnpacked          = None,
                     timeCompleted         = None)
 
-  def send(timeSent: OffsetDateTime): DomainValidation[SentShipment] =
-    this.timePacked
-      .toSuccessNel(TimePackedUndefined.toString)
-      .flatMap { timePacked =>
-        if (timeSent.isBefore(timePacked)) {
-          TimeSentBeforePacked.failureNel[SentShipment]
-        } else {
-          SentShipment(id                    = this.id,
-                       version               = this.version + 1,
-                       timeAdded             = this.timeAdded,
-                       timeModified          = Some(OffsetDateTime.now),
-                       courierName           = this.courierName,
-                       trackingNumber        = this.trackingNumber,
-                       originCentreId        = this.originCentreId,
-                       originLocationId      = this.originLocationId,
-                       destinationCentreId   = this.destinationCentreId,
-                       destinationLocationId = this.destinationLocationId,
-                       timePacked            = this.timePacked,
-                       timeSent              = Some(timeSent),
-                       timeReceived          = None,
-                       timeUnpacked          = None,
-                       timeCompleted         = None).successNel[String]
-        }
-      }
+  def send(timeSent: OffsetDateTime): DomainValidation[SentShipment] = {
+    for {
+      timePacked <- this.timePacked.toSuccessNel(TimePackedUndefined.toString)
+      validTime <- if (timeSent.isBefore(timePacked)) {
+                    TimeSentBeforePacked.failureNel[Unit]
+                  } else {
+                    ().successNel[String]
+                  }
+    } yield SentShipment(id                    = this.id,
+                         version               = this.version + 1,
+                         timeAdded             = this.timeAdded,
+                         timeModified          = Some(OffsetDateTime.now),
+                         courierName           = this.courierName,
+                         trackingNumber        = this.trackingNumber,
+                         originCentreId        = this.originCentreId,
+                         originLocationId      = this.originLocationId,
+                         destinationCentreId   = this.destinationCentreId,
+                         destinationLocationId = this.destinationLocationId,
+                         timePacked            = this.timePacked,
+                         timeSent              = Some(timeSent),
+                         timeReceived          = None,
+                         timeUnpacked          = None,
+                         timeCompleted         = None)
+  }
 
 }
 
@@ -503,60 +503,61 @@ final case class SentShipment(
                    timeUnpacked          = None,
                    timeCompleted         = None)
 
-  def receive(timeReceived: OffsetDateTime): DomainValidation[ReceivedShipment] =
-    this.timeSent
-      .toSuccessNel(TimeSentUndefined.toString)
-      .flatMap { timeSent =>
-        if (timeReceived.isBefore(timeSent)) {
-          TimeReceivedBeforeSent.failureNel[ReceivedShipment]
-        } else {
-          ReceivedShipment(id                    = this.id,
-                           version               = this.version + 1,
-                           timeAdded             = this.timeAdded,
-                           timeModified          = Some(OffsetDateTime.now),
-                           courierName           = this.courierName,
-                           trackingNumber        = this.trackingNumber,
-                           originCentreId        = this.originCentreId,
-                           originLocationId      = this.originLocationId,
-                           destinationCentreId   = this.destinationCentreId,
-                           destinationLocationId = this.destinationLocationId,
-                           timePacked            = this.timePacked,
-                           timeSent              = this.timeSent,
-                           timeReceived          = Some(timeReceived),
-                           timeUnpacked          = None,
-                           timeCompleted         = None).successNel[String]
-        }
-      }
+  def receive(timeReceived: OffsetDateTime): DomainValidation[ReceivedShipment] = {
+    for {
+      timeSent <- this.timeSent.toSuccessNel(TimeSentUndefined.toString)
+      validTime <- if (timeReceived.isBefore(timeSent)) {
+                    TimeReceivedBeforeSent.failureNel[Unit]
+                  } else {
+                    ().successNel[String]
+                  }
+    } yield ReceivedShipment(id                    = this.id,
+                             version               = this.version + 1,
+                             timeAdded             = this.timeAdded,
+                             timeModified          = Some(OffsetDateTime.now),
+                             courierName           = this.courierName,
+                             trackingNumber        = this.trackingNumber,
+                             originCentreId        = this.originCentreId,
+                             originLocationId      = this.originLocationId,
+                             destinationCentreId   = this.destinationCentreId,
+                             destinationLocationId = this.destinationLocationId,
+                             timePacked            = this.timePacked,
+                             timeSent              = this.timeSent,
+                             timeReceived          = Some(timeReceived),
+                             timeUnpacked          = None,
+                             timeCompleted         = None)
+  }
 
   def skipToUnpacked(
       timeReceived: OffsetDateTime,
       timeUnpacked: OffsetDateTime
-    ): DomainValidation[UnpackedShipment] =
-    this.timeSent
-      .toSuccessNel(TimeSentUndefined.toString)
-      .flatMap { timeSent =>
-        if (timeReceived.isBefore(timeSent)) {
-          TimeReceivedBeforeSent.failureNel[UnpackedShipment]
-        } else if (timeUnpacked.isBefore(timeReceived)) {
-          TimeUnpackedBeforeReceived.failureNel[UnpackedShipment]
-        } else {
-          UnpackedShipment(id                    = this.id,
-                           version               = this.version + 1,
-                           timeAdded             = this.timeAdded,
-                           timeModified          = Some(OffsetDateTime.now),
-                           courierName           = this.courierName,
-                           trackingNumber        = this.trackingNumber,
-                           originCentreId        = this.originCentreId,
-                           originLocationId      = this.originLocationId,
-                           destinationCentreId   = this.destinationCentreId,
-                           destinationLocationId = this.destinationLocationId,
-                           timePacked            = this.timePacked,
-                           timeSent              = this.timeSent,
-                           timeReceived          = Some(timeReceived),
-                           timeUnpacked          = Some(timeUnpacked),
-                           timeCompleted         = None).successNel[String]
-        }
-      }
+    ): DomainValidation[UnpackedShipment] = {
+    for {
+      timeSent <- this.timeSent.toSuccessNel(TimeSentUndefined.toString)
+      validTimes <- if (timeReceived.isBefore(timeSent)) {
+                     TimeReceivedBeforeSent.failureNel[Unit]
+                   } else if (timeUnpacked.isBefore(timeReceived)) {
+                     TimeUnpackedBeforeReceived.failureNel[Unit]
+                   } else {
+                     ().successNel[String]
+                   }
+    } yield UnpackedShipment(id                    = this.id,
+                             version               = this.version + 1,
+                             timeAdded             = this.timeAdded,
+                             timeModified          = Some(OffsetDateTime.now),
+                             courierName           = this.courierName,
+                             trackingNumber        = this.trackingNumber,
+                             originCentreId        = this.originCentreId,
+                             originLocationId      = this.originLocationId,
+                             destinationCentreId   = this.destinationCentreId,
+                             destinationLocationId = this.destinationLocationId,
+                             timePacked            = this.timePacked,
+                             timeSent              = this.timeSent,
+                             timeReceived          = Some(timeReceived),
+                             timeUnpacked          = Some(timeUnpacked),
+                             timeCompleted         = None)
+
+  }
 
   def lost: LostShipment =
     LostShipment(id                    = this.id,
@@ -611,31 +612,30 @@ final case class ReceivedShipment(
                  timeUnpacked          = None,
                  timeCompleted         = None)
 
-  def unpack(timeUnpacked: OffsetDateTime): DomainValidation[UnpackedShipment] =
-    this.timeReceived
-      .toSuccessNel(TimeReceivedUndefined.toString)
-      .flatMap { timeReceived =>
-        if (timeUnpacked.isBefore(timeReceived)) {
-          TimeUnpackedBeforeReceived.failureNel[UnpackedShipment]
-        } else {
-          UnpackedShipment(id                    = this.id,
-                           version               = this.version + 1,
-                           timeAdded             = this.timeAdded,
-                           timeModified          = Some(OffsetDateTime.now),
-                           courierName           = this.courierName,
-                           trackingNumber        = this.trackingNumber,
-                           originCentreId        = this.originCentreId,
-                           originLocationId      = this.originLocationId,
-                           destinationCentreId   = this.destinationCentreId,
-                           destinationLocationId = this.destinationLocationId,
-                           timePacked            = this.timePacked,
-                           timeSent              = this.timeSent,
-                           timeReceived          = this.timeReceived,
-                           timeUnpacked          = Some(timeUnpacked),
-                           timeCompleted         = None).successNel[String]
-        }
-      }
-
+  def unpack(timeUnpacked: OffsetDateTime): DomainValidation[UnpackedShipment] = {
+    for {
+      timeReceived <- this.timeReceived.toSuccessNel(TimeReceivedUndefined.toString)
+      validTime <- if (timeUnpacked.isBefore(timeReceived)) {
+                    TimeUnpackedBeforeReceived.failureNel[Unit]
+                  } else {
+                    ().successNel[String]
+                  }
+    } yield UnpackedShipment(id                    = this.id,
+                             version               = this.version + 1,
+                             timeAdded             = this.timeAdded,
+                             timeModified          = Some(OffsetDateTime.now),
+                             courierName           = this.courierName,
+                             trackingNumber        = this.trackingNumber,
+                             originCentreId        = this.originCentreId,
+                             originLocationId      = this.originLocationId,
+                             destinationCentreId   = this.destinationCentreId,
+                             destinationLocationId = this.destinationLocationId,
+                             timePacked            = this.timePacked,
+                             timeSent              = this.timeSent,
+                             timeReceived          = this.timeReceived,
+                             timeUnpacked          = Some(timeUnpacked),
+                             timeCompleted         = None)
+  }
 }
 
 final case class UnpackedShipment(
@@ -673,30 +673,30 @@ final case class UnpackedShipment(
                      timeUnpacked          = None,
                      timeCompleted         = None)
 
-  def complete(timeCompleted: OffsetDateTime): DomainValidation[CompletedShipment] =
-    this.timeUnpacked
-      .toSuccessNel(TimeReceivedUndefined.toString)
-      .flatMap { timeUnpacked =>
-        if (timeCompleted.isBefore(timeUnpacked)) {
-          TimeCompletedBeforeUnpacked.failureNel[CompletedShipment]
-        } else {
-          CompletedShipment(id                    = this.id,
-                            version               = this.version + 1,
-                            timeAdded             = this.timeAdded,
-                            timeModified          = Some(OffsetDateTime.now),
-                            courierName           = this.courierName,
-                            trackingNumber        = this.trackingNumber,
-                            originCentreId        = this.originCentreId,
-                            originLocationId      = this.originLocationId,
-                            destinationCentreId   = this.destinationCentreId,
-                            destinationLocationId = this.destinationLocationId,
-                            timePacked            = this.timePacked,
-                            timeSent              = this.timeSent,
-                            timeReceived          = this.timeReceived,
-                            timeUnpacked          = this.timeUnpacked,
-                            timeCompleted         = Some(timeCompleted)).successNel[String]
-        }
-      }
+  def complete(timeCompleted: OffsetDateTime): DomainValidation[CompletedShipment] = {
+    for {
+      timeUnpacked <- this.timeUnpacked.toSuccessNel(TimeReceivedUndefined.toString)
+      validTime <- if (timeCompleted.isBefore(timeUnpacked)) {
+                    TimeCompletedBeforeUnpacked.failureNel[Unit]
+                  } else {
+                    ().successNel[String]
+                  }
+    } yield CompletedShipment(id                    = this.id,
+                              version               = this.version + 1,
+                              timeAdded             = this.timeAdded,
+                              timeModified          = Some(OffsetDateTime.now),
+                              courierName           = this.courierName,
+                              trackingNumber        = this.trackingNumber,
+                              originCentreId        = this.originCentreId,
+                              originLocationId      = this.originLocationId,
+                              destinationCentreId   = this.destinationCentreId,
+                              destinationLocationId = this.destinationLocationId,
+                              timePacked            = this.timePacked,
+                              timeSent              = this.timeSent,
+                              timeReceived          = this.timeReceived,
+                              timeUnpacked          = this.timeUnpacked,
+                              timeCompleted         = Some(timeCompleted))
+  }
 }
 
 final case class CompletedShipment(

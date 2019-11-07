@@ -50,7 +50,6 @@ message ShipmentEvent {
       optional int64  version = 1;
    }
 
-
    required string id            = 1;
    optional string sessionUserId = 2;
    optional string time          = 3;

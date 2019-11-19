@@ -1,7 +1,10 @@
 package org.biobank.matchers
 
 import java.time.OffsetDateTime
-import gnieh.diffson.playJson._
+import diffson._
+import diffson.lcs._
+import diffson.jsonpatch.lcsdiff._
+import diffson.playJson._
 import org.biobank.domain.{ConcurrencySafeEntity, Location}
 import org.biobank.domain.access._
 import org.biobank.domain.annotations._
@@ -16,6 +19,8 @@ import play.api.libs.json._
 trait EntityMatchers {
 
   import DateMatchers._
+
+  implicit val lcs = new Patience[JsValue]
 
   def beEntityWithTimeAddedWithinSeconds(time: OffsetDateTime, diffSeconds: Long) =
     beTimeWithinSeconds(time, diffSeconds) compose { (e: ConcurrencySafeEntity[_]) =>
@@ -165,7 +170,7 @@ trait EntityMatchers {
                     "event types do not match for the folowing attributes: {0},\n: diff: {1}",
                     "event types match: actual: {1},\nexpected: {2}",
                     IndexedSeq(nonMatching.mkString(", "),
-                               JsonDiff.diff(Json.toJson(processingType), Json.toJson(left), true)))
+                               diff(Json.toJson(processingType), Json.toJson(left))))
       }
     }
 

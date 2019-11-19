@@ -13,10 +13,10 @@ packageSummary in Linux := "Biorepository application for tracking biospecimens.
 
 packageDescription := "Biorepository application for tracking biospecimens."
 
-scalaVersion := "2.12.8"
+scalaVersion := "2.12.10"
 
 val akkaVer           = "2.5.23"
-val silhouetteVersion = "6.1.0"
+val silhouetteVersion = "6.1.1"
 
 organization in ThisBuild := "org.biobank"
 
@@ -113,8 +113,8 @@ libraryDependencies += "com.typesafe.akka"   %% "akka-remote"            % akkaV
 libraryDependencies += "com.github.dnvriend" %% "akka-persistence-jdbc"  % "3.5.2" % "compile" excludeAll (ExclusionRule(
   organization = "com.typesafe.akka"
 ))
-libraryDependencies += "mysql"                      % "mysql-connector-java"             % "8.0.17"
-libraryDependencies += "org.scalaz"                 %% "scalaz-core"                     % "7.2.28" % "compile"
+libraryDependencies += "mysql"                      % "mysql-connector-java"             % "8.0.18"
+libraryDependencies += "org.scalaz"                 %% "scalaz-core"                     % "7.2.29" % "compile"
 libraryDependencies += "com.github.mauricio"        %% "mysql-async"                     % "0.2.21"
 libraryDependencies += "com.github.t3hnar"          %% "scala-bcrypt"                    % "4.1"
 libraryDependencies += "com.github.ancane"          %% "hashids-scala"                   % "1.3"
@@ -137,9 +137,9 @@ libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play"      % "
 libraryDependencies += "com.mohiva"             %% "play-silhouette-testkit" % silhouetteVersion % "test"
 libraryDependencies += "org.pegdown"            % "pegdown"                  % "1.6.0"           % "test"
 libraryDependencies += "org.codehaus.janino"    % "janino"                   % "3.1.0"           % "test"
-libraryDependencies += "org.mockito"            % "mockito-core"             % "3.0.0"           % "test"
+libraryDependencies += "org.mockito"            % "mockito-core"             % "3.1.0"           % "test"
 libraryDependencies += "it.bitbl"               %% "scala-faker"             % "0.4"             % "test"
-libraryDependencies += "org.gnieh"              %% "diffson-play-json"       % "3.1.1"           % "test"
+libraryDependencies += "org.gnieh"              %% "diffson-play-json"       % "4.0.0"           % "test"
 
 routesGenerator := InjectedRoutesGenerator
 

@@ -15,6 +15,8 @@ import org.biobank.services.PasswordHasher
 import org.hashids.Hashids
 import play.api.{Configuration, Environment, Logger, Mode}
 import scalaz.Scalaz._
+import org.biobank.query.db.DatabaseSchema
+import play.api.db.slick.DatabaseConfigProvider
 
 /**
  * Provides initial data to test with.
@@ -345,8 +347,14 @@ object CbsrTestData {
 /**
  * Provides initial data to test with. Ideally these methods should only be called for development builds.
  */
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.ImplicitParameter"))
 @Singleton
-class TestData @Inject()(config: Configuration, env: Environment, passwordHasher: PasswordHasher) {
+class TestData @Inject()(
+    private val config:             Configuration,
+    private val env:                Environment,
+    private val passwordHasher:     PasswordHasher,
+    protected val dbConfigProvider: DatabaseConfigProvider)
+    extends DatabaseSchema {
 
   import TestData._
 
@@ -695,7 +703,7 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
                        originLocationId        = originLocationId,
                        destinationCentreId     = destinationCentreId,
                        destinationLocationId   = destinationLocationId,
-                       timePacked              = Some(OffsetDateTime.now),
+                       timePacked              = Some(Global.StartOfTime),
                        timeSent                = None,
                        timeReceived            = None,
                        timeUnpacked            = None,
@@ -710,7 +718,7 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
                        originLocationId        = originLocationId,
                        destinationCentreId     = destinationCentreId,
                        destinationLocationId   = destinationLocationId,
-                       timePacked              = Some(OffsetDateTime.now),
+                       timePacked              = Some(Global.StartOfTime),
                        timeSent                = None,
                        timeReceived            = None,
                        timeUnpacked            = None,
@@ -725,10 +733,10 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
                          originLocationId      = originLocationId,
                          destinationCentreId   = destinationCentreId,
                          destinationLocationId = destinationLocationId,
-                         timePacked            = Some(OffsetDateTime.now),
-                         timeSent              = Some(OffsetDateTime.now),
-                         timeReceived          = Some(OffsetDateTime.now),
-                         timeUnpacked          = Some(OffsetDateTime.now),
+                         timePacked            = Some(Global.StartOfTime),
+                         timeSent              = Some(Global.StartOfTime),
+                         timeReceived          = Some(Global.StartOfTime),
+                         timeUnpacked          = Some(Global.StartOfTime),
                          timeCompleted         = None),
         UnpackedShipment(id                    = ShipmentId(s"test-shipment-unpacked-2"),
                          version               = 0,
@@ -740,10 +748,10 @@ class TestData @Inject()(config: Configuration, env: Environment, passwordHasher
                          originLocationId      = originLocationId,
                          destinationCentreId   = destinationCentreId,
                          destinationLocationId = destinationLocationId,
-                         timePacked            = Some(OffsetDateTime.now),
-                         timeSent              = Some(OffsetDateTime.now),
-                         timeReceived          = Some(OffsetDateTime.now),
-                         timeUnpacked          = Some(OffsetDateTime.now),
+                         timePacked            = Some(Global.StartOfTime),
+                         timeSent              = Some(Global.StartOfTime),
+                         timeReceived          = Some(Global.StartOfTime),
+                         timeUnpacked          = Some(Global.StartOfTime),
                          timeCompleted         = None)
       )
     }

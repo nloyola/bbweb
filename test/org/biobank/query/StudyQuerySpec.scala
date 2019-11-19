@@ -9,7 +9,7 @@ class StudyQuerySp extends WordSpecLike with MustMatchers {
 
   //  val log = LoggerFactory.getLogger(this.getClass)
   //
-  //  vaameGenerator = new NameGenerator[this.getClass]
+  //  var nameGenerator = new NameGenerator[this.getClass]
   //
   //  describe("Study") {
   //

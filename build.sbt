@@ -102,10 +102,12 @@ libraryDependencies += guice
 libraryDependencies += ws
 libraryDependencies += ehcache
 libraryDependencies += filters
-libraryDependencies += "org.scala-stm"     %% "scala-stm"        % "0.9.1"
-libraryDependencies += "com.iheart"        %% "ficus"            % "1.4.7"
-libraryDependencies += "com.typesafe.play" %% "play-json"        % "2.7.4"
-libraryDependencies += "com.typesafe.akka" %% "akka-persistence" % akkaVer % "compile" excludeAll (ExclusionRule(
+libraryDependencies += "org.scala-stm"     %% "scala-stm"             % "0.9.1"
+libraryDependencies += "com.iheart"        %% "ficus"                 % "1.4.7"
+libraryDependencies += "com.typesafe.play" %% "play-json"             % "2.7.4"
+libraryDependencies += "com.typesafe.play" %% "play-slick"            % "4.0.2"
+libraryDependencies += "com.typesafe.play" %% "play-slick-evolutions" % "4.0.2"
+libraryDependencies += "com.typesafe.akka" %% "akka-persistence"      % akkaVer % "compile" excludeAll (ExclusionRule(
   organization = "com.google.protobuf"
 ))
 libraryDependencies += "com.typesafe.akka"   %% "akka-persistence-query" % akkaVer % "compile"

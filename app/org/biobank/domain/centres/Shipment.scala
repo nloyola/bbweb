@@ -88,34 +88,19 @@ sealed trait Shipment extends ConcurrencySafeEntity[ShipmentId] with HasState {
   val timeCompleted:         Option[OffsetDateTime]
 
   def isCreated: DomainValidation[CreatedShipment] =
-    this match {
-      case s: CreatedShipment => s.successNel[String]
-      case s => InvalidState(s"shipment not created: ${s.id}").failureNel[CreatedShipment]
-    }
+    InvalidState(s"shipment not created: ${this.id}").failureNel[CreatedShipment]
 
   def isPacked: DomainValidation[PackedShipment] =
-    this match {
-      case s: PackedShipment => s.successNel[String]
-      case s => InvalidState(s"shipment not packed: ${s.id}").failureNel[PackedShipment]
-    }
+    InvalidState(s"shipment not packed: ${this.id}").failureNel[PackedShipment]
 
   def isSent: DomainValidation[SentShipment] =
-    this match {
-      case s: SentShipment => s.successNel[String]
-      case s => InvalidState(s"shipment not sent: ${s.id}").failureNel[SentShipment]
-    }
+    InvalidState(s"shipment not sent: ${this.id}").failureNel[SentShipment]
 
   def isReceived: DomainValidation[ReceivedShipment] =
-    this match {
-      case s: ReceivedShipment => s.successNel[String]
-      case s => InvalidState(s"shipment not received: ${s.id}").failureNel[ReceivedShipment]
-    }
+    InvalidState(s"shipment not received: ${this.id}").failureNel[ReceivedShipment]
 
   def isUnpacked: DomainValidation[UnpackedShipment] =
-    this match {
-      case s: UnpackedShipment => s.successNel[String]
-      case s => InvalidState(s"shipment not unpacked: ${s.id}").failureNel[UnpackedShipment]
-    }
+    InvalidState(s"shipment not unpacked: ${this.id}").failureNel[UnpackedShipment]
 
   override def toString: String =
     s"""|Shipment:{
@@ -260,6 +245,8 @@ final case class CreatedShipment(
 
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
+
+  override def isCreated: DomainValidation[CreatedShipment] = this.successNel[String]
 
   def withCourier(name: String): DomainValidation[CreatedShipment] =
     validateNonEmptyString(name, CourierNameInvalid).map { name =>
@@ -420,6 +407,8 @@ final case class PackedShipment(
     timeCompleted:         Option[OffsetDateTime])
     extends { val state: EntityState = Shipment.packedState } with Shipment with ShipmentValidations {
 
+  override def isPacked: DomainValidation[PackedShipment] = this.successNel[String]
+
   /**
    * Returns shipment to created state.
    *
@@ -485,6 +474,8 @@ final case class SentShipment(
     timeUnpacked:          Option[OffsetDateTime],
     timeCompleted:         Option[OffsetDateTime])
     extends { val state: EntityState = Shipment.sentState } with Shipment with ShipmentValidations {
+
+  override def isSent: DomainValidation[SentShipment] = this.successNel[String]
 
   def backToPacked: PackedShipment =
     PackedShipment(id                    = this.id,
@@ -595,6 +586,8 @@ final case class ReceivedShipment(
     timeCompleted:         Option[OffsetDateTime])
     extends { val state: EntityState = Shipment.receivedState } with Shipment with ShipmentValidations {
 
+  override def isReceived: DomainValidation[ReceivedShipment] = this.successNel[String]
+
   def backToSent: SentShipment =
     SentShipment(id                    = this.id,
                  version               = this.version + 1,
@@ -655,6 +648,8 @@ final case class UnpackedShipment(
     timeUnpacked:          Option[OffsetDateTime],
     timeCompleted:         Option[OffsetDateTime])
     extends { val state: EntityState = Shipment.unpackedState } with Shipment with ShipmentValidations {
+
+  override def isUnpacked: DomainValidation[UnpackedShipment] = this.successNel[String]
 
   def backToReceived: ReceivedShipment =
     ReceivedShipment(id                    = this.id,

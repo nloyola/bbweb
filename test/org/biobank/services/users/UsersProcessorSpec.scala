@@ -17,7 +17,7 @@ import scala.concurrent.Await
 
 case class NamedUsersProcessor @Inject()(@Named("usersProcessor") processor: ActorRef)
 
-class UsersProcessorSpec extends ProcessorTestFixture with PresistenceQueryEvents {
+class UsersProcessorSpec extends ProcessorTestFixture {
 
   import org.biobank.TestUtils._
 

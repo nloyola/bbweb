@@ -5,14 +5,30 @@ import java.time.{OffsetDateTime, ZoneOffset}
 import javax.inject._
 import org.biobank.domain.Slug
 import org.biobank.domain.users._
+import org.biobank.query.db.DatabaseSchema
 import play.api.{Configuration, Logger}
+import scala.concurrent.ExecutionContext
+//import scala.util.{Failure, Success}
+import play.api.db.slick.DatabaseConfigProvider
 
 /**
  * This is a trait so that it can be used by tests also.
  */
 @Singleton
-@SuppressWarnings(Array("org.wartremover.warts.Throw", "org.wartremover.warts.ImplicitParameter"))
-class Global @Inject()(implicit val mat: Materializer, configuration: Configuration) {
+@SuppressWarnings(
+  Array("org.wartremover.warts.Throw",
+        "org.wartremover.warts.ImplicitParameter",
+        "org.wartremover.warts.NonUnitStatements")
+)
+class Global @Inject()(
+    configuration:                  Configuration,
+    protected val dbConfigProvider: DatabaseConfigProvider
+  )(
+    implicit
+    val mat: Materializer,
+    val ec:  ExecutionContext)
+    extends DatabaseSchema {
+  import dbConfig.profile.api._
 
   val log: Logger = Logger(this.getClass)
 
@@ -31,7 +47,16 @@ class Global @Inject()(implicit val mat: Materializer, configuration: Configurat
     }
   }
 
+  def showSchema(): Unit = {
+    if (configuration.get[Boolean]("application.schema.show")) {
+      val schema = sequenceNumbers.schema ++ shipments.schema
+      schema.create.statements.foreach(s => log.info(s))
+      ()
+    }
+  }
+
   checkConfig
+  showSchema
 }
 
 object Global {

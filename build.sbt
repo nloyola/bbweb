@@ -88,7 +88,8 @@ sources in (Compile, doc) ~= (_ filter (_.getParent contains "org/biobank"))
 
 fork in run := true
 
-run / javaOptions += "-Xmx2G -Duser.timezone=GMT"
+run / javaOptions += "-Xmx2G"
+run / javaOptions += "-Duser.timezone=GMT"
 
 // https://scalameta.org/metals/docs/build-tools/sbt.html
 addCompilerPlugin("com.github.ghik" %% "silencer-plugin" % "1.4.2")

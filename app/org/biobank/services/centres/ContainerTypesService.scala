@@ -17,7 +17,6 @@ import org.biobank.services._
 import org.biobank.services.access.AccessService
 import org.slf4j.{Logger, LoggerFactory}
 import scala.concurrent._
-import scala.concurrent.ExecutionContext.Implicits.global
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 
@@ -40,13 +39,17 @@ trait ContainerTypesService extends BbwebService {
 
 }
 
+@SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
 class ContainerTypesServiceImpl @Inject()(
     @Named("containerTypesProcessor") val processor: ActorRef,
     val accessService:                               AccessService,
     val centresService:                              CentresService,
     val centreRepository:                            CentreRepository,
     val containerTypeRepository:                     ContainerTypeRepository,
-    val schemaRepository:                            ContainerSchemaRepository)
+    val schemaRepository:                            ContainerSchemaRepository
+  )(
+    implicit
+    ec: ExecutionContext)
     extends ContainerTypesService with AccessChecksSerivce with ServicePermissionChecks {
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)

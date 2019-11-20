@@ -17,7 +17,6 @@ import org.biobank.services._
 import org.biobank.services.access.AccessService
 import org.biobank.services.studies.StudiesService
 import org.slf4j.{Logger, LoggerFactory}
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
@@ -70,11 +69,15 @@ trait CentresService extends BbwebService {
  * @param centreProcessor
  *
  */
+@SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
 class CentresServiceImpl @Inject()(
     @Named("centresProcessor") val processor: ActorRef,
     val accessService:                        AccessService,
     val studiesService:                       StudiesService,
-    val centreRepository:                     CentreRepository)
+    val centreRepository:                     CentreRepository
+  )(
+    implicit
+    ec: ExecutionContext)
     extends CentresService with AccessChecksSerivce with CentreServicePermissionChecks {
 
   import org.biobank.CommonValidations._

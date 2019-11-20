@@ -20,7 +20,6 @@ import org.biobank.services.participants.SpecimensService
 import org.biobank.services._
 import org.biobank.services.access.AccessService
 import org.slf4j.{Logger, LoggerFactory}
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
@@ -85,6 +84,7 @@ trait ShipmentsService extends BbwebService {
 /**
  * Handles all commands dealing with shipments, shipment specimens, and shipment containers.
  */
+@SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
 class ShipmentsServiceImpl @Inject()(
     @Named("shipmentsProcessor") val processor: ActorRef,
     val accessService:                          AccessService,
@@ -96,7 +96,10 @@ class ShipmentsServiceImpl @Inject()(
     val collectionEventRepository:              CollectionEventRepository,
     val collectionEventTypeRepository:          CollectionEventTypeRepository,
     val specimensService:                       SpecimensService,
-    val shipmentFilter:                         ShipmentFilter)
+    val shipmentFilter:                         ShipmentFilter
+  )(
+    implicit
+    ec: ExecutionContext)
     extends ShipmentsService with AccessChecksSerivce with CentreServicePermissionChecks
     with ShipmentConstraints {
 

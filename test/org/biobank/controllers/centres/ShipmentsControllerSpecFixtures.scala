@@ -27,7 +27,8 @@ abstract private[centres] class ShipmentsControllerSpecFixtures
       specimenRepository.put(specimen)
       ceventSpecimenRepository.put(CeventSpecimen(f.cevent.id, specimen.id))
     }
-    shipmentRepository.put(f.shipment)
+    shipmentsReadRepository.put(f.shipment)
+    shipmentsWriteRepository.put(f.shipment)
     f
   }
 
@@ -35,7 +36,8 @@ abstract private[centres] class ShipmentsControllerSpecFixtures
     val f = super.shipmentSpecimensFixture(numSpecimens)
     f.shipmentSpecimenMap.values.foreach { v =>
       specimenRepository.put(v.specimen)
-      shipmentSpecimenRepository.put(v.shipmentSpecimen)
+      shipmentSpecimensRepository.put(v.shipmentSpecimen)
+      shipmentSpecimensReadRepository.put(v.shipmentSpecimen)
     }
     f
   }
@@ -43,7 +45,8 @@ abstract private[centres] class ShipmentsControllerSpecFixtures
   override def addSpecimenToShipment(shipment: Shipment, originCentre: Centre) = {
     val f = super.addSpecimenToShipment(shipment, originCentre)
     specimenRepository.put(f.specimen)
-    shipmentSpecimenRepository.put(f.shipmentSpecimen)
+    shipmentSpecimensRepository.put(f.shipmentSpecimen)
+    shipmentSpecimensReadRepository.put(f.shipmentSpecimen)
     f
   }
 

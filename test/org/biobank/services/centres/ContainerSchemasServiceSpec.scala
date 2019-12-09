@@ -11,6 +11,7 @@ import org.biobank.services.users.UserServiceFixtures
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import org.biobank.infrastructure.commands.ContainerSchemaCommands._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Primarily these are tests that exercise the User Access aspect of ContainerSchemasService.
@@ -36,7 +37,7 @@ class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceF
         forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           val cmd = containerToAddCommand(user, f.schema)
           schemaRepository.removeAll
-          schemasService.processCommand(cmd).futureValue mustSucceed { c =>
+          schemasService.processCommand(cmd).mustSucceed { c =>
             c.name must be(f.schema.name)
           }
         }
@@ -48,7 +49,7 @@ class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceF
 
         forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           val cmd = containerToAddCommand(user, f.schema)
-          schemasService.processCommand(cmd).futureValue mustFail "Unauthorized"
+          schemasService.processCommand(cmd) mustFail "Unauthorized"
         }
       }
     }
@@ -67,7 +68,6 @@ class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceF
           info(label)
           schemasService
             .search(user.id, f.centre.id, query)
-            .futureValue
             .mustSucceed { pagedResults =>
               pagedResults.items.length must be > 0
             }
@@ -81,11 +81,11 @@ class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceF
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
         info("no membership user")
         schemasService
-          .search(f.noMembershipUser.id, f.centre.id, query).futureValue.mustFail("Unauthorized")
+          .search(f.noMembershipUser.id, f.centre.id, query).mustFail("Unauthorized")
 
         info("no permission user")
         schemasService
-          .search(f.noCentrePermissionUser.id, f.centre.id, query).futureValue.mustFail("Unauthorized")
+          .search(f.noCentrePermissionUser.id, f.centre.id, query).mustFail("Unauthorized")
       }
 
     }
@@ -98,7 +98,7 @@ class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceF
         persistRoles(f)
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
-          schemasService.getBySlug(user.id, f.schema.slug).futureValue.mustSucceed { result =>
+          schemasService.getBySlug(user.id, f.schema.slug).mustSucceed { result =>
             result.id must be(f.schema.id.id)
           }
         }
@@ -110,11 +110,11 @@ class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceF
         persistRoles(f)
 
         info("no membership user")
-        schemasService.getBySlug(f.noMembershipUser.id, f.schema.slug).futureValue.mustFail("Unauthorized")
+        schemasService.getBySlug(f.noMembershipUser.id, f.schema.slug).mustFail("Unauthorized")
 
         info("no permission user")
         schemasService
-          .getBySlug(f.noCentrePermissionUser.id, f.schema.slug).futureValue.mustFail("Unauthorized")
+          .getBySlug(f.noCentrePermissionUser.id, f.schema.slug).mustFail("Unauthorized")
       }
 
     }
@@ -130,7 +130,7 @@ class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceF
           info(label)
           forAll(updateCommandsTable(user.id, f.schema)) { cmd =>
             schemaRepository.put(f.schema) // restore the containerSchema to it's previous state
-            schemasService.processCommand(cmd).futureValue mustSucceed { c =>
+            schemasService.processCommand(cmd).mustSucceed { c =>
               c.id must be(f.schema.id.id)
             }
           }
@@ -144,7 +144,7 @@ class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceF
 
         forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           forAll(updateCommandsTable(user.id, f.schema)) { cmd =>
-            schemasService.processCommand(cmd).futureValue mustFail "Unauthorized"
+            schemasService.processCommand(cmd) mustFail "Unauthorized"
           }
         }
       }
@@ -162,7 +162,7 @@ class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceF
 
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 10)
 
-        schemasService.search(f.allCentresAdminUser.id, f.centre.id, query).futureValue.mustSucceed { reply =>
+        schemasService.search(f.allCentresAdminUser.id, f.centre.id, query).mustSucceed { reply =>
           reply.items.length must be > 1
           val containerSchemaIds = reply.items.map(c => c.id).sorted
           containerSchemaIds must equal(List(f.schema.id.id, sibling.id.id).sorted)
@@ -181,7 +181,7 @@ class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceF
 
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
         schemasService
-          .search(f.centreUser.id, f.centre.id, query).futureValue.mustFail("Unauthorized")
+          .search(f.centreUser.id, f.centre.id, query).mustFail("Unauthorized")
       }
 
     }

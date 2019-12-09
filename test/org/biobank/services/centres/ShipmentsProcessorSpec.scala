@@ -10,6 +10,7 @@ import org.biobank.domain.centres._
 import org.biobank.domain.participants._
 import org.biobank.fixtures._
 import org.biobank.services._
+import org.biobank.services.participants.SpecimensService
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
 import play.api.libs.json._
@@ -30,7 +31,7 @@ class ShipmentsProcessorSpec extends ProcessorTestFixture with ShipmentSpecFixtu
 
   private val centreRepository = app.injector.instanceOf[CentreRepository]
 
-  private val shipmentRepository = app.injector.instanceOf[ShipmentRepository]
+  private val shipmentRepository = app.injector.instanceOf[ShipmentsWriteRepository]
 
   override def beforeEach() {
     studyRepository.removeAll
@@ -58,10 +59,11 @@ class ShipmentsProcessorSpec extends ProcessorTestFixture with ShipmentSpecFixtu
 
     val actor = system.actorOf(
       Props(
-        new ShipmentsProcessor(shipmentRepository,
-                               app.injector.instanceOf[ShipmentSpecimenRepository],
+        new ShipmentsProcessor(app.injector.instanceOf[ShipmentsWriteRepository],
+                               app.injector.instanceOf[ShipmentSpecimensWriteRepository],
                                centreRepository,
                                app.injector.instanceOf[SpecimenRepository],
+                               app.injector.instanceOf[SpecimensService],
                                app.injector.instanceOf[SnapshotWriter])
       ),
       "shipments-processor-id-2"

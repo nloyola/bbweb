@@ -6,11 +6,13 @@ import akka.persistence.query.{EventEnvelope, PersistenceQuery}
 import akka.stream.{ActorMaterializer, Materializer}
 import java.time.OffsetDateTime
 import javax.inject.Inject
-import org.biobank.TestData
+import org.biobank._
 import org.biobank.domain._
 import org.biobank.domain.centres._
+import org.biobank.domain.participants._
 import org.biobank.infrastructure.events.ShipmentEvents._
-import org.biobank.query.db.{DatabaseSchema, SequenceNumber, SequenceNumbersDao}
+import org.biobank.infrastructure.events.ShipmentSpecimenEvents._
+import org.biobank.query.db._
 import org.slf4j.LoggerFactory
 import play.api.db.slick.DatabaseConfigProvider
 import scala.concurrent.{ExecutionContext, Future}
@@ -21,26 +23,29 @@ import scalaz.Validation.FlatMap._
 import scalaz._
 import scala.collection.mutable.Queue
 
-trait DbOperation
-
 final case class AddOrUpdate(shipment: Shipment) extends DbOperation
 
 final case class Remove(shipmentId: ShipmentId) extends DbOperation
 
+final case class SpecimensAdded(shipmentSepecimens: List[ShipmentSpecimen]) extends DbOperation
+
+final case class SpecimenAddOrUpdate(shipmentSpecimen: ShipmentSpecimen) extends DbOperation
+
+final case class SpecimenRemove(shipmentSpecimenId: ShipmentSpecimenId) extends DbOperation
+
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter", "org.wartremover.warts.NonUnitStatements"))
 class ShipmentsQuery @Inject()(
-    private val system:               ActorSystem,
-    private val testData:             TestData,
-    protected val dbConfigProvider:   DatabaseConfigProvider,
-    protected val shipmentsDao:       ShipmentsDao,
-    protected val sequenceNumbersDao: SequenceNumbersDao
+    private val system:                        ActorSystem,
+    private val testData:                      TestData,
+    protected val dbConfigProvider:            DatabaseConfigProvider,
+    protected val shipmentsRepository:         ShipmentsReadRepository,
+    protected val shipmentSpecimensRepository: ShipmentSpecimensReadRepository,
+    protected val sequenceNumbersDao:          SequenceNumbersDao
   )(
     implicit
     val ec: ExecutionContext)
     extends DatabaseSchema {
   import dbConfig.profile.api._
-
-  type DbOperationResult = Future[DomainValidation[DbOperation]]
 
   val persistenceId = "shipments-processor-id"
 
@@ -59,7 +64,7 @@ class ShipmentsQuery @Inject()(
   private def init(): Unit = {
     val f = for {
       _ <- db.run(shipments.delete)
-      _ <- shipmentsDao.addAll(testData.testShipments)
+      _ <- shipmentsRepository.putAll(testData.testShipments)
     } yield ()
 
     f.onComplete {
@@ -82,7 +87,7 @@ class ShipmentsQuery @Inject()(
       ()
     }
 
-    sequenceNumbersDao.sequenceNumberForId(persistenceId).onComplete {
+    sequenceNumbersDao.sequenceNumberForId(persistenceId).futval.onComplete {
       case Success(v) =>
         v match {
           case scalaz.Success(sn) => handleEventsFrom(sn.sequenceNumber + 1L)
@@ -104,34 +109,30 @@ class ShipmentsQuery @Inject()(
 
       val f = handleEvent(envelope.event)
       currentOperation = Some(f)
-      f.andThen {
-          case Success(_) =>
-            sequenceNumbersDao.insertOrUpdate(SequenceNumber(persistenceId, envelope.sequenceNr))
-        }
-        .onComplete {
-          case Failure(err) =>
-            log.error(s"error processing event queue: {err.getMessage}")
-          case Success(_) =>
-            currentOperation = None
-            processEventQueue
-        }
-    }
-  }
-
-  private def handleEvent(event: Any): Future[Unit] = {
-    processEvent(event).flatMap {
-      _ match {
-        case scalaz.Success(s) =>
-          s match {
-            case AddOrUpdate(s) => shipmentsDao.insertOrUpdate(s)
-            case Remove(id)     => shipmentsDao.remove(id)
-          }
-        case scalaz.Failure(err) => Future { log.error(s"$err") }
+      f.map(_ => sequenceNumbersDao.insertOrUpdate(SequenceNumber(persistenceId, envelope.sequenceNr)))
+      f.onComplete {
+        case Failure(err) =>
+          log.error(s"error processing event queue: {err.getMessage}")
+        case Success(_) =>
+          currentOperation = None
+          processEventQueue
       }
     }
   }
 
-  private def processEvent(event: Any): DbOperationResult = {
+  private def handleEvent(event: Any): Future[Unit] = {
+    val f = processEvent(event)
+    f.map {
+      _ match {
+        case AddOrUpdate(s)     => shipmentsRepository.put(s)
+        case Remove(id)         => shipmentsRepository.remove(id)
+        case SpecimensAdded(ss) => shipmentSpecimensRepository.putAll(ss.toSeq)
+      }
+    }
+    f.futval.map(_ => ())
+  }
+
+  private def processEvent(event: Any): FutureValidation[DbOperation] = {
     event match {
       case event: ShipmentEvent =>
         event.eventType match {
@@ -151,15 +152,34 @@ class ShipmentsQuery @Inject()(
           case et: ShipmentEvent.EventType.SkippedToSentState         => skippedToSentState(event)
           case et: ShipmentEvent.EventType.SkippedToUnpackedState     => skippedToUnpackedState(event)
 
-          case event =>
-            Future { DomainError(s"shipment event not handled: $event").failureNel[DbOperation] }
+          case et =>
+            FutureValidation(DomainError(s"shipment event not handled: $event").failureNel[DbOperation])
         }
-      case event => Future { DomainError(s"event not handled: $event").failureNel[DbOperation] }
+
+      case event: ShipmentSpecimenEvent =>
+        event.eventType match {
+          case et: ShipmentSpecimenEvent.EventType.Added            => specimensAdded(event)
+          case et: ShipmentSpecimenEvent.EventType.Removed          => specimenRemoved(event)
+          case et: ShipmentSpecimenEvent.EventType.ContainerUpdated => specimenContainerUpdated(event)
+          case et: ShipmentSpecimenEvent.EventType.Present          => specimenPresent(event)
+          case et: ShipmentSpecimenEvent.EventType.Received         => specimenReceived(event)
+          case et: ShipmentSpecimenEvent.EventType.Missing          => specimenMissing(event)
+          case et: ShipmentSpecimenEvent.EventType.Extra            => specimenExtra(event)
+
+          case et =>
+            FutureValidation(
+              DomainError(s"shipment specimen event not handled: $event").failureNel[DbOperation]
+            )
+
+        }
+
+      case event =>
+        FutureValidation(DomainError(s"shipment event not handled: $event").failureNel[DbOperation])
     }
   }
 
-  private def added(event: ShipmentEvent): DbOperationResult = {
-    Future {
+  private def added(event: ShipmentEvent): FutureValidation[DbOperation] = {
+    FutureValidation(Future {
       val companion = event.getAdded
       val eventTime = OffsetDateTime.parse(event.getTime)
       val v = for {
@@ -177,7 +197,7 @@ class ShipmentsQuery @Inject()(
       } yield shipment
 
       v.map(AddOrUpdate(_))
-    }
+    })
   }
 
   private def courierNameUpdated(event: ShipmentEvent): DbOperationResult = {
@@ -344,31 +364,80 @@ class ShipmentsQuery @Inject()(
     }
   }
 
+  private def specimensAdded(event: ShipmentSpecimenEvent): DbOperationResult = {
+    FutureValidation {
+      val companionEvent      = event.getAdded
+      val eventTime           = OffsetDateTime.parse(event.getTime)
+      val shipmentId          = ShipmentId(event.shipmentId)
+      val shipmentContainerId = companionEvent.shipmentContainerId.map(ShipmentContainerId.apply)
+
+      companionEvent.shipmentSpecimenAddData
+        .map { info =>
+          ShipmentSpecimen
+            .create(id                  = ShipmentSpecimenId(info.getShipmentSpecimenId),
+                    version             = 0L,
+                    shipmentId          = shipmentId,
+                    specimenId          = SpecimenId(info.getSpecimenId),
+                    state               = ShipmentItemState.Present,
+                    shipmentContainerId = shipmentContainerId)
+            .map(_.copy(timeAdded = eventTime))
+        }
+        .toList.sequenceU
+        .map(SpecimensAdded(_))
+    }
+  }
+
+  private def specimenRemoved(event: ShipmentSpecimenEvent) = {
+    ???
+  }
+
+  private def specimenContainerUpdated(event: ShipmentSpecimenEvent) = {
+    ???
+  }
+
+  private def specimenPresent(event: ShipmentSpecimenEvent) = {
+    ???
+  }
+
+  private def specimenReceived(event: ShipmentSpecimenEvent) = {
+    ???
+  }
+
+  private def specimenMissing(event: ShipmentSpecimenEvent) = {
+    ???
+  }
+
+  private def specimenExtra(event: ShipmentSpecimenEvent) = {
+    ???
+  }
+
   @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
   protected def onValidEvent(
       event:        ShipmentEvent,
       eventType:    Boolean,
       eventVersion: Long
-    )(applyEvent:   (Shipment, ShipmentEvent, OffsetDateTime) => DomainValidation[DbOperation]
-    ): DbOperationResult = {
+    )(applyEvent:   (Shipment, ShipmentEvent, OffsetDateTime) => SystemValidation[DbOperation]
+    ): FutureValidation[DbOperation] = {
     if (!eventType) {
-      Future { s"invalid event type: $event".failureNel[DbOperation] }
+      FutureValidation(Future { s"invalid event type: $event".failureNel[DbOperation] })
     } else {
       val shipmentId = ShipmentId(event.id)
 
-      shipmentsDao.shipmentWithId(shipmentId).map { result =>
-        for {
-          shipment <- result
-          validVersion <- shipment
-                           .requireVersion(eventVersion).leftMap(
-                             _ =>
-                               NonEmptyList(
-                                 s"invalid version for event: shipment version: ${shipment.version}, event: $event"
-                               )
-                           )
-          updated <- applyEvent(shipment, event, OffsetDateTime.parse(event.getTime))
-        } yield updated
-      }
+      for {
+        shipment <- shipmentsRepository.getByKey(shipmentId)
+        valid <- FutureValidation(Future {
+                  for {
+                    validVersion <- shipment
+                                     .requireVersion(eventVersion).leftMap(
+                                       _ =>
+                                         NonEmptyList(
+                                           s"invalid version for event: shipment version: ${shipment.version}, event: $event"
+                                         )
+                                     )
+                    updated <- applyEvent(shipment, event, OffsetDateTime.parse(event.getTime))
+                  } yield updated
+                })
+      } yield valid
     }
   }
 

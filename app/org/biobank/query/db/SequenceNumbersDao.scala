@@ -2,7 +2,7 @@ package org.biobank.query.db
 
 import com.google.inject.ImplementedBy
 import javax.inject.Inject
-import org.biobank.domain._
+import org.biobank._
 import play.api.db.slick.DatabaseConfigProvider
 import scala.concurrent.{ExecutionContext, Future}
 import scalaz.Scalaz._
@@ -16,7 +16,7 @@ trait SequenceNumbersDao {
 
   def remove(persistenceId: String): Future[Unit]
 
-  def sequenceNumberForId(persistenceId: String): Future[DomainValidation[SequenceNumber]]
+  def sequenceNumberForId(persistenceId: String): FutureValidation[SequenceNumber]
 
 }
 
@@ -41,9 +41,11 @@ class SequenceNumbersDaoSlick @Inject()(
     db.run(action.map(_ => ()))
   }
 
-  def sequenceNumberForId(persistenceId: String): Future[DomainValidation[SequenceNumber]] = {
+  def sequenceNumberForId(persistenceId: String): FutureValidation[SequenceNumber] = {
+    FutureValidation(
     db.run(sequenceNumbers.filter(s => s.persistenceId === persistenceId).result.headOption)
       .map(_.toSuccessNel(s"persistence ID not found: $persistenceId"))
+    )
   }
 
 }

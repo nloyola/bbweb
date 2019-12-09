@@ -4,6 +4,7 @@ import akka.actor._
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Named}
+import org.biobank._
 import org.biobank.domain.Slug
 import org.biobank.domain.access._
 import org.biobank.domain.centres.CentreRepository
@@ -17,7 +18,6 @@ import org.biobank.infrastructure.events.SpecimenEvents._
 import org.biobank.services._
 import org.biobank.services.access.AccessService
 import org.slf4j.{Logger, LoggerFactory}
-import scala.concurrent._
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 
@@ -30,21 +30,23 @@ trait SpecimensService extends BbwebService {
 
   def getByInventoryId(requestUserId: UserId, inventoryId: String): ServiceValidation[Specimen]
 
+  def getByInventoryIds(requestUserId: UserId, inventoryIds: String*): ServiceValidation[List[Specimen]]
+
   def list(
       requestUserId:     UserId,
       collectionEventId: CollectionEventId,
       query:             PagedQuery
-    ): Future[ServiceValidation[PagedResults[SpecimenDto]]]
+    ): FutureValidation[PagedResults[SpecimenDto]]
 
   def listBySlug(
       requestUserId: UserId,
       eventSlug:     Slug,
       query:         PagedQuery
-    ): Future[ServiceValidation[PagedResults[SpecimenDto]]]
+    ): FutureValidation[PagedResults[SpecimenDto]]
 
-  def processCommand(cmd: SpecimenCommand): Future[ServiceValidation[CollectionEventDto]]
+  def processCommand(cmd: SpecimenCommand): FutureValidation[CollectionEventDto]
 
-  def processRemoveCommand(cmd: SpecimenCommand): Future[ServiceValidation[Boolean]]
+  def processRemoveCommand(cmd: SpecimenCommand): FutureValidation[Boolean]
 
   def snapshotRequest(requestUserId: UserId): ServiceValidation[Unit]
 
@@ -64,7 +66,7 @@ class SpecimensServiceImpl @Inject()(
     val centreRepository:                       CentreRepository
   )(
     implicit
-    executionContext: BbwebExecutionContext)
+    val executionContext: BbwebExecutionContext)
     extends SpecimensService with AccessChecksSerivce with ServicePermissionChecks {
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
@@ -89,17 +91,19 @@ class SpecimensServiceImpl @Inject()(
     for {
       specimen       <- specimenRepository.getByInventoryId(inventoryId)
       ceventSpecimen <- ceventSpecimenRepository.withSpecimenId(specimen.id)
-      permitted <- {
-        whenSpecimenPermitted(requestUserId, ceventSpecimen.ceventId)(_ => ().successNel[String])
-      }
+      permitted      <- whenSpecimenPermitted(requestUserId, ceventSpecimen.ceventId)(_ => ().successNel[String])
     } yield specimen
+
+  def getByInventoryIds(requestUserId: UserId, inventoryIds: String*): ServiceValidation[List[Specimen]] = {
+    inventoryIds.map(inventoryId => getByInventoryId(requestUserId, inventoryId)).toList.sequenceU
+  }
 
   def list(
       requestUserId:     UserId,
       collectionEventId: CollectionEventId,
       query:             PagedQuery
-    ): Future[ServiceValidation[PagedResults[SpecimenDto]]] =
-    Future {
+    ): FutureValidation[PagedResults[SpecimenDto]] =
+    FutureValidation {
       filterSpecimens(requestUserId, collectionEventId, query);
     }
 
@@ -107,8 +111,8 @@ class SpecimensServiceImpl @Inject()(
       requestUserId: UserId,
       eventSlug:     Slug,
       query:         PagedQuery
-    ): Future[ServiceValidation[PagedResults[SpecimenDto]]] =
-    Future {
+    ): FutureValidation[PagedResults[SpecimenDto]] =
+    FutureValidation {
       for {
         event     <- collectionEventRepository.getBySlug(eventSlug)
         specimens <- filterSpecimens(requestUserId, event.id, query)
@@ -162,34 +166,33 @@ class SpecimensServiceImpl @Inject()(
     }
   }
 
-  def processCommand(cmd: SpecimenCommand): Future[ServiceValidation[CollectionEventDto]] = {
+  def processCommand(cmd: SpecimenCommand): FutureValidation[CollectionEventDto] = {
     val validCommand = cmd match {
       case c: RemoveSpecimenCmd =>
         ServiceError(s"invalid service call: $cmd, use processRemoveCommand").failureNel[CollectionEvent]
       case c => c.successNel[String]
     }
 
-    validCommand.fold(err => Future.successful(err.failure[CollectionEventDto]),
+    validCommand
+      .fold(err => FutureValidation(err.failure[CollectionEventDto]),
                       _ =>
                         whenSpecimenPermittedAsync(cmd) { () =>
-                          ask(processor, cmd).mapTo[ServiceValidation[SpecimenEvent]].map { validation =>
                             for {
-                              event <- validation
-                              cevent <- collectionEventRepository
+                  event <- FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[SpecimenEvent]])
+                  cevent <- FutureValidation(
+                             collectionEventRepository
                                          .getByKey(CollectionEventId(event.getAdded.getCollectionEventId))
-                              dto <- eventsService.collectionEventToDto(UserId(cmd.sessionUserId), cevent)
+                           )
+                  dto <- FutureValidation(
+                          eventsService.collectionEventToDto(UserId(cmd.sessionUserId), cevent)
+                        )
                             } yield dto
-                          }
                         })
   }
 
-  def processRemoveCommand(cmd: SpecimenCommand): Future[ServiceValidation[Boolean]] =
+  def processRemoveCommand(cmd: SpecimenCommand): FutureValidation[Boolean] = {
     whenSpecimenPermittedAsync(cmd) { () =>
-      ask(processor, cmd).mapTo[ServiceValidation[SpecimenEvent]].map { validation =>
-        for {
-          event  <- validation
-          result <- true.successNel[String]
-        } yield result
+      FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[SpecimenEvent]]).map(_ => true)
       }
     }
 
@@ -218,8 +221,8 @@ class SpecimensServiceImpl @Inject()(
   //
   private def whenSpecimenPermittedAsync[T](
       cmd:   SpecimenCommand
-    )(block: () => Future[ServiceValidation[T]]
-    ): Future[ServiceValidation[T]] = {
+    )(block: () => FutureValidation[T]
+    ): FutureValidation[T] = {
 
     val validCeventId = cmd match {
       case c: SpecimenModifyCommand =>
@@ -241,7 +244,7 @@ class SpecimensServiceImpl @Inject()(
     } yield study
 
     validStudy.fold(
-      err => Future.successful(err.failure[T]),
+      err => FutureValidation(err.failure[T]),
       study =>
         whenPermittedAndIsMemberAsync(UserId(cmd.sessionUserId), permission, Some(study.id), None)(block)
     )

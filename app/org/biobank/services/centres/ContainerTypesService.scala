@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Named}
+import org.biobank._
 import org.biobank.domain.Slug
 import org.biobank.domain.access.PermissionId
 import org.biobank.domain.centres.{CentreId, CentreRepository}
@@ -16,24 +17,24 @@ import org.biobank.infrastructure.events.ContainerTypeEvents._
 import org.biobank.services._
 import org.biobank.services.access.AccessService
 import org.slf4j.{Logger, LoggerFactory}
-import scala.concurrent._
+import scala.concurrent.ExecutionContext
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 
 @ImplementedBy(classOf[ContainerTypesServiceImpl])
 trait ContainerTypesService extends BbwebService {
 
-  def getBySlug(requestUserId: UserId, slug: Slug): Future[ServiceValidation[ContainerTypeDto]]
+  def getBySlug(requestUserId: UserId, slug: Slug): FutureValidation[ContainerTypeDto]
 
   def search(
       requestUserId: UserId,
       centreId:      CentreId,
       query:         PagedQuery
-    ): Future[ServiceValidation[PagedResults[ContainerTypeDto]]]
+    ): FutureValidation[PagedResults[ContainerTypeDto]]
 
-  def processCommand(cmd: ContainerTypeCommand): Future[ServiceValidation[ContainerTypeDto]]
+  def processCommand(cmd: ContainerTypeCommand): FutureValidation[ContainerTypeDto]
 
-  def processRemoveCommand(cmd: RemoveContainerTypeCmd): Future[ServiceValidation[Boolean]]
+  def processRemoveCommand(cmd: RemoveContainerTypeCmd): FutureValidation[Boolean]
 
   def snapshotRequest(requestUserId: UserId): ServiceValidation[Unit]
 
@@ -49,13 +50,13 @@ class ContainerTypesServiceImpl @Inject()(
     val schemaRepository:                            ContainerSchemaRepository
   )(
     implicit
-    ec: ExecutionContext)
+    val executionContext: ExecutionContext)
     extends ContainerTypesService with AccessChecksSerivce with ServicePermissionChecks {
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
-  def getBySlug(requestUserId: UserId, slug: Slug): Future[ServiceValidation[ContainerTypeDto]] =
-    Future {
+  def getBySlug(requestUserId: UserId, slug: Slug): FutureValidation[ContainerTypeDto] =
+    FutureValidation {
       whenContainerTypePermitted(requestUserId, slug) { containerType =>
         containerTypeToDto(containerType)
       }
@@ -68,8 +69,8 @@ class ContainerTypesServiceImpl @Inject()(
       requestUserId: UserId,
       centreId:      CentreId,
       query:         PagedQuery
-    ): Future[ServiceValidation[PagedResults[ContainerTypeDto]]] =
-    Future {
+    ): FutureValidation[PagedResults[ContainerTypeDto]] =
+    FutureValidation {
       for {
         centre <- centresService.getCentre(requestUserId, centreId)
         allContainerTypes = containerTypeRepository.allForCentre(centre.id)
@@ -80,7 +81,7 @@ class ContainerTypesServiceImpl @Inject()(
       } yield results
     }
 
-  def processCommand(cmd: ContainerTypeCommand): Future[ServiceValidation[ContainerTypeDto]] = {
+  def processCommand(cmd: ContainerTypeCommand): FutureValidation[ContainerTypeDto] = {
     val validCentre = cmd match {
       case c: ContainerTypeAddCommand => centreRepository.getByKey(CentreId(c.centreId))
       case c: ContainerTypeModifyCommand =>
@@ -99,39 +100,37 @@ class ContainerTypesServiceImpl @Inject()(
     val requestUserId = UserId(cmd.sessionUserId)
 
     validCentre
-      .fold(err => Future.successful((err.failure[ContainerTypeDto])),
+      .fold(err => FutureValidation((err.failure[ContainerTypeDto])),
             centre =>
               whenPermittedAndIsMemberAsync(requestUserId, permission, None, Some(centre.id)) { () =>
-                ask(processor, cmd).mapTo[ServiceValidation[ContainerTypeEvent]].map {
-                  validation =>
-                    // need to retrieve the centre attached to the returned containerType, since there is a
-                    // possibility it was updated to a new centre
-                    for {
-                      event               <- validation
-                      containerType       <- containerTypeRepository.getByKey(ContainerTypeId(event.id))
-                      schema              <- schemaRepository.getByKey(containerType.schemaId)
-                      containerTypeCentre <- centreRepository.getByKey(containerType.centreId)
-                    } yield ContainerTypeDto(containerType, containerTypeCentre, schema)
-                }
+                for {
+                  event <- FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[ContainerTypeEvent]])
+                  // need to retrieve the centre attached to the returned containerType, since there is a
+                  // possibility it was updated to a new centre
+                  containerType <- FutureValidation(
+                                    containerTypeRepository.getByKey(ContainerTypeId(event.id))
+                                  )
+                  schema              <- FutureValidation(schemaRepository.getByKey(containerType.schemaId))
+                  containerTypeCentre <- FutureValidation(centreRepository.getByKey(containerType.centreId))
+                } yield ContainerTypeDto(containerType, containerTypeCentre, schema)
               })
   }
 
-  def processRemoveCommand(cmd: RemoveContainerTypeCmd): Future[ServiceValidation[Boolean]] = {
+  def processRemoveCommand(cmd: RemoveContainerTypeCmd): FutureValidation[Boolean] = {
     val validCentre = for {
       containerType <- containerTypeRepository.getByKey(ContainerTypeId(cmd.id))
       centre        <- centreRepository.getByKey(containerType.centreId)
     } yield centre
 
     validCentre
-      .fold(err => Future.successful((err.failure[Boolean])),
+      .fold(err => FutureValidation((err.failure[Boolean])),
             centre =>
               whenPermittedAndIsMemberAsync(UserId(cmd.sessionUserId),
                                             PermissionId.ContainerDelete,
                                             None,
                                             Some(centre.id)) { () =>
-                ask(processor, cmd)
-                  .mapTo[ServiceValidation[ContainerTypeEvent]]
-                  .map { _.map(event => true) }
+                FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[ContainerTypeEvent]])
+                  .map(_ => true)
               })
   }
 

@@ -9,6 +9,7 @@ import org.biobank.domain.participants._
 import org.biobank.domain.users._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.TableDrivenPropertyChecks._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Primarily these are tests that exercise the User Access aspect of StudiesService.
@@ -123,7 +124,7 @@ class ParticipantsServiceSpec
                                       studyId     = f.participant.studyId.id,
                                       uniqueId    = f.participant.uniqueId,
                                       annotations = List.empty[Annotation])
-          participantsService.processCommand(cmd).futureValue mustSucceed { result =>
+          participantsService.processCommand(cmd).mustSucceed { result =>
             result.uniqueId must be(f.participant.uniqueId)
           }
         }
@@ -138,7 +139,7 @@ class ParticipantsServiceSpec
                                       studyId     = f.participant.studyId.id,
                                       uniqueId    = f.participant.uniqueId,
                                       annotations = List.empty[Annotation])
-          participantsService.processCommand(cmd).futureValue mustFail "Unauthorized"
+          participantsService.processCommand(cmd) mustFail "Unauthorized"
         }
       }
 
@@ -157,7 +158,7 @@ class ParticipantsServiceSpec
               case _ => f.participant
             }
             participantRepository.put(participant)
-            participantsService.processCommand(cmd).futureValue mustSucceed { result =>
+            participantsService.processCommand(cmd).mustSucceed { result =>
               result.id must be(f.participant.id.id)
             }
           }
@@ -169,7 +170,7 @@ class ParticipantsServiceSpec
         forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           info(label)
           forAll(commandsTable(user.id, f.participant, f.annotation)) { cmd =>
-            participantsService.processCommand(cmd).futureValue mustFail "Unauthorized"
+            participantsService.processCommand(cmd) mustFail "Unauthorized"
           }
         }
       }

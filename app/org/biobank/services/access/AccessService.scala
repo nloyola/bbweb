@@ -5,6 +5,7 @@ import akka.pattern.ask
 import com.google.inject.ImplementedBy
 import java.time.format.DateTimeFormatter
 import javax.inject._
+import org.biobank._
 import org.biobank.domain.{ConcurrencySafeEntity, HasName, HasSlug, IdentifiedValueObject, Slug}
 import org.biobank.domain.access._
 import org.biobank.domain.access.PermissionId._
@@ -21,7 +22,6 @@ import org.biobank.infrastructure.events.MembershipEvents._
 import org.biobank.services._
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.Environment
-import scala.concurrent.Future
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 
@@ -34,33 +34,38 @@ trait AccessService extends BbwebService {
       requestUserId: UserId,
       filter:        FilterString,
       sort:          SortString
-    ): Future[ServiceValidation[Seq[AccessItemNameDto]]]
+    ): FutureValidation[Seq[AccessItemNameDto]]
 
   def getRole(requestUserId: UserId, roleId: AccessItemId): ServiceValidation[RoleDto]
 
   def getRoleBySlug(requestUserId: UserId, slug: Slug): ServiceValidation[RoleDto]
 
-  def getRoles(
-      requestUserId: UserId,
-      pagedQuery:    PagedQuery
-    ): Future[ServiceValidation[PagedResults[RoleDto]]]
+  def getRoles(requestUserId: UserId, pagedQuery: PagedQuery): FutureValidation[PagedResults[RoleDto]]
 
   def getRoleNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[NamedEntityInfoDto]]]
+    ): FutureValidation[Seq[NamedEntityInfoDto]]
 
   def getUserRoles(userId: UserId): ServiceValidation[Set[UserRoleDto]]
 
-  //def assignRole(cmd: AddUserToRoleCmd): Future[ServiceValidation[Role]]
+  //def assignRole(cmd: AddUserToRoleCmd): FutureValidation[Role]
 
   def hasPermission(userId: UserId, permissionId: AccessItemId): ServiceValidation[Boolean]
+
+  def hasPermission2(userId: UserId, permissionId: AccessItemId): ServiceValidation[Unit]
 
   def isMember(
       userId:   UserId,
       studyId:  Option[StudyId],
       centreId: Option[CentreId]
     ): ServiceValidation[Boolean]
+
+  def hasMembership(
+      userId:   UserId,
+      studyId:  Option[StudyId],
+      centreId: Option[CentreId]
+    ): ServiceValidation[Unit]
 
   def hasPermissionAndIsMember(
       userId:       UserId,
@@ -76,24 +81,24 @@ trait AccessService extends BbwebService {
   def getMemberships(
       requestUserId: UserId,
       pagedQuery:    PagedQuery
-    ): Future[ServiceValidation[PagedResults[MembershipDto]]]
+    ): FutureValidation[PagedResults[MembershipDto]]
 
   def getMembershipNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[NamedEntityInfoDto]]]
+    ): FutureValidation[Seq[NamedEntityInfoDto]]
 
   def getUserMembership(userId: UserId): ServiceValidation[UserMembership]
 
   def getUserMembershipDto(userId: UserId): ServiceValidation[UserMembershipDto]
 
-  def processRoleCommand(cmd: AccessCommand): Future[ServiceValidation[RoleDto]]
+  def processRoleCommand(cmd: AccessCommand): FutureValidation[RoleDto]
 
-  def processRemoveRoleCommand(cmd: RemoveRoleCmd): Future[ServiceValidation[Boolean]]
+  def processRemoveRoleCommand(cmd: RemoveRoleCmd): FutureValidation[Boolean]
 
-  def processMembershipCommand(cmd: MembershipCommand): Future[ServiceValidation[MembershipDto]]
+  def processMembershipCommand(cmd: MembershipCommand): FutureValidation[MembershipDto]
 
-  def processRemoveMembershipCommand(cmd: MembershipCommand): Future[ServiceValidation[Boolean]]
+  def processRemoveMembershipCommand(cmd: MembershipCommand): FutureValidation[Boolean]
 
   def snapshotRequest(requestUserId: UserId): ServiceValidation[Unit]
 
@@ -126,8 +131,8 @@ class AccessServiceImpl @Inject()(
       requestUserId: UserId,
       filter:        FilterString,
       sort:          SortString
-    ): Future[ServiceValidation[Seq[AccessItemNameDto]]] =
-    Future {
+    ): FutureValidation[Seq[AccessItemNameDto]] =
+    FutureValidation {
       whenPermitted(requestUserId, PermissionId.RoleRead) { () =>
         val allItems = accessItemRepository.getValues.toSet
         val sortStr =
@@ -176,8 +181,8 @@ class AccessServiceImpl @Inject()(
       } yield dto
     }
 
-  def getRoles(requestUserId: UserId, query: PagedQuery): Future[ServiceValidation[PagedResults[RoleDto]]] =
-    Future {
+  def getRoles(requestUserId: UserId, query: PagedQuery): FutureValidation[PagedResults[RoleDto]] =
+    FutureValidation {
       whenPermitted(requestUserId, PermissionId.RoleRead) { () =>
         for {
           sortedRoles <- getRolesInternal(query.filter, query.sort)
@@ -191,8 +196,8 @@ class AccessServiceImpl @Inject()(
   def getRoleNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[NamedEntityInfoDto]]] =
-    Future {
+    ): FutureValidation[Seq[NamedEntityInfoDto]] =
+    FutureValidation {
       getRolesInternal(query.filter, query.sort).map {
         _.map { r =>
           NamedEntityInfoDto(r.id.id, r.slug, r.name)
@@ -232,11 +237,21 @@ class AccessServiceImpl @Inject()(
     v
   }
 
+  def hasPermission2(userId: UserId, permissionId: AccessItemId): ServiceValidation[Unit] = {
+    val v = for {
+      user          <- userRepository.getByKey(userId)
+      hasPermission <- hasPermissionInternal(userId, permissionId)
+      permitted     <- if (hasPermission) ().successNel[String] else Unauthorized.failureNel[Unit]
+    } yield permitted
+    log.debug(s"hasPermission: $v")
+    v
+  }
+
   def isMember(
       userId:   UserId,
       studyId:  Option[StudyId],
       centreId: Option[CentreId]
-    ): ServiceValidation[Boolean] =
+    ): ServiceValidation[Boolean] = {
     (studyId, centreId) match {
       case (None, None) => false.successNel[String]
       case _ =>
@@ -248,6 +263,18 @@ class AccessServiceImpl @Inject()(
           isMember    <- isMemberInternal(userId, studyId, centreId)
         } yield isMember
     }
+  }
+
+  def hasMembership(
+      userId:   UserId,
+      studyId:  Option[StudyId],
+      centreId: Option[CentreId]
+    ): ServiceValidation[Unit] = {
+    isMember(userId, studyId, centreId).fold(
+      err           => err.failure[Unit],
+      hasMembership => if (hasMembership) ().successNel[String] else Unauthorized.failureNel[Unit]
+    )
+  }
 
   def hasPermissionAndIsMember(
       userId:       UserId,
@@ -277,8 +304,8 @@ class AccessServiceImpl @Inject()(
   def getMemberships(
       requestUserId: UserId,
       query:         PagedQuery
-    ): Future[ServiceValidation[PagedResults[MembershipDto]]] =
-    Future {
+    ): FutureValidation[PagedResults[MembershipDto]] =
+    FutureValidation {
       whenPermitted(requestUserId, PermissionId.MembershipRead) { () =>
         for {
           memberships <- getMembershipsInternal(query.filter, query.sort)
@@ -292,8 +319,8 @@ class AccessServiceImpl @Inject()(
   def getMembershipNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[NamedEntityInfoDto]]] =
-    Future {
+    ): FutureValidation[Seq[NamedEntityInfoDto]] =
+    FutureValidation {
       getMembershipsInternal(query.filter, query.sort).map {
         _.map { m =>
           NamedEntityInfoDto(m.id.id, m.slug, m.name)
@@ -339,7 +366,7 @@ class AccessServiceImpl @Inject()(
       accessItemRepository.getByKey(accessItemId)
     }
 
-  def processRoleCommand(cmd: AccessCommand): Future[ServiceValidation[RoleDto]] = {
+  def processRoleCommand(cmd: AccessCommand): FutureValidation[RoleDto] = {
     val v = for {
       validCommand <- {
         cmd match {
@@ -392,39 +419,34 @@ class AccessServiceImpl @Inject()(
     } yield permitted
 
     log.debug(s"processRoleCommand: cmd: $cmd")
-    v.fold(err => Future.successful(err.failure[RoleDto]),
+    v.fold(err => FutureValidation(err.failure[RoleDto]),
            permitted => {
              if (!permitted) {
-               Future.successful(Unauthorized.failureNel[RoleDto])
+               FutureValidation(Unauthorized.failureNel[RoleDto])
              } else {
-               ask(processor, cmd).mapTo[ServiceValidation[AccessEvent]].map { validation =>
-                 validation.flatMap { event =>
-                   if (event.eventType.isRole) {
+               for {
+                 event <- FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[AccessEvent]])
+                 dto <- FutureValidation(if (event.eventType.isRole) {
                      accessItemRepository.getRole(AccessItemId(event.getRole.getId)).flatMap(roleToDto)
                    } else {
                      ServiceError("Server Error: event is not for role").failureNel[RoleDto]
-                   }
-                 }
-               }
+                       })
+               } yield dto
              }
            })
   }
 
-  def processRemoveRoleCommand(cmd: RemoveRoleCmd): Future[ServiceValidation[Boolean]] =
-    hasPermissionInternal(UserId(cmd.sessionUserId), PermissionId.RoleDelete).fold(
-      err => Future.successful(err.failure[Boolean]),
-      permitted => {
+  def processRemoveRoleCommand(cmd: RemoveRoleCmd): FutureValidation[Boolean] =
+    hasPermissionInternal(UserId(cmd.sessionUserId), PermissionId.RoleDelete)
+      .fold(err => FutureValidation(err.failure[Boolean]), permitted => {
         if (!permitted) {
-          Future.successful(Unauthorized.failureNel[Boolean])
+          FutureValidation(Unauthorized.failureNel[Boolean])
         } else {
-          ask(processor, cmd).mapTo[ServiceValidation[AccessEvent]].map { validation =>
-            validation.map(_ => true)
+          FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[AccessEvent]]).map(_ => true)
           }
-        }
-      }
-    )
+      })
 
-  def processMembershipCommand(cmd: MembershipCommand): Future[ServiceValidation[MembershipDto]] = {
+  def processMembershipCommand(cmd: MembershipCommand): FutureValidation[MembershipDto] = {
     val v = for {
       validCommand <- {
         cmd match {
@@ -438,8 +460,8 @@ class AccessServiceImpl @Inject()(
         cmd match {
           case c: AddMembershipCmd => {
             for {
-              validUsers   <- c.userIds.map(id => userRepository.getByKey(UserId(id))).toList.sequenceU
-              validStudies <- c.studyIds.map(id => studyRepository.getByKey(StudyId(id))).toList.sequenceU
+              validUsers   <- c.userIds.map(id   => userRepository.getByKey(UserId(id))).toList.sequenceU
+              validStudies <- c.studyIds.map(id  => studyRepository.getByKey(StudyId(id))).toList.sequenceU
               validCentres <- c.centreIds.map(id => centreRepository.getByKey(CentreId(id))).toList.sequenceU
             } yield true
           }
@@ -481,30 +503,32 @@ class AccessServiceImpl @Inject()(
       }
     } yield permitted
 
-    v.fold(err => Future.successful(err.failure[MembershipDto]),
+    v.fold(err => FutureValidation(err.failure[MembershipDto]),
            permitted => {
              if (!permitted) {
-               Future.successful(Unauthorized.failureNel[MembershipDto])
+               FutureValidation(Unauthorized.failureNel[MembershipDto])
              } else {
-               ask(membershipProcessor, cmd).mapTo[ServiceValidation[MembershipEvent]].map { validation =>
-                 validation.flatMap { event =>
+               for {
+                 event <- FutureValidation(
+                           ask(membershipProcessor, cmd).mapTo[ServiceValidation[MembershipEvent]]
+                         )
+                 dto <- FutureValidation(
                    membershipRepository.getByKey(MembershipId(event.id)).flatMap(membershipToDto)
-                 }
-               }
+                       )
+               } yield dto
              }
            })
   }
 
-  def processRemoveMembershipCommand(cmd: MembershipCommand): Future[ServiceValidation[Boolean]] =
+  def processRemoveMembershipCommand(cmd: MembershipCommand): FutureValidation[Boolean] =
     hasPermissionInternal(UserId(cmd.sessionUserId), PermissionId.MembershipDelete).fold(
-      err => Future.successful(err.failure[Boolean]),
+      err => FutureValidation(err.failure[Boolean]),
       permitted => {
         if (!permitted) {
-          Future.successful(Unauthorized.failureNel[Boolean])
+          FutureValidation(Unauthorized.failureNel[Boolean])
         } else {
-          ask(membershipProcessor, cmd).mapTo[ServiceValidation[MembershipEvent]].map { validation =>
-            validation.map(_ => true)
-          }
+          FutureValidation(ask(membershipProcessor, cmd).mapTo[ServiceValidation[MembershipEvent]])
+            .map(_ => true)
         }
       }
     )
@@ -553,7 +577,8 @@ class AccessServiceImpl @Inject()(
     ): ServiceValidation[Boolean] = {
 
     val membership = membershipRepository
-      .getUserMembership(userId).map { membership =>
+      .getUserMembership(userId)
+      .map { membership =>
         membership.isMember(studyId, centreId)
       }
 

@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Named}
+import org.biobank._
 import org.biobank.domain.Slug
 import org.biobank.domain.access._
 import org.biobank.domain.studies._
@@ -15,7 +16,6 @@ import org.biobank.infrastructure.events.ProcessingTypeEvents._
 import org.biobank.services._
 import org.biobank.services.access.AccessService
 import org.slf4j.{Logger, LoggerFactory}
-import scala.concurrent.Future
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 
@@ -33,30 +33,30 @@ trait ProcessingTypeService extends BbwebService {
       requestUserId:    UserId,
       studyId:          StudyId,
       processingTypeId: ProcessingTypeId
-    ): Future[ServiceValidation[ProcessingType]]
+    ): FutureValidation[ProcessingType]
 
   def processingTypeBySlug(
       requestUserId:      UserId,
       studySlug:          Slug,
       processingTypeSlug: Slug
-    ): Future[ServiceValidation[ProcessingType]]
+    ): FutureValidation[ProcessingType]
 
   def processingTypesForStudy(
       requestUserId: UserId,
       studySlug:     Slug,
       query:         PagedQuery
-    ): Future[ServiceValidation[PagedResults[ProcessingType]]]
+    ): FutureValidation[PagedResults[ProcessingType]]
 
   def processingTypeInUse(requestUserId: UserId, slug: Slug): ServiceValidation[Boolean]
 
   def specimenDefinitionsForStudy(
       requestUserId: UserId,
       studyId:       StudyId
-    ): Future[ServiceValidation[Set[ProcessedSpecimenDefinitionName]]]
+    ): FutureValidation[Set[ProcessedSpecimenDefinitionName]]
 
-  def processCommand(cmd: ProcessingTypeCommand): Future[ServiceValidation[ProcessingType]]
+  def processCommand(cmd: ProcessingTypeCommand): FutureValidation[ProcessingType]
 
-  def processRemoveCommand(cmd: ProcessingTypeCommand): Future[ServiceValidation[Boolean]]
+  def processRemoveCommand(cmd: ProcessingTypeCommand): FutureValidation[Boolean]
 
   def snapshotRequest(requestUserId: UserId): ServiceValidation[Unit]
 
@@ -70,7 +70,7 @@ class ProcessingTypeServiceImpl @Inject()(
     val studiesService:                     StudiesService
   )(
     implicit
-    executionContext: BbwebExecutionContext)
+    val executionContext: BbwebExecutionContext)
     extends ProcessingTypeService with AccessChecksSerivce with ServicePermissionChecks {
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
@@ -79,8 +79,8 @@ class ProcessingTypeServiceImpl @Inject()(
       requestUserId:    UserId,
       studyId:          StudyId,
       processingTypeId: ProcessingTypeId
-    ): Future[ServiceValidation[ProcessingType]] =
-    Future {
+    ): FutureValidation[ProcessingType] =
+    FutureValidation {
       studiesService.getStudy(requestUserId, studyId).flatMap { study =>
         processingTypeRepository.getByKey(processingTypeId)
       }
@@ -90,8 +90,8 @@ class ProcessingTypeServiceImpl @Inject()(
       requestUserId:      UserId,
       studySlug:          Slug,
       processingTypeSlug: Slug
-    ): Future[ServiceValidation[ProcessingType]] =
-    Future {
+    ): FutureValidation[ProcessingType] =
+    FutureValidation {
       studiesService.getStudyBySlug(requestUserId, studySlug).flatMap { study =>
         processingTypeRepository.getBySlug(processingTypeSlug)
       }
@@ -101,8 +101,8 @@ class ProcessingTypeServiceImpl @Inject()(
       requestUserId: UserId,
       studySlug:     Slug,
       query:         PagedQuery
-    ): Future[ServiceValidation[PagedResults[ProcessingType]]] =
-    Future {
+    ): FutureValidation[PagedResults[ProcessingType]] =
+    FutureValidation {
       for {
         study     <- studiesService.getStudyBySlug(requestUserId, studySlug)
         types     <- queryInternal(study.id, query.filter, query.sort)
@@ -122,8 +122,8 @@ class ProcessingTypeServiceImpl @Inject()(
   def specimenDefinitionsForStudy(
       requestUserId: UserId,
       studyId:       StudyId
-    ): Future[ServiceValidation[Set[ProcessedSpecimenDefinitionName]]] =
-    Future {
+    ): FutureValidation[Set[ProcessedSpecimenDefinitionName]] =
+    FutureValidation {
       for {
         study           <- studiesService.getStudy(requestUserId, studyId)
         processingTypes <- queryInternal(study.id, new FilterString(""), new SortString(""))
@@ -132,7 +132,7 @@ class ProcessingTypeServiceImpl @Inject()(
       }
     }
 
-  def processCommand(cmd: ProcessingTypeCommand): Future[ServiceValidation[ProcessingType]] = {
+  def processCommand(cmd: ProcessingTypeCommand): FutureValidation[ProcessingType] = {
     val v = for {
       validCommand <- {
         cmd match {
@@ -144,35 +144,30 @@ class ProcessingTypeServiceImpl @Inject()(
       study <- studiesService.getDisabledStudy(UserId(cmd.sessionUserId), StudyId(cmd.studyId))
     } yield study
 
-    v.fold(err => Future.successful(err.failure[ProcessingType]),
+    v.fold(err => FutureValidation(err.failure[ProcessingType]),
            study =>
              whenPermittedAndIsMemberAsync(UserId(cmd.sessionUserId),
                                            PermissionId.StudyUpdate,
                                            Some(study.id),
                                            None) { () =>
-               ask(processor, cmd).mapTo[ServiceValidation[ProcessingTypeEvent]].map { validation =>
-                 for {
-                   event  <- validation
-                   result <- processingTypeRepository.getByKey(ProcessingTypeId(event.id))
-                 } yield result
-               }
+               for {
+                 event  <- FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[ProcessingTypeEvent]])
+                 result <- FutureValidation(processingTypeRepository.getByKey(ProcessingTypeId(event.id)))
+               } yield result
              })
   }
 
-  def processRemoveCommand(cmd: ProcessingTypeCommand): Future[ServiceValidation[Boolean]] =
+  def processRemoveCommand(cmd: ProcessingTypeCommand): FutureValidation[Boolean] =
     studiesService
       .getDisabledStudy(UserId(cmd.sessionUserId), StudyId(cmd.studyId)).fold(
-        err => Future.successful(err.failure[Boolean]),
+        err => FutureValidation(err.failure[Boolean]),
         study =>
           whenPermittedAndIsMemberAsync(UserId(cmd.sessionUserId),
                                         PermissionId.StudyUpdate,
                                         Some(study.id),
                                         None) { () =>
-            ask(processor, cmd)
-              .mapTo[ServiceValidation[ProcessingTypeEvent]]
-              .map { validation =>
-                validation.map(_ => true)
-              }
+            FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[ProcessingTypeEvent]])
+              .map(_ => true)
           }
       )
 

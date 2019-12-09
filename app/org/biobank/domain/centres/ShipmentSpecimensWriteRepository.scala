@@ -4,13 +4,14 @@ import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Singleton}
 import org.biobank.TestData
 import org.biobank.domain._
+import org.biobank.domain.centres.ShipmentItemState._
 import org.biobank.domain.participants.{Specimen, SpecimenId}
 import scalaz.Scalaz._
 
-@ImplementedBy(classOf[ShipmentSpecimenRepositoryImpl])
-trait ShipmentSpecimenRepository extends ReadWriteRepository[ShipmentSpecimenId, ShipmentSpecimen] {
+@ImplementedBy(classOf[ShipmentSpecimensWriteRepositoryImpl])
+trait ShipmentSpecimensWriteRepository extends ReadWriteRepository[ShipmentSpecimenId, ShipmentSpecimen] {
 
-  def allForShipment(id: ShipmentId): Set[ShipmentSpecimen]
+  def forShipment(id: ShipmentId): Set[ShipmentSpecimen]
 
   def allForSpecimen(id: SpecimenId): Set[ShipmentSpecimen]
 
@@ -18,12 +19,13 @@ trait ShipmentSpecimenRepository extends ReadWriteRepository[ShipmentSpecimenId,
 
   def getBySpecimens(shipmentId: ShipmentId, specimens: Specimen*): DomainValidation[List[ShipmentSpecimen]]
 
+  def shipmentSpecimenCount(shipmentId: ShipmentId, state: ShipmentItemState): Int
 }
 
 @Singleton
-class ShipmentSpecimenRepositoryImpl @Inject()(val testData: TestData)
+class ShipmentSpecimensWriteRepositoryImpl @Inject()(val testData: TestData)
     extends StmReadWriteRepositoryImpl[ShipmentSpecimenId, ShipmentSpecimen](v => v.id)
-    with ShipmentSpecimenRepository {
+    with ShipmentSpecimensWriteRepository {
   import org.biobank.CommonValidations._
 
   override def init(): Unit = {
@@ -41,7 +43,7 @@ class ShipmentSpecimenRepositoryImpl @Inject()(val testData: TestData)
   def specimenNotFound(specimen: Specimen): String =
     IdNotFound(s"shipment specimen with inventory ID: ${specimen.inventoryId}").toString
 
-  def allForShipment(id: ShipmentId): Set[ShipmentSpecimen] =
+  def forShipment(id: ShipmentId): Set[ShipmentSpecimen] =
     getValues.filter { ss =>
       ss.shipmentId == id
     }.toSet
@@ -59,5 +61,8 @@ class ShipmentSpecimenRepositoryImpl @Inject()(val testData: TestData)
 
   def getBySpecimens(shipmentId: ShipmentId, specimens: Specimen*): DomainValidation[List[ShipmentSpecimen]] =
     specimens.map(getBySpecimen(shipmentId, _)).toList.sequenceU
+
+  def shipmentSpecimenCount(shipmentId: ShipmentId, state: ShipmentItemState): Int =
+    forShipment(shipmentId).filter(ss => ss.state == state).size
 
 }

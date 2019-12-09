@@ -49,7 +49,7 @@ class Global @Inject()(
 
   def showSchema(): Unit = {
     if (configuration.get[Boolean]("application.schema.show")) {
-      val schema = sequenceNumbers.schema ++ shipments.schema
+      val schema = sequenceNumbers.schema ++ shipments.schema ++ shipmentSpecimens.schema
       schema.create.statements.foreach(s => log.info(s))
       ()
     }

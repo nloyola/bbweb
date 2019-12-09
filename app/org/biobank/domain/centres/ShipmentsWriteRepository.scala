@@ -7,8 +7,8 @@ import org.biobank.domain._
 import org.slf4j.{Logger, LoggerFactory}
 import scalaz.Validation.FlatMap._
 
-@ImplementedBy(classOf[ShipmentRepositoryImpl])
-trait ShipmentRepository extends ReadWriteRepository[ShipmentId, Shipment] {
+@ImplementedBy(classOf[ShipmentWriteRepositoryStm])
+trait ShipmentsWriteRepository extends ReadWriteRepository[ShipmentId, Shipment] {
 
   /**
    * Returns all shipments either being sent to or being received at the centre with centreId.
@@ -22,8 +22,8 @@ trait ShipmentRepository extends ReadWriteRepository[ShipmentId, Shipment] {
 }
 
 @Singleton
-class ShipmentRepositoryImpl @Inject()(val testData: TestData)
-    extends StmReadWriteRepositoryImpl[ShipmentId, Shipment](v => v.id) with ShipmentRepository {
+class ShipmentWriteRepositoryStm @Inject()(val testData: TestData)
+    extends StmReadWriteRepositoryImpl[ShipmentId, Shipment](v => v.id) with ShipmentsWriteRepository {
   import org.biobank.CommonValidations._
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)

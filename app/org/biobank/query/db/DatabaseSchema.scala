@@ -4,6 +4,8 @@ import java.sql.Timestamp
 import java.time.{OffsetDateTime, ZoneId}
 import org.biobank.domain.LocationId
 import org.biobank.domain.centres._
+import org.biobank.domain.containers._
+import org.biobank.domain.participants._
 import slick.jdbc.JdbcProfile
 import slick.lifted.ProvenShape
 import play.api.db.slick.DatabaseConfigProvider
@@ -15,13 +17,28 @@ trait DatabaseSchema extends HasDatabaseConfigProvider[JdbcProfile] {
   import dbConfig.profile.api._
 
   implicit val CentreIdMapper =
-    MappedColumnType.base[CentreId, String](id => id.id, id => CentreId(id))
+    MappedColumnType.base[CentreId, String](_.id, CentreId.apply)
 
   implicit val LocationIdMapper =
-    MappedColumnType.base[LocationId, String](id => id.id, id => LocationId(id))
+    MappedColumnType.base[LocationId, String](_.id, LocationId.apply)
 
   implicit val ShipmentIdMapper =
-    MappedColumnType.base[ShipmentId, String](id => id.id, id => ShipmentId(id))
+    MappedColumnType.base[ShipmentId, String](_.id, ShipmentId.apply)
+
+  implicit val ShipmentSpecimenIdMapper =
+    MappedColumnType.base[ShipmentSpecimenId, String](_.id, ShipmentSpecimenId.apply)
+
+  implicit val ShipmentItemStateMapper =
+    MappedColumnType.base[ShipmentItemState.Value, String](_.toString, ShipmentItemState.withName)
+
+  implicit val SpecimenIdMapper =
+    MappedColumnType.base[SpecimenId, String](_.id, SpecimenId.apply)
+
+  implicit val ContainerIdMapper =
+    MappedColumnType.base[ContainerId, String](_.id, ContainerId.apply)
+
+  implicit val ShipmentContainerIdMapper =
+    MappedColumnType.base[ShipmentContainerId, String](_.id, ShipmentContainerId.apply)
 
   implicit val JavaOffsetDateTimeMapper = MappedColumnType.base[OffsetDateTime, Timestamp](
     offsetDateTime => Timestamp.from(offsetDateTime.toInstant()),
@@ -39,8 +56,7 @@ trait DatabaseSchema extends HasDatabaseConfigProvider[JdbcProfile] {
   val sequenceNumbers = TableQuery[SequenceNumbers]
 
   class Shipments(tag: Tag) extends Table[Shipment](tag, "SHIPMENTS") {
-    def id = column[ShipmentId]("ID", O.PrimaryKey)
-
+    def id                    = column[ShipmentId]("ID", O.PrimaryKey)
     def version               = column[Long]("VERSION")
     def timeAdded             = column[OffsetDateTime]("TIME_ADDED")
     def timeModified          = column[Option[OffsetDateTime]]("TIME_MODIFIED")
@@ -147,4 +163,20 @@ trait DatabaseSchema extends HasDatabaseConfigProvider[JdbcProfile] {
   }
 
   val shipments = TableQuery[Shipments]
+
+  class ShipmentSpecimens(tag: Tag) extends Table[ShipmentSpecimen](tag, "SHIPMENT_SPECMENS") {
+    def id                  = column[ShipmentSpecimenId]("ID", O.PrimaryKey)
+    def version             = column[Long]("VERSION")
+    def timeAdded           = column[OffsetDateTime]("TIME_ADDED")
+    def timeModified        = column[Option[OffsetDateTime]]("TIME_MODIFIED")
+    def shipmentId          = column[ShipmentId]("SHIPMENT_ID")
+    def specimenId          = column[SpecimenId]("SPECIMEN_ID")
+    def state               = column[ShipmentItemState.Value]("STATE")
+    def shipmentContainerId = column[Option[ShipmentContainerId]]("SHIPMENT_CONTAINER_ID")
+
+    def * : ProvenShape[ShipmentSpecimen] =
+      (id, version, timeAdded, timeModified, shipmentId, specimenId, state, shipmentContainerId) <> ((ShipmentSpecimen.apply _).tupled, ShipmentSpecimen.unapply)
+  }
+
+  val shipmentSpecimens = TableQuery[ShipmentSpecimens]
 }

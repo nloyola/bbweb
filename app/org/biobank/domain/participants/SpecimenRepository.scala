@@ -12,6 +12,15 @@ trait SpecimenRepository extends ReadWriteRepositoryWithSlug[SpecimenId, Specime
 
   def getByInventoryId(inventoryId: String): DomainValidation[Specimen]
 
+  /**
+   * Ensures that the inventory IDs are for specimens already in the system.
+   *
+   * @param specimenInventoyIds one or more inventory IDs.
+   *
+   * @return a validation: Success if all inventory IDS match specimens in the system. Failure if not.
+   */
+  def getByInventoryIds(specimenInventoryIds: String*): DomainValidation[List[Specimen]]
+
   def containerInUse(containerId: ContainerId): Boolean
 
 }
@@ -40,6 +49,20 @@ class SpecimenRepositoryImpl @Inject()(val testData: TestData)
     getValues
       .find(s => s.inventoryId == inventoryId)
       .toSuccessNel(inventoryIdCriteriaError(inventoryId))
+
+  def getByInventoryIds(specimenInventoryIds: String*): DomainValidation[List[Specimen]] = {
+    val inventoryIds = specimenInventoryIds.map(_.trim)
+    inventoryIds
+      .map { inventoryId =>
+        getByInventoryId(inventoryId).fold(err => inventoryId.failureNel[Specimen],
+                                           spc => spc.successNel[String])
+      }
+      .toList.sequenceU
+      .leftMap(
+        err =>
+          EntityCriteriaNotFound { s"invalid specimen inventory IDs: " + err.list.toList.mkString(", ") }.nel
+      )
+  }
 
   def containerInUse(containerId: ContainerId): Boolean =
     getValues.exists(s => s.containerId == Some(containerId))

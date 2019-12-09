@@ -9,6 +9,7 @@ import org.biobank.services.{FilterAndSortQuery, FilterString, PagedQuery, Passw
 import org.biobank.services.access._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.TableDrivenPropertyChecks._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Primarily these are tests that exercise the User Access aspect of UsersService.
@@ -120,8 +121,7 @@ class UsersServiceSpec
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 10)
         val f     = usersFixture
         usersService
-          .getUsers(f.adminUser.id, query).futureValue
-          .mustSucceed { results =>
+          .getUsers(f.adminUser.id, query).mustSucceed { results =>
             results.items must have length (userRepository.getValues.size.toLong)
           }
       }
@@ -137,7 +137,7 @@ class UsersServiceSpec
         val f = usersFixture
         forAll(commandsTable(f.adminUser.id, f.user, f.userPlainPassword)) { cmd =>
           userRepository.put(f.user) // restore the user to it's previous state
-          usersService.processCommand(cmd).futureValue mustSucceed { u =>
+          usersService.processCommand(cmd).mustSucceed { u =>
             u.id must be(f.user.id.id)
           }
         }
@@ -149,7 +149,7 @@ class UsersServiceSpec
         val table = stateChangeCommandsTable(f.adminUser.id, u.registeredUser, u.activeUser, u.lockedUser)
         Set(u.registeredUser, u.activeUser, u.lockedUser).foreach(userRepository.put)
         forAll(table) { cmd =>
-          usersService.processCommand(cmd).futureValue mustSucceed { u =>
+          usersService.processCommand(cmd).mustSucceed { u =>
             u.id must be(cmd.id)
           }
         }
@@ -169,8 +169,7 @@ class UsersServiceSpec
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
 
         usersService
-          .getUsers(f.nonAdminUser.id, query).futureValue
-          .mustFail("Unauthorized")
+          .getUsers(f.nonAdminUser.id, query) mustFail ("Unauthorized")
       }
 
       it("user counts by status") {
@@ -182,7 +181,7 @@ class UsersServiceSpec
         val f = usersFixture
         forAll(commandsTable(f.nonAdminUser.id, f.user, f.userPlainPassword)) { cmd =>
           userRepository.put(f.user) // restore the user to it's previous state
-          usersService.processCommand(cmd).futureValue mustFail "Unauthorized"
+          usersService.processCommand(cmd) mustFail "Unauthorized"
         }
       }
 
@@ -192,7 +191,7 @@ class UsersServiceSpec
         val table = stateChangeCommandsTable(f.nonAdminUser.id, u.registeredUser, u.activeUser, u.lockedUser)
         Set(u.registeredUser, u.activeUser, u.lockedUser).foreach(userRepository.put)
         forAll(table) { cmd =>
-          usersService.processCommand(cmd).futureValue mustFail "Unauthorized"
+          usersService.processCommand(cmd) mustFail "Unauthorized"
         }
       }
 
@@ -206,7 +205,7 @@ class UsersServiceSpec
         val query      = FilterAndSortQuery(new FilterString(""), new SortString(""))
 
         Set(f.user, f.study, membership).foreach(addToRepository)
-        usersService.getUserStudies(f.user.id, query).futureValue mustSucceed { reply =>
+        usersService.getUserStudies(f.user.id, query).mustSucceed { reply =>
           reply must have size (1)
           reply.foreach(_.id must be(f.study.id.id))
         }
@@ -217,7 +216,7 @@ class UsersServiceSpec
         val query = FilterAndSortQuery(new FilterString(""), new SortString(""))
 
         Set(f.user, f.study, f.membership).foreach(addToRepository)
-        usersService.getUserStudies(f.user.id, query).futureValue mustSucceed { reply =>
+        usersService.getUserStudies(f.user.id, query).mustSucceed { reply =>
           reply must have size (1)
           reply.foreach(_.id must be(f.study.id.id))
         }

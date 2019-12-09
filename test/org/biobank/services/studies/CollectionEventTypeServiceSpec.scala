@@ -8,6 +8,7 @@ import org.biobank.domain.users._
 import org.biobank.services.{FilterString, PagedQuery, SortString}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.TableDrivenPropertyChecks._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Primarily these are tests that exercise the User Access aspect of CollectionEventTypeService.
@@ -176,7 +177,7 @@ class CollectionEventTypeServiceSpec
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
           ceventTypeService
-            .list(user.id, f.study.id, query).futureValue
+            .list(user.id, f.study.id, query)
             .mustSucceed { result =>
               result.items must have size 1
             }
@@ -189,13 +190,11 @@ class CollectionEventTypeServiceSpec
 
         info("no membership user")
         ceventTypeService
-          .list(f.noMembershipUser.id, f.study.id, query).futureValue
-          .mustFail("Unauthorized")
+          .list(f.noMembershipUser.id, f.study.id, query).mustFail("Unauthorized")
 
         info("no permission user")
         ceventTypeService
-          .list(f.nonStudyPermissionUser.id, f.study.id, query).futureValue
-          .mustFail("Unauthorized")
+          .list(f.nonStudyPermissionUser.id, f.study.id, query).mustFail("Unauthorized")
       }
 
     }
@@ -211,7 +210,7 @@ class CollectionEventTypeServiceSpec
                                               description = None,
                                               recurring   = true)
           collectionEventTypeRepository.removeAll
-          ceventTypeService.processCommand(cmd).futureValue mustSucceed { reply =>
+          ceventTypeService.processCommand(cmd).mustSucceed { reply =>
             reply.studyId must be(f.study.id)
           }
         }
@@ -226,7 +225,7 @@ class CollectionEventTypeServiceSpec
                                               description = None,
                                               recurring   = true)
           collectionEventTypeRepository.removeAll
-          ceventTypeService.processCommand(cmd).futureValue mustFail "Unauthorized"
+          ceventTypeService.processCommand(cmd) mustFail "Unauthorized"
         }
       }
 
@@ -250,7 +249,7 @@ class CollectionEventTypeServiceSpec
               }
 
               collectionEventTypeRepository.put(ceventType) // restore it to it's previous state
-              ceventTypeService.processCommand(cmd).futureValue mustSucceed { reply =>
+              ceventTypeService.processCommand(cmd).mustSucceed { reply =>
                 reply.studyId.id must be(cmd.studyId)
               }
           }
@@ -262,7 +261,7 @@ class CollectionEventTypeServiceSpec
         forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           forAll(updateCommandsTable(user.id, f.study, f.ceventType, f.specimenDefinition, f.annotationType)) {
             cmd =>
-              ceventTypeService.processCommand(cmd).futureValue mustFail "Unauthorized"
+              ceventTypeService.processCommand(cmd) mustFail "Unauthorized"
           }
         }
       }
@@ -281,7 +280,7 @@ class CollectionEventTypeServiceSpec
                                                  expectedVersion = f.ceventType.version)
 
           collectionEventTypeRepository.put(f.ceventType) // restore it to it's previous state
-          ceventTypeService.processRemoveCommand(cmd).futureValue mustSucceed { reply =>
+          ceventTypeService.processRemoveCommand(cmd).mustSucceed { reply =>
             ()
           }
         }
@@ -296,7 +295,7 @@ class CollectionEventTypeServiceSpec
                                                  id              = f.ceventType.id.id,
                                                  expectedVersion = f.ceventType.version)
 
-          ceventTypeService.processRemoveCommand(cmd).futureValue mustFail "Unauthorized"
+          ceventTypeService.processRemoveCommand(cmd) mustFail "Unauthorized"
         }
       }
     }

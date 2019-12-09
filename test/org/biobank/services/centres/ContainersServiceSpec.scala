@@ -11,6 +11,7 @@ import org.biobank.services.users.UserServiceFixtures
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import org.biobank.infrastructure.commands.ContainerCommands._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Primarily these are tests that exercise the User Access aspect of ContainersService.
@@ -32,7 +33,6 @@ class RootContainersServiceSpec
           info(label)
           containersService
             .search(user.id, f.centre.id, query)
-            .futureValue
             .mustSucceed { pagedResults =>
               pagedResults.items.length must be > 0
             }
@@ -46,11 +46,11 @@ class RootContainersServiceSpec
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
         info("no membership user")
         containersService
-          .search(f.noMembershipUser.id, f.centre.id, query).futureValue.mustFail("Unauthorized")
+          .search(f.noMembershipUser.id, f.centre.id, query).mustFail("Unauthorized")
 
         info("no permission user")
         containersService
-          .search(f.noCentrePermissionUser.id, f.centre.id, query).futureValue.mustFail("Unauthorized")
+          .search(f.noCentrePermissionUser.id, f.centre.id, query).mustFail("Unauthorized")
       }
 
     }
@@ -72,7 +72,7 @@ class RootContainersServiceSpec
                                 temperature     = f.container.temperature,
                                 containerTypeId = f.container.containerTypeId.id)
           containerRepository.removeAll
-          containersService.processCommand(cmd).futureValue mustSucceed { c =>
+          containersService.processCommand(cmd).mustSucceed { c =>
             c.inventoryId must be(f.container.inventoryId)
           }
         }
@@ -92,7 +92,7 @@ class RootContainersServiceSpec
                                 locationId      = f.container.locationId.id,
                                 temperature     = f.container.temperature,
                                 containerTypeId = f.container.containerTypeId.id)
-          containersService.processCommand(cmd).futureValue mustFail "Unauthorized"
+          containersService.processCommand(cmd) mustFail "Unauthorized"
         }
       }
     }
@@ -109,11 +109,10 @@ class RootContainersServiceSpec
 
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 10)
 
-        containersService.search(f.allCentresAdminUser.id, f.centre.id, query).futureValue.mustSucceed {
-          reply =>
-            reply.items must have size (2)
-            val containerIds = reply.items.map(c => c.id).sorted
-            containerIds must equal(List(f.container.id.id, siblingContainer.id.id).sorted)
+        containersService.search(f.allCentresAdminUser.id, f.centre.id, query).mustSucceed { reply =>
+          reply.items must have size (2)
+          val containerIds = reply.items.map(c => c.id).sorted
+          containerIds must equal(List(f.container.id.id, siblingContainer.id.id).sorted)
         }
       }
 
@@ -129,7 +128,7 @@ class RootContainersServiceSpec
         addToRepository(noCentresMembership)
 
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
-        containersService.search(f.centreUser.id, f.centre.id, query).futureValue.mustFail("Unauthorized")
+        containersService.search(f.centreUser.id, f.centre.id, query).mustFail("Unauthorized")
       }
 
     }
@@ -218,7 +217,7 @@ trait ChildContainerControllerSpec[
                                    label           = f.container.schemaLabel.label,
                                    containerTypeId = f.container.containerTypeId.id,
                                    parentId        = f.container.parentId.id)
-          containersService.processCommand(cmd).futureValue mustSucceed { c =>
+          containersService.processCommand(cmd).mustSucceed { c =>
             c.inventoryId must be(f.container.inventoryId)
 
             val repoContainer = containerRepository.getByKey(ContainerId(c.id)).toOption.value
@@ -293,7 +292,7 @@ trait CommonContainerControllerSpec[
         persistRoles(f)
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
-          containersService.getBySlug(user.id, f.container.slug).futureValue.mustSucceed { result =>
+          containersService.getBySlug(user.id, f.container.slug).mustSucceed { result =>
             result.id must be(f.container.id.id)
           }
         }
@@ -306,11 +305,11 @@ trait CommonContainerControllerSpec[
 
         info("no membership user")
         containersService
-          .getBySlug(f.noMembershipUser.id, f.container.slug).futureValue.mustFail("Unauthorized")
+          .getBySlug(f.noMembershipUser.id, f.container.slug).mustFail("Unauthorized")
 
         info("no permission user")
         containersService
-          .getBySlug(f.noCentrePermissionUser.id, f.container.slug).futureValue.mustFail("Unauthorized")
+          .getBySlug(f.noCentrePermissionUser.id, f.container.slug).mustFail("Unauthorized")
       }
 
     }
@@ -326,7 +325,7 @@ trait CommonContainerControllerSpec[
           info(label)
           forAll(updateCommandsTable(user.id, f.container)) { cmd =>
             containerRepository.put(f.container) // restore the container to it's previous state
-            containersService.processCommand(cmd).futureValue mustSucceed { c =>
+            containersService.processCommand(cmd).mustSucceed { c =>
               c.id must be(f.container.id.id)
             }
           }
@@ -340,7 +339,7 @@ trait CommonContainerControllerSpec[
 
         forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           forAll(updateCommandsTable(user.id, f.container)) { cmd =>
-            containersService.processCommand(cmd).futureValue mustFail "Unauthorized"
+            containersService.processCommand(cmd) mustFail "Unauthorized"
           }
         }
       }

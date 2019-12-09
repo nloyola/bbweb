@@ -1,5 +1,6 @@
 package org.biobank.controllers
 
+import org.biobank._
 import org.biobank.infrastructure.commands.Commands._
 import org.biobank.services.ServiceValidation
 import org.slf4j.{Logger, LoggerFactory}
@@ -122,6 +123,16 @@ abstract class CommandController(controllerComponents: ControllerComponents)
       writes: Writes[T]
     ): Future[Result] =
     future.map { validation =>
+      validationReply(validation)
+    }
+
+  protected def validationReply[T](
+      validation: FutureValidation[T]
+    )(
+      implicit
+      writes: Writes[T]
+    ): Future[Result] =
+    validation.futval.map { validation =>
       validationReply(validation)
     }
 

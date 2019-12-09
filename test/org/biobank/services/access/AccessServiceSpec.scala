@@ -6,12 +6,18 @@ import org.biobank.domain.users.{ActiveUser, UserRepository}
 import org.biobank.domain.studies.{StudyId, StudyRepository}
 import org.biobank.domain.centres.{CentreId, CentreRepository}
 import org.biobank.services.{FilterString, PagedQuery, SortString}
+import org.scalatest.time._
 import org.scalatest.concurrent.ScalaFutures
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class AccessServiceSpec extends TestFixture with AccessServiceFixtures with ScalaFutures {
 
   import org.biobank.TestUtils._
   import org.biobank.domain.access.AccessItem._
+
+  // need to configure scalatest to have more patience when waiting for future results
+  implicit val defaultPatience =
+    PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
 
   val accessItemRepository = app.injector.instanceOf[AccessItemRepository]
 
@@ -239,7 +245,7 @@ class AccessServiceSpec extends TestFixture with AccessServiceFixtures with Scal
         it("user with 'membership read' permission can retrieve memberships") {
           val f     = new Fixture
           val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
-          accessService.getMemberships(f.permittedUser.id, query).futureValue.mustSucceed { pagedResults =>
+          accessService.getMemberships(f.permittedUser.id, query).mustSucceed { pagedResults =>
             pagedResults.items must have size (1L)
           }
         }
@@ -247,7 +253,7 @@ class AccessServiceSpec extends TestFixture with AccessServiceFixtures with Scal
         it("fails for user without 'membership read' permission") {
           val f     = new Fixture
           val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
-          accessService.getMemberships(f.nonPermittedUser.id, query).futureValue.mustFail("Unauthorized")
+          accessService.getMemberships(f.nonPermittedUser.id, query).mustFail("Unauthorized")
         }
       }
 

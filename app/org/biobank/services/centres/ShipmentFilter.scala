@@ -23,7 +23,7 @@ trait ShipmentFilter {
  *
  */
 class ShipmentFilterImpl @Inject()(
-    val shipmentRepository: ShipmentRepository,
+    val shipmentRepository: ShipmentsWriteRepository,
     val centreRepository:   CentreRepository)
     extends ShipmentFilter with EntityFilter[Shipment] with PredicateHelper with ShipmentPredicates {
   import org.biobank.CommonValidations._

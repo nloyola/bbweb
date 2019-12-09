@@ -11,6 +11,7 @@ import org.biobank.services.users.UserServiceFixtures
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import org.biobank.infrastructure.commands.ContainerTypeCommands._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Primarily these are tests that exercise the User Access aspect of ContainerTypesService.
@@ -36,7 +37,7 @@ class StorageContainerTypesServiceSpec
                                        schemaId      = f.containerType.schemaId.id,
                                        shared        = f.containerType.shared)
           containerTypeRepository.removeAll
-          containerTypesService.processCommand(cmd).futureValue mustSucceed { c =>
+          containerTypesService.processCommand(cmd).mustSucceed { c =>
             c.name must be(f.containerType.name)
           }
         }
@@ -54,7 +55,7 @@ class StorageContainerTypesServiceSpec
                                        centreId      = f.containerType.centreId.id,
                                        schemaId      = f.containerType.schemaId.id,
                                        shared        = f.containerType.shared)
-          containerTypesService.processCommand(cmd).futureValue mustFail "Unauthorized"
+          containerTypesService.processCommand(cmd) mustFail "Unauthorized"
         }
       }
     }
@@ -89,7 +90,7 @@ class SpecimenContainerTypesServiceSpec
                                        schemaId      = f.containerType.schemaId.id,
                                        shared        = f.containerType.shared)
           containerTypeRepository.removeAll
-          containerTypesService.processCommand(cmd).futureValue mustSucceed { c =>
+          containerTypesService.processCommand(cmd).mustSucceed { c =>
             c.name must be(f.containerType.name)
           }
         }
@@ -107,7 +108,7 @@ class SpecimenContainerTypesServiceSpec
                                        centreId      = f.containerType.centreId.id,
                                        schemaId      = f.containerType.schemaId.id,
                                        shared        = f.containerType.shared)
-          containerTypesService.processCommand(cmd).futureValue mustFail "Unauthorized"
+          containerTypesService.processCommand(cmd) mustFail "Unauthorized"
         }
       }
     }
@@ -195,7 +196,6 @@ trait CommonContainerTypeControllerSpec[
           info(label)
           containerTypesService
             .search(user.id, f.centre.id, query)
-            .futureValue
             .mustSucceed { pagedResults =>
               pagedResults.items.length must be > 0
             }
@@ -209,11 +209,11 @@ trait CommonContainerTypeControllerSpec[
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
         info("no membership user")
         containerTypesService
-          .search(f.noMembershipUser.id, f.centre.id, query).futureValue.mustFail("Unauthorized")
+          .search(f.noMembershipUser.id, f.centre.id, query).mustFail("Unauthorized")
 
         info("no permission user")
         containerTypesService
-          .search(f.noCentrePermissionUser.id, f.centre.id, query).futureValue.mustFail("Unauthorized")
+          .search(f.noCentrePermissionUser.id, f.centre.id, query).mustFail("Unauthorized")
       }
 
     }
@@ -226,7 +226,7 @@ trait CommonContainerTypeControllerSpec[
         persistRoles(f)
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
-          containerTypesService.getBySlug(user.id, f.containerType.slug).futureValue.mustSucceed { result =>
+          containerTypesService.getBySlug(user.id, f.containerType.slug).mustSucceed { result =>
             result.id must be(f.containerType.id.id)
           }
         }
@@ -239,11 +239,11 @@ trait CommonContainerTypeControllerSpec[
 
         info("no membership user")
         containerTypesService
-          .getBySlug(f.noMembershipUser.id, f.containerType.slug).futureValue.mustFail("Unauthorized")
+          .getBySlug(f.noMembershipUser.id, f.containerType.slug).mustFail("Unauthorized")
 
         info("no permission user")
         containerTypesService
-          .getBySlug(f.noCentrePermissionUser.id, f.containerType.slug).futureValue.mustFail("Unauthorized")
+          .getBySlug(f.noCentrePermissionUser.id, f.containerType.slug).mustFail("Unauthorized")
       }
 
     }
@@ -259,7 +259,7 @@ trait CommonContainerTypeControllerSpec[
           info(label)
           forAll(updateCommandsTable(user.id, f.containerType)) { cmd =>
             containerTypeRepository.put(f.containerType) // restore the containerType to it's previous state
-            containerTypesService.processCommand(cmd).futureValue mustSucceed { c =>
+            containerTypesService.processCommand(cmd).mustSucceed { c =>
               c.id must be(f.containerType.id.id)
             }
           }
@@ -273,7 +273,7 @@ trait CommonContainerTypeControllerSpec[
 
         forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           forAll(updateCommandsTable(user.id, f.containerType)) { cmd =>
-            containerTypesService.processCommand(cmd).futureValue mustFail "Unauthorized"
+            containerTypesService.processCommand(cmd) mustFail "Unauthorized"
           }
         }
       }
@@ -291,11 +291,10 @@ trait CommonContainerTypeControllerSpec[
 
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 10)
 
-        containerTypesService.search(f.allCentresAdminUser.id, f.centre.id, query).futureValue.mustSucceed {
-          reply =>
-            reply.items.length must be > 1
-            val containerTypeIds = reply.items.map(c => c.id).sorted
-            containerTypeIds must equal(List(f.containerType.id.id, sibling.id.id).sorted)
+        containerTypesService.search(f.allCentresAdminUser.id, f.centre.id, query).mustSucceed { reply =>
+          reply.items.length must be > 1
+          val containerTypeIds = reply.items.map(c => c.id).sorted
+          containerTypeIds must equal(List(f.containerType.id.id, sibling.id.id).sorted)
         }
       }
 
@@ -310,7 +309,7 @@ trait CommonContainerTypeControllerSpec[
         addToRepository(noCentresMembership)
 
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
-        containerTypesService.search(f.centreUser.id, f.centre.id, query).futureValue.mustFail("Unauthorized")
+        containerTypesService.search(f.centreUser.id, f.centre.id, query).mustFail("Unauthorized")
       }
 
     }

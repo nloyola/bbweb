@@ -3,13 +3,14 @@ package org.biobank.services
 import akka.actor.ActorRef
 import akka.util.Timeout
 import com.github.ghik.silencer.silent
+import org.biobank._
 import org.biobank.domain.access.PermissionId
 import org.biobank.domain.access.PermissionId._
 import org.biobank.domain.centres.CentreId
 import org.biobank.domain.studies.StudyId
 import org.biobank.domain.users.UserId
 import org.biobank.services.access.AccessService
-import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scalaz.Scalaz._
 
@@ -48,6 +49,8 @@ trait ServicePermissionChecks {
   import org.biobank.domain.access.AccessItem._
   import org.biobank.domain.access.PermissionId._
 
+  implicit val executionContext: ExecutionContext
+
   protected val accessService: AccessService
 
   protected def whenPermitted[T](
@@ -56,22 +59,24 @@ trait ServicePermissionChecks {
     )(block:         () => ServiceValidation[T]
     ): ServiceValidation[T] =
     accessService
-      .hasPermission(requestUserId, permissionId).fold(err => err.failure[T],
-                                                       permission =>
-                                                         if (permission) block()
-                                                         else Unauthorized.failureNel[T])
+      .hasPermission(requestUserId, permissionId)
+      .fold(err => err.failure[T],
+            permission =>
+              if (permission) block()
+              else Unauthorized.failureNel[T])
 
   protected def whenPermittedAsync[T](
       requestUserId: UserId,
       permissionId:  PermissionId
-    )(block:         () => Future[ServiceValidation[T]]
-    ): Future[ServiceValidation[T]] =
+    )(block:         () => FutureValidation[T]
+    ): FutureValidation[T] = {
     accessService
       .hasPermission(requestUserId, permissionId)
-      .fold(err => Future.successful(err.failure[T]),
+      .fold(err => FutureValidation(err.failure[T]),
             permission =>
               if (permission) block()
-              else Future.successful(Unauthorized.failureNel[T]))
+              else FutureValidation(Unauthorized.failureNel[T]))
+  }
 
   protected def whenPermittedAndIsMember[T](
       requestUserId: UserId,
@@ -92,12 +97,12 @@ trait ServicePermissionChecks {
       permissionId:  PermissionId,
       studyId:       Option[StudyId],
       centreId:      Option[CentreId]
-    )(block:         () => Future[ServiceValidation[T]]
-    ): Future[ServiceValidation[T]] =
-    accessService
-      .hasPermissionAndIsMember(requestUserId, permissionId, studyId, centreId)
-      .fold(err => Future.successful(err.failure[T]),
-            permission =>
+    )(block:         () => FutureValidation[T]
+    ): FutureValidation[T] = {
+    FutureValidation(accessService.hasPermissionAndIsMember(requestUserId, permissionId, studyId, centreId))
+      .flatMap { permission =>
               if (permission) block()
-              else Future.successful(Unauthorized.failureNel[T]))
+        else FutureValidation(Unauthorized.failureNel[T])
+      }
+  }
 }

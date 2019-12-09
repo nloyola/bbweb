@@ -4,6 +4,7 @@ import akka.actor._
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
 import javax.inject._
+import org.biobank._
 import org.biobank.domain.Slug
 import org.biobank.domain.access._
 import org.biobank.domain.centres.{Centre, CentreRepository}
@@ -18,7 +19,6 @@ import org.biobank.services._
 import org.biobank.services.access.AccessService
 import org.biobank.services.centres.CentreServicePermissionChecks
 import org.slf4j.{Logger, LoggerFactory}
-import scala.concurrent._
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 
@@ -37,7 +37,7 @@ trait StudiesService extends BbwebService {
   def collectionStudies(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[EntityInfoAndStateDto]]]
+    ): FutureValidation[Seq[EntityInfoAndStateDto]]
 
   def getStudyCount(requestUserId: UserId): ServiceValidation[Long]
 
@@ -50,7 +50,7 @@ trait StudiesService extends BbwebService {
    *
    * @param sort the string representation of the sort expression to use when sorting the studies.
    */
-  def getStudies(requestUserId: UserId, query: PagedQuery): Future[ServiceValidation[PagedResults[Study]]]
+  def getStudies(requestUserId: UserId, query: PagedQuery): FutureValidation[PagedResults[Study]]
 
   def getStudy(requestUserId: UserId, studyId: StudyId): ServiceValidation[Study]
 
@@ -61,13 +61,13 @@ trait StudiesService extends BbwebService {
   def getStudyNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[EntityInfoAndStateDto]]]
+    ): FutureValidation[Seq[EntityInfoAndStateDto]]
 
   def getCentresForStudy(requestUserId: UserId, studyId: StudyId): ServiceValidation[Set[CentreLocationInfo]]
 
   def enableAllowed(requestUserId: UserId, studyId: StudyId): ServiceValidation[Boolean]
 
-  def processCommand(cmd: StudyCommand): Future[ServiceValidation[Study]]
+  def processCommand(cmd: StudyCommand): FutureValidation[Study]
 
   def snapshotRequest(requestUserId: UserId): ServiceValidation[Unit]
 
@@ -93,7 +93,7 @@ class StudiesServiceImpl @Inject()(
     val collectionEventRepository:            CollectionEventRepository
   )(
     implicit
-    executionContext: BbwebExecutionContext)
+    val executionContext: BbwebExecutionContext)
     extends StudiesService with AccessChecksSerivce with StudyServicePermissionChecks
     with CentreServicePermissionChecks {
 
@@ -105,8 +105,8 @@ class StudiesServiceImpl @Inject()(
   def collectionStudies(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[EntityInfoAndStateDto]]] =
-    Future {
+    ): FutureValidation[Seq[EntityInfoAndStateDto]] =
+    FutureValidation {
       val v: ServiceValidation[Seq[Study]] =
         for {
           membershipStudies <- getMembershipStudies(requestUserId)
@@ -157,8 +157,8 @@ class StudiesServiceImpl @Inject()(
         .successNel[String]
     }
 
-  def getStudies(requestUserId: UserId, query: PagedQuery): Future[ServiceValidation[PagedResults[Study]]] =
-    Future {
+  def getStudies(requestUserId: UserId, query: PagedQuery): FutureValidation[PagedResults[Study]] =
+    FutureValidation {
       withPermittedStudies(requestUserId) { studies =>
         for {
           studies   <- filterStudiesInternal(studies, query.filter, query.sort)
@@ -171,8 +171,8 @@ class StudiesServiceImpl @Inject()(
   def getStudyNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[EntityInfoAndStateDto]]] =
-    Future {
+    ): FutureValidation[Seq[EntityInfoAndStateDto]] =
+    FutureValidation {
       withPermittedStudies(requestUserId) { studies =>
         filterStudiesInternal(studies, query.filter, query.sort).map {
           _.map { s =>
@@ -222,9 +222,9 @@ class StudiesServiceImpl @Inject()(
       (specimenDefinitions.size > 0).successNel[String]
     }
 
-  def processCommand(cmd: StudyCommand): Future[ServiceValidation[Study]] =
+  def processCommand(cmd: StudyCommand): FutureValidation[Study] =
     cmd.sessionUserId match {
-      case None => Future.successful(Unauthorized.failureNel[Study])
+      case None => FutureValidation(Unauthorized.failureNel[Study])
       case Some(sessionUserId) =>
         val (permissionId, studyId) = cmd match {
           case c: StudyStateChangeCommand => (PermissionId.StudyChangeState, Some(StudyId(c.id)))
@@ -233,12 +233,10 @@ class StudiesServiceImpl @Inject()(
         }
 
         whenPermittedAndIsMemberAsync(UserId(sessionUserId), permissionId, studyId, None) { () =>
-          ask(processor, cmd).mapTo[ServiceValidation[StudyEvent]].map { validation =>
-            for {
-              event <- validation
-              study <- studyRepository.getByKey(StudyId(event.id))
-            } yield study
-          }
+          for {
+            event <- FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[StudyEvent]])
+            study <- FutureValidation(studyRepository.getByKey(StudyId(event.id)))
+          } yield study
         }
     }
 

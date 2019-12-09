@@ -1,6 +1,8 @@
 package org.biobank.domain
 
+import org.biobank.FutureValidation
 import org.biobank.CommonValidations.EntityCriteriaNotFound
+import scala.concurrent.Future
 
 /**
  * A read-only repository.
@@ -16,6 +18,23 @@ trait ReadRepository[K, A] {
   def getKeys: Iterable[K]
 
   def exists(predicate: A => Boolean): Boolean
+
+}
+
+/**
+ * A read-only repository.
+ */
+trait AsyncReadRepository[K, A] {
+
+  def isEmpty: Future[Boolean]
+
+  def getByKey(key: K): FutureValidation[A]
+
+  def getValues: Future[Iterable[A]]
+
+  def getKeys: Future[Iterable[K]]
+
+  def exists(predicate: A => Boolean): Future[Boolean]
 
 }
 

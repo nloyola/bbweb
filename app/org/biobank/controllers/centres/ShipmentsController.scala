@@ -41,7 +41,7 @@ class ShipmentsController @Inject()(
   private val PageSizeMax = 10
 
   def get(id: ShipmentId): Action[Unit] =
-    action(parse.empty) { implicit request =>
+    action.async(parse.empty) { implicit request =>
       validationReply(shipmentsService.getShipment(request.identity.user.id, id))
     }
 
@@ -66,21 +66,18 @@ class ShipmentsController @Inject()(
     }
 
   def canAddSpecimens(shipmentId: ShipmentId, specimenInventoryId: String): Action[Unit] =
-    action(parse.empty) { request =>
+    action.async(parse.empty) { request =>
       val v = shipmentsService
         .shipmentCanAddSpecimen(request.identity.user.id, shipmentId, specimenInventoryId)
-        .map { specimen =>
-          true
-        }
+        .map(s => true)
       validationReply(v)
     }
 
   def getSpecimen(shipmentId: ShipmentId, shipmentSpecimenId: String): Action[Unit] =
-    action(parse.empty) { implicit request =>
-      validationReply(
-        shipmentsService
+    action.async(parse.empty) { implicit request =>
+      val f = shipmentsService
           .getShipmentSpecimen(request.identity.user.id, shipmentId, ShipmentSpecimenId(shipmentSpecimenId))
-      )
+      validationReply(f)
     }
 
   def snapshot: Action[Unit] =

@@ -170,3 +170,5 @@ object ShipmentSpecimen extends ShipmentSpecimenValidations {
       case _ => ()
     }
 }
+
+final case class ShipmentSpecimenCounts(specimens: Int, presentSpecimens: Int)

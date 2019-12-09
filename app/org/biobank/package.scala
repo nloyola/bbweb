@@ -2,6 +2,7 @@ package org
 
 import scala.util.matching.Regex
 import scala.util.control.Exception._
+import scala.concurrent.{ExecutionContext, Future}
 import scalaz._
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
@@ -191,6 +192,38 @@ package biobank {
 
   }
 
+  final case class FutureValidation[A](futval: Future[SystemValidation[A]]) {
+
+    @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
+    def map[B](f: A => B)(implicit executor: ExecutionContext): FutureValidation[B] = {
+      val result = futval.map(_.fold(fail => Failure(fail), succ => Success(f(succ))))
+      FutureValidation(result)
+    }
+
+    @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
+    def flatMap[B](
+        f: A => FutureValidation[B]
+      )(
+        implicit
+        executor: ExecutionContext
+      ): FutureValidation[B] = {
+      val result = futval.flatMap(_.fold(fail => Future(Failure(fail)), succ => f(succ).futval))
+      FutureValidation(result)
+    }
+  }
+
+  object FutureValidation {
+
+    @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter", "org.wartremover.warts.Overloading"))
+    def apply[A](
+        validation: => SystemValidation[A]
+      )(
+        implicit
+        executor: ExecutionContext
+      ): FutureValidation[A] =
+      apply(Future(validation))
+  }
+
 }
 
 // move package object here due to: https://issues.scala-lang.org/browse/SI-9922
@@ -200,6 +233,5 @@ package object biobank {
   type SystemError = String
 
   /** Used by functions to return validated results. */
-  type SystemValidation[A] = ValidationNel[SystemError, A]
-
+  type SystemValidation[A] = ValidationNel[String, A]
 }

@@ -16,6 +16,7 @@ import org.biobank.domain.processing._
 import org.biobank.domain.studies._
 import org.biobank.domain.users._
 import org.biobank.matchers.ApiResultMatchers
+import org.biobank.query.centres._
 import org.biobank.services.PasswordHasher
 import org.biobank.utils.auth.DefaultEnv
 import org.scalatest._
@@ -126,12 +127,15 @@ abstract class ControllerFixture
   protected def processingEventInputSpecimenRepository =
     app.injector.instanceOf[ProcessingEventInputSpecimenRepository]
 
-  protected def centreRepository           = app.injector.instanceOf[CentreRepository]
-  protected def shipmentRepository         = app.injector.instanceOf[ShipmentRepository]
-  protected def shipmentSpecimenRepository = app.injector.instanceOf[ShipmentSpecimenRepository]
-  protected def containerTypeRepository    = app.injector.instanceOf[ContainerTypeRepository]
-  protected def containerSchemaRepository  = app.injector.instanceOf[ContainerSchemaRepository]
-  protected def containerRepository        = app.injector.instanceOf[ContainerRepository]
+  protected def centreRepository            = app.injector.instanceOf[CentreRepository]
+  protected def shipmentsWriteRepository    = app.injector.instanceOf[ShipmentsWriteRepository]
+  protected def shipmentSpecimensRepository = app.injector.instanceOf[ShipmentSpecimensWriteRepository]
+  protected def containerTypeRepository     = app.injector.instanceOf[ContainerTypeRepository]
+  protected def containerSchemaRepository   = app.injector.instanceOf[ContainerSchemaRepository]
+  protected def containerRepository         = app.injector.instanceOf[ContainerRepository]
+
+  protected def shipmentsReadRepository         = app.injector.instanceOf[ShipmentsReadRepository]
+  protected def shipmentSpecimensReadRepository = app.injector.instanceOf[ShipmentSpecimensReadRepository]
 
   protected def addToRepository[T <: ConcurrencySafeEntity[_]](entity: T): Unit =
     entity match {
@@ -145,8 +149,8 @@ abstract class ControllerFixture
       case e: Participant         => participantRepository.put(e)
       case e: CollectionEvent     => collectionEventRepository.put(e)
       case e: Specimen            => specimenRepository.put(e)
-      case e: ShipmentSpecimen    => shipmentSpecimenRepository.put(e)
-      case e: Shipment            => shipmentRepository.put(e)
+      case e: ShipmentSpecimen    => shipmentSpecimensRepository.put(e)
+      case e: Shipment            => shipmentsWriteRepository.put(e)
       case e: ContainerSchema     => containerSchemaRepository.put(e)
       case e: ContainerType       => containerTypeRepository.put(e)
       case e: Container           => containerRepository.put(e)

@@ -2,6 +2,7 @@ package org.biobank.controllers.access
 
 import javax.inject.{Inject, Singleton}
 import org.biobank.controllers._
+import org.biobank._
 import org.biobank.domain.Slug
 import org.biobank.domain.access._
 import org.biobank.domain.centres.CentreId
@@ -46,7 +47,7 @@ class AccessController @Inject()(
   def listItemNames: Action[Unit] =
     action.async(parse.empty) { implicit request =>
       FilterAndSortQueryHelper(request.rawQueryString).fold(err => {
-        validationReply(Future.successful(err.failure[Seq[AccessItemNameDto]]))
+        validationReply(FutureValidation(err.failure[Seq[AccessItemNameDto]]))
       }, query => {
         validationReply(accessService.getAccessItems(request.identity.user.id, query.filter, query.sort))
       })

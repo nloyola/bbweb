@@ -5,14 +5,14 @@ import akka.pattern.ask
 import com.google.inject.ImplementedBy
 import java.time.format.DateTimeFormatter
 import javax.inject._
-import org.biobank.ValidationKey
+import org.biobank.{FutureValidation, ValidationKey}
 import org.biobank.domain.Slug
 import org.biobank.domain.access.{AccessItemId, MembershipId, PermissionId}
 import org.biobank.domain.centres.CentreRepository
 import org.biobank.domain.studies.StudyRepository
 import org.biobank.domain.users._
 import org.biobank.dto._
-import org.biobank.dto.access.{MembershipDto, RoleDto, UserRoleDto}
+import org.biobank.dto.access.UserRoleDto
 import org.biobank.infrastructure.AscendingOrder
 import org.biobank.infrastructure.commands.AccessCommands._
 import org.biobank.infrastructure.commands.MembershipCommands._
@@ -22,7 +22,6 @@ import org.biobank.services._
 import org.biobank.services.access.AccessService
 import org.biobank.services.studies.StudiesService
 import org.slf4j.{Logger, LoggerFactory}
-import scala.concurrent.Future
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 
@@ -63,12 +62,12 @@ trait UsersService extends BbwebService {
    *
    * @param sort the string representation of the sort expression to use when sorting the users.
    */
-  def getUsers(requestUserId: UserId, query: PagedQuery): Future[ServiceValidation[PagedResults[UserDto]]]
+  def getUsers(requestUserId: UserId, query: PagedQuery): FutureValidation[PagedResults[UserDto]]
 
   def getUserNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[EntityInfoAndStateDto]]]
+    ): FutureValidation[Seq[EntityInfoAndStateDto]]
 
   /**
    * Returns the counts of all users and also counts of users categorized by state.
@@ -87,17 +86,14 @@ trait UsersService extends BbwebService {
    *
    * @param sort the string representation of the sort expression to use when sorting the studies.
    */
-  def getUserStudies(
-      userId: UserId,
-      query:  FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[EntityInfoAndStateDto]]]
+  def getUserStudies(userId: UserId, query: FilterAndSortQuery): FutureValidation[Seq[EntityInfoAndStateDto]]
 
   /**
    * Permissions not checked since anyone can attempt a login.
    */
   def loginAllowed(email: String, enteredPwd: String): ServiceValidation[UserDto]
 
-  def processCommand(cmd: UserCommand): Future[ServiceValidation[UserDto]]
+  def processCommand(cmd: UserCommand): FutureValidation[UserDto]
 
   def snapshotRequest(requestUserId: UserId): ServiceValidation[Unit]
 
@@ -114,7 +110,7 @@ class UsersServiceImpl @javax.inject.Inject()(
     val passwordHasher:                     PasswordHasher
   )(
     implicit
-    executionContext: BbwebExecutionContext)
+    val executionContext: BbwebExecutionContext)
     extends UsersService with AccessChecksSerivce with ServicePermissionChecks {
 
   import org.biobank.CommonValidations._
@@ -151,8 +147,8 @@ class UsersServiceImpl @javax.inject.Inject()(
       .getByKey(id)
       .leftMap(_ => IdNotFound(s"user with id: $id").nel)
 
-  def getUsers(requestUserId: UserId, query: PagedQuery): Future[ServiceValidation[PagedResults[UserDto]]] =
-    Future {
+  def getUsers(requestUserId: UserId, query: PagedQuery): FutureValidation[PagedResults[UserDto]] =
+    FutureValidation {
       whenPermitted(requestUserId, PermissionId.UserRead) { () =>
         for {
           users     <- filterUsers(query.filter, query.sort)
@@ -165,8 +161,8 @@ class UsersServiceImpl @javax.inject.Inject()(
   def getUserNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[EntityInfoAndStateDto]]] =
-    Future {
+    ): FutureValidation[Seq[EntityInfoAndStateDto]] =
+    FutureValidation {
       whenPermitted(requestUserId, PermissionId.UserRead) { () =>
         filterUsers(query.filter, query.sort).map {
           _.map { u =>
@@ -219,8 +215,8 @@ class UsersServiceImpl @javax.inject.Inject()(
   def getUserStudies(
       userId: UserId,
       query:  FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[EntityInfoAndStateDto]]] =
-    Future {
+    ): FutureValidation[Seq[EntityInfoAndStateDto]] =
+    FutureValidation {
       for {
         membership <- accessService.getUserMembership(userId)
         studyIds = {
@@ -253,22 +249,22 @@ class UsersServiceImpl @javax.inject.Inject()(
       dto <- userToDto(user, accessService.getUserRoles(user.id))
     } yield dto
 
-  def processCommand(cmd: UserCommand): Future[ServiceValidation[UserDto]] = {
+  def processCommand(cmd: UserCommand): FutureValidation[UserDto] = {
 
-    def processIfPermitted(validation: ServiceValidation[Boolean]) =
-      validation.fold(err => Future.successful(err.failure[UserDto]),
-                      permitted =>
-                        if (permitted) {
-                          ask(processor, cmd).mapTo[ServiceValidation[UserEvent]].map { validation =>
-                            for {
-                              event <- validation
-                              user  <- userRepository.getByKey(UserId(event.id))
-                              dto   <- userToDto(user, accessService.getUserRoles(user.id))
-                            } yield dto
-                          }
-                        } else {
-                          Future.successful(Unauthorized.failureNel[UserDto])
-                        })
+    def processIfPermitted(validation: ServiceValidation[Boolean]) = {
+      validation
+        .fold(err => FutureValidation(err.failure[UserDto]),
+              permitted =>
+                if (!permitted) {
+                  FutureValidation(Unauthorized.failureNel[UserDto])
+                } else {
+                  for {
+                    event <- FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[UserEvent]])
+                    user  <- FutureValidation(userRepository.getByKey(UserId(event.id)))
+                    dto   <- FutureValidation(userToDto(user, accessService.getUserRoles(user.id)))
+                  } yield dto
+                })
+    }
 
     cmd match {
       case c: UserAccessCommand =>
@@ -293,7 +289,7 @@ class UsersServiceImpl @javax.inject.Inject()(
     }
   }
 
-  private def processUserAccessCommand(cmd: UserAccessCommand): Future[ServiceValidation[UserDto]] = {
+  private def processUserAccessCommand(cmd: UserAccessCommand): FutureValidation[UserDto] = {
 
     def checkUserAndVersion(userId: UserId, expectedVersion: Long): ServiceValidation[User] =
       for {
@@ -311,33 +307,29 @@ class UsersServiceImpl @javax.inject.Inject()(
     def accessServiceProcessRoleCommand(
         userId:     UserId,
         validation: ServiceValidation[AccessCommand]
-      ): Future[ServiceValidation[UserDto]] =
-      validation.fold(err => Future.successful(err.failure[UserDto]),
-                      command => {
-                        accessService.processRoleCommand(command).mapTo[ServiceValidation[RoleDto]].map { v =>
-                          for {
-                            roleDto <- v
-                            userDto <- dtoFromUserId(userId)
-                          } yield userDto
-                        }
-                      })
+      ): FutureValidation[UserDto] = {
+      validation
+        .fold(err => FutureValidation(err.failure[UserDto]), command => {
+          for {
+            roleDto <- accessService.processRoleCommand(command)
+            userDto <- FutureValidation(dtoFromUserId(userId))
+          } yield userDto
+        })
+    }
 
     // asks the access service to process a membership command
     def accessServiceProcessMembershipCommand(
         userId:     UserId,
         validation: ServiceValidation[MembershipCommand]
-      ): Future[ServiceValidation[UserDto]] =
-      validation.fold(err => Future.successful(err.failure[UserDto]),
-                      command => {
-                        accessService
-                          .processMembershipCommand(command)
-                          .mapTo[ServiceValidation[MembershipDto]].map { v =>
-                            for {
-                              membershipDto <- v
-                              userDto       <- dtoFromUserId(userId)
-                            } yield userDto
-                          }
-                      })
+      ): FutureValidation[UserDto] = {
+      validation
+        .fold(err => FutureValidation(err.failure[UserDto]), command => {
+          for {
+            membershipDto <- accessService.processMembershipCommand(command)
+            userDto       <- FutureValidation(dtoFromUserId(userId))
+          } yield userDto
+        })
+    }
 
     cmd match {
       case c: UpdateUserAddRoleCmd =>

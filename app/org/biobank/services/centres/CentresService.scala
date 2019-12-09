@@ -4,6 +4,7 @@ import akka.actor._
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Named}
+import org.biobank._
 import org.biobank.domain.{LocationId, Slug}
 import org.biobank.domain.access._
 import org.biobank.domain.access.PermissionId
@@ -37,16 +38,13 @@ trait CentresService extends BbwebService {
 
   def searchLocations(cmd: SearchCentreLocationsCmd): ServiceValidation[Set[CentreLocationInfo]]
 
-  def getCentres(
-      requestUserId: UserId,
-      pagedQuery:    PagedQuery
-    ): Future[ServiceValidation[PagedResults[CentreDto]]]
+  def getCentres(requestUserId: UserId, pagedQuery: PagedQuery): FutureValidation[PagedResults[CentreDto]]
 
   def getCentreNames(
       requestUserId: UserId,
       filter:        FilterString,
       sort:          SortString
-    ): Future[ServiceValidation[Seq[EntityInfoAndStateDto]]]
+    ): FutureValidation[Seq[EntityInfoAndStateDto]]
 
   def getCentre(requestUserId: UserId, id: CentreId): ServiceValidation[Centre]
 
@@ -54,7 +52,7 @@ trait CentresService extends BbwebService {
 
   def centreFromLocation(requestUserId: UserId, id: LocationId): ServiceValidation[Centre]
 
-  def processCommand(cmd: CentreCommand): Future[ServiceValidation[CentreDto]]
+  def processCommand(cmd: CentreCommand): FutureValidation[CentreDto]
 
   def snapshotRequest(requestUserId: UserId): ServiceValidation[Unit]
 
@@ -77,7 +75,7 @@ class CentresServiceImpl @Inject()(
     val centreRepository:                     CentreRepository
   )(
     implicit
-    ec: ExecutionContext)
+    val executionContext: ExecutionContext)
     extends CentresService with AccessChecksSerivce with CentreServicePermissionChecks {
 
   import org.biobank.CommonValidations._
@@ -98,11 +96,8 @@ class CentresServiceImpl @Inject()(
         .successNel[String]
     }
 
-  def getCentres(
-      requestUserId: UserId,
-      query:         PagedQuery
-    ): Future[ServiceValidation[PagedResults[CentreDto]]] =
-    Future {
+  def getCentres(requestUserId: UserId, query: PagedQuery): FutureValidation[PagedResults[CentreDto]] =
+    FutureValidation {
       withPermittedCentres(requestUserId) { centres =>
         for {
           centres   <- filterCentresInternal(centres, query.filter, query.sort)
@@ -117,8 +112,8 @@ class CentresServiceImpl @Inject()(
       requestUserId: UserId,
       filter:        FilterString,
       sort:          SortString
-    ): Future[ServiceValidation[Seq[EntityInfoAndStateDto]]] =
-    Future {
+    ): FutureValidation[Seq[EntityInfoAndStateDto]] =
+    FutureValidation {
       withPermittedCentres(requestUserId) { centres =>
         filterCentresInternal(centres, filter, sort).map { centres =>
           centres.map(c => EntityInfoAndStateDto(c.id.id, c.slug, c.name, c.state.id))
@@ -176,7 +171,7 @@ class CentresServiceImpl @Inject()(
         .successNel[String]
     }
 
-  def processCommand(cmd: CentreCommand): Future[ServiceValidation[CentreDto]] = {
+  def processCommand(cmd: CentreCommand): FutureValidation[CentreDto] = {
     val (permissionId, centreId) = cmd match {
       case c: CentreStateChangeCommand => (PermissionId.CentreChangeState, Some(CentreId(c.id)))
       case c: CentreModifyCommand      => (PermissionId.CentreUpdate, Some(CentreId(c.id)))
@@ -186,15 +181,13 @@ class CentresServiceImpl @Inject()(
     val requestUserId = UserId(cmd.sessionUserId)
 
     whenPermittedAndIsMemberAsync(requestUserId, permissionId, None, centreId) { () =>
-      ask(processor, cmd).mapTo[ServiceValidation[CentreEvent]].map { validation =>
         for {
-          event  <- validation
-          centre <- centreRepository.getByKey(CentreId(event.id))
-          dto    <- centreToDto(requestUserId, centre)
+        event  <- FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[CentreEvent]])
+        centre <- FutureValidation(centreRepository.getByKey(CentreId(event.id)))
+        dto    <- FutureValidation(centreToDto(requestUserId, centre))
         } yield dto
       }
     }
-  }
 
   private def filterCentresInternal(
       unfilteredCentres: Set[Centre],

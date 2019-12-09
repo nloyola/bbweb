@@ -9,6 +9,7 @@ import org.biobank.domain.users._
 import org.biobank.services.{FilterAndSortQuery, FilterString, PagedQuery, SortString}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.TableDrivenPropertyChecks._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Primarily these are tests that exercise the User Access aspect of StudiesService.
@@ -131,22 +132,20 @@ class StudiesServiceSpec extends ProcessorTestFixture with StudiesServiceFixture
 
         forAll(f.usersCanReadTable) { (user, label) =>
           info(s"$label")
-          studiesService.collectionStudies(user.id, query).futureValue.mustSucceed { results =>
+          studiesService.collectionStudies(user.id, query).mustSucceed { results =>
             results must have size (0)
           }
         }
 
         info("no membership user")
         studiesService
-          .collectionStudies(f.noMembershipUser.id, query).futureValue
-          .mustSucceed { set =>
+          .collectionStudies(f.noMembershipUser.id, query).mustSucceed { set =>
             set must have size (0)
           }
 
         info("no permission user")
         studiesService
-          .collectionStudies(f.nonStudyPermissionUser.id, query).futureValue
-          .mustSucceed { set =>
+          .collectionStudies(f.nonStudyPermissionUser.id, query).mustSucceed { set =>
             set must have size (0)
           }
       }
@@ -212,8 +211,7 @@ class StudiesServiceSpec extends ProcessorTestFixture with StudiesServiceFixture
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
           studiesService
-            .getStudies(user.id, query).futureValue
-            .mustSucceed { results =>
+            .getStudies(user.id, query).mustSucceed { results =>
               results.items must have length (1)
             }
         }
@@ -225,15 +223,13 @@ class StudiesServiceSpec extends ProcessorTestFixture with StudiesServiceFixture
 
         info("no membership user")
         studiesService
-          .getStudies(f.noMembershipUser.id, query).futureValue
-          .mustSucceed { results =>
+          .getStudies(f.noMembershipUser.id, query).mustSucceed { results =>
             results.items must have length (0)
           }
 
         info("no permission user")
         studiesService
-          .getStudies(f.nonStudyPermissionUser.id, query).futureValue
-          .mustFail("Unauthorized")
+          .getStudies(f.nonStudyPermissionUser.id, query).mustFail("Unauthorized")
       }
 
     }
@@ -296,7 +292,7 @@ class StudiesServiceSpec extends ProcessorTestFixture with StudiesServiceFixture
                                 name        = f.study.name,
                                 description = f.study.description)
           studyRepository.removeAll
-          studiesService.processCommand(cmd).futureValue mustSucceed { s =>
+          studiesService.processCommand(cmd).mustSucceed { s =>
             s.name must be(f.study.name)
           }
         }
@@ -309,7 +305,7 @@ class StudiesServiceSpec extends ProcessorTestFixture with StudiesServiceFixture
           val cmd = AddStudyCmd(sessionUserId = Some(user.id.id),
                                 name        = f.study.name,
                                 description = f.study.description)
-          studiesService.processCommand(cmd).futureValue mustFail "Unauthorized"
+          studiesService.processCommand(cmd) mustFail "Unauthorized"
         }
       }
 
@@ -333,7 +329,7 @@ class StudiesServiceSpec extends ProcessorTestFixture with StudiesServiceFixture
             }
 
             studyRepository.put(study) // restore the study to it's previous state
-            studiesService.processCommand(cmd).futureValue mustSucceed { s =>
+            studiesService.processCommand(cmd).mustSucceed { s =>
               s.id must be(study.id)
             }
           }
@@ -348,7 +344,7 @@ class StudiesServiceSpec extends ProcessorTestFixture with StudiesServiceFixture
           info(label)
           studyRepository.put(f.study) // restore the study to it's previous state
           forAll(updateCommandsTable(user.id, f.study, annotationType)) { cmd =>
-            studiesService.processCommand(cmd).futureValue mustFail "Unauthorized"
+            studiesService.processCommand(cmd) mustFail "Unauthorized"
           }
         }
       }
@@ -363,7 +359,7 @@ class StudiesServiceSpec extends ProcessorTestFixture with StudiesServiceFixture
           info(label)
           forAll(stateChangeCommandsTable(user.id, f.disabledStudy, f.enabledStudy, f.retiredStudy)) { cmd =>
             Set(f.disabledStudy, f.enabledStudy, f.retiredStudy).foreach(addToRepository)
-            studiesService.processCommand(cmd).futureValue mustSucceed { s =>
+            studiesService.processCommand(cmd).mustSucceed { s =>
               s.id.id must be(cmd.id)
             }
           }
@@ -376,7 +372,7 @@ class StudiesServiceSpec extends ProcessorTestFixture with StudiesServiceFixture
           info(label)
           studyRepository.put(f.study) // restore the study to it's previous state
           forAll(stateChangeCommandsTable(user.id, f.disabledStudy, f.enabledStudy, f.retiredStudy)) { cmd =>
-            studiesService.processCommand(cmd).futureValue mustFail "Unauthorized"
+            studiesService.processCommand(cmd) mustFail "Unauthorized"
           }
         }
       }
@@ -392,8 +388,7 @@ class StudiesServiceSpec extends ProcessorTestFixture with StudiesServiceFixture
 
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 10)
         studiesService
-          .getStudies(f.allStudiesAdminUser.id, query).futureValue
-          .mustSucceed { reply =>
+          .getStudies(f.allStudiesAdminUser.id, query).mustSucceed { reply =>
             reply.items must have size (2)
             val studyIds = reply.items.map(c => c.id).sortBy(_.id)
             studyIds must equal(List(f.study.id, secondStudy.id).sortBy(_.id))
@@ -407,8 +402,7 @@ class StudiesServiceSpec extends ProcessorTestFixture with StudiesServiceFixture
 
         val f = new UsersWithStudyAccessFixture
         studiesService
-          .getStudies(f.studyOnlyAdminUser.id, query).futureValue
-          .mustSucceed { reply =>
+          .getStudies(f.studyOnlyAdminUser.id, query).mustSucceed { reply =>
             reply.items must have size (1)
             reply.items.map(c => c.id) must contain(f.study.id)
           }
@@ -429,8 +423,7 @@ class StudiesServiceSpec extends ProcessorTestFixture with StudiesServiceFixture
         addToRepository(study)
 
         studiesService
-          .getStudies(f.studyUser.id, query).futureValue
-          .mustSucceed { reply =>
+          .getStudies(f.studyUser.id, query).mustSucceed { reply =>
             reply.items must have size (0)
           }
       }

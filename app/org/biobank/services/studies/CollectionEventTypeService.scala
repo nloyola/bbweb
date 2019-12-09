@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Named}
+import org.biobank._
 import org.biobank.domain.Slug
 import org.biobank.domain.access._
 import org.biobank.domain.studies._
@@ -16,7 +17,6 @@ import org.biobank.infrastructure.events.CollectionEventTypeEvents._
 import org.biobank.services._
 import org.biobank.services.access.AccessService
 import org.slf4j.{Logger, LoggerFactory}
-import scala.concurrent.Future
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 
@@ -48,34 +48,34 @@ trait CollectionEventTypeService extends BbwebService {
       requestUserId: UserId,
       studyId:       StudyId,
       pagedQuery:    PagedQuery
-    ): Future[ServiceValidation[PagedResults[CollectionEventType]]]
+    ): FutureValidation[PagedResults[CollectionEventType]]
 
   def listByStudySlug(
       requestUserId: UserId,
       studySlug:     Slug,
       pagedQuery:    PagedQuery
-    ): Future[ServiceValidation[PagedResults[CollectionEventType]]]
+    ): FutureValidation[PagedResults[CollectionEventType]]
 
   def specimenDefinitionsForStudy(
       requestUserId: UserId,
       studySlug:     Slug
-    ): Future[ServiceValidation[Set[CollectedSpecimenDefinitionNames]]]
+    ): FutureValidation[Set[CollectedSpecimenDefinitionNames]]
 
   def listNamesByStudySlug(
       requestUserId: UserId,
       studySlug:     Slug,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[NamedEntityInfoDto]]]
+    ): FutureValidation[Seq[NamedEntityInfoDto]]
 
   def listNamesByStudyId(
       requestUserId: UserId,
       studyId:       StudyId,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[NamedEntityInfoDto]]]
+    ): FutureValidation[Seq[NamedEntityInfoDto]]
 
-  def processCommand(cmd: CollectionEventTypeCommand): Future[ServiceValidation[CollectionEventType]]
+  def processCommand(cmd: CollectionEventTypeCommand): FutureValidation[CollectionEventType]
 
-  def processRemoveCommand(cmd: RemoveCollectionEventTypeCmd): Future[ServiceValidation[Boolean]]
+  def processRemoveCommand(cmd: RemoveCollectionEventTypeCmd): FutureValidation[Boolean]
 
   def snapshotRequest(requestUserId: UserId): ServiceValidation[Unit]
 
@@ -90,7 +90,7 @@ class CollectionEventTypeServiceImpl @Inject()(
     val eventRepository:                         CollectionEventRepository
   )(
     implicit
-    executionContext: BbwebExecutionContext)
+    val executionContext: BbwebExecutionContext)
     extends CollectionEventTypeService with AccessChecksSerivce with ServicePermissionChecks {
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
@@ -126,8 +126,8 @@ class CollectionEventTypeServiceImpl @Inject()(
       requestUserId: UserId,
       studyId:       StudyId,
       query:         PagedQuery
-    ): Future[ServiceValidation[PagedResults[CollectionEventType]]] =
-    Future {
+    ): FutureValidation[PagedResults[CollectionEventType]] =
+    FutureValidation {
       whenPermittedAndIsMember(requestUserId, PermissionId.StudyRead, Some(studyId), None) { () =>
         queryInternal(requestUserId, studyId, query.filter, query.sort).flatMap { types =>
           PagedResults.create(types, query.page, query.limit)
@@ -139,8 +139,8 @@ class CollectionEventTypeServiceImpl @Inject()(
       requestUserId: UserId,
       studySlug:     Slug,
       query:         PagedQuery
-    ): Future[ServiceValidation[PagedResults[CollectionEventType]]] =
-    Future {
+    ): FutureValidation[PagedResults[CollectionEventType]] =
+    FutureValidation {
       for {
         study     <- studiesService.getStudyBySlug(requestUserId, studySlug)
         types     <- queryInternal(requestUserId, study.id, query.filter, query.sort)
@@ -152,8 +152,8 @@ class CollectionEventTypeServiceImpl @Inject()(
   def specimenDefinitionsForStudy(
       requestUserId: UserId,
       studySlug:     Slug
-    ): Future[ServiceValidation[Set[CollectedSpecimenDefinitionNames]]] =
-    Future {
+    ): FutureValidation[Set[CollectedSpecimenDefinitionNames]] =
+    FutureValidation {
       for {
         study      <- studiesService.getStudyBySlug(requestUserId, studySlug)
         eventTypes <- queryInternal(requestUserId, study.id, new FilterString(""), new SortString(""))
@@ -169,8 +169,8 @@ class CollectionEventTypeServiceImpl @Inject()(
       requestUserId: UserId,
       studyId:       StudyId,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[NamedEntityInfoDto]]] =
-    Future {
+    ): FutureValidation[Seq[NamedEntityInfoDto]] =
+    FutureValidation {
       for {
         study <- studiesService.getStudy(requestUserId, studyId)
         types <- queryInternal(requestUserId, study.id, query.filter, query.sort)
@@ -185,8 +185,8 @@ class CollectionEventTypeServiceImpl @Inject()(
       requestUserId: UserId,
       studySlug:     Slug,
       query:         FilterAndSortQuery
-    ): Future[ServiceValidation[Seq[NamedEntityInfoDto]]] =
-    Future {
+    ): FutureValidation[Seq[NamedEntityInfoDto]] =
+    FutureValidation {
       for {
         study <- studiesService.getStudyBySlug(requestUserId, studySlug)
         types <- queryInternal(requestUserId, study.id, query.filter, query.sort)
@@ -197,7 +197,7 @@ class CollectionEventTypeServiceImpl @Inject()(
       }
     }
 
-  def processCommand(cmd: CollectionEventTypeCommand): Future[ServiceValidation[CollectionEventType]] = {
+  def processCommand(cmd: CollectionEventTypeCommand): FutureValidation[CollectionEventType] = {
     val v = for {
       validCommand <- cmd match {
                        case c: RemoveCollectionEventTypeCmd =>
@@ -208,35 +208,32 @@ class CollectionEventTypeServiceImpl @Inject()(
       study <- studiesService.getDisabledStudy(UserId(cmd.sessionUserId), StudyId(cmd.studyId))
     } yield study
 
-    v.fold(err => Future.successful(err.failure[CollectionEventType]),
+    v.fold(err => FutureValidation(err.failure[CollectionEventType]),
            study =>
              whenPermittedAndIsMemberAsync(UserId(cmd.sessionUserId),
                                            PermissionId.StudyUpdate,
                                            Some(study.id),
                                            None) { () =>
-               ask(processor, cmd).mapTo[ServiceValidation[CollectionEventTypeEvent]].map { validation =>
-                 for {
-                   event  <- validation
-                   result <- eventTypeRepository.getByKey(CollectionEventTypeId(event.id))
-                 } yield result
-               }
+               for {
+                 event <- FutureValidation(
+                           ask(processor, cmd).mapTo[ServiceValidation[CollectionEventTypeEvent]]
+                         )
+                 result <- FutureValidation(eventTypeRepository.getByKey(CollectionEventTypeId(event.id)))
+               } yield result
              })
   }
 
-  def processRemoveCommand(cmd: RemoveCollectionEventTypeCmd): Future[ServiceValidation[Boolean]] =
+  def processRemoveCommand(cmd: RemoveCollectionEventTypeCmd): FutureValidation[Boolean] =
     studiesService
       .getDisabledStudy(UserId(cmd.sessionUserId), StudyId(cmd.studyId)).fold(
-        err => Future.successful(err.failure[Boolean]),
+        err => FutureValidation(err.failure[Boolean]),
         study =>
           whenPermittedAndIsMemberAsync(UserId(cmd.sessionUserId),
                                         PermissionId.StudyUpdate,
                                         Some(study.id),
                                         None) { () =>
-            ask(processor, cmd)
-              .mapTo[ServiceValidation[CollectionEventTypeEvent]]
-              .map { validation =>
-                validation.map(event => true)
-              }
+            FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[CollectionEventTypeEvent]])
+              .map(event => true)
           }
       )
 

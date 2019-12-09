@@ -9,6 +9,7 @@ import org.biobank.domain.users._
 import org.biobank.services.{FilterString, PagedQuery, SortString}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.TableDrivenPropertyChecks._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Primarily these are tests that exercise the User Access aspect of SpecimenService.
@@ -169,11 +170,9 @@ class SpecimensServiceSpec extends ProcessorTestFixture with ParticipantsService
 
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
-          specimensService
-            .list(user.id, f.cevent.id, query).futureValue
-            .mustSucceed { result =>
-              result.items must have size 1
-            }
+          specimensService.list(user.id, f.cevent.id, query) mustSucceed { result =>
+            result.items must have size 1
+          }
         }
       }
 
@@ -182,13 +181,11 @@ class SpecimensServiceSpec extends ProcessorTestFixture with ParticipantsService
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
 
         info("no membership user")
-        specimensService
-          .list(f.noMembershipUser.id, f.cevent.id, query).futureValue
-          .mustFail("Unauthorized")
+        specimensService.list(f.noMembershipUser.id, f.cevent.id, query) mustFail "Unauthorized"
 
         info("no permission user")
         specimensService
-          .list(f.nonStudyPermissionUser.id, f.cevent.id, query).futureValue
+          .list(f.nonStudyPermissionUser.id, f.cevent.id, query)
           .mustFail("Unauthorized")
       }
 
@@ -201,7 +198,7 @@ class SpecimensServiceSpec extends ProcessorTestFixture with ParticipantsService
         forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           val cmd = getAddSpecimensCmd(user.id, f.cevent.id, f.specimen)
           specimenRepository.removeAll
-          specimensService.processCommand(cmd).futureValue mustSucceed { reply =>
+          specimensService.processCommand(cmd).mustSucceed { reply =>
             reply.participantId must be(f.participant.id.id)
           }
         }
@@ -212,7 +209,7 @@ class SpecimensServiceSpec extends ProcessorTestFixture with ParticipantsService
         forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           val cmd = getAddSpecimensCmd(user.id, f.cevent.id, f.specimen)
           specimenRepository.removeAll
-          specimensService.processCommand(cmd).futureValue mustFail "Unauthorized"
+          specimensService.processCommand(cmd) mustFail "Unauthorized"
         }
       }
 
@@ -233,7 +230,7 @@ class SpecimensServiceSpec extends ProcessorTestFixture with ParticipantsService
     //             }
 
     //           specimenRepository.put(specimen) // restore it to it's previous state
-    //           specimensService.processCommand(cmd).futureValue mustSucceed { reply =>
+    //           specimensService.processCommand(cmd).mustSucceed { reply =>
     //             reply.id must be (f.specimen.id)
     //           }
     //         }
@@ -244,7 +241,7 @@ class SpecimensServiceSpec extends ProcessorTestFixture with ParticipantsService
     //       val f = new UsersWithSpecimenAccessFixture
     //       forAll (f.usersCannotAddOrUpdateTable) { (user, label) =>
     //         forAll(updateCommandsTable(user.id, f.specimen, f.specimenAnnotation)) { cmd =>
-    //           specimensService.processCommand(cmd).futureValue mustFail "Unauthorized"
+    //           specimensService.processCommand(cmd).mustFail "Unauthorized"
     //         }
     //       }
     //     }
@@ -260,7 +257,7 @@ class SpecimensServiceSpec extends ProcessorTestFixture with ParticipantsService
           val cmd = getRemoveSpecimenCmd(user.id, f.cevent.id, f.specimen)
           specimenRepository.put(f.specimen) // restore it to it's previous state
           ceventSpecimenRepository.put(CeventSpecimen(f.cevent.id, f.specimen.id))
-          specimensService.processRemoveCommand(cmd).futureValue mustSucceed { reply =>
+          specimensService.processRemoveCommand(cmd).mustSucceed { reply =>
             ()
           }
         }
@@ -271,7 +268,7 @@ class SpecimensServiceSpec extends ProcessorTestFixture with ParticipantsService
         forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           info(label)
           val cmd = getRemoveSpecimenCmd(user.id, f.cevent.id, f.specimen)
-          specimensService.processRemoveCommand(cmd).futureValue mustFail "Unauthorized"
+          specimensService.processRemoveCommand(cmd) mustFail "Unauthorized"
         }
       }
     }

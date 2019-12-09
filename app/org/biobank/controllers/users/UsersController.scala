@@ -157,19 +157,16 @@ class UsersController @Inject()(
   /**
    * Permissions not checked since anyone can register as a user.
    */
-  def registerUser(): Action[JsValue] =
+  def registerUser(): Action[JsValue] = {
     anonymousCommandAction[RegisterUserCmd] { cmd =>
-      usersService.processCommand(cmd).map { validation =>
-        validation.fold(err => {
+      usersService.processCommand(cmd).futval.map {
+        _.fold(err => {
           val errs = err.list.toList.mkString(", ")
-          if (errs.contains("exists")) {
-            Forbidden("email already registered")
-          } else {
-            BadRequest(errs)
-          }
+          if (errs.contains("exists")) Forbidden("email already registered") else BadRequest(errs)
         }, user => Ok(user))
       }
     }
+  }
 
   def snapshot: Action[Unit] =
     action(parse.empty) { implicit request =>
@@ -185,8 +182,8 @@ class UsersController @Inject()(
    */
   def passwordReset(): Action[JsValue] =
     anonymousCommandAction[ResetUserPasswordCmd] { cmd =>
-      usersService.processCommand(cmd).map { validation =>
-        validation.fold(err => Unauthorized, event => Ok("password has been reset"))
+      usersService.processCommand(cmd).futval.map {
+        _.fold(err => Unauthorized, event => Ok("password has been reset"))
       }
     }
 

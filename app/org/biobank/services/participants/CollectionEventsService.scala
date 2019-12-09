@@ -4,6 +4,7 @@ import akka.actor._
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Named}
+import org.biobank._
 import org.biobank.domain.access._
 import org.biobank.domain.participants._
 import org.biobank.domain.studies._
@@ -15,7 +16,7 @@ import org.biobank.infrastructure.events.CollectionEventEvents._
 import org.biobank.services._
 import org.biobank.services.access.AccessService
 import org.slf4j.{Logger, LoggerFactory}
-import scala.concurrent._
+import scala.concurrent.ExecutionContext
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 
@@ -34,16 +35,16 @@ trait CollectionEventsService extends BbwebService {
       requestUserId: UserId,
       participantId: ParticipantId,
       pagedQuery:    PagedQuery
-    ): Future[ServiceValidation[PagedResults[CollectionEventDto]]]
+    ): FutureValidation[PagedResults[CollectionEventDto]]
 
   def collectionEventToDto(
       requestUserId: UserId,
       event:         CollectionEvent
     ): ServiceValidation[CollectionEventDto]
 
-  def processCommand(cmd: CollectionEventCommand): Future[ServiceValidation[CollectionEventDto]]
+  def processCommand(cmd: CollectionEventCommand): FutureValidation[CollectionEventDto]
 
-  def processRemoveCommand(cmd: RemoveCollectionEventCmd): Future[ServiceValidation[Boolean]]
+  def processRemoveCommand(cmd: RemoveCollectionEventCmd): FutureValidation[Boolean]
 
   def snapshotRequest(requestUserId: UserId): ServiceValidation[Unit]
 
@@ -59,7 +60,7 @@ class CollectionEventsServiceImpl @Inject()(
     val collectionEventTypeRepository:                 CollectionEventTypeRepository
   )(
     implicit
-    executionContext: BbwebExecutionContext)
+    val executionContext: ExecutionContext)
     extends CollectionEventsService with AccessChecksSerivce with ServicePermissionChecks {
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
@@ -87,8 +88,8 @@ class CollectionEventsServiceImpl @Inject()(
       requestUserId: UserId,
       participantId: ParticipantId,
       query:         PagedQuery
-    ): Future[ServiceValidation[PagedResults[CollectionEventDto]]] =
-    Future {
+    ): FutureValidation[PagedResults[CollectionEventDto]] =
+    FutureValidation {
       whenParticipantPermitted(requestUserId, participantId) { participant =>
         val allCevents = collectionEventRepository.allForParticipant(participantId).toSet
         val sortStr =
@@ -127,35 +128,31 @@ class CollectionEventsServiceImpl @Inject()(
       }
     }
 
-  def processCommand(cmd: CollectionEventCommand): Future[ServiceValidation[CollectionEventDto]] = {
+  def processCommand(cmd: CollectionEventCommand): FutureValidation[CollectionEventDto] = {
     val validCommand = cmd match {
       case c: RemoveCollectionEventCmd =>
         ServiceError(s"invalid service call: $cmd, use processRemoveCommand").failureNel[DisabledStudy]
       case c => c.successNel[String]
     }
 
-    validCommand.fold(err => Future.successful(err.failure[CollectionEventDto]),
-                      c =>
-                        whenParticipantPermittedAsync(cmd) { () =>
-                          ask(processor, cmd)
-                            .mapTo[ServiceValidation[CollectionEventEvent]]
-                            .map { validation =>
-                              for {
-                                event  <- validation
-                                cevent <- collectionEventRepository.getByKey(CollectionEventId(event.id))
-                                dto    <- collectionEventToDto(UserId(cmd.sessionUserId), cevent)
-                              } yield dto
-                            }
-                        })
+    validCommand
+      .fold(err => FutureValidation(err.failure[CollectionEventDto]),
+            c =>
+              whenParticipantPermittedAsync(cmd) { () =>
+                for {
+                  event <- FutureValidation(
+                            ask(processor, cmd).mapTo[ServiceValidation[CollectionEventEvent]]
+                          )
+                  cevent <- FutureValidation(collectionEventRepository.getByKey(CollectionEventId(event.id)))
+                  dto    <- FutureValidation(collectionEventToDto(UserId(cmd.sessionUserId), cevent))
+                } yield dto
+              })
   }
 
-  def processRemoveCommand(cmd: RemoveCollectionEventCmd): Future[ServiceValidation[Boolean]] =
+  def processRemoveCommand(cmd: RemoveCollectionEventCmd): FutureValidation[Boolean] =
     whenParticipantPermittedAsync(cmd) { () =>
-      ask(processor, cmd)
-        .mapTo[ServiceValidation[CollectionEventEvent]]
-        .map { validation =>
-          validation.map(event => true)
-        }
+      FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[CollectionEventEvent]])
+        .map(_ => true)
     }
 
   private def whenParticipantPermitted[T](
@@ -174,8 +171,8 @@ class CollectionEventsServiceImpl @Inject()(
 
   private def whenParticipantPermittedAsync[T](
       cmd:   CollectionEventCommand
-    )(block: () => Future[ServiceValidation[T]]
-    ): Future[ServiceValidation[T]] = {
+    )(block: () => FutureValidation[T]
+    ): FutureValidation[T] = {
     val validParticipantId = cmd match {
       case c: AddCollectionEventCmd => ParticipantId(c.participantId).successNel[String]
       case c: CollectionEventModifyCommand =>
@@ -195,7 +192,7 @@ class CollectionEventsServiceImpl @Inject()(
     } yield study
 
     validStudy.fold(
-      err => Future.successful(err.failure[T]),
+      err => FutureValidation(err.failure[T]),
       study =>
         whenPermittedAndIsMemberAsync(UserId(cmd.sessionUserId), permission, Some(study.id), None)(block)
     )

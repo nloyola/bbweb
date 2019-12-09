@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Named}
+import org.biobank._
 import org.biobank.domain.Slug
 import org.biobank.domain.access.PermissionId
 import org.biobank.domain.centres.{Centre, CentreId, CentreRepository}
@@ -23,17 +24,17 @@ import scalaz.Validation.FlatMap._
 @ImplementedBy(classOf[ContainerSchemasServiceImpl])
 trait ContainerSchemasService extends BbwebService {
 
-  def getBySlug(requestUserId: UserId, slug: Slug): Future[ServiceValidation[ContainerSchemaDto]]
+  def getBySlug(requestUserId: UserId, slug: Slug): FutureValidation[ContainerSchemaDto]
 
   def search(
       requestUserId: UserId,
       centreId:      CentreId,
       query:         PagedQuery
-    ): Future[ServiceValidation[PagedResults[ContainerSchemaDto]]]
+    ): FutureValidation[PagedResults[ContainerSchemaDto]]
 
-  def processCommand(cmd: ContainerSchemaCommand): Future[ServiceValidation[ContainerSchemaDto]]
+  def processCommand(cmd: ContainerSchemaCommand): FutureValidation[ContainerSchemaDto]
 
-  def processRemoveCommand(cmd: RemoveContainerSchemaCmd): Future[ServiceValidation[Boolean]]
+  def processRemoveCommand(cmd: RemoveContainerSchemaCmd): FutureValidation[Boolean]
 
   def snapshotRequest(requestUserId: UserId): ServiceValidation[Unit]
 
@@ -47,13 +48,13 @@ class ContainerSchemasServiceImpl @Inject()(
     val schemaRepository:                              ContainerSchemaRepository
   )(
     implicit
-    ec: ExecutionContext)
+    val executionContext: ExecutionContext)
     extends ContainerSchemasService with AccessChecksSerivce with ServicePermissionChecks {
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
-  def getBySlug(requestUserId: UserId, slug: Slug): Future[ServiceValidation[ContainerSchemaDto]] =
-    Future {
+  def getBySlug(requestUserId: UserId, slug: Slug): FutureValidation[ContainerSchemaDto] =
+    FutureValidation {
       whenSchemaPermitted(requestUserId, slug) { (centre, schema) =>
         ContainerSchemaDto(schema, centre).successNel[String]
       }
@@ -66,8 +67,8 @@ class ContainerSchemasServiceImpl @Inject()(
       requestUserId: UserId,
       centreId:      CentreId,
       query:         PagedQuery
-    ): Future[ServiceValidation[PagedResults[ContainerSchemaDto]]] =
-    Future {
+    ): FutureValidation[PagedResults[ContainerSchemaDto]] =
+    FutureValidation {
       whenCentrePermitted(requestUserId, centreId) { centre =>
         val allSchemas = schemaRepository.allForCentre(centre.id)
         for {
@@ -79,7 +80,7 @@ class ContainerSchemasServiceImpl @Inject()(
       }
     }
 
-  def processCommand(cmd: ContainerSchemaCommand): Future[ServiceValidation[ContainerSchemaDto]] = {
+  def processCommand(cmd: ContainerSchemaCommand): FutureValidation[ContainerSchemaDto] = {
     val validCentre = cmd match {
       case c: AddContainerSchemaCmd => centreRepository.getByKey(CentreId(c.centreId))
       case c: ContainerSchemaModifyCommand =>
@@ -98,37 +99,38 @@ class ContainerSchemasServiceImpl @Inject()(
     val requestUserId = UserId(cmd.sessionUserId)
 
     validCentre
-      .fold(err => Future.successful((err.failure[ContainerSchemaDto])),
+      .fold(err => FutureValidation((err.failure[ContainerSchemaDto])),
             centre =>
               whenPermittedAndIsMemberAsync(requestUserId, permission, None, Some(centre.id)) { () =>
-                ask(processor, cmd).mapTo[ServiceValidation[ContainerSchemaEvent]].map { validation =>
+                for {
+                  event <- FutureValidation(
+                            ask(processor, cmd).mapTo[ServiceValidation[ContainerSchemaEvent]]
+                          )
                   // need to retrieve the centre attached to the returned schema, since there is a
                   // possibility it was updated to a new centre
-                  for {
-                    event        <- validation
-                    schema       <- schemaRepository.getByKey(ContainerSchemaId(event.id))
-                    schemaCentre <- centreRepository.getByKey(schema.centreId)
-                  } yield ContainerSchemaDto(schema, schemaCentre)
-                }
+                  schema       <- FutureValidation(schemaRepository.getByKey(ContainerSchemaId(event.id)))
+                  schemaCentre <- FutureValidation(centreRepository.getByKey(schema.centreId))
+                } yield ContainerSchemaDto(schema, schemaCentre)
               })
   }
 
-  def processRemoveCommand(cmd: RemoveContainerSchemaCmd): Future[ServiceValidation[Boolean]] = {
+  def processRemoveCommand(cmd: RemoveContainerSchemaCmd): FutureValidation[Boolean] = {
     val validCentre = for {
       schema <- schemaRepository.getByKey(ContainerSchemaId(cmd.id))
       centre <- centreRepository.getByKey(schema.centreId)
     } yield centre
 
     validCentre
-      .fold(err => Future.successful((err.failure[Boolean])),
+      .fold(err => FutureValidation((err.failure[Boolean])),
             centre =>
               whenPermittedAndIsMemberAsync(UserId(cmd.sessionUserId),
                                             PermissionId.ContainerDelete,
                                             None,
                                             Some(centre.id)) { () =>
-                ask(processor, cmd)
-                  .mapTo[ServiceValidation[ContainerSchemaEvent]]
-                  .map { _.map(event => true) }
+                FutureValidation(
+                  ask(processor, cmd)
+                    .mapTo[ServiceValidation[ContainerSchemaEvent]]
+                ).map(_ => true)
               })
   }
 

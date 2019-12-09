@@ -9,6 +9,7 @@ import org.biobank.domain.users._
 import org.biobank.services.{FilterString, PagedQuery, SortString}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.TableDrivenPropertyChecks._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Primarily these are tests that exercise the User Access aspect of CentresService.
@@ -165,7 +166,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
       val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
       forAll(f.usersCanReadTable) { (user, label) =>
         info(label)
-        centresService.getCentres(user.id, query).futureValue.mustSucceed { pagedResults =>
+        centresService.getCentres(user.id, query).mustSucceed { pagedResults =>
           pagedResults.items must have length (1)
         }
       }
@@ -175,12 +176,12 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
       val f     = createFixture
       val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
       info("no membership user")
-      centresService.getCentres(f.noMembershipUser.id, query).futureValue.mustSucceed { pagedResults =>
+      centresService.getCentres(f.noMembershipUser.id, query).mustSucceed { pagedResults =>
         pagedResults.items must have length (0)
       }
 
       info("no permission user")
-      centresService.getCentres(f.noCentrePermissionUser.id, query).futureValue.mustFail("Unauthorized")
+      centresService.getCentres(f.noCentrePermissionUser.id, query).mustFail("Unauthorized")
     }
 
   }
@@ -247,7 +248,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
         val cmd =
           AddCentreCmd(sessionUserId = user.id.id, name = f.centre.name, description = f.centre.description)
         centreRepository.removeAll
-        centresService.processCommand(cmd).futureValue mustSucceed { s =>
+        centresService.processCommand(cmd) mustSucceed { s =>
           s.name must be(f.centre.name)
         }
       }
@@ -259,7 +260,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
       forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
         val cmd =
           AddCentreCmd(sessionUserId = user.id.id, name = f.centre.name, description = f.centre.description)
-        centresService.processCommand(cmd).futureValue mustFail "Unauthorized"
+        centresService.processCommand(cmd) mustFail "Unauthorized"
       }
     }
 
@@ -282,7 +283,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
           }
 
           centreRepository.put(centre) // restore the centre to it's previous state
-          centresService.processCommand(cmd).futureValue mustSucceed { c =>
+          centresService.processCommand(cmd).mustSucceed { c =>
             c.id must be(centre.id.id)
           }
         }
@@ -296,7 +297,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
 
       forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
         forAll(updateCommandsTable(user.id, f.centre, f.location, study)) { cmd =>
-          centresService.processCommand(cmd).futureValue mustFail "Unauthorized"
+          centresService.processCommand(cmd) mustFail "Unauthorized"
         }
       }
     }
@@ -311,7 +312,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
         info(label)
         forAll(stateChangeCommandsTable(user.id, f.disabledCentre, f.enabledCentre)) { cmd =>
           Set(f.disabledCentre, f.enabledCentre).foreach(addToRepository)
-          centresService.processCommand(cmd).futureValue mustSucceed { c =>
+          centresService.processCommand(cmd).mustSucceed { c =>
             c.id must be(cmd.id)
           }
         }
@@ -323,7 +324,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
       forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
         info(label)
         forAll(stateChangeCommandsTable(user.id, f.disabledCentre, f.enabledCentre)) { cmd =>
-          centresService.processCommand(cmd).futureValue mustFail "Unauthorized"
+          centresService.processCommand(cmd) mustFail "Unauthorized"
         }
       }
     }
@@ -337,7 +338,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
       addToRepository(secondCentre)
 
       val query = PagedQuery(new FilterString(""), new SortString(""), 0, 10)
-      centresService.getCentres(f.allCentresAdminUser.id, query).futureValue.mustSucceed { reply =>
+      centresService.getCentres(f.allCentresAdminUser.id, query).mustSucceed { reply =>
         reply.items.length must be > 1
         val centreIds = reply.items.map(c => c.id).sorted
         centreIds must equal(List(f.centre.id.id, secondCentre.id.id).sorted)
@@ -350,7 +351,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
       addToRepository(secondCentre)
 
       val query = PagedQuery(new FilterString(""), new SortString(""), 0, 10)
-      centresService.getCentres(f.centreOnlyAdminUser.id, query).futureValue.mustSucceed { reply =>
+      centresService.getCentres(f.centreOnlyAdminUser.id, query).mustSucceed { reply =>
         reply.items must have size (1)
         reply.items.map(c => c.id) must contain(f.centre.id.id)
       }
@@ -370,7 +371,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
       val secondStudy = factory.createDisabledStudy
       addToRepository(secondStudy)
 
-      centresService.getCentres(f.centreUser.id, query).futureValue.mustSucceed { reply =>
+      centresService.getCentres(f.centreUser.id, query).mustSucceed { reply =>
         reply.items must have size (0)
       }
     }

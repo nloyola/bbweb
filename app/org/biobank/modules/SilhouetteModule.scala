@@ -30,7 +30,6 @@ import play.api.Configuration
 import play.api.libs.openid.OpenIdClient
 import play.api.libs.ws.WSClient
 import play.api.mvc.Cookie
-
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /**

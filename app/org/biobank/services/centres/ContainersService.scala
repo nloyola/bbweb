@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Named}
+import org.biobank._
 import org.biobank.domain.Slug
 import org.biobank.domain.access.PermissionId
 import org.biobank.domain.centres.{CentreId, CentreRepository}
@@ -23,20 +24,20 @@ import scalaz.Validation.FlatMap._
 @ImplementedBy(classOf[ContainersServiceImpl])
 trait ContainersService extends BbwebService {
 
-  def getBySlug(requestUserId: UserId, slug: Slug): Future[ServiceValidation[ContainerDto]]
+  def getBySlug(requestUserId: UserId, slug: Slug): FutureValidation[ContainerDto]
 
   /** Searches for [[domain.containers.RootContainer RootContainers]] for a [domain.centres.Centre Centre]. */
   def search(
       requestUserId: UserId,
       centreId:      CentreId,
       query:         PagedQuery
-    ): Future[ServiceValidation[PagedResults[ContainerDto]]]
+    ): FutureValidation[PagedResults[ContainerDto]]
 
-  def getChildrenBySlug(requestUserId: UserId, slug: Slug): Future[ServiceValidation[ContainerChildrenInfo]]
+  def getChildrenBySlug(requestUserId: UserId, slug: Slug): FutureValidation[ContainerChildrenInfo]
 
-  def processCommand(cmd: ContainerCommand): Future[ServiceValidation[ContainerDto]]
+  def processCommand(cmd: ContainerCommand): FutureValidation[ContainerDto]
 
-  def processRemoveCommand(cmd: RemoveContainerCmd): Future[ServiceValidation[Boolean]]
+  def processRemoveCommand(cmd: RemoveContainerCmd): FutureValidation[Boolean]
 
   def snapshotRequest(requestUserId: UserId): ServiceValidation[Unit]
 }
@@ -52,13 +53,13 @@ class ContainersServiceImpl @Inject()(
     val containerSchemaRepository:               ContainerSchemaRepository
   )(
     implicit
-    ec: ExecutionContext)
+    val executionContext: ExecutionContext)
     extends ContainersService with AccessChecksSerivce with ServicePermissionChecks {
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
-  def getBySlug(requestUserId: UserId, slug: Slug): Future[ServiceValidation[ContainerDto]] =
-    Future {
+  def getBySlug(requestUserId: UserId, slug: Slug): FutureValidation[ContainerDto] =
+    FutureValidation {
       whenContainerPermitted(requestUserId, slug) { container =>
         containerToDto(container)
       }
@@ -68,8 +69,8 @@ class ContainersServiceImpl @Inject()(
       requestUserId: UserId,
       centreId:      CentreId,
       query:         PagedQuery
-    ): Future[ServiceValidation[PagedResults[ContainerDto]]] =
-    Future {
+    ): FutureValidation[PagedResults[ContainerDto]] =
+    FutureValidation {
       for {
         centre <- centresService.getCentre(requestUserId, centreId)
         rootContainers = containerRepository.rootContainers(centreId).toSeq
@@ -80,11 +81,8 @@ class ContainersServiceImpl @Inject()(
       } yield result
     }
 
-  def getChildrenBySlug(
-      requestUserId: UserId,
-      slug:          Slug
-    ): Future[ServiceValidation[ContainerChildrenInfo]] = {
-    Future {
+  def getChildrenBySlug(requestUserId: UserId, slug: Slug): FutureValidation[ContainerChildrenInfo] = {
+    FutureValidation {
       whenContainerPermitted(requestUserId, slug) { container =>
         containerRepository.getChildren(container.id).map { children =>
           ContainerChildrenInfo(container, children.map(ContainerInfo(_)))
@@ -93,7 +91,7 @@ class ContainersServiceImpl @Inject()(
     }
   }
 
-  def processCommand(cmd: ContainerCommand): Future[ServiceValidation[ContainerDto]] = {
+  def processCommand(cmd: ContainerCommand): FutureValidation[ContainerDto] = {
     val validCentreId = cmd match {
       case c: AddRootContainerCmd    => centreRepository.getByKey(CentreId(c.centreId)).map(_.id)
       case c: AddSubContainerCommand => getContainerCentreId(ContainerId(c.parentId))
@@ -108,20 +106,18 @@ class ContainersServiceImpl @Inject()(
     val requestUserId = UserId(cmd.sessionUserId)
 
     validCentreId
-      .fold(err => Future.successful((err.failure[ContainerDto])),
+      .fold(err => FutureValidation((err.failure[ContainerDto])),
             centreId =>
               whenPermittedAndIsMemberAsync(requestUserId, permission, None, Some(centreId)) { () =>
-                ask(processor, cmd).mapTo[ServiceValidation[ContainerEvent]].map { validation =>
-                  for {
-                    event     <- validation
-                    container <- containerRepository.getByKey(ContainerId(event.id))
-                    dto       <- containerToDto(container)
-                  } yield dto
-                }
+                for {
+                  event     <- FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[ContainerEvent]])
+                  container <- FutureValidation(containerRepository.getByKey(ContainerId(event.id)))
+                  dto       <- FutureValidation(containerToDto(container))
+                } yield dto
               })
   }
 
-  def processRemoveCommand(cmd: RemoveContainerCmd): Future[ServiceValidation[Boolean]] = {
+  def processRemoveCommand(cmd: RemoveContainerCmd): FutureValidation[Boolean] = {
     val validCentre = for {
       container     <- containerRepository.getByKey(ContainerId(cmd.id))
       containerType <- containerTypeRepository.getByKey(container.containerTypeId)
@@ -129,15 +125,13 @@ class ContainersServiceImpl @Inject()(
     } yield centre
 
     validCentre
-      .fold(err => Future.successful((err.failure[Boolean])),
+      .fold(err => FutureValidation((err.failure[Boolean])),
             centre =>
               whenPermittedAndIsMemberAsync(UserId(cmd.sessionUserId),
                                             PermissionId.ContainerDelete,
                                             None,
                                             Some(centre.id)) { () =>
-                ask(processor, cmd)
-                  .mapTo[ServiceValidation[ContainerEvent]]
-                  .map { _.map(event => true) }
+                FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[ContainerEvent]]).map(_ => true)
               })
   }
 

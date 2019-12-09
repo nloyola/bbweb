@@ -9,6 +9,7 @@ import org.biobank.fixtures.ProcessingTypeFixtures
 import org.biobank.services.{FilterString, PagedQuery, SortString}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.TableDrivenPropertyChecks._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Primarily these are tests that exercise the User Access aspect of ProcessingTypeService.
@@ -128,7 +129,6 @@ class ProcessingTypeServiceSpec
           info(label)
           processingTypeService
             .processingTypeBySlug(user.id, f.study.slug, f.inputProcessingType.slug)
-            .futureValue
             .mustSucceed { result =>
               result.id must be(f.inputProcessingType.id)
             }
@@ -140,13 +140,11 @@ class ProcessingTypeServiceSpec
         info("no membership user")
         processingTypeService
           .processingTypeBySlug(f.noMembershipUser.id, f.study.slug, f.inputProcessingType.slug)
-          .futureValue
           .mustFail("Unauthorized")
 
         info("no permission user")
         processingTypeService
           .processingTypeBySlug(f.nonStudyPermissionUser.id, f.study.slug, f.inputProcessingType.slug)
-          .futureValue
           .mustFail("Unauthorized")
 
       }
@@ -162,7 +160,7 @@ class ProcessingTypeServiceSpec
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
           processingTypeService
-            .processingTypesForStudy(user.id, f.study.slug, query).futureValue
+            .processingTypesForStudy(user.id, f.study.slug, query)
             .mustSucceed { result =>
               result.items must have size 1
             }
@@ -176,12 +174,12 @@ class ProcessingTypeServiceSpec
         info("no membership user")
         processingTypeService
           .processingTypesForStudy(f.noMembershipUser.id, f.study.slug, query)
-          .futureValue.mustFail("Unauthorized")
+          .mustFail("Unauthorized")
 
         info("no permission user")
         processingTypeService
           .processingTypesForStudy(f.nonStudyPermissionUser.id, f.study.slug, query)
-          .futureValue.mustFail("Unauthorized")
+          .mustFail("Unauthorized")
       }
 
     }
@@ -197,7 +195,7 @@ class ProcessingTypeServiceSpec
     //                                             description     = None,
     //                                             recurring       = true)
     //         processingTypeRepository.removeAll
-    //         processingTypeService.processCommand(cmd).futureValue mustSucceed { reply =>
+    //         processingTypeService.processCommand(cmd).mustSucceed { reply =>
     //           reply.studyId must be (f.study.id)
     //         }
     //       }
@@ -212,7 +210,7 @@ class ProcessingTypeServiceSpec
     //                                             description     = None,
     //                                             recurring       = true)
     //         processingTypeRepository.removeAll
-    //         processingTypeService.processCommand(cmd).futureValue mustFail "Unauthorized"
+    //         processingTypeService.processCommand(cmd).mustFail "Unauthorized"
     //       }
     //     }
 
@@ -239,7 +237,7 @@ class ProcessingTypeServiceSpec
     //             }
 
     //           processingTypeRepository.put(processingType) // restore it to it's previous state
-    //           processingTypeService.processCommand(cmd).futureValue mustSucceed { reply =>
+    //           processingTypeService.processCommand(cmd).mustSucceed { reply =>
     //             reply.studyId.id must be (cmd.studyId)
     //           }
     //         }
@@ -254,7 +252,7 @@ class ProcessingTypeServiceSpec
     //                                    f.processingType,
     //                                    f.specimenDefinition,
     //                                    f.annotationType)) { cmd =>
-    //           processingTypeService.processCommand(cmd).futureValue mustFail "Unauthorized"
+    //           processingTypeService.processCommand(cmd).mustFail "Unauthorized"
     //         }
     //       }
     //     }
@@ -275,7 +273,7 @@ class ProcessingTypeServiceSpec
     //           )
 
     //         processingTypeRepository.put(f.processingType) // restore it to it's previous state
-    //         processingTypeService.processRemoveCommand(cmd).futureValue mustSucceed { reply =>
+    //         processingTypeService.processRemoveCommand(cmd).mustSucceed { reply =>
     //           reply must be (true)
     //         }
     //       }
@@ -292,7 +290,7 @@ class ProcessingTypeServiceSpec
     //             expectedVersion  = f.processingType.version
     //           )
 
-    //         processingTypeService.processRemoveCommand(cmd).futureValue mustFail "Unauthorized"
+    //         processingTypeService.processRemoveCommand(cmd).mustFail "Unauthorized"
     //       }
     //     }
     //   }

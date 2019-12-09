@@ -4,6 +4,7 @@ import akka.actor._
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Named, Singleton}
+import org.biobank._
 import org.biobank.domain.Slug
 import org.biobank.domain.access._
 import org.biobank.domain.participants._
@@ -16,7 +17,6 @@ import org.biobank.services._
 import org.biobank.services.access.AccessService
 import org.biobank.services.studies.StudiesService
 import org.slf4j.{Logger, LoggerFactory}
-import scala.concurrent._
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 
@@ -33,7 +33,7 @@ trait ParticipantsService extends BbwebService {
 
   def getByUniqueId(requestUserId: UserId, uniqueId: String): ServiceValidation[ParticipantDto]
 
-  def processCommand(cmd: ParticipantCommand): Future[ServiceValidation[ParticipantDto]]
+  def processCommand(cmd: ParticipantCommand): FutureValidation[ParticipantDto]
 
   def snapshotRequest(requestUserId: UserId): ServiceValidation[Unit]
 
@@ -48,7 +48,7 @@ class ParticipantsServiceImpl @Inject()(
     val participantRepository:                     ParticipantRepository
   )(
     implicit
-    executionContext: BbwebExecutionContext)
+    val executionContext: BbwebExecutionContext)
     extends ParticipantsService with AccessChecksSerivce with ServicePermissionChecks {
 
   import org.biobank.CommonValidations._
@@ -96,7 +96,7 @@ class ParticipantsServiceImpl @Inject()(
       }
     } yield ParticipantDto(participant, study)
 
-  def processCommand(cmd: ParticipantCommand): Future[ServiceValidation[ParticipantDto]] = {
+  def processCommand(cmd: ParticipantCommand): FutureValidation[ParticipantDto] = {
     val validStudyId = cmd match {
       case c: AddParticipantCmd => StudyId(c.studyId).successNel[String]
       case c: ParticipantModifyCommand =>
@@ -110,17 +110,16 @@ class ParticipantsServiceImpl @Inject()(
 
     val requestUserId = UserId(cmd.sessionUserId)
 
-    validStudyId.fold(err => Future.successful(err.failure[ParticipantDto]),
-                      studyId =>
-                        whenPermittedAndIsMemberAsync(requestUserId, permission, Some(studyId), None) { () =>
-                          ask(processor, cmd).mapTo[ServiceValidation[ParticipantEvent]].map { validation =>
-                            for {
-                              event       <- validation
-                              participant <- participantRepository.getByKey(ParticipantId(event.id))
-                              study       <- studiesService.getStudy(requestUserId, studyId)
-                            } yield ParticipantDto(participant, study)
-                          }
-                        })
+    validStudyId
+      .fold(err => FutureValidation(err.failure[ParticipantDto]),
+            studyId =>
+              whenPermittedAndIsMemberAsync(requestUserId, permission, Some(studyId), None) { () =>
+                for {
+                  event       <- FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[ParticipantEvent]])
+                  participant <- FutureValidation(participantRepository.getByKey(ParticipantId(event.id)))
+                  study       <- FutureValidation(studiesService.getStudy(requestUserId, studyId))
+                } yield ParticipantDto(participant, study)
+              })
   }
 
 }

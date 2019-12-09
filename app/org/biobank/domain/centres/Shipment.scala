@@ -102,6 +102,9 @@ sealed trait Shipment extends ConcurrencySafeEntity[ShipmentId] with HasState {
   def isUnpacked: DomainValidation[UnpackedShipment] =
     InvalidState(s"shipment not unpacked: ${this.id}").failureNel[UnpackedShipment]
 
+  def isCreatedOrUnpacked: DomainValidation[Shipment] =
+    InvalidState(s"shipment not created or unpacked: ${this.id}").failureNel[CreatedShipment]
+
   override def toString: String =
     s"""|Shipment:{
         |  id:             $id,
@@ -247,6 +250,8 @@ final case class CreatedShipment(
   import org.biobank.domain.DomainValidations._
 
   override def isCreated: DomainValidation[CreatedShipment] = this.successNel[String]
+
+  override def isCreatedOrUnpacked: DomainValidation[CreatedShipment] = this.successNel[String]
 
   def withCourier(name: String): DomainValidation[CreatedShipment] =
     validateNonEmptyString(name, CourierNameInvalid).map { name =>
@@ -650,6 +655,8 @@ final case class UnpackedShipment(
     extends { val state: EntityState = Shipment.unpackedState } with Shipment with ShipmentValidations {
 
   override def isUnpacked: DomainValidation[UnpackedShipment] = this.successNel[String]
+
+  override def isCreatedOrUnpacked: DomainValidation[UnpackedShipment] = this.successNel[String]
 
   def backToReceived: ReceivedShipment =
     ReceivedShipment(id                    = this.id,

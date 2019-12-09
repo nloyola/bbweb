@@ -5,8 +5,10 @@ import org.scalatest._
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 import org.slf4j.LoggerFactory
+import scala.concurrent.ExecutionContext
+import org.scalatest.concurrent.ScalaFutures
 
-object TestUtils extends MustMatchers with OptionValues {
+object TestUtils extends MustMatchers with OptionValues with ScalaFutures {
 
   val log = LoggerFactory.getLogger(this.getClass)
 
@@ -39,10 +41,47 @@ object TestUtils extends MustMatchers with OptionValues {
 
   def containItemContainingRegex(regex: String) = ListItemContainsRegexMatcher(regex)
 
+  implicit class ValidationTestsAsync[T](
+      val validation: FutureValidation[T]
+    )(
+      implicit
+      val executionContext: ExecutionContext) {
+
+    /**
+     * Executes the function if the validation is successful. If the validation fails then the test fails. To
+     * be used in ScalaTest tests.
+     *
+     *  @param fn the function to execute.
+     */
+    def mustSucceed(fn: T => Any): Unit = {
+      validation.futval.futureValue
+        .fold(err => fail(err.list.toList.mkString(", ")), entity => {
+          fn(entity)
+          ()
+        })
+    }
+
+    /**
+     * Looks for an expected message in the validation failure error. If the validation is successful the test
+     * fails. To be used in ScalaTest tests.
+     *
+     *  @param expectedMessages one or more regular expression to look for in the error list.
+     */
+    def mustFail(expectedMessages: String*): Unit =
+      validation.futval.futureValue.fold(err => {
+        val errList = err.list.toList
+        errList.size must be > 0
+        expectedMessages.foreach { em =>
+          errList must containItemMatchingRegex(em)
+        }
+      }, event => fail(s"validation must have failed: $validation"))
+  }
+
   implicit class ValidationTests[T](val validation: DomainValidation[T]) {
 
-    /** Executes the function if the validation is successful. If the validation fails then the test fails. To be
-     * used in ScalaTest tests.
+    /**
+     * Executes the function if the validation is successful. If the validation fails then the test fails. To
+     * be used in ScalaTest tests.
      *
      *  @param fn the function to execute.
      */
@@ -52,7 +91,8 @@ object TestUtils extends MustMatchers with OptionValues {
         ()
       })
 
-    /** Looks for an expected message in the validation failure error. If the validation is successful the test
+    /**
+     * Looks for an expected message in the validation failure error. If the validation is successful the test
      * fails. To be used in ScalaTest tests.
      *
      *  @param expectedMessages one or more regular expression to look for in the error list.
@@ -66,7 +106,8 @@ object TestUtils extends MustMatchers with OptionValues {
         }
       }, event => fail(s"validation must have failed: $validation"))
 
-    /** Looks for an expected message in the validation failure error. If the validation is successful the test
+    /**
+     * Looks for an expected message in the validation failure error. If the validation is successful the test
      * fails. To be used in ScalaTest tests.
      *
      *  @param minMessages the minimum number of messages expected in the error list.
@@ -80,7 +121,8 @@ object TestUtils extends MustMatchers with OptionValues {
         }
       }, event => fail(s"validation must have failed: $validation"))
 
-    /** Looks for an expected message in the validation failure error. If the validation is successful the test
+    /**
+     * Looks for an expected message in the validation failure error. If the validation is successful the test
      * fails. To be used in ScalaTest tests.
      *
      *  @param expectedMessages one or more regular expression to look for in the error list.

@@ -3,7 +3,6 @@ package org.biobank.domain.studies
 import org.biobank.domain.IdentifiedValueObject
 
 import play.api.libs.json._
-import play.api.libs.json.Reads._
 
 /** Identifies a unique [[ProcessingType]] in the system.
  *
@@ -13,7 +12,12 @@ final case class ProcessingTypeId(val id: String) extends IdentifiedValueObject[
 
 object ProcessingTypeId {
 
-  implicit val processingTypeIdRead: Reads[ProcessingTypeId] =
-    (__).read[String].map(new ProcessingTypeId(_))
+  implicit val processingTypeIdFormat: Format[ProcessingTypeId] = new Format[ProcessingTypeId] {
+
+    override def writes(id: ProcessingTypeId): JsValue = JsString(id.id)
+
+    override def reads(json: JsValue): JsResult[ProcessingTypeId] =
+      Reads.StringReads.reads(json).map(ProcessingTypeId.apply _)
+  }
 
 }

@@ -80,9 +80,9 @@ object Study {
     }
   }
 
-  implicit val disabledStudyReads: Reads[DisabledStudy] = Json.reads[DisabledStudy]
-  implicit val enabledStudyReads:  Reads[EnabledStudy]  = Json.reads[EnabledStudy]
-  implicit val retiredStudyReads:  Reads[RetiredStudy]  = Json.reads[RetiredStudy]
+  implicit val disabledStudyReads: Format[DisabledStudy] = Json.format[DisabledStudy]
+  implicit val enabledStudyReads:  Format[EnabledStudy]  = Json.format[EnabledStudy]
+  implicit val retiredStudyReads:  Format[RetiredStudy]  = Json.format[RetiredStudy]
 
   def compareByName(a: Study, b: Study): Boolean =
     (a.name compareToIgnoreCase b.name) < 0

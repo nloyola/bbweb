@@ -3,7 +3,6 @@ package org.biobank.domain.studies
 import org.biobank.domain.IdentifiedValueObject
 
 import play.api.libs.json._
-import play.api.libs.json.Reads._
 
 /** Identifies a unique [[CollectionEventType]] in the system.
  *
@@ -13,7 +12,13 @@ final case class CollectionEventTypeId(val id: String) extends IdentifiedValueOb
 
 object CollectionEventTypeId {
 
-  implicit val collectionEventTypeIdReader: Reads[CollectionEventTypeId] =
-    (__).read[String].map(new CollectionEventTypeId(_))
+  implicit val collectionEventTypeIdFormat: Format[CollectionEventTypeId] =
+    new Format[CollectionEventTypeId] {
+
+      override def writes(id: CollectionEventTypeId): JsValue = JsString(id.id)
+
+      override def reads(json: JsValue): JsResult[CollectionEventTypeId] =
+        Reads.StringReads.reads(json).map(CollectionEventTypeId.apply _)
+    }
 
 }

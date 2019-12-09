@@ -11,6 +11,12 @@ final case class StudyId(id: String) extends IdentifiedValueObject[String]
 
 object StudyId {
 
-  implicit val studyIdRead: Reads[StudyId] = (__).read[String].map(StudyId(_))
+  implicit val studyIdFormat: Format[StudyId] = new Format[StudyId] {
+
+    override def writes(id: StudyId): JsValue = JsString(id.id)
+
+    override def reads(json: JsValue): JsResult[StudyId] =
+      Reads.StringReads.reads(json).map(StudyId.apply _)
+  }
 
 }

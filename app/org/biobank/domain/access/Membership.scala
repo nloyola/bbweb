@@ -27,7 +27,13 @@ final case class MembershipId(id: String) extends IdentifiedValueObject[String]
 
 object MembershipId {
 
-  implicit val membershipIdReader: Reads[MembershipId] = (__).read[String].map(MembershipId(_))
+  implicit val membershipIdFormat: Format[MembershipId] = new Format[MembershipId] {
+
+    override def writes(id: MembershipId): JsValue = JsString(id.id)
+
+    override def reads(json: JsValue): JsResult[MembershipId] =
+      Reads.StringReads.reads(json).map(MembershipId.apply _)
+  }
 }
 
 /**

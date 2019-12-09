@@ -32,8 +32,8 @@ project's root directory.
 
 #### Dependencies
 
-Project [sbt-updated](https://github.com/rtimush/sbt-updates) is used to determine if any
-dependencies can be updated. Use command `dependencyUpdates` to display what can be updated.
+Project [sbt-dependency-updates](https://github.com/aiyanbo/sbt-dependency-updates) is used to determine if
+any dependencies can be updated. Use command `dependencyUpdates`, within SBT, to display what can be updated.
 
 #### Initialization
 

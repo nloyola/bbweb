@@ -15,7 +15,7 @@ packageDescription := "Biorepository application for tracking biospecimens."
 
 scalaVersion := "2.12.10"
 
-val akkaVer           = "2.5.23"
+val akkaVer           = "2.5.26"
 val silhouetteVersion = "6.1.1"
 
 organization in ThisBuild := "org.biobank"
@@ -104,7 +104,7 @@ libraryDependencies += ehcache
 libraryDependencies += filters
 libraryDependencies += "org.scala-stm"     %% "scala-stm"             % "0.9.1"
 libraryDependencies += "com.iheart"        %% "ficus"                 % "1.4.7"
-libraryDependencies += "com.typesafe.play" %% "play-json"             % "2.7.4"
+libraryDependencies += "com.typesafe.play" %% "play-json"             % "2.8.0"
 libraryDependencies += "com.typesafe.play" %% "play-slick"            % "4.0.2"
 libraryDependencies += "com.typesafe.play" %% "play-slick-evolutions" % "4.0.2"
 libraryDependencies += "com.typesafe.akka" %% "akka-persistence"      % akkaVer % "compile" excludeAll (ExclusionRule(
@@ -139,9 +139,9 @@ libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play"      % "
 libraryDependencies += "com.mohiva"             %% "play-silhouette-testkit" % silhouetteVersion % "test"
 libraryDependencies += "org.pegdown"            % "pegdown"                  % "1.6.0"           % "test"
 libraryDependencies += "org.codehaus.janino"    % "janino"                   % "3.1.0"           % "test"
-libraryDependencies += "org.mockito"            % "mockito-core"             % "3.1.0"           % "test"
+libraryDependencies += "org.mockito"            % "mockito-core"             % "3.2.0"           % "test"
 libraryDependencies += "it.bitbl"               %% "scala-faker"             % "0.4"             % "test"
-libraryDependencies += "org.gnieh"              %% "diffson-play-json"       % "4.0.0"           % "test"
+libraryDependencies += "org.gnieh"              %% "diffson-play-json"       % "4.0.1"           % "test"
 
 routesGenerator := InjectedRoutesGenerator
 

@@ -8,9 +8,13 @@ import org.biobank.domain.centres._
 import org.biobank.domain.studies._
 import org.biobank.domain.participants._
 import org.biobank.domain.users._
+import org.biobank.query.centres._
 import org.biobank.services.{FilterString, PagedQuery, SortString}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.TableDrivenPropertyChecks._
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Primarily these are tests that exercise the User Access aspect of SpecimenService.
@@ -78,6 +82,8 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
         centreOnlyMembership,
         noCentresMembership).foreach(addToRepository)
 
+    Await.ready(shipmentsReadRepository.put(shipment), Duration.Inf)
+
     addUserToRole(allCentresAdminUser, RoleId.ShippingAdministrator)
     addUserToRole(centreOnlyShippingAdminUser, RoleId.ShippingAdministrator)
     addUserToRole(shippingUser, RoleId.ShippingUser)
@@ -106,22 +112,31 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
 
   protected val ceventSpecimenRepository = app.injector.instanceOf[CeventSpecimenRepository]
 
-  protected val shipmentRepository = app.injector.instanceOf[ShipmentRepository]
+  protected val shipmentsWriteRepository = app.injector.instanceOf[ShipmentsWriteRepository]
 
-  protected val shipmentSpecimenRepository = app.injector.instanceOf[ShipmentSpecimenRepository]
+  protected val shipmentSpecimensRepository = app.injector.instanceOf[ShipmentSpecimensWriteRepository]
 
   private val shipmentsService = app.injector.instanceOf[ShipmentsService]
 
-  override protected def addToRepository[T <: ConcurrencySafeEntity[_]](entity: T): Unit =
+  private val shipmentsReadRepository = app.injector.instanceOf[ShipmentsReadRepository]
+
+  private val shipmentSpecimensReadRepository = app.injector.instanceOf[ShipmentSpecimensReadRepository]
+
+  override protected def addToRepository[T <: ConcurrencySafeEntity[_]](entity: T): Unit = {
     entity match {
-      case e: Shipment            => shipmentRepository.put(e)
-      case e: ShipmentSpecimen    => shipmentSpecimenRepository.put(e)
+      case e: Shipment =>
+        shipmentsWriteRepository.put(e)
+        shipmentsReadRepository.put(e)
+
+      case e: ShipmentSpecimen    => shipmentSpecimensRepository.put(e)
       case e: Specimen            => specimenRepository.put(e)
       case e: CollectionEventType => collectionEventTypeRepository.put(e)
       case e: Participant         => participantRepository.put(e)
       case e: CollectionEvent     => collectionEventRepository.put(e)
       case e => super.addToRepository(e)
     }
+    ()
+  }
 
   private def getAddShipmentCmd(userId: UserId, shipment: CreatedShipment) =
     AddShipmentCmd(sessionUserId         = userId.id,
@@ -153,6 +168,8 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
         ceventFixture.cevent,
         specimen,
         shipmentSpecimen).foreach(addToRepository)
+
+    Await.ready(shipmentSpecimensReadRepository.put(shipmentSpecimen), Duration.Inf)
 
     (f, specimen, shipmentSpecimen)
   }
@@ -280,22 +297,23 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
                                     specimenInventoryIds = List(specimen.inventoryId))))
   }
 
-  override def beforeEach() {
+  override def beforeEach() = {
     super.beforeEach()
     collectionEventTypeRepository.removeAll
     participantRepository.removeAll
     collectionEventRepository.removeAll
     specimenRepository.removeAll
     centreRepository.removeAll
-    shipmentRepository.removeAll
-    shipmentSpecimenRepository.removeAll
+    shipmentsReadRepository.removeAll
+    shipmentsWriteRepository.removeAll
+    shipmentSpecimensRepository.removeAll
   }
 
   describe("SpecimenService") {
 
     describe("when getting a shipment") {
 
-      it("users can access") {
+      it("users can access - 1") {
         val f = new UsersWithShipmentAccessFixture
 
         forAll(f.usersCanReadTable) { (user, label) =>
@@ -329,7 +347,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
         val f     = new UsersWithShipmentAccessFixture
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
-          shipmentsService.getShipments(user.id, query).futureValue.mustSucceed { result =>
+          shipmentsService.getShipments(user.id, query) mustSucceed { result =>
             result.items must have size 1
           }
         }
@@ -339,14 +357,14 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
         val f     = new UsersWithShipmentAccessFixture
         info("no membership user")
-        shipmentsService.getShipments(f.noMembershipUser.id, query).futureValue.mustSucceed { result =>
+        shipmentsService.getShipments(f.noMembershipUser.id, query) mustSucceed { result =>
           result.items must have size 0
         }
 
         info("no permission user")
         shipmentsService
           .getShipments(f.noShippingPermissionUser.id, query)
-          .futureValue.mustFail("Unauthorized")
+          .mustFail("Unauthorized")
       }
 
     }
@@ -385,7 +403,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
         forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           info(label)
           shipmentsService
-            .getShipmentSpecimens(user.id, f.shipment.id, query).futureValue
+            .getShipmentSpecimens(user.id, f.shipment.id, query)
             .mustSucceed { reply =>
               reply.items must have size 1
             }
@@ -398,12 +416,12 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
 
         info("no membership user")
         shipmentsService
-          .getShipmentSpecimens(f.noMembershipUser.id, f.shipment.id, query).futureValue
+          .getShipmentSpecimens(f.noMembershipUser.id, f.shipment.id, query)
           .mustFail("Unauthorized")
 
         info("no permission user")
         shipmentsService
-          .getShipmentSpecimens(f.noShippingPermissionUser.id, f.shipment.id, query).futureValue
+          .getShipmentSpecimens(f.noShippingPermissionUser.id, f.shipment.id, query)
           .mustFail("Unauthorized")
       }
 
@@ -415,7 +433,8 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
         val (f, specimen, shipmentSpecimen) = shipmentSpecimenFixture
         forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           info(label)
-          shipmentSpecimenRepository.remove(shipmentSpecimen)
+          shipmentSpecimensRepository.remove(shipmentSpecimen)
+          shipmentSpecimensReadRepository.remove(shipmentSpecimen.id)
           shipmentsService
             .shipmentCanAddSpecimen(user.id, f.shipment.id, specimen.inventoryId)
             .mustSucceed { reply =>
@@ -426,7 +445,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
 
       it("users cannot access") {
         val (f, specimen, shipmentSpecimen) = shipmentSpecimenFixture
-        shipmentSpecimenRepository.remove(shipmentSpecimen)
+        shipmentSpecimensRepository.remove(shipmentSpecimen)
 
         forAll(f.usersWithoutAccess) { (user, label) =>
           info(label)
@@ -444,8 +463,9 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
         val f = new UsersWithShipmentAccessFixture
         forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           val cmd = getAddShipmentCmd(user.id, f.shipment)
-          shipmentRepository.removeAll
-          shipmentsService.processCommand(cmd).futureValue mustSucceed { reply =>
+          shipmentsReadRepository.removeAll.futureValue
+          shipmentsWriteRepository.removeAll
+          shipmentsService.processCommand(cmd) mustSucceed { reply =>
             reply.courierName must be(f.shipment.courierName)
           }
         }
@@ -455,8 +475,9 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
         val f = new UsersWithShipmentAccessFixture
         forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           val cmd = getAddShipmentCmd(user.id, f.shipment)
-          shipmentRepository.removeAll
-          shipmentsService.processCommand(cmd).futureValue mustFail "Unauthorized"
+          shipmentsReadRepository.removeAll.futureValue
+          shipmentsWriteRepository.removeAll
+          shipmentsService.processCommand(cmd) mustFail "Unauthorized"
         }
       }
 
@@ -469,10 +490,9 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
         forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           info(label)
           forAll(updateCommandsTable(user.id, f.shipment)) { cmd =>
-            shipmentRepository.put(f.shipment) // restore it to it's previous state
-            shipmentsService
-              .processCommand(cmd).futureValue
-              .mustSucceed { _.id must be(f.shipment.id.id) }
+            shipmentsWriteRepository.put(f.shipment) // restore it to it's previous state
+
+            shipmentsService.processCommand(cmd).mustSucceed { _.id must be(f.shipment.id.id) }
           }
         }
       }
@@ -481,7 +501,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
         val f = new UsersWithShipmentAccessFixture
         forAll(f.usersCannotAddOrUpdateTable) { (user, label) =>
           forAll(updateCommandsTable(user.id, f.shipment)) { cmd =>
-            shipmentsService.processCommand(cmd).futureValue mustFail "Unauthorized"
+            shipmentsService.processCommand(cmd) mustFail "Unauthorized"
           }
         }
       }
@@ -503,7 +523,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
             }
 
             addToRepository(shipment)
-            shipmentsService.processCommand(cmd).futureValue mustSucceed { _.id must be(shipment.id.id) }
+            shipmentsService.processCommand(cmd) mustSucceed { _.id must be(shipment.id.id) }
           }
         }
       }
@@ -514,7 +534,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
           info(label)
           forAll(changeStateCommandsTable(user.id, f.shipment)) { (shipment, cmd) =>
             addToRepository(f.shipment)
-            shipmentsService.processCommand(cmd).futureValue mustFail "Unauthorized"
+            shipmentsService.processCommand(cmd) mustFail "Unauthorized"
           }
         }
       }
@@ -531,16 +551,16 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
             (shipment, cmd) =>
               // set up pre-condition
               addToRepository(shipment)
-              shipmentSpecimenRepository.removeAll
+              shipmentSpecimensRepository.removeAll
               cmd match {
                 case _: ShipmentAddSpecimensCmd | _: ShipmentSpecimenExtraCmd =>
                 case c: ShipmentSpecimensPresentCmd =>
-                  shipmentSpecimenRepository.put(shipmentSpecimen.copy(state = ShipmentItemState.Received))
+                  shipmentSpecimensRepository.put(shipmentSpecimen.copy(state = ShipmentItemState.Received))
                 case c =>
-                  shipmentSpecimenRepository.put(shipmentSpecimen)
+                  shipmentSpecimensRepository.put(shipmentSpecimen)
               }
 
-              val v = shipmentsService.processShipmentSpecimenCommand(cmd).futureValue
+              val v = shipmentsService.processShipmentSpecimenCommand(cmd)
               v mustSucceed { _.id must be(f.shipment.id.id) }
           }
         }
@@ -554,16 +574,16 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
             (shipment, cmd) =>
               // set up pre-condition
               addToRepository(shipment)
-              shipmentSpecimenRepository.removeAll
+              shipmentSpecimensRepository.removeAll
               cmd match {
                 case _: ShipmentAddSpecimensCmd | _: ShipmentSpecimenExtraCmd =>
                 case c: ShipmentSpecimensPresentCmd =>
-                  shipmentSpecimenRepository.put(shipmentSpecimen.copy(state = ShipmentItemState.Received))
+                  shipmentSpecimensRepository.put(shipmentSpecimen.copy(state = ShipmentItemState.Received))
                 case c =>
-                  shipmentSpecimenRepository.put(shipmentSpecimen)
+                  shipmentSpecimensRepository.put(shipmentSpecimen)
               }
 
-              shipmentsService.processShipmentSpecimenCommand(cmd).futureValue mustFail "Unauthorized"
+              shipmentsService.processShipmentSpecimenCommand(cmd) mustFail "Unauthorized"
           }
         }
       }
@@ -582,8 +602,8 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
         forAll(usersCanRemove) { (user, label) =>
           info(label)
           val cmd = getRemoveShipmentCmd(user.id, f.shipment)
-          shipmentRepository.put(f.shipment) // restore it to it's previous state
-          shipmentsService.removeShipment(cmd).futureValue mustSucceed { reply =>
+          shipmentsWriteRepository.put(f.shipment) // restore it to it's previous state
+          shipmentsService.removeShipment(cmd) mustSucceed { reply =>
             ()
           }
         }
@@ -600,7 +620,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
         forAll(usersCannotRemove) { (user, label) =>
           info(label)
           val cmd = getRemoveShipmentCmd(user.id, f.shipment)
-          shipmentsService.removeShipment(cmd).futureValue mustFail "Unauthorized"
+          shipmentsService.removeShipment(cmd) mustFail "Unauthorized"
         }
       }
 

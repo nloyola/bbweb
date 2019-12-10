@@ -325,8 +325,9 @@ class StudiesControllerSpec
         val reply = makeAuthRequest(GET, uri(study.slug.id)).value
         reply must beOkResponseWithJsonReply
 
-        val json = contentAsJson(reply)
-        json must containValue((JsPath \ "data"), Json.toJson(study))
+        val entity = (contentAsJson(reply) \ "data").validate[Study]
+        entity must be(jsSuccess)
+        entity.get must matchStudy(study)
       }
 
       it("fails for an invalid study ID") {

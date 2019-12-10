@@ -22,7 +22,7 @@ trait ShipmentSpecimenRepository extends ReadWriteRepository[ShipmentSpecimenId,
 
 @Singleton
 class ShipmentSpecimenRepositoryImpl @Inject()(val testData: TestData)
-    extends ReadWriteRepositoryRefImpl[ShipmentSpecimenId, ShipmentSpecimen](v => v.id)
+    extends StmReadWriteRepositoryImpl[ShipmentSpecimenId, ShipmentSpecimen](v => v.id)
     with ShipmentSpecimenRepository {
   import org.biobank.CommonValidations._
 

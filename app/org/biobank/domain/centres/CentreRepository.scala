@@ -25,7 +25,7 @@ trait CentreRepository extends ReadWriteRepositoryWithSlug[CentreId, Centre] {
 
 @Singleton
 class CentreRepositoryImpl @Inject()(val testData: TestData)
-    extends ReadWriteRepositoryRefImplWithSlug[CentreId, Centre](v => v.id) with CentreRepository {
+    extends StmReadWriteRepositoryImplWithSlug[CentreId, Centre](v => v.id) with CentreRepository {
   import org.biobank.CommonValidations._
 
   override def init(): Unit = {

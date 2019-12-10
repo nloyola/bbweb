@@ -21,7 +21,7 @@ trait ParticipantRepository extends ReadWriteRepositoryWithSlug[ParticipantId, P
 
 @Singleton
 class ParticipantRepositoryImpl @Inject()(val testData: TestData)
-    extends ReadWriteRepositoryRefImplWithSlug[ParticipantId, Participant](v => v.id)
+    extends StmReadWriteRepositoryImplWithSlug[ParticipantId, Participant](v => v.id)
     with ParticipantRepository {
 
   import org.biobank.CommonValidations._

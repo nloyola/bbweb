@@ -26,7 +26,7 @@ trait AccessItemRepository extends ReadWriteRepositoryWithSlug[AccessItemId, Acc
 
 @Singleton
 class AccessItemRepositoryImpl @Inject()(val testData: TestData)
-    extends ReadWriteRepositoryRefImplWithSlug[AccessItemId, AccessItem](v => v.id)
+    extends StmReadWriteRepositoryImplWithSlug[AccessItemId, AccessItem](v => v.id)
     with AccessItemRepository {
 
   import org.biobank.CommonValidations._

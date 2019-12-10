@@ -18,7 +18,7 @@ trait SpecimenRepository extends ReadWriteRepositoryWithSlug[SpecimenId, Specime
 
 @Singleton
 class SpecimenRepositoryImpl @Inject()(val testData: TestData)
-    extends ReadWriteRepositoryRefImplWithSlug[SpecimenId, Specimen](v => v.id) with SpecimenRepository {
+    extends StmReadWriteRepositoryImplWithSlug[SpecimenId, Specimen](v => v.id) with SpecimenRepository {
   import org.biobank.CommonValidations._
 
   override def init(): Unit = {

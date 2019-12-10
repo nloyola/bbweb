@@ -19,7 +19,7 @@ trait ContainerSchemaRepository extends ReadWriteRepositoryWithSlug[ContainerSch
 
 @Singleton
 class ContainerSchemaRepositoryImpl @Inject()(val testData: TestData)
-    extends ReadWriteRepositoryRefImplWithSlug[ContainerSchemaId, ContainerSchema](v => v.id)
+    extends StmReadWriteRepositoryImplWithSlug[ContainerSchemaId, ContainerSchema](v => v.id)
     with ContainerSchemaRepository {
   import org.biobank.CommonValidations._
 

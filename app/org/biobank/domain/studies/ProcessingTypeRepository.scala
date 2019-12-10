@@ -21,7 +21,7 @@ trait ProcessingTypeRepository extends ReadWriteRepositoryWithSlug[ProcessingTyp
 
 @Singleton
 class ProcessingTypeRepositoryImpl @Inject()(val testData: TestData)
-    extends ReadWriteRepositoryRefImplWithSlug[ProcessingTypeId, ProcessingType](v => v.id)
+    extends StmReadWriteRepositoryImplWithSlug[ProcessingTypeId, ProcessingType](v => v.id)
     with ProcessingTypeRepository {
   import org.biobank.CommonValidations._
 

@@ -1,6 +1,6 @@
 package org.biobank.domain.processing
 
-import org.biobank.domain.{ReadWriteRepository, ReadWriteRepositoryRefImpl}
+import org.biobank.domain.{ReadWriteRepository, StmReadWriteRepositoryImpl}
 import com.google.inject.ImplementedBy
 import javax.inject.Singleton
 import org.biobank.domain.participants.SpecimenId
@@ -20,7 +20,7 @@ trait ProcessingEventInputSpecimenRepository
 
 @Singleton
 class ProcessingEventInputSpecimenRepositoryImpl
-    extends ReadWriteRepositoryRefImpl[ProcessingEventInputSpecimenId, ProcessingEventInputSpecimen](
+    extends StmReadWriteRepositoryImpl[ProcessingEventInputSpecimenId, ProcessingEventInputSpecimen](
       v => v.id
     ) with ProcessingEventInputSpecimenRepository {
 

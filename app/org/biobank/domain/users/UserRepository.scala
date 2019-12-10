@@ -31,7 +31,7 @@ trait UserRepository extends ReadWriteRepositoryWithSlug[UserId, User] {
  */
 @Singleton
 class UserRepositoryImpl @Inject()(val config: Configuration, val env: Environment, val testData: TestData)
-    extends ReadWriteRepositoryRefImplWithSlug[UserId, User](v => v.id) with UserRepository {
+    extends StmReadWriteRepositoryImplWithSlug[UserId, User](v => v.id) with UserRepository {
   import org.biobank.CommonValidations._
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)

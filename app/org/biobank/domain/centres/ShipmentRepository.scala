@@ -23,7 +23,7 @@ trait ShipmentRepository extends ReadWriteRepository[ShipmentId, Shipment] {
 
 @Singleton
 class ShipmentRepositoryImpl @Inject()(val testData: TestData)
-    extends ReadWriteRepositoryRefImpl[ShipmentId, Shipment](v => v.id) with ShipmentRepository {
+    extends StmReadWriteRepositoryImpl[ShipmentId, Shipment](v => v.id) with ShipmentRepository {
   import org.biobank.CommonValidations._
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)

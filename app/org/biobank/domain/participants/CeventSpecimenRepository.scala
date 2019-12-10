@@ -20,7 +20,7 @@ trait CeventSpecimenRepository extends ReadWriteRepository[SpecimenId, CeventSpe
 
 @Singleton
 class CeventSpecimenRepositoryImpl @Inject()(val testData: TestData)
-    extends ReadWriteRepositoryRefImpl[SpecimenId, CeventSpecimen](v => v.specimenId)
+    extends StmReadWriteRepositoryImpl[SpecimenId, CeventSpecimen](v => v.specimenId)
     with CeventSpecimenRepository {
 
   import org.biobank.CommonValidations._

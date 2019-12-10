@@ -19,7 +19,7 @@ trait MembershipRepository extends ReadWriteRepositoryWithSlug[MembershipId, Mem
 
 @Singleton
 class MembershipRepositoryImpl @Inject()(val testData: TestData)
-    extends ReadWriteRepositoryRefImplWithSlug[MembershipId, Membership](v => v.id)
+    extends StmReadWriteRepositoryImplWithSlug[MembershipId, Membership](v => v.id)
     with MembershipRepository {
 
   import org.biobank.CommonValidations._

@@ -24,7 +24,7 @@ trait CollectionEventTypeRepository
 
 @Singleton
 class CollectionEventTypeRepositoryImpl @Inject()(val testData: TestData)
-    extends ReadWriteRepositoryRefImplWithSlug[CollectionEventTypeId, CollectionEventType](v => v.id)
+    extends StmReadWriteRepositoryImplWithSlug[CollectionEventTypeId, CollectionEventType](v => v.id)
     with CollectionEventTypeRepository {
   import org.biobank.CommonValidations._
 

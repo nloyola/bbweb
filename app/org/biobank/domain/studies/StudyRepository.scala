@@ -22,7 +22,7 @@ trait StudyRepository extends ReadWriteRepositoryWithSlug[StudyId, Study] {
 
 @Singleton
 class StudyRepositoryImpl @Inject()(val testData: TestData)
-    extends ReadWriteRepositoryRefImplWithSlug[StudyId, Study](v => v.id) with StudyRepository {
+    extends StmReadWriteRepositoryImplWithSlug[StudyId, Study](v => v.id) with StudyRepository {
   import org.biobank.CommonValidations._
 
   override def init(): Unit = {

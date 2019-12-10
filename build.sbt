@@ -142,6 +142,7 @@ libraryDependencies += "org.codehaus.janino"    % "janino"                   % "
 libraryDependencies += "org.mockito"            % "mockito-core"             % "3.2.0"           % "test"
 libraryDependencies += "it.bitbl"               %% "scala-faker"             % "0.4"             % "test"
 libraryDependencies += "org.gnieh"              %% "diffson-play-json"       % "4.0.1"           % "test"
+libraryDependencies += "com.h2database"         % "h2"                       % "1.4.187"         % "test"
 
 routesGenerator := InjectedRoutesGenerator
 

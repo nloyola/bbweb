@@ -120,6 +120,7 @@ trait AnnotationTypeValidations {
   /**
    *  Validates each item in the map and returns all failures.
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def validateOptions(options: Seq[String]): DomainValidation[Seq[String]] =
     if (options.distinct.size === options.size) {
       options.toList
@@ -188,6 +189,7 @@ object AnnotationType extends AnnotationTypeValidations {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val annotationTypeFormat: Format[AnnotationType] = Json.format[AnnotationType]
 
   def create(

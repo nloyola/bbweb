@@ -123,7 +123,10 @@ object Specimen {
     }
   }
 
-  implicit val usableSpecimenReads:   Reads[UsableSpecimen]   = Json.reads[UsableSpecimen]
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val usableSpecimenReads: Reads[UsableSpecimen] = Json.reads[UsableSpecimen]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val unusableSpecimenReads: Reads[UnusableSpecimen] = Json.reads[UnusableSpecimen]
 
   val sort2Compare: Map[String, (Specimen, Specimen) => Boolean] =

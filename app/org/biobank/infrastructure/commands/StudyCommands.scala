@@ -80,33 +80,43 @@ object StudyCommands {
   final case class UnretireStudyCmd(sessionUserId: Option[String], id: String, expectedVersion: Long)
       extends StudyStateChangeCommand
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addStudyCmdReads: Reads[AddStudyCmd] =
     Json.reads[AddStudyCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateStudyNameCmdReads: Reads[UpdateStudyNameCmd] =
     Json.reads[UpdateStudyNameCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateStudyDescriptionCmdReads: Reads[UpdateStudyDescriptionCmd] =
     Json.reads[UpdateStudyDescriptionCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val studyAddParticipantAnnotationTypeCmdReads: Reads[StudyAddParticipantAnnotationTypeCmd] =
     Json.reads[StudyAddParticipantAnnotationTypeCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val studyUpdateParticipantAnnotationTypeCmdReads: Reads[StudyUpdateParticipantAnnotationTypeCmd] =
     Json.reads[StudyUpdateParticipantAnnotationTypeCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateStudyRemoveAnnotationTypeCmdReads: Reads[UpdateStudyRemoveAnnotationTypeCmd] =
     Json.reads[UpdateStudyRemoveAnnotationTypeCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val enableStudyCmdReads: Reads[EnableStudyCmd] =
     Json.reads[EnableStudyCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val disableStudyCmdReads: Reads[DisableStudyCmd] =
     Json.reads[DisableStudyCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val retireStudyCmdReads: Reads[RetireStudyCmd] =
     Json.reads[RetireStudyCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val unretireStudyCmdReads: Reads[UnretireStudyCmd] =
     Json.reads[UnretireStudyCmd]
 

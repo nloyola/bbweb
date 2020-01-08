@@ -64,6 +64,7 @@ class ShipmentSpecimensReadRepositorySlick @Inject()(
 
   def isEmpty: scala.concurrent.Future[Boolean] = ???
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def getByKey(shipmentSpecimenId: ShipmentSpecimenId): FutureValidation[ShipmentSpecimen] = {
     FutureValidation(
       db.run(shipmentSpecimens.filter(ss => ss.id === shipmentSpecimenId).result.headOption)
@@ -76,11 +77,13 @@ class ShipmentSpecimensReadRepositorySlick @Inject()(
     db.run(shipmentSpecimens.filter(ss => ss.shipmentId === id).result)
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def forShipments(shipmentIds: ShipmentId*): Future[Seq[ShipmentSpecimen]] = {
     val query = shipmentSpecimens.filter(ss => ss.shipmentId.inSet(shipmentIds))
     db.run(query.result)
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def countsForShipments(shipmentIds: ShipmentId*): Future[Map[ShipmentId, ShipmentSpecimenCounts]] = {
     val query = shipmentSpecimens
       .filter(ss => ss.shipmentId.inSet(shipmentIds))
@@ -115,19 +118,23 @@ class ShipmentSpecimensReadRepositorySlick @Inject()(
     ???
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def putAll(shipmentSpecimensToAdd: Seq[ShipmentSpecimen]): Future[Unit] = {
     db.run(shipmentSpecimens ++= shipmentSpecimensToAdd).map(_ => ())
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def put(shipmentSpecimen: ShipmentSpecimen): Future[Unit] = {
     db.run(shipmentSpecimens.insertOrUpdate(shipmentSpecimen).map(_ => ()))
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def remove(shipmentSpecimenId: ShipmentSpecimenId): Future[Unit] = {
     val query  = shipmentSpecimens.filter(s => s.id === shipmentSpecimenId)
     val action = query.delete
     db.run(action.map(_ => ()))
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def removeAll(): Future[Unit] = db.run(shipmentSpecimens.delete.map(_ => ()))
 }

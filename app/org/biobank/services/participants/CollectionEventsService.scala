@@ -84,6 +84,7 @@ class CollectionEventsServiceImpl @Inject()(
       dto    <- collectionEventToDto(requestUserId, cevent)
     } yield dto
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def list(
       requestUserId: UserId,
       participantId: ParticipantId,

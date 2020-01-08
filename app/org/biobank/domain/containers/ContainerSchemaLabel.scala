@@ -61,6 +61,7 @@ object ContainerSchemaLabel {
       case None    => ().successNel[String]
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val containerSchemLabelFormat: Format[ContainerSchemaLabel] =
     Json.format[ContainerSchemaLabel]
 

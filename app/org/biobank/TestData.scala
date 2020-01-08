@@ -12,7 +12,6 @@ import org.biobank.domain.participants._
 import org.biobank.domain.studies._
 import org.biobank.domain.users._
 import org.biobank.services.PasswordHasher
-import org.hashids.Hashids
 import play.api.{Configuration, Environment, Logger, Mode}
 import scalaz.Scalaz._
 import org.biobank.query.db.DatabaseSchema
@@ -182,10 +181,10 @@ object TestData {
          ("shipping-admin", "Shipping Admin"),
          ("shipping-user", "Shipping User"))
 
-  val EventTypeHashids:      Hashids = Hashids("test-data-cevent-types")
-  val ProcessingTypeHashids: Hashids = Hashids("test-data-processing-types")
-  val SpecimenDefHashids:    Hashids = Hashids("test-data-specimen-specs")
-  val SpecimenHashids:       Hashids = Hashids("test-data-specimen-specs")
+  val EventTypeIdPrefix      = "test-data-cevent-types"
+  val ProcessingTypeIdPrefix = "test-data-processing-types"
+  val SpecimenDefIdPrefix    = "test-data-specimen-specs"
+  val SpecimenIdPrefix       = "test-data-specimen-specs"
 }
 
 object BbpspTestData {
@@ -198,16 +197,16 @@ object BbpspTestData {
   val EventTypeNames:      List[String]   = List("1 - Default Event", "2 - Second Event")
   val ProcessingTypeNames: List[String]   = List("1 - Step 1", "2 - Step 2")
 
-  val ParticipantAnnotationTypeHashids: Hashids = Hashids("bbpsp-participant-annotation-types")
-  val EventTypeAnnotationTypeHashids:   Hashids = Hashids("bbpsp-collection-event-annotation-types")
-  val EventHashids:                     Hashids = Hashids("bbpsp-collection-events")
-  val ParticipantHashids:               Hashids = Hashids("bbpsp-participants")
+  val ParticipantAnnotationTypeIdPrefix = "bbpsp-participant-annotation-types"
+  val EventTypeAnnotationTypeIdPrefix   = "bbpsp-collection-event-annotation-types"
+  val EventIdPrefix                     = "bbpsp-collection-events"
+  val ParticipantIdPrefix               = "bbpsp-participants"
 
   // the slug is temporarily assigned an empty value, once the set is created, the slug is then derived
   // from the name below.
   val CollectedSpecimenDefinitions: Set[CollectedSpecimenDefinition] =
     Set(
-      CollectedSpecimenDefinition(id                      = SpecimenDefinitionId(SpecimenDefHashids.encode(1)),
+      CollectedSpecimenDefinition(id                      = SpecimenDefinitionId(SpecimenDefIdPrefix + "1"),
                                   slug                    = Slug(""),
                                   name                    = "10 mL Lavender top EDTA tube",
                                   description             = None,
@@ -218,7 +217,7 @@ object BbpspTestData {
                                   specimenType            = SpecimenType.WholeBloodEdta,
                                   maxCount                = 2, // set to 2 for testing form, set back to 1 for demo
                                   amount                  = 10.0),
-      CollectedSpecimenDefinition(id                      = SpecimenDefinitionId(SpecimenDefHashids.encode(2)),
+      CollectedSpecimenDefinition(id                      = SpecimenDefinitionId(SpecimenDefIdPrefix + "2"),
                                   slug                    = Slug(""),
                                   name                    = "10 mL Orange top PAXgene tube",
                                   description             = None,
@@ -229,7 +228,7 @@ object BbpspTestData {
                                   specimenType            = SpecimenType.Paxgene,
                                   maxCount                = 1,
                                   amount                  = 10.0),
-      CollectedSpecimenDefinition(id                      = SpecimenDefinitionId(SpecimenDefHashids.encode(3)),
+      CollectedSpecimenDefinition(id                      = SpecimenDefinitionId(SpecimenDefIdPrefix + "3"),
                                   slug                    = Slug(""),
                                   name                    = "3mL Lavender top EDTA tube",
                                   description             = None,
@@ -240,7 +239,7 @@ object BbpspTestData {
                                   specimenType            = SpecimenType.WholeBloodEdta,
                                   maxCount                = 1,
                                   amount                  = 3),
-      CollectedSpecimenDefinition(id                      = SpecimenDefinitionId(SpecimenDefHashids.encode(4)),
+      CollectedSpecimenDefinition(id                      = SpecimenDefinitionId(SpecimenDefIdPrefix + "4"),
                                   slug                    = Slug(""),
                                   name                    = "4ml lavender top EDTA tube",
                                   description             = None,
@@ -251,7 +250,7 @@ object BbpspTestData {
                                   specimenType            = SpecimenType.WholeBloodEdta,
                                   maxCount                = 1,
                                   amount                  = 4),
-      CollectedSpecimenDefinition(id                      = SpecimenDefinitionId(SpecimenDefHashids.encode(5)),
+      CollectedSpecimenDefinition(id                      = SpecimenDefinitionId(SpecimenDefIdPrefix + "5"),
                                   slug                    = Slug(""),
                                   name                    = "9ml CPDA yellow top tube",
                                   description             = None,
@@ -262,7 +261,7 @@ object BbpspTestData {
                                   specimenType            = SpecimenType.WholeBloodEdta,
                                   maxCount                = 1,
                                   amount                  = 9),
-      CollectedSpecimenDefinition(id                      = SpecimenDefinitionId(SpecimenDefHashids.encode(6)),
+      CollectedSpecimenDefinition(id                      = SpecimenDefinitionId(SpecimenDefIdPrefix + "6"),
                                   slug                    = Slug(""),
                                   name                    = "Urine cup",
                                   description             = None,
@@ -279,7 +278,7 @@ object BbpspTestData {
 
   val EventTypeAnnotationTypes: Set[AnnotationType] =
     Set(
-      AnnotationType(id            = AnnotationTypeId(EventTypeAnnotationTypeHashids.encode(1)),
+      AnnotationType(id            = AnnotationTypeId(EventTypeAnnotationTypeIdPrefix + "1"),
                      slug          = Slug("Phlebotomist"),
                      name          = "Phlebotomist",
                      description   = None,
@@ -287,7 +286,7 @@ object BbpspTestData {
                      maxValueCount = None,
                      options       = Seq.empty[String],
                      required      = true),
-      AnnotationType(id            = AnnotationTypeId(EventTypeAnnotationTypeHashids.encode(2)),
+      AnnotationType(id            = AnnotationTypeId(EventTypeAnnotationTypeIdPrefix + "2"),
                      slug          = Slug("Consent"),
                      name          = "Consent",
                      description   = None,
@@ -302,7 +301,7 @@ object BbpspTestData {
 
   val ProcessingTypeAnnotationTypes: Set[AnnotationType] =
     Set(
-      AnnotationType(id            = AnnotationTypeId(EventTypeAnnotationTypeHashids.encode(3)),
+      AnnotationType(id            = AnnotationTypeId(EventTypeAnnotationTypeIdPrefix + "3"),
                      slug          = Slug("PBMC Count"),
                      name          = "PBMC Count",
                      description   = None,
@@ -316,7 +315,7 @@ object BbpspTestData {
 
   val ParticipantAnnotationTypes: Set[AnnotationType] =
     Set(
-      AnnotationType(id            = AnnotationTypeId(ParticipantAnnotationTypeHashids.encode(1)),
+      AnnotationType(id            = AnnotationTypeId(ParticipantAnnotationTypeIdPrefix + "1"),
                      slug          = Slug(""),
                      name          = "Date of birth",
                      description   = None,
@@ -324,7 +323,7 @@ object BbpspTestData {
                      maxValueCount = None,
                      options       = Seq.empty[String],
                      required      = true),
-      AnnotationType(id            = AnnotationTypeId(ParticipantAnnotationTypeHashids.encode(2)),
+      AnnotationType(id            = AnnotationTypeId(ParticipantAnnotationTypeIdPrefix + "2"),
                      slug          = Slug(""),
                      name          = "Gender",
                      description   = None,
@@ -347,7 +346,12 @@ object CbsrTestData {
 /**
  * Provides initial data to test with. Ideally these methods should only be called for development builds.
  */
-@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.ImplicitParameter"))
+@SuppressWarnings(
+  Array("org.wartremover.warts.NonUnitStatements",
+        "org.wartremover.warts.ImplicitParameter",
+        "org.wartremover.warts.StringPlusAny",
+        "org.wartremover.warts.Var")
+)
 @Singleton
 class TestData @Inject()(
     private val config:             Configuration,
@@ -384,7 +388,7 @@ class TestData @Inject()(
   private val loadAccessTestData =
     loadTestDataMode && config.get[Boolean]("application.testData.loadAccessData")
 
-  def testUsers(): List[User] =
+  def testUsers(): List[User] = {
     if (!loadTestData) {
       List.empty[User]
     } else {
@@ -392,11 +396,11 @@ class TestData @Inject()(
 
       val plainPassword = "testuser"
       val salt          = passwordHasher.generateSalt
-      val hashids       = Hashids("test-data-users")
+      val userIdPrefix  = "test-data-users"
 
       userData.zipWithIndex.map {
         case ((name, email), index) =>
-          ActiveUser(id           = UserId(hashids.encode(index.toLong)),
+          ActiveUser(id           = UserId(userIdPrefix + index.toString),
                      version      = 0L,
                      timeAdded    = Global.StartOfTime,
                      timeModified = None,
@@ -429,6 +433,7 @@ class TestData @Inject()(
                    avatarUrl        = None)
       )
     }
+  }
 
   def testCentres(): List[Centre] =
     if (!loadTestData) {
@@ -538,7 +543,7 @@ class TestData @Inject()(
 
       BbpspTestData.EventTypeNames.zipWithIndex.map {
         case (name, index) =>
-          val id = CollectionEventTypeId(EventTypeHashids.encode(index.toLong))
+          val id = CollectionEventTypeId(EventTypeIdPrefix + index.toString)
           val annotationTypes =
             if (name == BbpspTestData.EventTypeNames(0)) BbpspTestData.EventTypeAnnotationTypes
             else Set.empty[AnnotationType]
@@ -571,28 +576,26 @@ class TestData @Inject()(
 
       BbpspTestData.ProcessingTypeNames.zipWithIndex.map {
         case (name, index) =>
-          val id = ProcessingTypeId(ProcessingTypeHashids.encode(index.toLong))
+          val id = ProcessingTypeId(ProcessingTypeIdPrefix + index.toString)
           val annotationTypes =
             if (name == BbpspTestData.ProcessingTypeNames(0)) BbpspTestData.ProcessingTypeAnnotationTypes
             else Set.empty[AnnotationType]
 
           val input =
             if (index == 0)
-              InputSpecimenProcessing(expectedChange  = BigDecimal(1.0),
-                                      count           = 1,
-                                      containerTypeId = None,
-                                      definitionType  = ProcessingType.collectedDefinition,
-                                      entityId        = CollectionEventTypeId(EventTypeHashids.encode(0L)).id,
-                                      specimenDefinitionId =
-                                        SpecimenDefinitionId(SpecimenDefHashids.encode(1L)))
+              InputSpecimenProcessing(expectedChange       = BigDecimal(1.0),
+                                      count                = 1,
+                                      containerTypeId      = None,
+                                      definitionType       = ProcessingType.collectedDefinition,
+                                      entityId             = CollectionEventTypeId(EventTypeIdPrefix + "0").id,
+                                      specimenDefinitionId = SpecimenDefinitionId(SpecimenDefIdPrefix + "1"))
             else
-              InputSpecimenProcessing(expectedChange  = BigDecimal(1.0),
-                                      count           = 1,
-                                      containerTypeId = None,
-                                      definitionType  = ProcessingType.processedDefinition,
-                                      entityId        = ProcessingTypeId(ProcessingTypeHashids.encode(0L)).id,
-                                      specimenDefinitionId =
-                                        SpecimenDefinitionId(SpecimenDefHashids.encode(1L)))
+              InputSpecimenProcessing(expectedChange       = BigDecimal(1.0),
+                                      count                = 1,
+                                      containerTypeId      = None,
+                                      definitionType       = ProcessingType.processedDefinition,
+                                      entityId             = ProcessingTypeId(ProcessingTypeIdPrefix + "0").id,
+                                      specimenDefinitionId = SpecimenDefinitionId(SpecimenDefIdPrefix + "1"))
           val specimenDefinition =
             ProcessedSpecimenDefinition(id                      = SpecimenDefinitionId(id.id),
                                         slug                    = Slug(name),
@@ -770,7 +773,7 @@ class TestData @Inject()(
        * - takes all the specimens at the second centre and assigns them to the shipment in PACKED state
        */
       val originCentreId    = centreCalgaryId
-      val originLocationId  = LocationId(s"${originCentreId}:Primary")
+      val originLocationId  = LocationId(s"${originCentreId.id}:Primary")
       val specimens         = testSpecimens
       val halfSpecimenCount = specimens.filter(_.locationId == originLocationId).size / 2
 
@@ -802,7 +805,7 @@ class TestData @Inject()(
       log.debug("createParticipants")
 
       (0 to BbpspTestData.NumParticipants).map { index =>
-        val id       = ParticipantId(BbpspTestData.ParticipantHashids.encode(index.toLong))
+        val id       = ParticipantId(BbpspTestData.ParticipantIdPrefix + index.toString)
         val uniqueId = f"P$index%05d"
         val participant = Participant(id = id,
                                       studyId      = BbpspTestData.BbpspStudyId,
@@ -821,10 +824,8 @@ class TestData @Inject()(
 
     BbpspTestData.EventTypeNames.zipWithIndex.map {
       case (eventTypeName, eventTypeIndex) =>
-        val eventTypeId = CollectionEventTypeId(EventTypeHashids.encode(eventTypeIndex.toLong))
-        val reverseHash = BbpspTestData.ParticipantHashids.decode(participant.id.id)
-        val id =
-          CollectionEventId(BbpspTestData.EventHashids.encode((reverseHash :+ eventTypeIndex.toLong): _*))
+        val eventTypeId = CollectionEventTypeId(EventTypeIdPrefix + eventTypeIndex.toString)
+        val id          = CollectionEventId(BbpspTestData.EventIdPrefix + participant.id.id + eventTypeId.id)
 
         val event = CollectionEvent(id = id,
                                     participantId         = participant.id,
@@ -841,6 +842,8 @@ class TestData @Inject()(
     }
   }
 
+  private var specimenIndex = 0L
+
   /*
    * Creates two specimens per collection event specimen description, one from each centre associated with
    * BBPSP.
@@ -851,33 +854,29 @@ class TestData @Inject()(
     } else {
       BbpspTestData.CentreIds.zipWithIndex.flatMap {
         case (centreId, centreIndex) =>
-          val locationId = LocationId(s"${centreId}:Primary")
+          val locationId = LocationId(s"${centreId.id}:Primary")
 
-          BbpspTestData.CollectedSpecimenDefinitions.zipWithIndex
-            .map {
-              case (specimenDefinition, specimenIndex) =>
-                val spcdefId         = event.collectionEventTypeId.id + "_" + specimenDefinition.id.id
-                val reverseHash      = BbpspTestData.EventHashids.decode(event.id.id)
-                val participantIndex = reverseHash(0)
-                val eventIndex       = reverseHash(1)
-                val uniqueId         = 1000L * centreIndex + 100 * participantIndex + 10 * eventIndex + specimenIndex
-                val inventoryId      = f"A$uniqueId%05d"
-                val id               = SpecimenId(SpecimenHashids.encode(uniqueId))
+          BbpspTestData.CollectedSpecimenDefinitions.map { specimenDefinition =>
+            val spcdefId    = event.collectionEventTypeId.id + "_" + specimenDefinition.id.id
+            val uniqueId    = 1000L * centreIndex + specimenIndex
+            val inventoryId = f"A$uniqueId%05d"
+            val id          = SpecimenId(SpecimenIdPrefix + uniqueId.toString)
 
-                UsableSpecimen(id                   = id,
-                               version              = 0L,
-                               timeAdded            = Global.StartOfTime,
-                               timeModified         = None,
-                               slug                 = Slug(inventoryId),
-                               inventoryId          = inventoryId,
-                               specimenDefinitionId = SpecimenDefinitionId(spcdefId),
-                               originLocationId     = locationId,
-                               locationId           = locationId,
-                               containerId          = None,
-                               schemaLabel          = None,
-                               timeCreated          = OffsetDateTime.now.minusDays(1),
-                               amount               = BigDecimal(0.1))
-            }
+            specimenIndex = specimenIndex + 1L
+            UsableSpecimen(id                   = id,
+                           version              = 0L,
+                           timeAdded            = Global.StartOfTime,
+                           timeModified         = None,
+                           slug                 = Slug(inventoryId),
+                           inventoryId          = inventoryId,
+                           specimenDefinitionId = SpecimenDefinitionId(spcdefId),
+                           originLocationId     = locationId,
+                           locationId           = locationId,
+                           containerId          = None,
+                           schemaLabel          = None,
+                           timeCreated          = OffsetDateTime.now.minusDays(1),
+                           amount               = BigDecimal(0.1))
+          }
       }
     }
 
@@ -987,14 +986,14 @@ class TestData @Inject()(
   private def microplateLabels96Wells(): Set[String] =
     "ABCDEFGH".flatMap { row =>
       (1 to 12).map { col =>
-        s"$row$col"
+        row.toString + col.toString
       }
     }.toSet
 
   private def microplateLabels384Wells(): Set[String] =
     "ABCDEFGHIJKLMNOP".flatMap { row =>
       (1 to 24).map { col =>
-        s"$row$col"
+        row.toString + col.toString
       }
     }.toSet
 

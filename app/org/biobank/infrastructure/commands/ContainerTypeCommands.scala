@@ -82,22 +82,39 @@ object ContainerTypeCommands {
   final case class RemoveContainerTypeCmd(sessionUserId: String, id: String, expectedVersion: Long)
       extends ContainerTypeCommand
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addStorageContainerTypeCmdReads: Reads[AddStorageContainerTypeCmd] =
     Json.reads[AddStorageContainerTypeCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addSpecimenContainerTypeCmdReads: Reads[AddSpecimenContainerTypeCmd] =
     Json.reads[AddSpecimenContainerTypeCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerTypeNameCmdReads: Reads[UpdateContainerTypeNameCmd] =
     Json.reads[UpdateContainerTypeNameCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerTypeDescriptionCmdReads: Reads[UpdateContainerTypeDescriptionCmd] =
     Json.reads[UpdateContainerTypeDescriptionCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerTypeCentreCmdReads: Reads[UpdateContainerTypeCentreCmd] =
     Json.reads[UpdateContainerTypeCentreCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerTypeSchemaCmdReads: Reads[UpdateContainerTypeSchemaCmd] =
     Json.reads[UpdateContainerTypeSchemaCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerTypeSharedCmdReads: Reads[UpdateContainerTypeSharedCmd] =
     Json.reads[UpdateContainerTypeSharedCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerTypeEnabledCmdReads: Reads[UpdateContainerTypeEnabledCmd] =
     Json.reads[UpdateContainerTypeEnabledCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val removeContainerTypeCmdReads: Reads[RemoveContainerTypeCmd] =
     Json.reads[RemoveContainerTypeCmd]
 

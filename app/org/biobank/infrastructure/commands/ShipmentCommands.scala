@@ -117,51 +117,67 @@ object ShipmentCommands {
 
   final case class ShipmentsSnapshotCmd(sessionUserId: String) extends ShipmentCommand
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addShipmentCmdReads: Reads[AddShipmentCmd] =
     Json.reads[AddShipmentCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateShipmentCourierNameCmdReads: Reads[UpdateShipmentCourierNameCmd] =
     Json.reads[UpdateShipmentCourierNameCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateShipmentTrackingNumberCmdReads: Reads[UpdateShipmentTrackingNumberCmd] =
     Json.reads[UpdateShipmentTrackingNumberCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateShipmentOriginLocationCmdReads: Reads[UpdateShipmentOriginCmd] =
     Json.reads[UpdateShipmentOriginCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateShipmentDestinationLocationCmdReads: Reads[UpdateShipmentDestinationCmd] =
     Json.reads[UpdateShipmentDestinationCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val createdShipmentCmdReads: Reads[CreatedShipmentCmd] =
     Json.reads[CreatedShipmentCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val packShipmentCmdReads: Reads[PackShipmentCmd] =
     Json.reads[PackShipmentCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val sendShipmentCmdReads: Reads[SendShipmentCmd] =
     Json.reads[SendShipmentCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val receiveShipmentCmdReads: Reads[ReceiveShipmentCmd] =
     Json.reads[ReceiveShipmentCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val unpackShipmentCmdReads: Reads[UnpackShipmentCmd] =
     Json.reads[UnpackShipmentCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val completeShipmentCmdReads: Reads[CompleteShipmentCmd] =
     Json.reads[CompleteShipmentCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val lostShipmentCmdReads: Reads[LostShipmentCmd] =
     Json.reads[LostShipmentCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val shipmentSkipStateToSentCmdReads: Reads[ShipmentSkipStateToSentCmd] =
     Json.reads[ShipmentSkipStateToSentCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val shipmentSkipStateToUnpackedCmdReads: Reads[ShipmentSkipStateToUnpackedCmd] =
     Json.reads[ShipmentSkipStateToUnpackedCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val shipmentRemoveCmdReads: Reads[ShipmentRemoveCmd] =
     Json.reads[ShipmentRemoveCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val shipmentsSnapshotReads: Reads[ShipmentsSnapshotCmd] =
     Json.reads[ShipmentsSnapshotCmd]
 

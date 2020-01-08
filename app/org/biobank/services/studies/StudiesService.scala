@@ -102,6 +102,7 @@ class StudiesServiceImpl @Inject()(
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def collectionStudies(
       requestUserId: UserId,
       query:         FilterAndSortQuery

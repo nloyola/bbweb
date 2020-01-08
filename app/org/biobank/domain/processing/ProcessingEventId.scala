@@ -7,7 +7,12 @@ final case class ProcessingEventId(id: String) extends IdentifiedValueObject[Str
 
 object ProcessingEventId {
 
-  implicit val processingEventIdReader: Reads[ProcessingEventId] =
-    (__).read[String].map(ProcessingEventId(_))
+  implicit val processingEventIdFormat: Format[ProcessingEventId] = new Format[ProcessingEventId] {
+
+    override def writes(id: ProcessingEventId): JsValue = JsString(id.id)
+
+    override def reads(json: JsValue): JsResult[ProcessingEventId] =
+      Reads.StringReads.reads(json).map(ProcessingEventId.apply _)
+  }
 
 }

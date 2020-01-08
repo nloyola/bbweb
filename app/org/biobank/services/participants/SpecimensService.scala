@@ -94,6 +94,7 @@ class SpecimensServiceImpl @Inject()(
       permitted      <- whenSpecimenPermitted(requestUserId, ceventSpecimen.ceventId)(_ => ().successNel[String])
     } yield specimen
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def getByInventoryIds(requestUserId: UserId, inventoryIds: String*): ServiceValidation[List[Specimen]] = {
     inventoryIds.map(inventoryId => getByInventoryId(requestUserId, inventoryId)).toList.sequenceU
   }
@@ -119,6 +120,7 @@ class SpecimensServiceImpl @Inject()(
       } yield specimens
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def filterSpecimens(
       requestUserId: UserId,
       eventId:       CollectionEventId,
@@ -132,6 +134,7 @@ class SpecimensServiceImpl @Inject()(
       results   <- PagedResults.create(dtos, query.page, query.limit)
     } yield results
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def sortSpecimens(
       ceventId: CollectionEventId,
       sort:     SortString

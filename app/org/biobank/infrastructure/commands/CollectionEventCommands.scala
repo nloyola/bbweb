@@ -58,13 +58,22 @@ object CollectionEventCommands {
       expectedVersion: Long)
       extends CollectionEventModifyCommand
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addCollectionEventCmdReads: Reads[AddCollectionEventCmd] = Json.reads[AddCollectionEventCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateCollectionEventVisitNumberCmdReads: Reads[UpdateCollectionEventVisitNumberCmd] =
     Json.reads[UpdateCollectionEventVisitNumberCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateCollectionEventTimeCompletedCmdReads: Reads[UpdateCollectionEventTimeCompletedCmd] =
     Json.reads[UpdateCollectionEventTimeCompletedCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateCollectionEventAnnotationCmdReads: Reads[CollectionEventUpdateAnnotationCmd] =
     Json.reads[CollectionEventUpdateAnnotationCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val removeCollectionEventCmdReads: Reads[RemoveCollectionEventCmd] =
     Json.reads[RemoveCollectionEventCmd]
 

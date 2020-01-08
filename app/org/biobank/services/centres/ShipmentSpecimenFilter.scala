@@ -36,6 +36,7 @@ object ShipmentSpecimenFilter
         ServiceError(s"invalid filter selector: $selector").failureNel[ShipmentSpecimenFilter]
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def stateFilter(comparator: Comparator, stateNames: List[String]) =
     stateNames
       .map { str =>

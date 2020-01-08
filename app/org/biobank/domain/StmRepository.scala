@@ -1,6 +1,6 @@
 package org.biobank.domain
 
-import com.github.ghik.silencer.silent
+//import com.github.ghik.silencer.silent
 import org.biobank.CommonValidations.EntityCriteriaNotFound
 import scala.concurrent.stm.Ref
 import scalaz.Scalaz._
@@ -8,7 +8,8 @@ import scalaz.Scalaz._
 /**
  * A read-only wrapper around an STM Ref of a Map.
  */
-@silent abstract class StmReadRepositoryImpl[K, A](keyGetter: (A) => K) extends ReadRepository[K, A] {
+//@silent
+abstract class StmReadRepositoryImpl[K, A](keyGetter: (A) => K) extends ReadRepository[K, A] {
   import org.biobank.CommonValidations._
 
   protected val internalMap: Ref[Map[K, A]] = Ref(Map.empty[K, A])

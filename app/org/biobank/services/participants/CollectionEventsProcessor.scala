@@ -2,7 +2,7 @@ package org.biobank.services.participants
 
 import akka.actor._
 import akka.persistence.{RecoveryCompleted, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
-import com.github.ghik.silencer.silent
+//import com.github.ghik.silencer.silent
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -177,7 +177,8 @@ class CollectionEventsProcessor @Inject()(
               })
   }
 
-  @silent private def updateVisitNumberCmdToEvent(
+  //@silent
+  private def updateVisitNumberCmdToEvent(
       cmd:                 UpdateCollectionEventVisitNumberCmd,
       participant:         Participant,
       collectionEventType: CollectionEventType,
@@ -194,7 +195,8 @@ class CollectionEventsProcessor @Inject()(
               _.visitNumberUpdated.version     := cmd.expectedVersion,
               _.visitNumberUpdated.visitNumber := updatedCevent.visitNumber)
 
-  @silent private def updateTimeCompletedCmdToEvent(
+  //@silent
+  private def updateTimeCompletedCmdToEvent(
       cmd:                 UpdateCollectionEventTimeCompletedCmd,
       participant:         Participant,
       collectionEventType: CollectionEventType,

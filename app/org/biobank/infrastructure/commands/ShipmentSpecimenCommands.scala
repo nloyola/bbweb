@@ -56,21 +56,27 @@ object ShipmentSpecimenCommands {
       specimenInventoryIds: List[String])
       extends ShipmentSpecimenModifyCommand
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val shipmentAddSpecimenCmdReads: Reads[ShipmentAddSpecimensCmd] =
     Json.reads[ShipmentAddSpecimensCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val shipmentSpecimenUpdateContainerCmdReads: Reads[ShipmentSpecimenUpdateContainerCmd] =
     Json.reads[ShipmentSpecimenUpdateContainerCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val shipmentSpecimensPresentCmdReads: Reads[ShipmentSpecimensPresentCmd] =
     Json.reads[ShipmentSpecimensPresentCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val shipmentSpecimensReceivedCmdReads: Reads[ShipmentSpecimensReceiveCmd] =
     Json.reads[ShipmentSpecimensReceiveCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val shipmentSpecimensMissingCmdReads: Reads[ShipmentSpecimenMissingCmd] =
     Json.reads[ShipmentSpecimenMissingCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val shipmentSpecimensExtraCmdReads: Reads[ShipmentSpecimenExtraCmd] =
     Json.reads[ShipmentSpecimenExtraCmd]
 

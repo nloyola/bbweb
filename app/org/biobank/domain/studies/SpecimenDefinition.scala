@@ -1,6 +1,6 @@
 package org.biobank.domain.studies
 
-import com.github.ghik.silencer.silent
+//import com.github.ghik.silencer.silent
 import org.biobank.ValidationKey
 import org.biobank.domain._
 import org.biobank.domain.AnatomicalSourceType._
@@ -135,6 +135,7 @@ final case class CollectedSpecimenDefinition(
 object CollectedSpecimenDefinition extends SpecimenDefinitionValidations {
   import org.biobank.CommonValidations._
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val collectedSpecimenDefinitionFormat: Format[CollectedSpecimenDefinition] =
     Json.format[CollectedSpecimenDefinition]
 
@@ -178,7 +179,8 @@ object CollectedSpecimenDefinition extends SpecimenDefinitionValidations {
                                   amount                  = amount)
     }
 
-  @silent def validate(
+  //@silent
+  def validate(
       name:                    String,
       description:             Option[String],
       units:                   String,
@@ -211,6 +213,7 @@ final case class ProcessedSpecimenDefinition(
 
 object ProcessedSpecimenDefinition extends SpecimenDefinitionValidations {
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val processingSpecimenSpecFormat: Format[ProcessedSpecimenDefinition] =
     Json.format[ProcessedSpecimenDefinition]
 
@@ -242,8 +245,9 @@ object ProcessedSpecimenDefinition extends SpecimenDefinitionValidations {
                                   specimenType            = specimenType)
     }
 
+  //@silent
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  @silent def validate(
+  def validate(
       name:                    String,
       description:             Option[String],
       units:                   String,

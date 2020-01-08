@@ -8,6 +8,7 @@ package centres {
 
   object CentreCountsByStatus {
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val centreCountsByStatusFormat: Format[CentreCountsByStatus] = Json.format[CentreCountsByStatus]
   }
 

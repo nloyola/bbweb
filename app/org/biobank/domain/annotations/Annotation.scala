@@ -56,6 +56,7 @@ object Annotation {
 
   case object AnnotationTypeIdRequired extends ValidationKey
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val annotationFormat: Format[Annotation] = Json.format[Annotation]
 
   def create(
@@ -70,7 +71,7 @@ object Annotation {
         Annotation(annotationTypeId, valueType, stringValue, numberValue, selectedValues)
       }
 
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading", "org.wartremover.warts.Any"))
   def validate(
       annotationTypeId: AnnotationTypeId,
       stringValue:      Option[String],

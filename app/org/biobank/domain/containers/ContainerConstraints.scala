@@ -58,6 +58,7 @@ object ContainerConstraints {
       case None    => ().success
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val constraintsFormat: Format[ContainerConstraints] = Json.format[ContainerConstraints]
 
 }

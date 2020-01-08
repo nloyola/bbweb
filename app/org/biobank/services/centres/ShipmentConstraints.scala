@@ -23,6 +23,7 @@ trait ShipmentConstraints {
 
   protected val specimenRepository: SpecimenRepository
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   protected def specimensAtCentre(
       locationId: LocationId,
       specimens:  Specimen*
@@ -92,6 +93,7 @@ trait ShipmentConstraints {
    * @param shipSpecimenMap map of inventory ID to Shipment Specimen.
    *
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def getPackedShipmentSpecimens(
       shipSpecimenMap: Map[String, ShipmentSpecimen]
     ): FutureValidation[List[ShipmentSpecimen]] = {
@@ -112,6 +114,7 @@ trait ShipmentConstraints {
    * @param shipSpecimenMap map of inventory ID to Shipment Specimen.
    *
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def getNonPackedShipmentSpecimens(
       shipSpecimenMap: Map[String, ShipmentSpecimen]
     ): FutureValidation[List[ShipmentSpecimen]] = {

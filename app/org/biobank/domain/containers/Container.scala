@@ -184,8 +184,13 @@ object Container extends ContainerValidations {
     }
   }
 
-  implicit val rootContainerFormat:     Format[RootContainer]     = Json.format[RootContainer]
-  implicit val storageContainerFormat:  Format[StorageContainer]  = Json.format[StorageContainer]
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val rootContainerFormat: Format[RootContainer] = Json.format[RootContainer]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val storageContainerFormat: Format[StorageContainer] = Json.format[StorageContainer]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val specimenContainerFormat: Format[SpecimenContainer] = Json.format[SpecimenContainer]
 
 }

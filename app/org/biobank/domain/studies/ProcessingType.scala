@@ -378,9 +378,10 @@ object ProcessingType extends ProcessingTypeValidations {
 
   val processedDefinition: InputSpecimenDefinitionType = new InputSpecimenDefinitionType("processed")
 
-  implicit val processingTypeFormat: Format[ProcessingType] =
-    Json.format[ProcessingType]
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val processingTypeFormat: Format[ProcessingType] = Json.format[ProcessingType]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def create(
       studyId:         StudyId,
       id:              ProcessingTypeId,

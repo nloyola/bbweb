@@ -63,6 +63,7 @@ object Participant extends ParticipantValidations {
   import org.biobank.domain.DomainValidations._
   import Annotation._
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def create(
       studyId:     StudyId,
       id:          ParticipantId,
@@ -79,6 +80,7 @@ object Participant extends ParticipantValidations {
       case _ => Participant(id, studyId, version, timeAdded, None, Slug(uniqueId), uniqueId, annotations)
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val participantWrites: Format[Participant] = Json.format[Participant]
 
 }

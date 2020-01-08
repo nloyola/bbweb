@@ -117,7 +117,10 @@ object ContainerType {
     }
   }
 
-  implicit val storageContainerTypeFormat:  Format[StorageContainerType]  = Json.format[StorageContainerType]
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val storageContainerTypeFormat: Format[StorageContainerType] = Json.format[StorageContainerType]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val specimenContainerTypeFormat: Format[SpecimenContainerType] = Json.format[SpecimenContainerType]
 
 }

@@ -23,6 +23,7 @@ trait StudyServicePermissionChecks extends ServicePermissionChecks {
       } yield result
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   protected def getMembershipStudies(userId: UserId): ServiceValidation[Set[Study]] =
     accessService.getUserMembership(userId).flatMap { membership =>
       if (membership.studyData.allEntities) {

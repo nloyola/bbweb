@@ -61,6 +61,7 @@ class ShipmentsQuery @Inject()(
 
   val eventQueue = new Queue[EventEnvelope]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def init(): Unit = {
     val f = for {
       _ <- db.run(shipments.delete)
@@ -364,6 +365,7 @@ class ShipmentsQuery @Inject()(
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def specimensAdded(event: ShipmentSpecimenEvent): DbOperationResult = {
     FutureValidation {
       val companionEvent      = event.getAdded

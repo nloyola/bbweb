@@ -74,6 +74,7 @@ object Location {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val locationFormat: Format[Location] = Json.format[Location]
 
   def create(

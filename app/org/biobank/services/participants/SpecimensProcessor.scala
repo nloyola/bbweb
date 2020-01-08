@@ -3,7 +3,7 @@ package org.biobank.services.participants
 import akka.actor._
 
 import akka.persistence.{RecoveryCompleted, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
-import com.github.ghik.silencer.silent
+//import com.github.ghik.silencer.silent
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.{Inject, Singleton}
@@ -25,6 +25,7 @@ object SpecimensProcessor {
 
   final case class SnapshotState(specimens: Set[Specimen], ceventSpecimens: Set[CeventSpecimen])
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val snapshotStateFormat: Format[SnapshotState] = Json.format[SnapshotState]
 
   def specimenSpecNotFound(id: String): IdNotFound = IdNotFound(s"collection specimen spec id: $id")
@@ -173,24 +174,28 @@ class SpecimensProcessor @Inject()(
       }
     )
 
-  @silent private def moveCmdToEvent(cmd: MoveSpecimensCmd): ServiceValidation[SpecimenEvent] =
+  //@silent
+  private def moveCmdToEvent(cmd: MoveSpecimensCmd): ServiceValidation[SpecimenEvent] =
     ???
 
-  @silent private def assignPositionCmdToEvent(
+  //@silent
+  private def assignPositionCmdToEvent(
       cmd:      SpecimenAssignPositionCmd,
       cevent:   CollectionEvent,
       specimen: Specimen
     ): ServiceValidation[SpecimenEvent] =
     ???
 
-  @silent private def removeAmountCmdToEvent(
+  //@silent
+  private def removeAmountCmdToEvent(
       cmd:      SpecimenRemoveAmountCmd,
       cevent:   CollectionEvent,
       specimen: Specimen
     ): ServiceValidation[SpecimenEvent] =
     ???
 
-  @silent private def updateUsableCmdToEvent(
+  //@silent
+  private def updateUsableCmdToEvent(
       cmd:      SpecimenUpdateUsableCmd,
       cevent:   CollectionEvent,
       specimen: Specimen
@@ -212,6 +217,7 @@ class SpecimensProcessor @Inject()(
         )
     )
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def applyAddedEvent(event: SpecimenEvent): Unit = {
     val v = for {
       validEventType <- validEventType(event.eventType.isAdded)
@@ -247,16 +253,20 @@ class SpecimensProcessor @Inject()(
     }
   }
 
-  @silent private def applyMovedEvent(event: SpecimenEvent): Unit =
+  //@silent
+  private def applyMovedEvent(event: SpecimenEvent): Unit =
     ???
 
-  @silent private def applyPositionAssignedEvent(event: SpecimenEvent): Unit =
+  //@silent
+  private def applyPositionAssignedEvent(event: SpecimenEvent): Unit =
     ???
 
-  @silent private def applyAmountRemovedEvent(event: SpecimenEvent): Unit =
+  //@silent
+  private def applyAmountRemovedEvent(event: SpecimenEvent): Unit =
     ???
 
-  @silent private def applyUsableUpdatedEvent(event: SpecimenEvent): Unit =
+  //@silent
+  private def applyUsableUpdatedEvent(event: SpecimenEvent): Unit =
     ???
 
   private def applyRemovedEvent(event: SpecimenEvent): Unit = {
@@ -317,6 +327,7 @@ class SpecimensProcessor @Inject()(
    * Returns success if none of the inventory IDs are found in the repository.
    *
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def validateInventoryId(specimenData: List[SpecimenInfo]): ServiceValidation[Unit] =
     specimenData
       .map { info =>

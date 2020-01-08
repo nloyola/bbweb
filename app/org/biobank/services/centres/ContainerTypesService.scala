@@ -65,6 +65,7 @@ class ContainerTypesServiceImpl @Inject()(
   /** All [[domain.containers.ContainerType ContainerTypes]] for a [domain.centres.Centre Centre], and all
    * shared [[domain.containers.ContainerType ContainerTypes]] for other [domain.centres.Centre Centres].
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def search(
       requestUserId: UserId,
       centreId:      CentreId,

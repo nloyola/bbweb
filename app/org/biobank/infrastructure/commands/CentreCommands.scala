@@ -86,36 +86,47 @@ object CentreCommands {
 
   final case class SearchCentreLocationsCmd(sessionUserId: String, filter: String, limit: Int) extends Command
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addCentreCmdReads: Reads[AddCentreCmd] =
     Json.reads[AddCentreCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateCentreNameCmdReads: Reads[UpdateCentreNameCmd] =
     Json.reads[UpdateCentreNameCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateCentreDescriptionCmdReads: Reads[UpdateCentreDescriptionCmd] =
     Json.reads[UpdateCentreDescriptionCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val enableCentreCmdReads: Reads[EnableCentreCmd] =
     Json.reads[EnableCentreCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val disableCentreCmdReads: Reads[DisableCentreCmd] =
     Json.reads[DisableCentreCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addCentreLocationCmdReads: Reads[AddCentreLocationCmd] =
     Json.reads[AddCentreLocationCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateCentreLocationCmdReads: Reads[UpdateCentreLocationCmd] =
     Json.reads[UpdateCentreLocationCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val removeCentreLocationCmdReads: Reads[RemoveCentreLocationCmd] =
     Json.reads[RemoveCentreLocationCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addStudyToCentreCmdReads: Reads[AddStudyToCentreCmd] =
     Json.reads[AddStudyToCentreCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val removeStudyFromCentreCmdReads: Reads[RemoveStudyFromCentreCmd] =
     Json.reads[RemoveStudyFromCentreCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val searchCentreLocationsCmdReads: Reads[SearchCentreLocationsCmd] =
     Json.reads[SearchCentreLocationsCmd]
 

@@ -33,6 +33,7 @@ class ProcessingTypesController @Inject()(
       property:        String,
       newValue:        JsValue)
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateJsonReads: Reads[UpdateJson] = Json.reads[UpdateJson]
 
   protected val PageSizeMax = 10

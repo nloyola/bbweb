@@ -195,8 +195,11 @@ object AccessItem {
   implicit def permissionIdsToAccessItemId(permissionIds: Set[PermissionId]): Set[AccessItemId] =
     permissionIds.map(p => AccessItemId(p.toString))
 
-  implicit val disabledStudyFormat: Reads[Role]       = Json.format[Role]
-  implicit val permissionFormat:    Reads[Permission] = Json.format[Permission]
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val disabledStudyFormat: Reads[Role] = Json.format[Role]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val permissionFormat: Reads[Permission] = Json.format[Permission]
 
   val sort2Compare: Map[String, (AccessItem, AccessItem) => Boolean] =
     Map[String, (AccessItem, AccessItem) => Boolean]("name" -> compareByName)
@@ -288,6 +291,7 @@ object Role extends AccessItemValidations {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def create(
       id:           AccessItemId,
       version:      Long,
@@ -361,6 +365,7 @@ object Permission extends AccessItemValidations {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def create(
       id:          AccessItemId,
       name:        String,

@@ -172,6 +172,7 @@ class UsersServiceImpl @javax.inject.Inject()(
       }
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def filterUsers(filter: FilterString, sort: SortString): ServiceValidation[Seq[UserDto]] = {
     val allUsers = userRepository.getValues.toSet
     val sortStr =
@@ -212,6 +213,7 @@ class UsersServiceImpl @javax.inject.Inject()(
         .successNel[String]
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def getUserStudies(
       userId: UserId,
       query:  FilterAndSortQuery

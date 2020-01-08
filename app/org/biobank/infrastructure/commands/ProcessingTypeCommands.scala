@@ -138,27 +138,36 @@ object ProcessingTypeCommands {
       expectedVersion: Long)
       extends ProcessingTypeModifyCommand
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val specimenDefinitionFormat: Format[SpecimenDefinition] = Json.format[SpecimenDefinition]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val inputSpecimenInfoFormat: Format[InputSpecimenProcessing] = Json.format[InputSpecimenProcessing]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val outputSpecimenInfoFormat: Format[OutputSpecimenProcessing] =
     Json.format[OutputSpecimenProcessing]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addAddProcessingTypeCmdReads: Reads[AddProcessingTypeCmd] =
     Json.reads[AddProcessingTypeCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateNameCmdReads: Reads[UpdateNameCmd] = Json.reads[UpdateNameCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val removeProcessingTypeCmdReads: Reads[RemoveProcessingTypeCmd] =
     Json.reads[RemoveProcessingTypeCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addProcessingTypeAnnotationTypeCmdReads: Reads[AddProcessingTypeAnnotationTypeCmd] =
     Json.reads[AddProcessingTypeAnnotationTypeCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateProcessingTypeAnnotationTypeCmdReads: Reads[UpdateProcessingTypeAnnotationTypeCmd] =
     Json.reads[UpdateProcessingTypeAnnotationTypeCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val removeProcessingTypeAnnotationTypeCmdReads: Reads[RemoveProcessingTypeAnnotationTypeCmd] =
     Json.reads[RemoveProcessingTypeAnnotationTypeCmd]
 

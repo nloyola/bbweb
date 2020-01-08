@@ -199,6 +199,7 @@ class ShipmentsServiceImpl @Inject()(
    * Sorting should be done by controller since the DTO has additional fields to sort by.
    *
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def getShipmentSpecimens(
       requestUserId: UserId,
       shipmentId:    ShipmentId,
@@ -394,6 +395,7 @@ class ShipmentsServiceImpl @Inject()(
     FutureValidation(f)
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def shipmentsToDtos(shipments: Seq[Shipment]): FutureValidation[Seq[ShipmentDto]] = {
     val shipmentIds = shipments.map(_.id)
     val zeroCounts  = ShipmentSpecimenCounts(0, 0)

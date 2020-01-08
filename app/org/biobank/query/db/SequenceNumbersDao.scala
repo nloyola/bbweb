@@ -31,16 +31,19 @@ class SequenceNumbersDaoSlick @Inject()(
 
   protected val log = LoggerFactory.getLogger(this.getClass)
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def insertOrUpdate(sequenceNumber: SequenceNumber): Future[Unit] = {
     db.run(sequenceNumbers.insertOrUpdate(sequenceNumber).map(_ => ()))
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def remove(persistenceId: String): Future[Unit] = {
     val query  = sequenceNumbers.filter(s => s.persistenceId === persistenceId)
     val action = query.delete
     db.run(action.map(_ => ()))
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def sequenceNumberForId(persistenceId: String): FutureValidation[SequenceNumber] = {
     FutureValidation(
     db.run(sequenceNumbers.filter(s => s.persistenceId === persistenceId).result.headOption)

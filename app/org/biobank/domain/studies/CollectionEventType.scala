@@ -142,8 +142,10 @@ object CollectionEventType extends CollectionEventTypeValidations {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val collectionEventTypeWrites: Format[CollectionEventType] = Json.format[CollectionEventType]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def create(
       studyId:             StudyId,
       id:                  CollectionEventTypeId,

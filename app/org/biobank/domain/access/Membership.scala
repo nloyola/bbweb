@@ -59,6 +59,7 @@ final case class MembershipEntitySet[T <: IdentifiedValueObject[_]](allEntities:
 
 object MembershipEntitySet {
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit def format[T <: IdentifiedValueObject[_]](
       implicit
       fmt: Format[T]
@@ -187,6 +188,7 @@ object Membership extends MembershipValidations {
 
   case object InvalidMembershipId extends org.biobank.ValidationKey
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def create(
       id:           MembershipId,
       version:      Long,
@@ -231,6 +233,7 @@ object Membership extends MembershipValidations {
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val usersMembershipformat: Format[Membership] = Json.format[Membership]
 
   val sort2Compare: Map[String, (Membership, Membership) => Boolean] =
@@ -288,6 +291,7 @@ object UserMembership {
                    studyData    = usersMembership.studyData,
                    centreData   = usersMembership.centreData)
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val userMembershipformat: Format[UserMembership] = Json.format[UserMembership]
 
 }

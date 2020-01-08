@@ -69,6 +69,7 @@ trait CentreServicePermissionChecks extends ServicePermissionChecks {
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   protected def getMembershipCentres(userId: UserId): ServiceValidation[Set[Centre]] =
     accessService.getUserMembership(userId).flatMap { membership =>
       if (membership.centreData.allEntities) {

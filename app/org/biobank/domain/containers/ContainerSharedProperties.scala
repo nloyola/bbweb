@@ -49,6 +49,7 @@ object ContainerSharedProperties extends ContainerValidations {
       case None     => ().successNel[String]
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val containerSharedPropertiesFormat: Format[ContainerSharedProperties] =
     Json.format[ContainerSharedProperties]
 

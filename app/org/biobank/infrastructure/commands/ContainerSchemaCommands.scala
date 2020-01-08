@@ -57,17 +57,30 @@ object ContainerSchemaCommands {
   final case class RemoveContainerSchemaCmd(sessionUserId: String, id: String, expectedVersion: Long)
       extends ContainerSchemaCommand
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addContainerSchemaCmdReads: Reads[AddContainerSchemaCmd] = Json.reads[AddContainerSchemaCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerSchemaNameCmdReads: Reads[UpdateContainerSchemaNameCmd] =
     Json.reads[UpdateContainerSchemaNameCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerSchemaDescriptionCmdReads: Reads[UpdateContainerSchemaDescriptionCmd] =
     Json.reads[UpdateContainerSchemaDescriptionCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerSchemaSharedCmdReads: Reads[UpdateContainerSchemaSharedCmd] =
     Json.reads[UpdateContainerSchemaSharedCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerSchemaCentreCmdReads: Reads[UpdateContainerSchemaCentreCmd] =
     Json.reads[UpdateContainerSchemaCentreCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerSchemaLabelsCmdReads: Reads[UpdateContainerSchemaLabelsCmd] =
     Json.reads[UpdateContainerSchemaLabelsCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val removeContainerSchemaCmdReads: Reads[RemoveContainerSchemaCmd] =
     Json.reads[RemoveContainerSchemaCmd]
 

@@ -96,6 +96,7 @@ class CentresServiceImpl @Inject()(
         .successNel[String]
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def getCentres(requestUserId: UserId, query: PagedQuery): FutureValidation[PagedResults[CentreDto]] =
     FutureValidation {
       withPermittedCentres(requestUserId) { centres =>
@@ -216,6 +217,7 @@ class CentresServiceImpl @Inject()(
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def centreToDto(requestUserId: UserId, centre: Centre): ServiceValidation[CentreDto] = {
     val v = centre.studyIds
       .map { id =>

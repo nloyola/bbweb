@@ -38,6 +38,7 @@ package dto {
     def compareByName(a: NamedEntityInfoDto, b: NamedEntityInfoDto): Boolean =
       (a.name compareToIgnoreCase b.name) < 0
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val namedEntityInfoDtoFormat: Format[NamedEntityInfoDto] = Json.format[NamedEntityInfoDto]
 
   }
@@ -46,6 +47,7 @@ package dto {
 
   object EntitySetDto {
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val entitySetInfoDtoFormat: Format[EntitySetDto] = Json.format[EntitySetDto]
 
   }
@@ -63,6 +65,7 @@ package dto {
     def compareByName(a: EntityInfoAndStateDto, b: EntityInfoAndStateDto): Boolean =
       (a.name compareToIgnoreCase b.name) < 0
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val entityInfoAndStateDtoFormat: Format[EntityInfoAndStateDto] =
       Json.format[EntityInfoAndStateDto]
   }
@@ -94,6 +97,7 @@ package dto {
                 studyNames   = studies.map(EntityInfoAndStateDto(_)),
                 locations    = centre.locations)
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val centreDtoFormat: Format[CentreDto] = Json.format[CentreDto]
 
   }
@@ -116,6 +120,7 @@ package dto {
                          location     = NamedEntityInfoDto(location),
                          combinedName = s"${centre.name}: ${location.name}")
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val centreLocationInfoFormat: Format[CentreLocationInfo] = Json.format[CentreLocationInfo]
 
   }
@@ -163,6 +168,7 @@ package dto {
                          centre      = NamedEntityInfoDto(centre),
                          labels      = schema.labels)
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val containerSchemaDtoFormat: Format[ContainerSchemaDto] = Json.format[ContainerSchemaDto]
 
   }
@@ -217,6 +223,7 @@ package dto {
                        enabled     = containerType.enabled,
                        storageType = containerType.storageType.id)
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val containerTypeDtoFormat: Format[ContainerTypeDto] = Json.format[ContainerTypeDto]
 
   }
@@ -238,6 +245,7 @@ package dto {
                               preservationTypes = constraints.preservationTypes,
                               specimenTypes     = constraints.specimenTypes)
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val containerConstraintsDtoFormat: Format[ContainerConstraintsDto] =
       Json.format[ContainerConstraintsDto]
 
@@ -317,6 +325,7 @@ package dto {
                        constraints        = c.constraints.map(ContainerConstraintsDto(_)),
                        storageType        = c.storageType.id)
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val rootContainerDtoFormat: Format[RootContainerDto] = Json.format[RootContainerDto]
 
   }
@@ -345,6 +354,7 @@ package dto {
     def apply(container: SpecimenContainer): ContainerInfoDto =
       ContainerInfoDto(id = container.id.id, slug = container.slug.id, label = container.schemaLabel.label)
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val containerInfoDtoFormat: Format[ContainerInfoDto] = Json.format[ContainerInfoDto]
 
   }
@@ -387,6 +397,7 @@ package dto {
                           storageType   = c.storageType.id)
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val storageContainerDtoFormat: Format[StorageContainerDto] = Json.format[StorageContainerDto]
 
   }
@@ -419,6 +430,7 @@ package dto {
                            label         = c.schemaLabel.label,
                            storageType   = c.storageType.id)
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val specimenContainerDtoFormat: Format[SpecimenContainerDto] = Json.format[SpecimenContainerDto]
 
   }
@@ -432,6 +444,7 @@ package dto {
       ContainerInfo(container.id.id, container.slug.id, container.inventoryId, container.getLabel)
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val containerInfoFormat: Format[ContainerInfo] = Json.format[ContainerInfo]
 
   }
@@ -445,6 +458,7 @@ package dto {
       ContainerChildrenInfo(ContainerInfo(container), children)
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val containerChildrenInfoFormat: Format[ContainerChildrenInfo] =
       Json.format[ContainerChildrenInfo]
 
@@ -472,6 +486,7 @@ package dto {
       CollectedSpecimenDefinitionNames(eventType.id.id, eventType.slug, eventType.name, definitionNames)
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val specimenDefinitionNamesFormat: Format[CollectedSpecimenDefinitionNames] =
       Json.format[CollectedSpecimenDefinitionNames]
 
@@ -492,6 +507,7 @@ package dto {
                                       processingType.name,
                                       NamedEntityInfoDto(processingType.output.specimenDefinition))
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val specimenDefinitionNamesFormat: Format[ProcessedSpecimenDefinitionName] =
       Json.format[ProcessedSpecimenDefinitionName]
 
@@ -521,6 +537,7 @@ package dto {
                      uniqueId    = participant.uniqueId,
                      annotations = participant.annotations)
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val participantDtoForma: Format[ParticipantDto] = Json.format[ParticipantDto]
 
   }
@@ -533,6 +550,7 @@ package dto {
     def apply(participant: Participant): ParticipantInfoDto =
       ParticipantInfoDto(participant.id.toString, participant.slug, participant.uniqueId)
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val participantInfoDtoFormat: Format[ParticipantInfoDto] = Json.format[ParticipantInfoDto]
 
   }
@@ -585,6 +603,7 @@ package dto {
     def apply(collectionEvent: CollectionEvent): CollectionEventInfoDto =
       CollectionEventInfoDto(collectionEvent.id.toString, collectionEvent.slug, collectionEvent.visitNumber)
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val collectionEventInfoDtoFormat: Format[CollectionEventInfoDto] =
       Json.format[CollectionEventInfoDto]
 
@@ -605,6 +624,7 @@ package dto {
 
   object UserDto {
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val userDtoFormat: Format[UserDto] = Json.format[UserDto]
 
   }
@@ -639,6 +659,7 @@ package dto {
 
   object SpecimenDto {
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val specimenDtoFormat: Format[SpecimenDto] = Json.format[SpecimenDto]
 
   }
@@ -692,7 +713,7 @@ package dto {
                   state                = shipment.state.id)
 
     val sort2Compare: Map[String, (ShipmentDto, ShipmentDto) => Boolean] =
-      Map[String, (ShipmentDto, ShipmentDto) => Boolean]("courierName"    -> compareByCourier,
+      Map[String, (ShipmentDto, ShipmentDto) => Boolean]("courierName" -> compareByCourier,
                                                          "trackingNumber" -> compareByTrackingNumber,
                                                          "state"          -> compareByState,
                                                          "origin"         -> compareByOrigin,
@@ -713,6 +734,7 @@ package dto {
     def compareByDestination(a: ShipmentDto, b: ShipmentDto): Boolean =
       (a.destination.combinedName compareToIgnoreCase b.destination.combinedName) < 0
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val shipmentDtoFormat: Format[ShipmentDto] = Json.format[ShipmentDto]
 
   }
@@ -776,6 +798,7 @@ package dto {
     def compareByTimeCreated(a: ShipmentSpecimenDto, b: ShipmentSpecimenDto): Boolean =
       (a.specimen.timeCreated compareTo b.specimen.timeCreated) < 0
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val shipmentSpecimenDtoFormat: Format[ShipmentSpecimenDto] = Json.format[ShipmentSpecimenDto]
   }
 

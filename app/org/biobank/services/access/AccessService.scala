@@ -124,6 +124,7 @@ class AccessServiceImpl @Inject()(
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def getUserRoles(userId: UserId): ServiceValidation[Set[UserRoleDto]] =
     accessItemRepository.rolesForUser(userId).map(roleToUserRoleDto).toList.sequenceU.map(_.toSet)
 
@@ -181,6 +182,7 @@ class AccessServiceImpl @Inject()(
       } yield dto
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def getRoles(requestUserId: UserId, query: PagedQuery): FutureValidation[PagedResults[RoleDto]] =
     FutureValidation {
       whenPermitted(requestUserId, PermissionId.RoleRead) { () =>
@@ -271,7 +273,7 @@ class AccessServiceImpl @Inject()(
       centreId: Option[CentreId]
     ): ServiceValidation[Unit] = {
     isMember(userId, studyId, centreId).fold(
-      err           => err.failure[Unit],
+      err => err.failure[Unit],
       hasMembership => if (hasMembership) ().successNel[String] else Unauthorized.failureNel[Unit]
     )
   }
@@ -301,6 +303,7 @@ class AccessServiceImpl @Inject()(
       membershipRepository.getBySlug(slug).flatMap(membershipToDto)
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def getMemberships(
       requestUserId: UserId,
       query:         PagedQuery
@@ -366,6 +369,7 @@ class AccessServiceImpl @Inject()(
       accessItemRepository.getByKey(accessItemId)
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def processRoleCommand(cmd: AccessCommand): FutureValidation[RoleDto] = {
     val v = for {
       validCommand <- {
@@ -446,6 +450,7 @@ class AccessServiceImpl @Inject()(
           }
       })
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def processMembershipCommand(cmd: MembershipCommand): FutureValidation[MembershipDto] = {
     val v = for {
       validCommand <- {
@@ -460,8 +465,8 @@ class AccessServiceImpl @Inject()(
         cmd match {
           case c: AddMembershipCmd => {
             for {
-              validUsers   <- c.userIds.map(id   => userRepository.getByKey(UserId(id))).toList.sequenceU
-              validStudies <- c.studyIds.map(id  => studyRepository.getByKey(StudyId(id))).toList.sequenceU
+              validUsers   <- c.userIds.map(id => userRepository.getByKey(UserId(id))).toList.sequenceU
+              validStudies <- c.studyIds.map(id => studyRepository.getByKey(StudyId(id))).toList.sequenceU
               validCentres <- c.centreIds.map(id => centreRepository.getByKey(CentreId(id))).toList.sequenceU
             } yield true
           }
@@ -598,6 +603,7 @@ class AccessServiceImpl @Inject()(
                                                       if (permission) block()
                                                       else Unauthorized.failureNel[T])
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def roleToDto(role: Role): ServiceValidation[RoleDto] = {
 
     def getAccessItems(ids: Set[AccessItemId]): ServiceValidation[Set[AccessItem]] =
@@ -630,7 +636,7 @@ class AccessServiceImpl @Inject()(
 
   private def roleToUserRoleDto(role: Role): ServiceValidation[UserRoleDto] = {
 
-    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Any"))
     def getAccessItems(ids: Set[AccessItemId]): ServiceValidation[List[AccessItem]] =
       ids.toList.flatMap { id =>
         val items = for {
@@ -649,6 +655,7 @@ class AccessServiceImpl @Inject()(
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def membershipToDto(membership: Membership): ServiceValidation[MembershipDto] =
     for {
       users           <- membership.userIds.map(userRepository.getByKey).toList.sequenceU.map(_.toSet)
@@ -700,6 +707,7 @@ class AccessServiceImpl @Inject()(
       entitySetDto(membership.centreData.allEntities, centres)
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def idsToEntities[I <: IdentifiedValueObject[_], E <: ConcurrencySafeEntity[I]](
       ids:       Set[I],
       getEntity: I => ServiceValidation[E]

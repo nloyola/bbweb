@@ -59,6 +59,7 @@ class ShipmentSpecimensWriteRepositoryImpl @Inject()(val testData: TestData)
         specimenNotFound(specimen)
       )
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def getBySpecimens(shipmentId: ShipmentId, specimens: Specimen*): DomainValidation[List[ShipmentSpecimen]] =
     specimens.map(getBySpecimen(shipmentId, _)).toList.sequenceU
 

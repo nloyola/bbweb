@@ -10,6 +10,7 @@ final case class CeventSpecimen(ceventId: CollectionEventId, specimenId: Specime
 
 object CeventSpecimen {
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val ceventSpecimenFormat: Format[CeventSpecimen] = Json.format[CeventSpecimen]
 
 }

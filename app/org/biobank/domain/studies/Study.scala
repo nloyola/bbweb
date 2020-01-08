@@ -80,9 +80,14 @@ object Study {
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val disabledStudyReads: Format[DisabledStudy] = Json.format[DisabledStudy]
-  implicit val enabledStudyReads:  Format[EnabledStudy]  = Json.format[EnabledStudy]
-  implicit val retiredStudyReads:  Format[RetiredStudy]  = Json.format[RetiredStudy]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val enabledStudyReads: Format[EnabledStudy] = Json.format[EnabledStudy]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val retiredStudyReads: Format[RetiredStudy] = Json.format[RetiredStudy]
 
   def compareByName(a: Study, b: Study): Boolean =
     (a.name compareToIgnoreCase b.name) < 0
@@ -193,6 +198,7 @@ object DisabledStudy extends StudyValidations with AnnotationTypeValidations {
    *
    * Performs validation on fields.
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def create(
       id:              StudyId,
       version:         Long,

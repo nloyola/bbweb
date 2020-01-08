@@ -39,7 +39,7 @@ trait EntityFilter[T <: ConcurrencySafeEntity[_]] extends PredicateHelper {
       args:       List[String]
     ): ServiceValidation[T => Boolean]
 
-  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Any"))
   private def comparisonToPredicates(expression: Expression): ServiceValidation[T => Boolean] =
     expression match {
       case Comparison(selector, comparator, args) =>

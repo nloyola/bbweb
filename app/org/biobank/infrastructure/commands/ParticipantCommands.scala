@@ -41,15 +41,19 @@ object ParticipantCommands {
       annotationTypeId: String)
       extends ParticipantModifyCommand
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addParticipantCmdReads: Reads[AddParticipantCmd] =
     Json.reads[AddParticipantCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateParticipantUniqueIdCmdReads: Reads[UpdateParticipantUniqueIdCmd] =
     Json.reads[UpdateParticipantUniqueIdCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val participantAddAnnotationCmdReads: Reads[ParticipantUpdateAnnotationCmd] =
     Json.reads[ParticipantUpdateAnnotationCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val participantRemoveAnnotationCmdReads: Reads[ParticipantRemoveAnnotationCmd] =
     Json.reads[ParticipantRemoveAnnotationCmd]
 

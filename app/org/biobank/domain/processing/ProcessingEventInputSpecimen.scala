@@ -8,8 +8,14 @@ final case class ProcessingEventInputSpecimenId(id: String) extends IdentifiedVa
 
 object ProcessingEventInputSpecimenId {
 
-  implicit val processingEventInputSpecimenIdReader: Reads[ProcessingEventInputSpecimenId] =
-    (__).read[String].map(ProcessingEventInputSpecimenId(_))
+  implicit val processingEventInputSpecimenIdFormat: Format[ProcessingEventInputSpecimenId] =
+    new Format[ProcessingEventInputSpecimenId] {
+
+      override def writes(id: ProcessingEventInputSpecimenId): JsValue = JsString(id.id)
+
+      override def reads(json: JsValue): JsResult[ProcessingEventInputSpecimenId] =
+        Reads.StringReads.reads(json).map(ProcessingEventInputSpecimenId.apply _)
+    }
 
 }
 

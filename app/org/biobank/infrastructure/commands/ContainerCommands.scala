@@ -130,42 +130,55 @@ object ContainerCommands {
   final case class RemoveContainerCmd(sessionUserId: String, id: String, expectedVersion: Long)
       extends ContainerModifyCommand
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addTopContainerCmdReads: Reads[AddRootContainerCmd] =
     Json.reads[AddRootContainerCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addStorageContainerCmdReads: Reads[AddStorageContainerCmd] =
     Json.reads[AddStorageContainerCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addSpecimenContainerCmdReads: Reads[AddSpecimenContainerCmd] =
     Json.reads[AddSpecimenContainerCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerLabelCmdReads: Reads[UpdateContainerLabelCmd] =
     Json.reads[UpdateContainerLabelCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerInventoryIdCmdReads: Reads[UpdateContainerInventoryIdCmd] =
     Json.reads[UpdateContainerInventoryIdCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerEnabledCmdReads: Reads[UpdateContainerEnabledCmd] =
     Json.reads[UpdateContainerEnabledCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerContainerTypeCmdReads: Reads[UpdateContainerContainerTypeCmd] =
     Json.reads[UpdateContainerContainerTypeCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerCentreLocationCmdReads: Reads[UpdateContainerCentreLocationCmd] =
     Json.reads[UpdateContainerCentreLocationCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerTemperatureCmdReads: Reads[UpdateContainerTemperatureCmd] =
     Json.reads[UpdateContainerTemperatureCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerConstraintsCmdReads: Reads[UpdateContainerConstraintsCmd] =
     Json.reads[UpdateContainerConstraintsCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val removeContainerConstraintsCmdReads: Reads[RemoveContainerConstraintsCmd] =
     Json.reads[RemoveContainerConstraintsCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateContainerPositionCmdReads: Reads[UpdateContainerPositionCmd] =
     Json.reads[UpdateContainerPositionCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val removeContainerCmdReads: Reads[RemoveContainerCmd] =
     Json.reads[RemoveContainerCmd]
 

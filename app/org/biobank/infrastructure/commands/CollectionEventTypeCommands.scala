@@ -133,38 +133,49 @@ object CollectionEventTypeCommands {
 
   //--
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addCollectionEventTypeCmdReads: Reads[AddCollectionEventTypeCmd] =
     Json.reads[AddCollectionEventTypeCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val removeCollectionEventTypeCmdReads: Reads[RemoveCollectionEventTypeCmd] =
     Json.reads[RemoveCollectionEventTypeCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateCollectionEventTypeNameCmdReads: Reads[UpdateCollectionEventTypeNameCmd] =
     Json.reads[UpdateCollectionEventTypeNameCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateCollectionEventTypeDescriptionCmdReads: Reads[UpdateCollectionEventTypeDescriptionCmd] =
     Json.reads[UpdateCollectionEventTypeDescriptionCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateCollectionEventTypeRecurringCmdReads: Reads[UpdateCollectionEventTypeRecurringCmd] =
     Json.reads[UpdateCollectionEventTypeRecurringCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val collectionEventTypeAddAnnotationTypeCmdReads: Reads[CollectionEventTypeAddAnnotationTypeCmd] =
     Json.reads[CollectionEventTypeAddAnnotationTypeCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val collectionEventTypeUpdateAnnotationTypeCmdReads
       : Reads[CollectionEventTypeUpdateAnnotationTypeCmd] =
     Json.reads[CollectionEventTypeUpdateAnnotationTypeCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val removeCollectionEventAnnotationTypeCmdReads
       : Reads[RemoveCollectionEventTypeAnnotationTypeCmd] =
     Json.reads[RemoveCollectionEventTypeAnnotationTypeCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addCollectedSpecimenDefinitionCmdReads: Reads[AddCollectedSpecimenDefinitionCmd] =
     Json.reads[AddCollectedSpecimenDefinitionCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateCollectedSpecimenDefinitionCmdReads: Reads[UpdateCollectedSpecimenDefinitionCmd] =
     Json.reads[UpdateCollectedSpecimenDefinitionCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val removeCollectedSpecimenDefinitionCmdReads: Reads[RemoveCollectedSpecimenDefinitionCmd] =
     Json.reads[RemoveCollectedSpecimenDefinitionCmd]
 

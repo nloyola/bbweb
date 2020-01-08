@@ -98,8 +98,11 @@ object Centre {
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val disabledCentreReads: Reads[DisabledCentre] = Json.reads[DisabledCentre]
-  implicit val enabledCentreReads:  Reads[EnabledCentre]  = Json.reads[EnabledCentre]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val enabledCentreReads: Reads[EnabledCentre] = Json.reads[EnabledCentre]
 
   type CentresCompare = (Centre, Centre) => Boolean
 
@@ -246,6 +249,7 @@ object DisabledCentre extends CentreValidations {
    *
    * Performs validation on fields.
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def create(
       id:          CentreId,
       version:     Long,

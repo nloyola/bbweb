@@ -50,6 +50,7 @@ class SpecimenRepositoryImpl @Inject()(val testData: TestData)
       .find(s => s.inventoryId == inventoryId)
       .toSuccessNel(inventoryIdCriteriaError(inventoryId))
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def getByInventoryIds(specimenInventoryIds: String*): DomainValidation[List[Specimen]] = {
     val inventoryIds = specimenInventoryIds.map(_.trim)
     inventoryIds

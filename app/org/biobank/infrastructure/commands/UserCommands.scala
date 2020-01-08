@@ -78,22 +78,28 @@ object UserCommands {
 
   final case class ResetUserPasswordCmd(email: String) extends UserCommand
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val registerUserCmdReads: Reads[RegisterUserCmd] =
     Json.reads[RegisterUserCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val resetUserPasswordCmdReads: Reads[ResetUserPasswordCmd] = (
     (__ \ "email").read[String](minLength[String](5))
   ).map { ResetUserPasswordCmd(_) }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateUserAddRoleCmdReads: Reads[UpdateUserAddRoleCmd] =
     Json.reads[UpdateUserAddRoleCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateUserRemoveRoleCmdReads: Reads[UpdateUserRemoveRoleCmd] =
     Json.reads[UpdateUserRemoveRoleCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateUserAddMembershipCmdReads: Reads[UpdateUserAddMembershipCmd] =
     Json.reads[UpdateUserAddMembershipCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val updateUserRemoveMembershipCmdReads: Reads[UpdateUserRemoveMembershipCmd] =
     Json.reads[UpdateUserRemoveMembershipCmd]
 

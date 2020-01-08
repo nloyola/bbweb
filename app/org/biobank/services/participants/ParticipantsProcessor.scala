@@ -2,7 +2,7 @@ package org.biobank.services.participants
 
 import akka.actor._
 import akka.persistence.{RecoveryCompleted, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
-import com.github.ghik.silencer.silent
+//import com.github.ghik.silencer.silent
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -155,7 +155,8 @@ class ParticipantsProcessor @Inject()(
                 annotationToEvent(_)
               })
 
-  @silent private def updateUniqueIdCmdToEvent(
+  //@silent
+  private def updateUniqueIdCmdToEvent(
       cmd:         UpdateParticipantUniqueIdCmd,
       study:       Study,
       participant: Participant
@@ -292,7 +293,7 @@ class ParticipantsProcessor @Inject()(
           p.copy(slug = participantRepository.uniqueSlugFromStr(p.uniqueId))
         }
         v.foreach(p => participantRepository.put(p.copy(timeModified = Some(eventTime))))
-        v.map(_     => ())
+        v.map(_ => ())
     }
 
   private def applyAnnotationUpdatedEvent(event: ParticipantEvent) =
@@ -300,7 +301,7 @@ class ParticipantsProcessor @Inject()(
       (participant, eventTime) =>
         val v = participant.withAnnotation(annotationFromEvent(event.getAnnotationUpdated.getAnnotation))
         v.foreach(p => participantRepository.put(p.copy(timeModified = Some(eventTime))))
-        v.map(_     => ())
+        v.map(_ => ())
     }
 
   private def applyAnnotationRemovedEvent(event: ParticipantEvent) =
@@ -309,7 +310,7 @@ class ParticipantsProcessor @Inject()(
         val v =
           participant.withoutAnnotation(AnnotationTypeId(event.getAnnotationRemoved.getAnnotationTypeId))
         v.foreach(p => participantRepository.put(p.copy(timeModified = Some(eventTime))))
-        v.map(_     => ())
+        v.map(_ => ())
     }
 
   /** Searches the repository for a matching item.

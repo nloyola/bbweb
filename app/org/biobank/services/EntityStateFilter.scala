@@ -8,6 +8,7 @@ trait EntityStateFilter[A <: HasState] extends PredicateHelper with HasStatePred
   import org.biobank.CommonValidations._
   import Comparator._
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   protected def stateFilter(
       comparator:  Comparator,
       stateNames:  List[String],

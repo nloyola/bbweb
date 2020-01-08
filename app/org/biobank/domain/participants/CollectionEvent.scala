@@ -91,6 +91,7 @@ object CollectionEvent extends CollectionEventValidations {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def create(
       id:                    CollectionEventId,
       participantId:         ParticipantId,
@@ -130,5 +131,6 @@ object CollectionEvent extends CollectionEventValidations {
   def compareByTimeCompleted(a: CollectionEvent, b: CollectionEvent): Boolean =
     (a.timeCompleted compareTo b.timeCompleted) < 0
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val collectionEventFormat: Format[CollectionEvent] = Json.format[CollectionEvent]
 }

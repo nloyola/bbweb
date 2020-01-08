@@ -12,6 +12,7 @@ package studies {
 
   object StudyCountsByStatus {
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val studyCountsByStatusFormat: Format[StudyCountsByStatus] = Json.format[StudyCountsByStatus]
   }
 

@@ -120,17 +120,26 @@ object ShipmentSpecimen extends ShipmentSpecimenValidations {
   import org.biobank.domain.DomainValidations._
   import org.biobank.CommonValidations._
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val shipmentSpecimenFormat: Format[ShipmentSpecimen] = Json.format[ShipmentSpecimen]
+
   // Do not want JSON to create a sub object, we just want it to be converted
   // to a single string
-  implicit val shipmentIdReader: Reads[ShipmentId] =
-    (__ \ "id").read[String].map(new ShipmentId(_))
+  implicit val shipmentIdFormat: Format[ShipmentId] = new Format[ShipmentId] {
 
-  implicit val shipmentIdWriter: Writes[ShipmentId] =
-    Writes { (shipmentId: ShipmentId) =>
-      JsString(shipmentId.id)
-    }
+    override def writes(id: ShipmentId): JsValue = JsString(id.id)
 
-  implicit val shipmentSpecimenFormat: Format[ShipmentSpecimen] = Json.format[ShipmentSpecimen]
+    override def reads(json: JsValue): JsResult[ShipmentId] =
+      Reads.StringReads.reads(json).map(ShipmentId.apply _)
+  }
+
+  implicit val shipmentSpecimenIdFormat: Format[ShipmentSpecimenId] = new Format[ShipmentSpecimenId] {
+
+    override def writes(id: ShipmentSpecimenId): JsValue = JsString(id.id)
+
+    override def reads(json: JsValue): JsResult[ShipmentSpecimenId] =
+      Reads.StringReads.reads(json).map(ShipmentSpecimenId.apply _)
+  }
 
   def compareByState(a: ShipmentSpecimen, b: ShipmentSpecimen): Boolean = (a.state compareTo b.state) < 0
 

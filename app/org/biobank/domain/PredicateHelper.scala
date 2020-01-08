@@ -16,6 +16,6 @@ trait PredicateHelper {
   def none[A](predicates: (A => Boolean)*): A => Boolean = complement(any(predicates: _*))
 
   @SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing"))
-  def every[A](predicates: (A => Boolean)*): A => Boolean = none(predicates.view.map(complement(_)): _*)
+  def every[A](predicates: (A => Boolean)*): A => Boolean = none(predicates.map(complement(_)): _*)
 
 }

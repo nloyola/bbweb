@@ -12,6 +12,7 @@ package access {
     def compareByName(a: AccessItemNameDto, b: AccessItemNameDto): Boolean =
       (a.name compareToIgnoreCase b.name) < 0
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val accessItemNameDtoFormat: Format[AccessItemNameDto] = Json.format[AccessItemNameDto]
   }
 
@@ -47,6 +48,7 @@ package access {
 
   object RoleDto {
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val roleDtoFormat: Format[RoleDto] = Json.format[RoleDto]
 
   }
@@ -61,6 +63,7 @@ package access {
 
   object UserRoleDto {
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val userRoleDtoFormat: Format[UserRoleDto] = Json.format[UserRoleDto]
 
   }
@@ -95,6 +98,7 @@ package access {
 
   object MembershipDto {
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val membershipDtoFormat: Format[MembershipDto] = Json.format[MembershipDto]
 
   }
@@ -113,6 +117,7 @@ package access {
 
   object UserMembershipDto {
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val userMembershipDtoFormat: Format[UserMembershipDto] = Json.format[UserMembershipDto]
 
   }

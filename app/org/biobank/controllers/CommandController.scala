@@ -17,8 +17,8 @@ object CommandController {
       property:        String,
       newValue:        JsValue)
 
-  implicit val updateEntityJsonReads: Reads[UpdateEntityJson] =
-    Json.reads[UpdateEntityJson]
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val updateEntityJsonFormat: Format[UpdateEntityJson] = Json.format[UpdateEntityJson]
 }
 
 /**

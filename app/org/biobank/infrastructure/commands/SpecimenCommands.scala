@@ -61,15 +61,28 @@ object SpecimenCommands {
       expectedVersion:   Long)
       extends SpecimenModifyCommand
 
-  implicit val specimenInfoReads:     Reads[SpecimenInfo]     = Json.reads[SpecimenInfo]
-  implicit val addSpecimensCmdReads:  Reads[AddSpecimensCmd]  = Json.reads[AddSpecimensCmd]
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val specimenInfoReads: Reads[SpecimenInfo] = Json.reads[SpecimenInfo]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val addSpecimensCmdReads: Reads[AddSpecimensCmd] = Json.reads[AddSpecimensCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val moveSpecimensCmdReads: Reads[MoveSpecimensCmd] = Json.reads[MoveSpecimensCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val specimenAssignPositionCmdReads: Reads[SpecimenAssignPositionCmd] =
     Json.reads[SpecimenAssignPositionCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val specimenRemoveAmountCmdReads: Reads[SpecimenRemoveAmountCmd] =
     Json.reads[SpecimenRemoveAmountCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val specimenUpdateUsableCmdReads: Reads[SpecimenUpdateUsableCmd] =
     Json.reads[SpecimenUpdateUsableCmd]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val removeSpecimenCmdReads: Reads[RemoveSpecimenCmd] = Json.reads[RemoveSpecimenCmd]
 
 }

@@ -2,7 +2,7 @@ package org.biobank.services.centres
 
 import akka.actor._
 import akka.persistence.{RecoveryCompleted, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
-import com.github.ghik.silencer.silent
+//import com.github.ghik.silencer.silent
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -28,6 +28,7 @@ object ShipmentsProcessor {
 
   final case class SnapshotState(shipments: Set[Shipment], shipmentSpecimens: Set[ShipmentSpecimen])
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val snapshotStateFormat: Format[SnapshotState] = Json.format[SnapshotState]
 
 }
@@ -479,7 +480,8 @@ class ShipmentsProcessor @Inject()(
         InvalidState(s"shipment not sent: ${shipment.state}").failureNel[ShipmentEvent]
     }
 
-  @silent private def removeCmdToEvent(
+  //@silent
+  private def removeCmdToEvent(
       cmd:      ShipmentRemoveCmd,
       shipment: CreatedShipment
     ): ServiceValidation[ShipmentEvent] = {
@@ -567,7 +569,8 @@ class ShipmentsProcessor @Inject()(
                                                          _.removed.shipmentSpecimenId := cmd.shipmentSpecimenId)
   }
 
-  @silent private def updateSpecimenContainerCmdToEvent(
+  //@silent
+  private def updateSpecimenContainerCmdToEvent(
       cmd:      ShipmentSpecimenUpdateContainerCmd,
       shipment: Shipment
     ): ServiceValidation[ShipmentSpecimenEvent] =
@@ -587,6 +590,7 @@ class ShipmentsProcessor @Inject()(
                                                    _.containerUpdated.shipmentSpecimenData        := shipmentSpecimenData)
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def presentSpecimensCmdToEvent(
       cmd:      ShipmentSpecimensPresentCmd,
       shipment: Shipment
@@ -603,6 +607,7 @@ class ShipmentsProcessor @Inject()(
                                                    _.present.shipmentSpecimenData := shipmentSpecimenData)
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def receiveSpecimensCmdToEvent(
       cmd:      ShipmentSpecimensReceiveCmd,
       shipment: Shipment
@@ -619,6 +624,7 @@ class ShipmentsProcessor @Inject()(
                                                    _.received.shipmentSpecimenData := shipmentSpecimenData)
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def specimenMissingCmdToEvent(
       cmd:      ShipmentSpecimenMissingCmd,
       shipment: Shipment
@@ -635,6 +641,7 @@ class ShipmentsProcessor @Inject()(
                                                    _.missing.shipmentSpecimenData := shipmentSpecimenData)
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def getSpecimens(specimenInventoryIds: String*): ServiceValidation[List[Specimen]] =
     specimenInventoryIds
       .map { inventoryId =>
@@ -649,6 +656,7 @@ class ShipmentsProcessor @Inject()(
    * The specimens must be moved to this centre if and only if they are already at the centre the shipment is
    * coming from.
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def specimenExtraCmdToEvent(
       cmd:      ShipmentSpecimenExtraCmd,
       shipment: Shipment
@@ -890,6 +898,7 @@ class ShipmentsProcessor @Inject()(
         shipment.successNel[String]
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def applySpecimensAddedEvent(event: ShipmentSpecimenEvent): ServiceValidation[Shipment] =
     if (!event.eventType.isAdded) {
       ServiceError(s"invalid event type: $event").failureNel[Shipment]
@@ -926,6 +935,7 @@ class ShipmentsProcessor @Inject()(
         }
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def applySpecimenContainerUpdatedEvent(
       event: ShipmentSpecimenEvent
     ): ServiceValidation[Shipment] = {
@@ -952,6 +962,7 @@ class ShipmentsProcessor @Inject()(
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def specimenStateUpdate(
       event:                ShipmentSpecimenEvent,
       shipmentSpecimenData: Seq[ShipmentSpecimenEvent.ShipmentSpecimenInfo],
@@ -996,6 +1007,7 @@ class ShipmentsProcessor @Inject()(
       }
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def applySpecimenExtraEvent(event: ShipmentSpecimenEvent): ServiceValidation[Shipment] = {
     if (!event.eventType.isExtra) {
       ServiceError(s"invalid event type: $event").failureNel[Shipment]
@@ -1133,6 +1145,7 @@ class ShipmentsProcessor @Inject()(
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def createShipmentSpecimens(
       shipment:             Shipment,
       shipmentContainerId:  Option[ShipmentContainerId],
@@ -1174,6 +1187,7 @@ class ShipmentsProcessor @Inject()(
     else ().successNel[String]
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   protected def specimensAtCentre(
       locationId: LocationId,
       specimens:  Specimen*
@@ -1192,6 +1206,7 @@ class ShipmentsProcessor @Inject()(
    * @param shipSpecimenMap map of inventory ID to Shipment Specimen.
    *
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def getShipmentSpecimens(
       shipmentId: ShipmentId,
       specimens:  List[Specimen]
@@ -1209,6 +1224,7 @@ class ShipmentsProcessor @Inject()(
   /**
    * Checks that a specimen is not present in any shipment.
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   protected def specimensNotPresentInShipment(specimens: Specimen*): ServiceValidation[List[Specimen]] =
     specimens
       .map { specimen =>
@@ -1228,6 +1244,7 @@ class ShipmentsProcessor @Inject()(
   /**
    * Checks that a specimen is not present in a shipment.
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def specimensNotInShipment(
       shipmentId: ShipmentId,
       specimens:  Specimen*
@@ -1249,6 +1266,7 @@ class ShipmentsProcessor @Inject()(
    * @param shipSpecimenMap map of inventory ID to Shipment Specimen.
    *
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def getPackedShipmentSpecimens(
       shipSpecimenMap: List[(String, ShipmentSpecimen)]
     ): ServiceValidation[List[ShipmentSpecimen]] =
@@ -1268,6 +1286,7 @@ class ShipmentsProcessor @Inject()(
    * @param shipSpecimenMap map of inventory ID to Shipment Specimen.
    *
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def getNonPackedShipmentSpecimens(
       shipSpecimenMap: List[(String, ShipmentSpecimen)]
     ): ServiceValidation[List[ShipmentSpecimen]] =

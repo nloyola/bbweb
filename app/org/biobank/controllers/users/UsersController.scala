@@ -32,17 +32,19 @@ object UsersController {
   final case class Token(user: UserDto, token: String, expiresOn: DateTime)
 
   /** JSON reader for [[LoginCredentials]]. */
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val loginCredentialsFormat: Format[LoginCredentials] = Json.format[LoginCredentials]
 
   final case class PasswordUpdate(currentPassword: String, newPassword: String)
 
-  implicit protected val passwordUpdatenReads: Reads[PasswordUpdate] =
-    Json.reads[PasswordUpdate]
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit protected val passwordUpdatenReads: Reads[PasswordUpdate] = Json.reads[PasswordUpdate]
 
   implicit val jodaDateReads: Reads[DateTime] = JodaReads.jodaDateReads("yyyy-MM-dd'T'HH:mm:ss'Z'")
 
   implicit val jodaDateWrites: Writes[DateTime] = JodaWrites.jodaDateWrites("yyyy-MM-dd'T'HH:mm:ss'Z'")
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val tokenFormat: Format[Token] = Json.format[Token]
 
 }

@@ -86,25 +86,35 @@ object AccessCommands {
   final case class RemoveRoleCmd(sessionUserId: String, expectedVersion: Long, roleId: String)
       extends RoleModifyCommand
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addRoleCmdReads: Reads[AddRoleCmd] = Json.reads[AddRoleCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val roleUpdateNameCmdReads: Reads[RoleUpdateNameCmd] = Json.reads[RoleUpdateNameCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val roleUpdateDescriptionCmdReads: Reads[RoleUpdateDescriptionCmd] =
     Json.reads[RoleUpdateDescriptionCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val roleAddUserCmdReads: Reads[RoleAddUserCmd] = Json.reads[RoleAddUserCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val roleAddParentCmdReads: Reads[RoleAddParentCmd] = Json.reads[RoleAddParentCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val roleAddChildCmdReads: Reads[RoleAddChildCmd] = Json.reads[RoleAddChildCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val roleRemoveUserCmdReads: Reads[RoleRemoveUserCmd] = Json.reads[RoleRemoveUserCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val roleRemoveParentCmdReads: Reads[RoleRemoveParentCmd] = Json.reads[RoleRemoveParentCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val roleRemoveChildCmdReads: Reads[RoleRemoveChildCmd] = Json.reads[RoleRemoveChildCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val removeRoleCmdReads: Reads[RemoveRoleCmd] = Json.reads[RemoveRoleCmd]
 
 }

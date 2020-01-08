@@ -57,6 +57,7 @@ final case class ContainerSchema(
       update.copy(centreId = centreId)
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def withLabels(labels: Set[String]): DomainValidation[ContainerSchema] =
     labels
       .map { validateNonEmptyString(_, ContainerSchemaLabelInvalid) }
@@ -124,5 +125,6 @@ object ContainerSchema {
   def compareByName(a: ContainerSchema, b: ContainerSchema): Boolean =
     (a.name compareToIgnoreCase b.name) < 0
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val containerSchemaFormat: Format[ContainerSchema] = Json.format[ContainerSchema]
 }

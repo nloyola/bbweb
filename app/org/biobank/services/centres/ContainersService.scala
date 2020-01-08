@@ -65,6 +65,7 @@ class ContainersServiceImpl @Inject()(
       }
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def search(
       requestUserId: UserId,
       centreId:      CentreId,

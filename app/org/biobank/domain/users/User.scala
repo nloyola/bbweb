@@ -93,9 +93,14 @@ object User {
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val registeredUserReads: Reads[RegisteredUser] = Json.reads[RegisteredUser]
-  implicit val activeUserReads:     Reads[ActiveUser]     = Json.reads[ActiveUser]
-  implicit val lockedUserReads:     Reads[LockedUser]     = Json.reads[LockedUser]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val activeUserReads: Reads[ActiveUser] = Json.reads[ActiveUser]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val lockedUserReads: Reads[LockedUser] = Json.reads[LockedUser]
 
   val sort2Compare: Map[String, (User, User) => Boolean] =
     Map[String, (User, User) => Boolean]("name" -> compareByName,

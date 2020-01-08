@@ -105,45 +105,59 @@ object MembershipCommands {
   final case class RemoveMembershipCmd(sessionUserId: String, expectedVersion: Long, membershipId: String)
       extends MembershipModifyCommand
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val addMembershipCmdReads: Reads[AddMembershipCmd] =
     Json.reads[AddMembershipCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val membershipUpdateNameCmdReads: Reads[MembershipUpdateNameCmd] =
     Json.reads[MembershipUpdateNameCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val membershipUpdateDescriptionCmdReads: Reads[MembershipUpdateDescriptionCmd] =
     Json.reads[MembershipUpdateDescriptionCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val membershipAddUserCmdReads: Reads[MembershipAddUserCmd] =
     Json.reads[MembershipAddUserCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val membershipUpdateStudyDataCmdReads: Reads[MembershipUpdateStudyDataCmd] =
     Json.reads[MembershipUpdateStudyDataCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val membershipAllStudiesCmdReads: Reads[MembershipAllStudiesCmd] =
     Json.reads[MembershipAllStudiesCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val membershipAddStudyCmdReads: Reads[MembershipAddStudyCmd] =
     Json.reads[MembershipAddStudyCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val membershipUpdateCentreDataCmdReads: Reads[MembershipUpdateCentreDataCmd] =
     Json.reads[MembershipUpdateCentreDataCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val membershipAllCentresCmdReads: Reads[MembershipAllCentresCmd] =
     Json.reads[MembershipAllCentresCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val membershipAddCentreCmdReads: Reads[MembershipAddCentreCmd] =
     Json.reads[MembershipAddCentreCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val membershipRemoveUserCmdReads: Reads[MembershipRemoveUserCmd] =
     Json.reads[MembershipRemoveUserCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val membershipRemoveStudyCmdReads: Reads[MembershipRemoveStudyCmd] =
     Json.reads[MembershipRemoveStudyCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val membershipRemoveCentreCmdReads: Reads[MembershipRemoveCentreCmd] =
     Json.reads[MembershipRemoveCentreCmd]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val removeMembershipCmdReads: Reads[RemoveMembershipCmd] =
     Json.reads[RemoveMembershipCmd]
 

@@ -54,6 +54,7 @@ class ShipmentsReadRepositorySlick @Inject()(
 
   def isEmpty: scala.concurrent.Future[Boolean] = ???
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def getByKey(shipmentId: ShipmentId): FutureValidation[Shipment] = {
     FutureValidation(
     db.run(shipments.filter(s => s.id === shipmentId).result.headOption)
@@ -61,6 +62,7 @@ class ShipmentsReadRepositorySlick @Inject()(
     )
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def withCentres(centreIds: Set[CentreId]): Future[Seq[Shipment]] = {
     val query = shipments
       .filter(s => s.originCentreId.inSet(centreIds) || s.destinationCentreId.inSet(centreIds))
@@ -71,19 +73,23 @@ class ShipmentsReadRepositorySlick @Inject()(
 
   def getUnpacked(id: ShipmentId): FutureValidation[UnpackedShipment] = ???
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def putAll(shipmentsToAdd: Seq[Shipment]): Future[Unit] = {
     db.run(shipments ++= shipmentsToAdd).map(_ => ())
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def put(shipment: Shipment): Future[Unit] = {
     db.run(shipments.insertOrUpdate(shipment).map(_ => ()))
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def remove(shipmentId: ShipmentId): Future[Unit] = {
     val query  = shipments.filter(s => s.id === shipmentId)
     val action = query.delete
     db.run(action.map(_ => ()))
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def removeAll(): Future[Unit] = db.run(shipments.delete.map(_ => ()))
 }

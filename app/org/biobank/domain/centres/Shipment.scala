@@ -218,13 +218,26 @@ object Shipment extends ShipmentValidations {
     }
   }
 
-  implicit val createdShipmentReads:   Reads[CreatedShipment]   = Json.reads[CreatedShipment]
-  implicit val packedShipmentReads:    Reads[PackedShipment]    = Json.reads[PackedShipment]
-  implicit val sentShipmentReads:      Reads[SentShipment]      = Json.reads[SentShipment]
-  implicit val receivedShipmentReads:  Reads[ReceivedShipment]  = Json.reads[ReceivedShipment]
-  implicit val unpackedShipmentReads:  Reads[UnpackedShipment]  = Json.reads[UnpackedShipment]
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val createdShipmentReads: Reads[CreatedShipment] = Json.reads[CreatedShipment]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val packedShipmentReads: Reads[PackedShipment] = Json.reads[PackedShipment]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val sentShipmentReads: Reads[SentShipment] = Json.reads[SentShipment]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val receivedShipmentReads: Reads[ReceivedShipment] = Json.reads[ReceivedShipment]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val unpackedShipmentReads: Reads[UnpackedShipment] = Json.reads[UnpackedShipment]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val completedShipmentReads: Reads[CompletedShipment] = Json.reads[CompletedShipment]
-  implicit val lostShipmentReads:      Reads[LostShipment]      = Json.reads[LostShipment]
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  implicit val lostShipmentReads: Reads[LostShipment] = Json.reads[LostShipment]
 
 }
 

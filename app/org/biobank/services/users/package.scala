@@ -12,6 +12,7 @@ package users {
 
   object UserCountsByStatus {
 
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val userCountsByStatusForamt: Format[UserCountsByStatus] = Json.format[UserCountsByStatus]
   }
 

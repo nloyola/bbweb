@@ -12,9 +12,13 @@ final case class ShipmentContainerId(id: String) extends IdentifiedValueObject[S
 
 object ShipmentContainerId {
 
-  implicit val shipmentContainerIdReader: Reads[ShipmentContainerId] =
-    (__ \ "id").read[String].map(ShipmentContainerId(_))
+  implicit val shipmentContainerIdFormat: Format[ShipmentContainerId] = new Format[ShipmentContainerId] {
 
+    override def writes(id: ShipmentContainerId): JsValue = JsString(id.id)
+
+    override def reads(json: JsValue): JsResult[ShipmentContainerId] =
+      Reads.StringReads.reads(json).map(ShipmentContainerId.apply _)
+  }
 }
 
 /**

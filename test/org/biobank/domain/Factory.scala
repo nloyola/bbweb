@@ -13,7 +13,6 @@ import org.biobank.domain.users._
 import org.biobank.fixtures.NameGenerator
 import org.scalatest.OptionValues._
 import scala.reflect._
-import scalaz.Scalaz._
 
 /**
  * This factory class creates domain entities that can be used in test cases.

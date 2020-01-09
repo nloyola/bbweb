@@ -1129,7 +1129,7 @@ class ProcessingTypesControllerSpec
              "annotationTypes" -> procType.annotationTypes)
   }
 
-  private def addOnNonDisabledStudySharedBehaviour(setupFunc: () => (Url, ProcessingType)) {
+  private def addOnNonDisabledStudySharedBehaviour(setupFunc: () => (Url, ProcessingType)) = {
 
     it("must be bad request") {
       val (url, processingType) = setupFunc()
@@ -1151,7 +1151,7 @@ class ProcessingTypesControllerSpec
     makeAuthRequest(POST, uri("update", processingType.studyId.id, processingType.id.id), json)
   }
 
-  private def updateSharedBehaviour(setupFunc: () => (String, JsValue)) {
+  private def updateSharedBehaviour(setupFunc: () => (String, JsValue)) = {
 
     it("not update a processing type on a non disabled study") {
       val (property, value) = setupFunc()
@@ -1387,7 +1387,7 @@ class ProcessingTypesControllerSpec
 
   }
 
-  private def updateWithInvalidVersionSharedBehaviour(func: ProcessingType => (Url, JsValue)) {
+  private def updateWithInvalidVersionSharedBehaviour(func: ProcessingType => (Url, JsValue)) = {
 
     it("should be a bad request") {
       val f = collectedSpecimenDefinitionFixtures
@@ -1404,7 +1404,7 @@ class ProcessingTypesControllerSpec
     }
   }
 
-  private def updateWithNonDisabledStudySharedBehaviour(func: ProcessingType => (Url, JsValue)) {
+  private def updateWithNonDisabledStudySharedBehaviour(func: ProcessingType => (Url, JsValue)) = {
 
     it("should be a bad request") {
       val f = collectedSpecimenDefinitionFixtures

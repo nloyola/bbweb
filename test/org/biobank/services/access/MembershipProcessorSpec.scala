@@ -10,7 +10,6 @@ import org.biobank.domain.access._
 import org.biobank.services._
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
-import org.mockito.Mockito._
 import org.scalatest.Inside
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
@@ -38,7 +37,7 @@ class MembershipProcessorSpec extends ProcessorTestFixture with Inside {
 
   val nameGenerator = new NameGenerator(this.getClass)
 
-  override def beforeEach() {
+  override def beforeEach() = {
     membershipRepository.removeAll
     super.beforeEach()
   }

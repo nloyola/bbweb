@@ -56,7 +56,7 @@ sealed trait ContainerType
    */
   val enabled: Boolean
 
-  val storageType: ContainerStorageType
+  def storageType: ContainerStorageType
 
   def withName(name: String): DomainValidation[ContainerType]
 
@@ -141,10 +141,12 @@ final case class StorageContainerType(
     schemaId:     ContainerSchemaId,
     shared:       Boolean,
     enabled:      Boolean)
-    extends { val storageType = ContainerType.containerStorageType } with ContainerType {
+    extends ContainerType {
 
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
+
+  val storageType = ContainerType.containerStorageType
 
   def withName(name: String): DomainValidation[StorageContainerType] =
     validateNonEmptyString(name, InvalidName) map { _ =>
@@ -230,10 +232,12 @@ final case class SpecimenContainerType(
     schemaId:     ContainerSchemaId,
     shared:       Boolean,
     enabled:      Boolean)
-    extends { val storageType = ContainerType.specimenStorageType } with ContainerType {
+    extends ContainerType {
 
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
+
+  val storageType = ContainerType.specimenStorageType
 
   def withName(name: String): DomainValidation[SpecimenContainerType] =
     validateNonEmptyString(name, InvalidName) map { _ =>

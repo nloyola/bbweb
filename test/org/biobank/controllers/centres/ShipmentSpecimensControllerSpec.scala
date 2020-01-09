@@ -7,6 +7,7 @@ import org.biobank.domain.participants._
 import org.biobank.dto._
 import org.biobank.fixtures.Url
 import org.biobank.matchers.PagedResultsMatchers
+import org.scalatest.Ignore
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import play.api.libs.json._
@@ -17,6 +18,7 @@ import play.api.test.Helpers._
  *
  * Tests for [[Shipment]]s in ShipmentsControllerSpec.scala.
  */
+@Ignore
 class ShipmentSpecimensControllerSpec
     extends ShipmentsControllerSpecFixtures with PagedResultsSharedSpec with PagedResultsMatchers {
 

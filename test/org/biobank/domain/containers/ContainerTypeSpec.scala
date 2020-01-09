@@ -50,14 +50,14 @@ trait ContainerTypeSharedSpec { this: FunSpec =>
       val name          = nameGenerator.next[StorageContainer]
 
       containerType.withName(name) mustSucceed { updatedCt =>
-        updatedCt must have('id (containerType.id),
-                            'version (containerType.version + 1),
-                            'name (name),
-                            'description (containerType.description),
-                            'centreId (containerType.centreId),
-                            'schemaId (containerType.schemaId),
-                            'shared (containerType.shared),
-                            'enabled (containerType.enabled))
+        updatedCt.id must be(containerType.id)
+        updatedCt.version must be(containerType.version + 1)
+        updatedCt.name must be(name)
+        updatedCt.description must be(containerType.description)
+        updatedCt.centreId must be(containerType.centreId)
+        updatedCt.schemaId must be(containerType.schemaId)
+        updatedCt.shared must be(containerType.shared)
+        updatedCt.enabled must be(containerType.enabled)
 
         updatedCt must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
       }
@@ -69,14 +69,14 @@ trait ContainerTypeSharedSpec { this: FunSpec =>
       val description   = Some(nameGenerator.next[StorageContainer])
 
       containerType.withDescription(description) mustSucceed { updatedCt =>
-        updatedCt must have('id (containerType.id),
-                            'version (containerType.version + 1),
-                            'name (containerType.name),
-                            'description (description),
-                            'centreId (containerType.centreId),
-                            'schemaId (containerType.schemaId),
-                            'shared (containerType.shared),
-                            'enabled (containerType.enabled))
+        updatedCt.id must be(containerType.id)
+        updatedCt.version must be(containerType.version + 1)
+        updatedCt.name must be(containerType.name)
+        updatedCt.description must be(description)
+        updatedCt.centreId must be(containerType.centreId)
+        updatedCt.schemaId must be(containerType.schemaId)
+        updatedCt.shared must be(containerType.shared)
+        updatedCt.enabled must be(containerType.enabled)
 
         updatedCt must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
       }

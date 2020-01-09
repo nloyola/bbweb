@@ -37,7 +37,7 @@ sealed trait Centre
     with HasOptionalDescription {
   import org.biobank.CommonValidations._
 
-  val state: EntityState
+  def state: EntityState
 
   val studyIds: Set[StudyId]
 
@@ -145,9 +145,11 @@ final case class DisabledCentre(
     description:  Option[String],
     studyIds:     Set[StudyId],
     locations:    Set[Location])
-    extends { val state: EntityState = Centre.disabledState } with Centre with CentreValidations {
+    extends Centre with CentreValidations {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
+
+  val state: EntityState = Centre.disabledState
 
   /** Used to change the name. */
   def withName(name: String): DomainValidation[DisabledCentre] =
@@ -294,7 +296,9 @@ final case class EnabledCentre(
     description:  Option[String],
     studyIds:     Set[StudyId],
     locations:    Set[Location])
-    extends { val state: EntityState = Centre.enabledState } with Centre {
+    extends Centre {
+
+  val state: EntityState = Centre.enabledState
 
   def disable(): DomainValidation[DisabledCentre] =
     DisabledCentre(id           = this.id,

@@ -19,6 +19,8 @@
     <appender-ref ref="STDOUT" />
   </appender>
 
+  <logger name="com.zaxxer.hikari" level="WARN" />
+
   <!-- uncomment "org.biobank.controllers" when debugging tests -->
 
   <!--

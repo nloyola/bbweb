@@ -7,6 +7,7 @@ import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
 import net.codingwell.scalaguice.ScalaModule
 import org.biobank.Global.{DefaultUserEmail, DefaultUserId}
 import org.biobank.controllers.CacheForTesting
+import org.biobank._
 import org.biobank.domain._
 import org.biobank.domain.access._
 import org.biobank.domain.centres._
@@ -49,6 +50,15 @@ class Url(val path: String) extends AnyVal {
 object Url {
 
   def apply(path: String) = new Url(path)
+
+}
+
+class BbwebTestModule extends AbstractModule {
+
+  override def configure() = {
+    bind(classOf[Global]).asEagerSingleton
+    //bind(classOf[ShipmentsQuery]).asEagerSingleton
+  }
 
 }
 

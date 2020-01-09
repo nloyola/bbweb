@@ -41,7 +41,7 @@ class AccessServiceSpec extends TestFixture with AccessServiceFixtures with Scal
     f
   }
 
-  override def beforeEach() {
+  override def beforeEach() = {
     accessItemRepository.removeAll
     membershipRepository.removeAll
     super.beforeEach()

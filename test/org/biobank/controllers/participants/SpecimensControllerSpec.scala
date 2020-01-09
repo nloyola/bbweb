@@ -121,14 +121,14 @@ class SpecimensControllerSpec
         describe("sorted in ascending order") {
           listMultipleSpecimens() { () =>
             val (cevent, specimens) = commonSetup
-            (new Url(uriSlug(cevent) + "?sort=inventoryId"), specimens.sortBy(_.inventoryId))
+            (uriSlug(cevent).addQueryString("sort=inventoryId"), specimens.sortBy(_.inventoryId))
           }
         }
 
         describe("sorted in descending order") {
           listMultipleSpecimens() { () =>
             val (cevent, specimens) = commonSetup
-            (new Url(uriSlug(cevent) + "?sort=-inventoryId"), specimens.sortBy(_.inventoryId).reverse)
+            (uriSlug(cevent).addQueryString("sort=-inventoryId"), specimens.sortBy(_.inventoryId).reverse)
           }
         }
 
@@ -148,14 +148,14 @@ class SpecimensControllerSpec
         describe("sorted in ascending order") {
           listMultipleSpecimens() { () =>
             val (cevent, specimens) = commonSetup
-            (new Url(uriSlug(cevent) + "?sort=timeCreated"), specimens.sortBy(_.timeCreated))
+            (uriSlug(cevent).addQueryString("sort=timeCreated"), specimens.sortBy(_.timeCreated))
           }
         }
 
         describe("sorted in descending order") {
           listMultipleSpecimens() { () =>
             val (cevent, specimens) = commonSetup
-            (new Url(uriSlug(cevent) + "?sort=-timeCreated"), specimens.sortBy(_.timeCreated).reverse)
+            (uriSlug(cevent).addQueryString("sort=-timeCreated"), specimens.sortBy(_.timeCreated).reverse)
           }
         }
 
@@ -173,14 +173,14 @@ class SpecimensControllerSpec
         describe("sorted in ascending order") {
           listMultipleSpecimens() { () =>
             val (cevent, specimens) = commonSetup
-            (new Url(uriSlug(cevent) + "?sort=state"), specimens.sortBy(_.state.id))
+            (uriSlug(cevent).addQueryString("sort=state"), specimens.sortBy(_.state.id))
           }
         }
 
         describe("sorted in descending order") {
           listMultipleSpecimens() { () =>
             val (cevent, specimens) = commonSetup
-            (new Url(uriSlug(cevent) + "?sort=-state"), specimens.sortBy(_.state.id).reverse)
+            (uriSlug(cevent).addQueryString("sort=-state"), specimens.sortBy(_.state.id).reverse)
           }
         }
 
@@ -193,7 +193,7 @@ class SpecimensControllerSpec
             factory.createUsableSpecimen.copy(id = SpecimenId(id))
           }
           storeSpecimens(e.cevent, specimens)
-          (new Url(uriSlug(e.cevent) + "?sort=inventoryId&limit=1"), specimens(0))
+          (uriSlug(e.cevent).addQueryString("sort=inventoryId&limit=1"), specimens(0))
         }
       }
 
@@ -204,7 +204,7 @@ class SpecimensControllerSpec
             factory.createUsableSpecimen.copy(id = SpecimenId(id))
           }
           storeSpecimens(e.cevent, specimens)
-          (new Url(uriSlug(e.cevent) + "?sort=inventoryId&page=2&limit=1"), specimens(1))
+          (uriSlug(e.cevent).addQueryString("sort=inventoryId&page=2&limit=1"), specimens(1))
         }
       }
 

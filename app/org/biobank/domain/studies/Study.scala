@@ -28,7 +28,7 @@ sealed trait Study
     extends ConcurrencySafeEntity[StudyId] with HasState with HasUniqueName with HasSlug
     with HasOptionalDescription {
 
-  val state: EntityState
+  def state: EntityState
 
   /** The annotation types associated with participants of this study. */
   val annotationTypes: Set[AnnotationType]
@@ -126,10 +126,11 @@ final case class DisabledStudy(
     name:            String,
     description:     Option[String],
     annotationTypes: Set[AnnotationType])
-    extends { val state: EntityState = Study.disabledState } with Study with StudyValidations
-with AnnotationTypeValidations with HasAnnotationTypes with HasSlug {
+    extends Study with StudyValidations with AnnotationTypeValidations with HasAnnotationTypes with HasSlug {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
+
+  val state: EntityState = Study.disabledState
 
   /** Used to change the name. */
   def withName(name: String): DomainValidation[DisabledStudy] =
@@ -239,7 +240,9 @@ final case class EnabledStudy(
     name:            String,
     description:     Option[String],
     annotationTypes: Set[AnnotationType])
-    extends { val state: EntityState = Study.enabledState } with Study {
+    extends Study {
+
+  val state: EntityState = Study.enabledState
 
   def disable(): DomainValidation[DisabledStudy] =
     DisabledStudy(id              = this.id,
@@ -267,7 +270,9 @@ final case class RetiredStudy(
     name:            String,
     description:     Option[String],
     annotationTypes: Set[AnnotationType])
-    extends { val state: EntityState = Study.retiredState } with Study {
+    extends Study {
+
+  val state: EntityState = Study.retiredState
 
   def unretire(): DomainValidation[DisabledStudy] =
     DisabledStudy(id              = this.id,

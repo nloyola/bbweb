@@ -11,7 +11,6 @@ import org.biobank.infrastructure.commands.ProcessingTypeCommands
 import org.biobank.services._
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
-import org.mockito.Mockito._
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
 import scala.concurrent.duration._
@@ -46,7 +45,7 @@ class ProcessingTypesProcessorSpec extends ProcessorTestFixture with ProcessingT
 
   val nameGenerator = new NameGenerator(this.getClass)
 
-  override def beforeEach() {
+  override def beforeEach() = {
     studyRepository.removeAll
     collectionEventTypeRepository.removeAll
     processingTypeRepository.removeAll

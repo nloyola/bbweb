@@ -101,7 +101,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
                            id              = enabledCentre.id.id,
                            expectedVersion = enabledCentre.version))
 
-  override def beforeEach() {
+  override def beforeEach() = {
     super.beforeEach()
     removeUsersFromRepository
     restoreRoles

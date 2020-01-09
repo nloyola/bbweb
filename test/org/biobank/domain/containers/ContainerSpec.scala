@@ -43,14 +43,13 @@ trait ContainerSharedSpec[T <: Container] { this: FunSpec =>
     it("can have it's inventory ID updated") {
       val container   = createEntity
       val inventoryId = nameGenerator.next[Container]
-      container.withInventoryId(inventoryId, Slug(inventoryId)) mustSucceed { c =>
-        c must have('id (container.id),
-                    'version (container.version + 1),
-                    'slug (Slug(inventoryId).id),
-                    'inventoryId (inventoryId),
-                    'containerTypeId (container.containerTypeId))
 
-        c must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
+      container.withInventoryId(inventoryId, Slug(inventoryId)) mustSucceed { c =>
+        c.id must be(container.id)
+        c.version must be(container.version + 1)
+        c.slug must be(Slug(inventoryId))
+        c.inventoryId must be(inventoryId)
+        c.containerTypeId must be(container.containerTypeId)
       }
     }
 

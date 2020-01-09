@@ -5,7 +5,6 @@ import org.biobank.domain.DomainSpec
 import org.biobank.domain.centres.CentreId
 import org.biobank.fixtures.NameGenerator
 import org.slf4j.LoggerFactory
-import scalaz.Scalaz._
 
 class ContainerSchemaSpec extends DomainSpec {
   import org.biobank.TestUtils._

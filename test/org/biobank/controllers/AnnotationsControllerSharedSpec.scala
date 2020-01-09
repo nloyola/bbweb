@@ -36,17 +36,16 @@ trait AnnotationsControllerSharedSpec[T <: ConcurrencySafeEntity[_] with HasAnno
     val multipleSelectType       = factory.createAnnotationType(AnnotationValueType.Select, Some(2), options)
     val multipleSelectAnnotation = factory.createAnnotationWithValues(multipleSelectType)
 
-    (AnnotationValueType.values
-      .map { vt =>
-        vt match {
-          case AnnotationValueType.Select =>
-            val annotationType = factory.createAnnotationType(vt, Some(1), options)
-            (annotationType, factory.createAnnotationWithValues(annotationType))
-          case _ =>
-            val annotationType = factory.createAnnotationType(vt, None, Seq.empty)
-            (annotationType, factory.createAnnotationWithValues(annotationType))
-        }
-      }.unsorted.toList ++
+    (AnnotationValueType.values.unsorted.map { vt =>
+      vt match {
+        case AnnotationValueType.Select =>
+          val annotationType = factory.createAnnotationType(vt, Some(1), options)
+          (annotationType, factory.createAnnotationWithValues(annotationType))
+        case _ =>
+          val annotationType = factory.createAnnotationType(vt, None, Seq.empty)
+          (annotationType, factory.createAnnotationWithValues(annotationType))
+      }
+    }.toList ++
       List((multipleSelectType, multipleSelectAnnotation))).toMap
   }
 
@@ -185,7 +184,7 @@ trait StudyAnnotationsControllerSharedSpec[T <: ConcurrencySafeEntity[_] with Ha
       }
     }
 
-    def updateOnNonEnabledStudy(study: Study, entity: T, annotation: Annotation): Unit {
+    def updateOnNonEnabledStudy(study: Study, entity: T, annotation: Annotation): Unit = {
       study must not be an[EnabledStudy]
       val reply = makeAuthRequest(POST,
                                   updateUri(entity),

@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory
 class SpecimenSpec extends DomainSpec {
   import org.biobank.TestUtils._
   import org.biobank.matchers.EntityMatchers._
-  import org.biobank.matchers.DateMatchers._
 
   val log = LoggerFactory.getLogger(this.getClass)
 
@@ -35,20 +34,8 @@ class SpecimenSpec extends DomainSpec {
 
       it("when valid arguments are used") {
         val specimen = factory.createUsableSpecimen.copy(version = 0L)
-        createFrom(specimen) mustSucceed { spc =>
-          spc must have('id (specimen.id),
-                        'inventoryId (specimen.inventoryId),
-                        'specimenDefinitionId (specimen.specimenDefinitionId),
-                        'version (0),
-                        'originLocationId (specimen.originLocationId),
-                        'locationId (specimen.locationId),
-                        'containerId (specimen.containerId),
-                        'schemaLabel (specimen.schemaLabel),
-                        'amount (specimen.amount))
-
-          spc must beEntityWithTimeStamps(OffsetDateTime.now, None, 5L)
-
-          spc.timeCreated must beTimeWithinSeconds(specimen.timeCreated, 5L)
+        createFrom(specimen) mustSucceed {
+          _ must matchSpecimen(specimen)
         }
       }
 

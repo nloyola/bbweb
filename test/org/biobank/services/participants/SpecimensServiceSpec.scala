@@ -96,7 +96,7 @@ class SpecimensServiceSpec extends ProcessorTestFixture with ParticipantsService
   //   )
   // }
 
-  override def beforeEach() {
+  override def beforeEach() = {
     super.beforeEach()
     collectionEventTypeRepository.removeAll
     participantRepository.removeAll

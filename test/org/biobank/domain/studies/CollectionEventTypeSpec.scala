@@ -5,7 +5,7 @@ import org.biobank.domain._
 import org.biobank.domain.annotations._
 import org.biobank.fixtures.NameGenerator
 import org.slf4j.LoggerFactory
-import scalaz.Scalaz._
+import org.scalatest.prop.TableDrivenPropertyChecks._
 
 class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpec[CollectionEventType] {
   import org.biobank.TestUtils._
@@ -15,94 +15,98 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
 
   val nameGenerator = new NameGenerator(this.getClass)
 
-  def createFrom(ceventType: CollectionEventType): DomainValidation[CollectionEventType] =
-    CollectionEventType.create(ceventType.studyId,
-                               ceventType.id,
-                               ceventType.version,
-                               ceventType.name,
-                               ceventType.description,
-                               ceventType.recurring,
-                               ceventType.specimenDefinitions,
-                               ceventType.annotationTypes)
+  def createFrom(eventType: CollectionEventType): DomainValidation[CollectionEventType] =
+    CollectionEventType.create(eventType.studyId,
+                               eventType.id,
+                               eventType.version,
+                               eventType.name,
+                               eventType.description,
+                               eventType.recurring,
+                               eventType.specimenDefinitions,
+                               eventType.annotationTypes)
 
   describe("A collection event type can") {
 
     it("be created") {
-      val ceventType = factory.createCollectionEventType
-      createFrom(ceventType) mustSucceed { cet =>
-        cet mustBe a[CollectionEventType]
+      val eventType = factory.createCollectionEventType
+      createFrom(eventType) mustSucceed { actual =>
+        actual mustBe a[CollectionEventType]
 
-        cet must have('studyId (ceventType.studyId),
-                      'id (ceventType.id),
-                      'version (ceventType.version),
-                      'name (ceventType.name),
-                      'description (ceventType.description),
-                      'recurring (ceventType.recurring))
+        actual.studyId must be(eventType.studyId)
+        actual.id must be(eventType.id)
+        actual.version must be(eventType.version)
+        actual.name must be(eventType.name)
+        actual.description must be(eventType.description)
+        actual.recurring must be(eventType.recurring)
 
-        cet.specimenDefinitions must have size 0
-        cet.annotationTypes must have size 0
+        actual.specimenDefinitions must have size 0
+        actual.annotationTypes must have size 0
 
-        cet must beEntityWithTimeStamps(OffsetDateTime.now, None, 5L)
+        actual must beEntityWithTimeStamps(OffsetDateTime.now, None, 5L)
       }
     }
 
     it("have it's name updated") {
-      val cet  = factory.createCollectionEventType
-      val name = nameGenerator.next[CollectionEventType]
+      val eventType = factory.createCollectionEventType
+      val name      = nameGenerator.next[CollectionEventType]
 
-      cet.withName(name) mustSucceed { updatedCet =>
-        updatedCet mustBe a[CollectionEventType]
+      eventType.withName(name) mustSucceed { actual =>
+        actual mustBe a[CollectionEventType]
 
-        updatedCet must have('studyId (cet.studyId),
-                             'id (cet.id),
-                             'version (cet.version + 1),
-                             'name (name),
-                             'description (cet.description),
-                             'recurring (cet.recurring))
+        actual.studyId must be(eventType.studyId)
+        actual.id must be(eventType.id)
+        actual.version must be(eventType.version + 1L)
+        actual.name must be(name)
+        actual.description must be(eventType.description)
+        actual.recurring must be(eventType.recurring)
 
-        updatedCet.specimenDefinitions must have size 0
-        updatedCet.annotationTypes must have size 0
-        updatedCet must beEntityWithTimeStamps(cet.timeAdded, Some(OffsetDateTime.now), 5L)
+        actual.specimenDefinitions must have size 0
+        actual.annotationTypes must have size 0
+
+        actual must beEntityWithTimeStamps(eventType.timeAdded, Some(OffsetDateTime.now), 5L)
       }
     }
 
     it("have it's description updated") {
-      val cet         = factory.createCollectionEventType
+      val eventType   = factory.createCollectionEventType
       val description = Some(nameGenerator.next[CollectionEventType])
 
-      cet.withDescription(description) mustSucceed { updatedCet =>
-        updatedCet mustBe a[CollectionEventType]
+      eventType.withDescription(description) mustSucceed { actual =>
+        actual mustBe a[CollectionEventType]
 
-        updatedCet must have('studyId (cet.studyId),
-                             'id (cet.id),
-                             'version (cet.version + 1),
-                             'name (cet.name),
-                             'description (description),
-                             'recurring (cet.recurring))
+        actual.studyId must be(eventType.studyId)
+        actual.id must be(eventType.id)
+        actual.version must be(eventType.version + 1L)
+        actual.name must be(eventType.name)
+        actual.description must be(description)
+        actual.recurring must be(eventType.recurring)
 
-        updatedCet.specimenDefinitions must have size 0
-        updatedCet.annotationTypes must have size 0
-        updatedCet must beEntityWithTimeStamps(cet.timeAdded, Some(OffsetDateTime.now), 5L)
+        actual.specimenDefinitions must have size 0
+        actual.annotationTypes must have size 0
+
+        actual must beEntityWithTimeStamps(eventType.timeAdded, Some(OffsetDateTime.now), 5L)
       }
     }
 
     it("have it's recurring field updated") {
-      val cet = factory.createCollectionEventType
+      val eventType      = factory.createCollectionEventType
+      val recurringTable = Table(("possible recurringg values"), (true), (false))
 
-      List(true, false).foreach { recurring =>
-        cet.withRecurring(recurring) mustSucceed { updatedCet =>
-          updatedCet mustBe a[CollectionEventType]
+      forAll(recurringTable) { recurring =>
+        eventType.withRecurring(recurring) mustSucceed { actual =>
+          actual mustBe a[CollectionEventType]
 
-          updatedCet must have('studyId (cet.studyId),
-                               'id (cet.id),
-                               'version (cet.version + 1),
-                               'name (cet.name),
-                               'description (cet.description),
-                               'recurring (recurring))
+          actual.studyId must be(eventType.studyId)
+          actual.id must be(eventType.id)
+          actual.version must be(eventType.version + 1L)
+          actual.name must be(eventType.name)
+          actual.description must be(eventType.description)
+          actual.recurring must be(recurring)
 
-          updatedCet.specimenDefinitions must have size 0
-          updatedCet.annotationTypes must have size 0
-          updatedCet must beEntityWithTimeStamps(cet.timeAdded, Some(OffsetDateTime.now), 5L)
+          actual.specimenDefinitions must have size 0
+          actual.annotationTypes must have size 0
+
+          actual must beEntityWithTimeStamps(eventType.timeAdded, Some(OffsetDateTime.now), 5L)
         }
       }
     }
@@ -112,39 +116,39 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
   describe("A collection event type") {
 
     it("not be created with an empty study id") {
-      val ceventType = factory.createCollectionEventType.copy(studyId = StudyId(""))
-      createFrom(ceventType) mustFail "StudyIdRequired"
+      val eventType = factory.createCollectionEventType.copy(studyId = StudyId(""))
+      createFrom(eventType) mustFail "StudyIdRequired"
     }
 
     it("not be created with an empty id") {
-      val ceventType = factory.createCollectionEventType.copy(id = CollectionEventTypeId(""))
-      createFrom(ceventType) mustFail "IdRequired"
+      val eventType = factory.createCollectionEventType.copy(id = CollectionEventTypeId(""))
+      createFrom(eventType) mustFail "IdRequired"
     }
 
     it("not be created with an invalid version") {
-      val ceventType = factory.createCollectionEventType.copy(version = -2L)
-      createFrom(ceventType) mustFail "InvalidVersion"
+      val eventType = factory.createCollectionEventType.copy(version = -2L)
+      createFrom(eventType) mustFail "InvalidVersion"
     }
 
     it("not be created with an null or empty name") {
-      var ceventType = factory.createCollectionEventType.copy(name = null)
-      createFrom(ceventType) mustFail "NameRequired"
+      var eventType = factory.createCollectionEventType.copy(name = null)
+      createFrom(eventType) mustFail "NameRequired"
 
-      ceventType = factory.createCollectionEventType.copy(name = "")
-      createFrom(ceventType) mustFail "NameRequired"
+      eventType = factory.createCollectionEventType.copy(name = "")
+      createFrom(eventType) mustFail "NameRequired"
     }
 
     it("not be created with an empty description option") {
-      var ceventType = factory.createCollectionEventType.copy(description = Some(null))
-      createFrom(ceventType) mustFail "InvalidDescription"
+      var eventType = factory.createCollectionEventType.copy(description = Some(null))
+      createFrom(eventType) mustFail "InvalidDescription"
 
-      ceventType = factory.createCollectionEventType.copy(description = Some(""))
-      createFrom(ceventType) mustFail "InvalidDescription"
+      eventType = factory.createCollectionEventType.copy(description = Some(""))
+      createFrom(eventType) mustFail "InvalidDescription"
     }
 
     it("have more than one validation fail") {
-      val ceventType = factory.createCollectionEventType.copy(version = -2L, name = "")
-      createFrom(ceventType) mustFail ("InvalidVersion", "NameRequired")
+      val eventType = factory.createCollectionEventType.copy(version = -2L, name = "")
+      createFrom(eventType) mustFail ("InvalidVersion", "NameRequired")
     }
 
   }
@@ -152,63 +156,45 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
   describe("A collection event type's specimen spec set") {
 
     it("add a specimen spec") {
-      val cet                = factory.createCollectionEventType.copy(specimenDefinitions = Set.empty)
+      val eventType          = factory.createCollectionEventType.copy(specimenDefinitions = Set.empty)
       val specimenDefinition = factory.createCollectedSpecimenDefinition
 
-      cet.withSpecimenDefinition(specimenDefinition) mustSucceed { updatedCet =>
-        updatedCet mustBe a[CollectionEventType]
-
-        updatedCet must have('studyId (cet.studyId),
-                             'id (cet.id),
-                             'version (cet.version + 1),
-                             'name (cet.name),
-                             'description (cet.description),
-                             'recurring (cet.recurring))
-
-        updatedCet.specimenDefinitions must have size 1
-        updatedCet.annotationTypes must have size 0
-        updatedCet must beEntityWithTimeStamps(cet.timeAdded, Some(OffsetDateTime.now), 5L)
+      eventType.withSpecimenDefinition(specimenDefinition) mustSucceed { actual =>
+        actual.studyId must be(eventType.studyId)
+        actual.id must be(eventType.id)
+        actual.version must be(eventType.version + 1)
+        actual.name must be(eventType.name)
+        actual.description must be(eventType.description)
+        actual.recurring must be(eventType.recurring)
       }
     }
 
     it("replace a specimen spec") {
       val specimenDefinition  = factory.createCollectedSpecimenDefinition
       val specimenDefinition2 = factory.createCollectedSpecimenDefinition.copy(id = specimenDefinition.id)
-      val cet                 = factory.createCollectionEventType.copy(specimenDefinitions = Set(specimenDefinition))
+      val eventType           = factory.createCollectionEventType.copy(specimenDefinitions = Set(specimenDefinition))
 
-      cet.withSpecimenDefinition(specimenDefinition2) mustSucceed { updatedCet =>
-        updatedCet mustBe a[CollectionEventType]
-
-        updatedCet must have('studyId (cet.studyId),
-                             'id (cet.id),
-                             'version (cet.version + 1),
-                             'name (cet.name),
-                             'description (cet.description),
-                             'recurring (cet.recurring))
-
-        updatedCet.specimenDefinitions must have size 1
-        updatedCet.annotationTypes must have size 0
-        updatedCet must beEntityWithTimeStamps(cet.timeAdded, Some(OffsetDateTime.now), 5L)
+      eventType.withSpecimenDefinition(specimenDefinition2) mustSucceed { actual =>
+        actual.studyId must be(eventType.studyId)
+        actual.id must be(eventType.id)
+        actual.version must be(eventType.version + 1)
+        actual.name must be(eventType.name)
+        actual.description must be(eventType.description)
+        actual.recurring must be(eventType.recurring)
       }
     }
 
     it("remove a specimen spec") {
       val specimenDefinition = factory.createCollectedSpecimenDefinition
-      val cet                = factory.createCollectionEventType.copy(specimenDefinitions = Set(specimenDefinition))
+      val eventType          = factory.createCollectionEventType.copy(specimenDefinitions = Set(specimenDefinition))
 
-      cet.removeSpecimenDefinition(specimenDefinition.id) mustSucceed { updatedCet =>
-        updatedCet mustBe a[CollectionEventType]
-
-        updatedCet must have('studyId (cet.studyId),
-                             'id (cet.id),
-                             'version (cet.version + 1),
-                             'name (cet.name),
-                             'description (cet.description),
-                             'recurring (cet.recurring))
-
-        updatedCet.specimenDefinitions must have size 0
-        updatedCet.annotationTypes must have size 0
-        updatedCet must beEntityWithTimeStamps(cet.timeAdded, Some(OffsetDateTime.now), 5L)
+      eventType.removeSpecimenDefinition(specimenDefinition.id) mustSucceed { actual =>
+        actual.studyId must be(eventType.studyId)
+        actual.id must be(eventType.id)
+        actual.version must be(eventType.version + 1)
+        actual.name must be(eventType.name)
+        actual.description must be(eventType.description)
+        actual.recurring must be(eventType.recurring)
       }
     }
 
@@ -216,9 +202,9 @@ class CollectionEventTypeSpec extends DomainSpec with AnnotationTypeSetSharedSpe
       val specimenDefinition = factory.createCollectedSpecimenDefinition
       val specimenDefinition2 =
         factory.createCollectedSpecimenDefinition.copy(name = specimenDefinition.name)
-      val cet = factory.createCollectionEventType.copy(specimenDefinitions = Set(specimenDefinition))
+      val eventType = factory.createCollectionEventType.copy(specimenDefinitions = Set(specimenDefinition))
 
-      cet
+      eventType
         .withSpecimenDefinition(specimenDefinition2)
         .mustFail("EntityCriteriaError: specimen definition name already used.*")
     }

@@ -54,7 +54,7 @@ sealed trait AccessItem
 
   import org.biobank.domain.DomainValidations._
 
-  val accessItemType: AccessItemType
+  def accessItemType: AccessItemType
 
   val NameMinLength: Long = 2L
 
@@ -219,9 +219,11 @@ final case class Role(
     userIds:      Set[UserId],
     parentIds:    Set[AccessItemId],
     childrenIds:  Set[AccessItemId])
-    extends { val accessItemType: AccessItemType = AccessItem.roleAccessItemType } with AccessItem {
+    extends AccessItem {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
+
+  val accessItemType: AccessItemType = AccessItem.roleAccessItemType
 
   /** Used to change the name. */
   def addUser(userId: UserId): DomainValidation[Role] =
@@ -333,7 +335,9 @@ final case class Permission(
     description:  Option[String],
     parentIds:    Set[AccessItemId],
     childrenIds:  Set[AccessItemId])
-    extends { val accessItemType: AccessItemType = AccessItem.permissionAccessItemType } with AccessItem {
+    extends AccessItem {
+
+  val accessItemType: AccessItemType = AccessItem.permissionAccessItemType
 
   override def addParent(parentId: AccessItemId): DomainValidation[Permission] =
     super.addParent(parentId).map {

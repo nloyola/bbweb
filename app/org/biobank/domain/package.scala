@@ -17,7 +17,7 @@ package domain {
   trait HasState {
 
     /** the entity's current state. */
-    val state: EntityState
+    def state: EntityState
   }
 
   trait HasSlug {

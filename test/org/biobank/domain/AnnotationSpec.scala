@@ -21,22 +21,20 @@ class AnnotationSpec extends DomainSpec {
     it("when a string value is given") {
       val annotation = factory.createAnnotation
       createFrom(annotation) mustSucceed { reply =>
-        reply must have('annotationTypeId (annotation.annotationTypeId),
-                        'stringValue (annotation.stringValue),
-                        'numberValue (annotation.numberValue),
-                        'selectedValues (annotation.selectedValues))
-        ()
+        reply.annotationTypeId must be(annotation.annotationTypeId)
+        reply.stringValue must be(annotation.stringValue)
+        reply.numberValue must be(annotation.numberValue)
+        reply.selectedValues must be(annotation.selectedValues)
       }
     }
 
     it("when a number value is given") {
       val annotation = factory.createAnnotation.copy(numberValue = Some("1.01"))
       createFrom(annotation) mustSucceed { reply =>
-        reply must have('annotationTypeId (annotation.annotationTypeId),
-                        'stringValue (annotation.stringValue),
-                        'numberValue (annotation.numberValue),
-                        'selectedValues (annotation.selectedValues))
-        ()
+        reply.annotationTypeId must be(annotation.annotationTypeId)
+        reply.stringValue must be(annotation.stringValue)
+        reply.numberValue must be(annotation.numberValue)
+        reply.selectedValues must be(annotation.selectedValues)
       }
     }
 
@@ -45,11 +43,10 @@ class AnnotationSpec extends DomainSpec {
       val annotation = factory.createAnnotation
         .copy(selectedValues = Set(annotationType.id.id, nameGenerator.next[String]))
       createFrom(annotation) mustSucceed { reply =>
-        reply must have('annotationTypeId (annotation.annotationTypeId),
-                        'stringValue (annotation.stringValue),
-                        'numberValue (annotation.numberValue),
-                        'selectedValues (annotation.selectedValues))
-        ()
+        reply.annotationTypeId must be(annotation.annotationTypeId)
+        reply.stringValue must be(annotation.stringValue)
+        reply.numberValue must be(annotation.numberValue)
+        reply.selectedValues must be(annotation.selectedValues)
       }
     }
 

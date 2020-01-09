@@ -19,7 +19,7 @@ package biobank {
   }
 
   trait ValidationMsgKey extends ValidationKey {
-    val msg: String
+    def msg: String
 
     override val toString: String = s"${this.getClass.getSimpleName}: $msg"
   }
@@ -76,9 +76,9 @@ package biobank {
 
     case object InvalidUrl extends ValidationKey
 
-    case object InvalidName extends {
+    case object InvalidName extends ValidationMsgKey {
       val msg = "must contain only letters (a-z), digits (0-9), period or quote"
-    } with ValidationMsgKey
+    }
 
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments", "org.wartremover.warts.Null"))
     def validateNonEmptyString(s: String, err: ValidationKey = NonEmptyString): SystemValidation[String] =

@@ -93,7 +93,7 @@ trait StudiesServiceFixtures extends ProcessorTestFixture with UserServiceFixtur
       case _ => fail(s"invalid entity: ${entity}")
     }
 
-  override def beforeEach() {
+  override def beforeEach() = {
     super.beforeEach()
     removeUsersFromRepository
     restoreRoles

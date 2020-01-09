@@ -11,7 +11,6 @@ import org.biobank.services._
 import org.scalatest.Inside
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
-import org.mockito.Mockito._
 import play.api.libs.json._
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -36,7 +35,7 @@ class AccesssProcessorSpec extends ProcessorTestFixture with Inside {
 
   private val nameGenerator = new NameGenerator(this.getClass)
 
-  override def beforeEach() {
+  override def beforeEach() = {
     accessItemRepository.removeAll
     accessItemRepository.removeAll
     super.beforeEach()

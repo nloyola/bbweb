@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory
 class CollectionEventSpec extends DomainSpec {
   import org.biobank.TestUtils._
   import org.biobank.matchers.EntityMatchers._
-  import org.biobank.matchers.DateMatchers._
 
   val log = LoggerFactory.getLogger(this.getClass)
 
@@ -31,34 +30,26 @@ class CollectionEventSpec extends DomainSpec {
 
       it("when valid arguments are used and with no annotations") {
         val cevent = factory.createCollectionEvent.copy(version = 0L)
-        createFrom(cevent) mustSucceed { ce =>
-          ce must have('id (cevent.id),
-                       'participantId (cevent.participantId),
-                       'collectionEventTypeId (cevent.collectionEventTypeId),
-                       'version (0),
-                       'visitNumber (cevent.visitNumber),
-                       'annotations (cevent.annotations))
-
-          ce must beEntityWithTimeStamps(OffsetDateTime.now, None, 5L)
-
-          ce.timeCompleted must beTimeWithinSeconds(cevent.timeCompleted, 5L)
+        createFrom(cevent) mustSucceed { actual =>
+          actual.id must be(cevent.id)
+          actual.participantId must be(cevent.participantId)
+          actual.collectionEventTypeId must be(cevent.collectionEventTypeId)
+          actual.version must be(0)
+          actual.visitNumber must be(cevent.visitNumber)
+          actual.annotations must be(cevent.annotations)
         }
       }
 
       it("when valid arguments are used and annotations") {
         val annotation = factory.createAnnotation
         val cevent     = factory.createCollectionEvent.copy(annotations = Set(annotation), version = 0L)
-        createFrom(cevent) mustSucceed { ce =>
-          ce must have('id (cevent.id),
-                       'participantId (cevent.participantId),
-                       'collectionEventTypeId (cevent.collectionEventTypeId),
-                       'version (0),
-                       'visitNumber (cevent.visitNumber),
-                       'annotations (cevent.annotations))
-
-          ce must beEntityWithTimeStamps(OffsetDateTime.now, None, 5L)
-
-          ce.timeCompleted must beTimeWithinSeconds(cevent.timeCompleted, 5L)
+        createFrom(cevent) mustSucceed { actual =>
+          actual.id must be(cevent.id)
+          actual.participantId must be(cevent.participantId)
+          actual.collectionEventTypeId must be(cevent.collectionEventTypeId)
+          actual.version must be(0)
+          actual.visitNumber must be(cevent.visitNumber)
+          actual.annotations must be(cevent.annotations)
         }
       }
     }

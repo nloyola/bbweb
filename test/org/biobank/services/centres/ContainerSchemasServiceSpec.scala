@@ -19,7 +19,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceFixtures with ScalaFutures {
   import org.biobank.TestUtils._
 
-  override def beforeEach() {
+  override def beforeEach() = {
     super.beforeEach()
     removeUsersFromRepository
     restoreRoles

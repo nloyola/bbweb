@@ -69,7 +69,7 @@ class AuthTokenImpl @Inject()(val env: Environment, val cacheApi: SyncCacheApi) 
 
   // Generate a random string of length n from the given alphabet
   private def randomString(alphabet: String)(n: Int): String =
-    Stream.continually(random.nextInt(alphabet.size)).map(alphabet).take(n).mkString
+    LazyList.continually(random.nextInt(alphabet.size)).map(alphabet).take(n).mkString
 
   // Generate a random alphabnumeric string of length n
   private def randomAlphanumericString(n: Int) =

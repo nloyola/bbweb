@@ -114,7 +114,7 @@ class ProcessingTypeServiceSpec
   //   )
   // }
 
-  override def beforeEach() {
+  override def beforeEach() = {
     super.beforeEach()
     processingTypeRepository.removeAll
   }

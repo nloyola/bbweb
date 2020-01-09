@@ -29,7 +29,7 @@ class ParticipantsProcessorSpec extends ProcessorTestFixture {
 
   private val nameGenerator = new NameGenerator(this.getClass)
 
-  override def beforeEach() {
+  override def beforeEach() = {
     participantRepository.removeAll
     super.beforeEach()
   }

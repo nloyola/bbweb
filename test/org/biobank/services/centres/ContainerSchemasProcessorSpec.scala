@@ -31,7 +31,7 @@ class ContainerSchemasProcessorSpec extends ProcessorTestFixture with Presistenc
 
   private val nameGenerator = new NameGenerator(this.getClass)
 
-  override def beforeEach() {
+  override def beforeEach() = {
     schemaRepository.removeAll
     super.beforeEach()
   }

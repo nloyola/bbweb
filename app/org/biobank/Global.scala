@@ -10,6 +10,8 @@ import play.api.{Configuration, Logger}
 import scala.concurrent.ExecutionContext
 //import scala.util.{Failure, Success}
 import play.api.db.slick.DatabaseConfigProvider
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 
 /**
  * This is a trait so that it can be used by tests also.
@@ -47,6 +49,18 @@ class Global @Inject()(
     }
   }
 
+  def createSchema(): Future[Unit] = {
+    if (!configuration.get[Boolean]("application.schema.create")) {
+      Future.successful { () }
+    } else {
+      db.run(
+        sequenceNumbers.schema.createIfNotExists
+          andThen shipments.schema.createIfNotExists
+          andThen shipmentSpecimens.schema.createIfNotExists
+      )
+    }
+  }
+
   def showSchema(): Unit = {
     if (configuration.get[Boolean]("application.schema.show")) {
       val schema = sequenceNumbers.schema ++ shipments.schema ++ shipmentSpecimens.schema
@@ -57,6 +71,7 @@ class Global @Inject()(
 
   checkConfig
   showSchema
+  Await.ready(createSchema, Duration.Inf)
 }
 
 object Global {

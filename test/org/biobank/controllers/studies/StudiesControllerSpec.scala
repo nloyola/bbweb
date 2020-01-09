@@ -163,7 +163,7 @@ class StudiesControllerSpec
         listSingleStudy() { () =>
           val studies = List(factory.createDisabledStudy, factory.createEnabledStudy)
           studies.foreach(studyRepository.put)
-          (new Url(uri("search") + s"?filter=name::${studies(0).name}"), studies(0))
+          (uri("search").addQueryString(s"filter=name::${studies(0).name}"), studies(0))
         }
 
       }
@@ -174,7 +174,7 @@ class StudiesControllerSpec
           val studies =
             List(factory.createDisabledStudy, factory.createEnabledStudy, factory.createRetiredStudy)
           studies.foreach(studyRepository.put)
-          (new Url(uri("search") + s"?filter=state::disabled"), studies(0))
+          (uri("search").addQueryString("filter=state::disabled"), studies(0))
         }
 
       }
@@ -193,7 +193,7 @@ class StudiesControllerSpec
         describe("for disabled") {
 
           listMultipleStudies() { () =>
-            (new Url(uri("search") + s"?filter=state::disabled"),
+            (uri("search").addQueryString("filter=state::disabled"),
              commonSetup
                .filter { c =>
                  c.state == Study.disabledState
@@ -205,7 +205,7 @@ class StudiesControllerSpec
         describe("for enabled") {
 
           listMultipleStudies() { () =>
-            (new Url(uri("search") + s"?filter=state::enabled"),
+            (uri("search").addQueryString("filter=state::enabled"),
              commonSetup
                .filter { c =>
                  c.state == Study.enabledState
@@ -236,7 +236,7 @@ class StudiesControllerSpec
         describe("in ascending order") {
 
           listMultipleStudies() { () =>
-            (new Url(uri("search") + s"?sort=name"), commonSetup.sortWith(_.name < _.name))
+            (uri("search").addQueryString("sort=name"), commonSetup.sortWith(_.name < _.name))
           }
 
         }
@@ -244,7 +244,7 @@ class StudiesControllerSpec
         describe("in decending order") {
 
           listMultipleStudies() { () =>
-            (new Url(uri("search") + s"?sort=-name"), commonSetup.sortWith(_.name > _.name))
+            (uri("search").addQueryString("sort=-name"), commonSetup.sortWith(_.name > _.name))
           }
         }
 
@@ -261,7 +261,7 @@ class StudiesControllerSpec
         describe("in ascending order") {
 
           listMultipleStudies() { () =>
-            (new Url(uri("search") + s"?sort=state"), commonSetup.sortWith(_.state.id < _.state.id))
+            (uri("search").addQueryString("sort=state"), commonSetup.sortWith(_.state.id < _.state.id))
           }
 
         }
@@ -269,7 +269,7 @@ class StudiesControllerSpec
         describe("in decending order") {
 
           listMultipleStudies() { () =>
-            (new Url(uri("search") + s"?sort=-state"), commonSetup.sortWith(_.state.id > _.state.id))
+            (uri("search") addQueryString ("sort=-state"), commonSetup.sortWith(_.state.id > _.state.id))
           }
         }
 
@@ -295,7 +295,7 @@ class StudiesControllerSpec
         describe("fist page") {
 
           listSingleStudy(maybeNext = Some(2)) { () =>
-            (new Url(uri("search") + s"?sort=name&limit=1"), commonSetup(3))
+            (uri("search") addQueryString ("sort=name&limit=1"), commonSetup(3))
           }
 
         }
@@ -303,7 +303,7 @@ class StudiesControllerSpec
         describe("last page") {
 
           listSingleStudy(offset = 3, maybePrev = Some(3)) { () =>
-            (new Url(uri("search") + s"?sort=name&page=4&limit=1"), commonSetup(0))
+            (uri("search") addQueryString ("sort=name&page=4&limit=1"), commonSetup(0))
           }
 
         }
@@ -1004,7 +1004,7 @@ class StudiesControllerSpec
 
   }
 
-  private def updateWithInvalidVersionSharedBehaviour(urlFunc: Study => Url, json: JsValue = JsNull) {
+  private def updateWithInvalidVersionSharedBehaviour(urlFunc: Study => Url, json: JsValue = JsNull) = {
 
     it("should return bad request") {
       val study = factory.createDisabledStudy

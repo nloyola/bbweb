@@ -14,7 +14,7 @@ object ShipmentId {
 
   // Do not want JSON to create a sub object, we just want it to be converted
   // to a single string
-  implicit val shipmentIdReader: Format[ShipmentId] = new Format[ShipmentId] {
+  implicit val shipmentIdFormat: Format[ShipmentId] = new Format[ShipmentId] {
 
     override def writes(id: ShipmentId): JsValue = JsString(id.id)
 
@@ -257,10 +257,12 @@ final case class CreatedShipment(
     timeReceived:          Option[OffsetDateTime],
     timeUnpacked:          Option[OffsetDateTime],
     timeCompleted:         Option[OffsetDateTime])
-    extends { val state: EntityState = Shipment.createdState } with Shipment with ShipmentValidations {
+    extends Shipment with ShipmentValidations {
 
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
+
+  val state: EntityState = Shipment.createdState
 
   override def isCreated: DomainValidation[CreatedShipment] = this.successNel[String]
 
@@ -423,7 +425,9 @@ final case class PackedShipment(
     timeReceived:          Option[OffsetDateTime],
     timeUnpacked:          Option[OffsetDateTime],
     timeCompleted:         Option[OffsetDateTime])
-    extends { val state: EntityState = Shipment.packedState } with Shipment with ShipmentValidations {
+    extends Shipment with ShipmentValidations {
+
+  val state: EntityState = Shipment.packedState
 
   override def isPacked: DomainValidation[PackedShipment] = this.successNel[String]
 
@@ -491,7 +495,9 @@ final case class SentShipment(
     timeReceived:          Option[OffsetDateTime],
     timeUnpacked:          Option[OffsetDateTime],
     timeCompleted:         Option[OffsetDateTime])
-    extends { val state: EntityState = Shipment.sentState } with Shipment with ShipmentValidations {
+    extends Shipment with ShipmentValidations {
+
+  val state: EntityState = Shipment.sentState
 
   override def isSent: DomainValidation[SentShipment] = this.successNel[String]
 
@@ -602,7 +608,9 @@ final case class ReceivedShipment(
     timeReceived:          Option[OffsetDateTime],
     timeUnpacked:          Option[OffsetDateTime],
     timeCompleted:         Option[OffsetDateTime])
-    extends { val state: EntityState = Shipment.receivedState } with Shipment with ShipmentValidations {
+    extends Shipment with ShipmentValidations {
+
+  val state: EntityState = Shipment.receivedState
 
   override def isReceived: DomainValidation[ReceivedShipment] = this.successNel[String]
 
@@ -665,7 +673,9 @@ final case class UnpackedShipment(
     timeReceived:          Option[OffsetDateTime],
     timeUnpacked:          Option[OffsetDateTime],
     timeCompleted:         Option[OffsetDateTime])
-    extends { val state: EntityState = Shipment.unpackedState } with Shipment with ShipmentValidations {
+    extends Shipment with ShipmentValidations {
+
+  val state: EntityState = Shipment.unpackedState
 
   override def isUnpacked: DomainValidation[UnpackedShipment] = this.successNel[String]
 
@@ -730,7 +740,9 @@ final case class CompletedShipment(
     timeReceived:          Option[OffsetDateTime],
     timeUnpacked:          Option[OffsetDateTime],
     timeCompleted:         Option[OffsetDateTime])
-    extends { val state: EntityState = Shipment.completedState } with Shipment with ShipmentValidations {
+    extends Shipment with ShipmentValidations {
+
+  val state: EntityState = Shipment.completedState
 
   def backToUnpacked: UnpackedShipment =
     UnpackedShipment(id                    = this.id,
@@ -767,7 +779,9 @@ final case class LostShipment(
     timeReceived:          Option[OffsetDateTime],
     timeUnpacked:          Option[OffsetDateTime],
     timeCompleted:         Option[OffsetDateTime])
-    extends { val state: EntityState = Shipment.lostState } with Shipment with ShipmentValidations {
+    extends Shipment with ShipmentValidations {
+
+  val state: EntityState = Shipment.lostState
 
   def backToSent: SentShipment =
     SentShipment(id                    = this.id,

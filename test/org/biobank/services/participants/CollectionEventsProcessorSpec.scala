@@ -34,7 +34,7 @@ class CollectionEventsProcessorSpec extends ProcessorTestFixture {
 
   private val nameGenerator = new NameGenerator(this.getClass)
 
-  override def beforeEach() {
+  override def beforeEach() = {
     collectionEventRepository.removeAll
     super.beforeEach()
   }

@@ -32,7 +32,7 @@ trait ShipmentsReadRepository extends AsyncReadRepository[ShipmentId, Shipment] 
 
 }
 
-@SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
+@SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter", "org.wartremover.warts.NonUnitStatements"))
 class ShipmentsReadRepositorySlick @Inject()(
     protected val dbConfigProvider: DatabaseConfigProvider
   )(
@@ -92,4 +92,9 @@ class ShipmentsReadRepositorySlick @Inject()(
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def removeAll(): Future[Unit] = db.run(shipments.delete.map(_ => ()))
+
+  def init(): Future[Unit] = {
+    org.slf4j.LoggerFactory.getLogger(this.getClass).info("----------> HERE")
+    db.run(shipments.schema.createIfNotExists)
+  }
 }

@@ -33,7 +33,7 @@ class ShipmentsProcessorSpec extends ProcessorTestFixture with ShipmentSpecFixtu
 
   private val shipmentRepository = app.injector.instanceOf[ShipmentsWriteRepository]
 
-  override def beforeEach() {
+  override def beforeEach() = {
     studyRepository.removeAll
     shipmentRepository.removeAll
     centreRepository.removeAll

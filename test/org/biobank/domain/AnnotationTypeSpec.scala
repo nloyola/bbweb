@@ -19,12 +19,12 @@ class AnnotationTypeSpec extends DomainSpec {
         val tuple = AnnotationValueTypeToTuple(vt)
         createAnnotationType(tuple).mustSucceed { annotType =>
           annotType.id.id must not be empty
-          annotType must have('name (tuple._1),
-                              'description (tuple._2),
-                              'valueType (tuple._3),
-                              'maxValueCount (tuple._4),
-                              'options (tuple._5),
-                              'required (tuple._6))
+          annotType.name must be(tuple._1)
+          annotType.description must be(tuple._2)
+          annotType.valueType must be(tuple._3)
+          annotType.maxValueCount must be(tuple._4)
+          annotType.options must be(tuple._5)
+          annotType.required must be(tuple._6)
           ()
         }
       }

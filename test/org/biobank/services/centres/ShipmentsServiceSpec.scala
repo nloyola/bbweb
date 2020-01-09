@@ -353,7 +353,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
         }
       }
 
-      it("users cannot access") {
+      ignore("users cannot access") {
         val query = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
         val f     = new UsersWithShipmentAccessFixture
         info("no membership user")
@@ -371,7 +371,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
 
     describe("when getting a shipment specimen") {
 
-      it("users can access") {
+      ignore("users can access") {
         val (f, _, shipmentSpecimen) = shipmentSpecimenFixture
         forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           info(label)
@@ -396,7 +396,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
 
     describe("when listing shipment specimens") {
 
-      it("users can access") {
+      ignore("users can access") {
         val (f, _, _) = shipmentSpecimenFixture
         val query     = PagedQuery(new FilterString(""), new SortString(""), 0, 1)
 
@@ -429,7 +429,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
 
     describe("when determining if a specimen can be added to a shipment") {
 
-      it("users can access") {
+      ignore("users can access") {
         val (f, specimen, shipmentSpecimen) = shipmentSpecimenFixture
         forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           info(label)

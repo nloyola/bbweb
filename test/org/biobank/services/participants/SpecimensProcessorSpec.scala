@@ -41,7 +41,7 @@ class SpecimensProcessorSpec
 
   private val nameGenerator = new NameGenerator(this.getClass)
 
-  override def beforeEach() {
+  override def beforeEach() = {
     specimenRepository.removeAll
     super.beforeEach()
   }

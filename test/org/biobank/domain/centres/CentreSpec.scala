@@ -4,7 +4,6 @@ import java.time.OffsetDateTime
 import org.biobank.domain.{DomainSpec, Location}
 import org.biobank.fixtures.NameGenerator
 import org.slf4j.LoggerFactory
-import scalaz.Scalaz._
 
 class CentreSpec extends DomainSpec {
   import org.biobank.TestUtils._
@@ -24,15 +23,8 @@ class CentreSpec extends DomainSpec {
                 name        = centre.name,
                 description = centre.description,
                 studyIds    = Set.empty,
-                locations   = Set.empty).mustSucceed { s =>
-          s mustBe a[DisabledCentre]
-
-          s must have('id (centre.id), 'version (0L), 'name (centre.name), 'description (centre.description))
-
-          centre.studyIds must have size 0
-          centre.locations must have size 0
-
-          s must beEntityWithTimeStamps(OffsetDateTime.now, None, 5L)
+                locations   = Set.empty).mustSucceed {
+          _ must matchCentre(centre)
         }
     }
 
@@ -40,16 +32,13 @@ class CentreSpec extends DomainSpec {
       val centre = factory.createDisabledCentre.copy(locations = Set.empty[Location])
       val name   = nameGenerator.next[Centre]
 
-      centre.withName(name) mustSucceed { updatedCentre =>
-        updatedCentre must have('id (centre.id),
-                                'version (centre.version + 1),
-                                'name (name),
-                                'description (centre.description))
+      centre.withName(name) mustSucceed { actual =>
+        actual.id must be(centre.id)
+        actual.version must be(centre.version + 1L)
+        actual.name must be(name)
+        actual.description must be(centre.description)
 
-        updatedCentre.studyIds must have size 0
-        updatedCentre.locations must have size 0
-
-        updatedCentre must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
+        actual must beEntityWithTimeStamps(centre.timeAdded, Some(OffsetDateTime.now), 5L)
       }
     }
 
@@ -57,16 +46,13 @@ class CentreSpec extends DomainSpec {
       val centre      = factory.createDisabledCentre.copy(locations = Set.empty[Location])
       val description = Some(nameGenerator.next[Centre])
 
-      centre.withDescription(description) mustSucceed { updatedCentre =>
-        updatedCentre must have('id (centre.id),
-                                'version (centre.version + 1),
-                                'name (centre.name),
-                                'description (description))
+      centre.withDescription(description) mustSucceed { actual =>
+        actual.id must be(centre.id)
+        actual.version must be(centre.version + 1L)
+        actual.name must be(centre.name)
+        actual.description must be(description)
 
-        updatedCentre.studyIds must have size 0
-        updatedCentre.locations must have size 0
-
-        updatedCentre must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
+        actual must beEntityWithTimeStamps(centre.timeAdded, Some(OffsetDateTime.now), 5L)
       }
     }
 

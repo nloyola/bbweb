@@ -115,7 +115,7 @@ class StudiesServiceSpec extends ProcessorTestFixture with StudiesServiceFixture
                            id              = retiredStudy.id.id,
                            expectedVersion = retiredStudy.version))
 
-  override def beforeEach() {
+  override def beforeEach() = {
     super.beforeEach()
     removeUsersFromRepository
     restoreRoles

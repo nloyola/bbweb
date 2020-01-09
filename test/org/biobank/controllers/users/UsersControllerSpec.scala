@@ -775,7 +775,7 @@ class UsersControllerSpec
         }
 
         membershipRepository.getByKey(membershipNew.id) mustSucceed { m =>
-          m.userIds.find(_ == user.id) must be('defined)
+          m.userIds.find(_ == user.id) must not be None
         }
       }
 
@@ -1020,7 +1020,8 @@ class UsersControllerSpec
         accessItemRepository.getByKey(role.id) mustSucceed { item =>
           inside(item) {
             case repoRole: Role =>
-              repoRole must have('id (role.id), 'version (role.version + 1))
+              repoRole.id must be(role.id)
+              repoRole.version must be(role.version + 1)
               repoRole.userIds must not contain (user.id)
               repoRole must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
           }
@@ -1047,7 +1048,7 @@ class UsersControllerSpec
         reply must beNotFoundWithMessage("IdNotFound: user id")
       }
 
-      it("111 fail when removing and role ID does not exist") {
+      it("fail when removing and role ID does not exist") {
         val user = factory.createActiveUser
         val role = factory.createRole
         Set(user).foreach(addToRepository)
@@ -1096,7 +1097,8 @@ class UsersControllerSpec
         membershipRepository.getByKey(membership.id) mustSucceed { item =>
           inside(item) {
             case repoMembership: Membership =>
-              repoMembership must have('id (membership.id), 'version (membership.version + 1))
+              repoMembership.id must be(membership.id)
+              repoMembership.version must be(membership.version + 1)
               repoMembership.userIds must not contain (user.id)
               repoMembership must beEntityWithTimeStamps(OffsetDateTime.now, Some(OffsetDateTime.now), 5L)
           }
@@ -1148,7 +1150,7 @@ class UsersControllerSpec
 
   }
 
-  def userChangeStateSharedBehaviour[T <: User](setupFunc: () => (T, T, List[T], String, String)) {
+  def userChangeStateSharedBehaviour[T <: User](setupFunc: () => (T, T, List[T], String, String)) = {
 
     it(s"can change state on a user") {
       val (user, updatedUser, wrongStateUsers, stateAction, newState) = setupFunc()

@@ -36,6 +36,7 @@ trait AsyncReadRepository[K, A] {
 
   def exists(predicate: A => Boolean): Future[Boolean]
 
+  def init(): Future[Unit]
 }
 
 /** A read/write repository.

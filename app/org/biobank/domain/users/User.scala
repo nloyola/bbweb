@@ -35,7 +35,7 @@ trait UserPredicates extends HasNamePredicates[User] {
 sealed trait User extends ConcurrencySafeEntity[UserId] with HasState with HasUniqueName with HasSlug {
 
   /** the user's current state */
-  val state: EntityState
+  def state: EntityState
 
   /** The user's full name. */
   val name: String
@@ -103,7 +103,7 @@ object User {
   implicit val lockedUserReads: Reads[LockedUser] = Json.reads[LockedUser]
 
   val sort2Compare: Map[String, (User, User) => Boolean] =
-    Map[String, (User, User) => Boolean]("name" -> compareByName,
+    Map[String, (User, User) => Boolean]("name"  -> compareByName,
                                          "email" -> compareByEmail,
                                          "state" -> compareByState)
 
@@ -147,7 +147,9 @@ final case class RegisteredUser(
     password:     String,
     salt:         String,
     avatarUrl:    Option[String])
-    extends { val state: EntityState = new EntityState("registered") } with User with UserValidations {
+    extends User with UserValidations {
+
+  val state: EntityState = new EntityState("registered")
 
   /* if registration is valid, the user can be activated and allowed to access the system */
   def activate(): DomainValidation[ActiveUser] =
@@ -227,9 +229,11 @@ final case class ActiveUser(
     password:     String,
     salt:         String,
     avatarUrl:    Option[String])
-    extends { val state: EntityState = new EntityState("active") } with User with UserValidations {
+    extends User with UserValidations {
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
+
+  val state: EntityState = new EntityState("active")
 
   def withName(name: String): DomainValidation[ActiveUser] =
     (validateNonEmptyString(name) |@|
@@ -287,7 +291,9 @@ final case class LockedUser(
     password:     String,
     salt:         String,
     avatarUrl:    Option[String])
-    extends { val state: EntityState = new EntityState("locked") } with User {
+    extends User {
+
+  val state: EntityState = new EntityState("locked")
 
   /** Unlocks a locked user */
   def unlock(): DomainValidation[ActiveUser] =

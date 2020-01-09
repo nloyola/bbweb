@@ -1,7 +1,6 @@
 package org.biobank.services.participants
 
 import org.biobank.fixtures._
-import org.biobank.domain._
 import org.biobank.domain.access._
 import org.biobank.domain.annotations._
 import org.biobank.domain.studies._
@@ -56,7 +55,7 @@ class ParticipantsServiceSpec
                                          expectedVersion  = participant.version,
                                          annotationTypeId = annotation.annotationTypeId.id))
 
-  override def beforeEach() {
+  override def beforeEach() = {
     super.beforeEach()
     collectionEventTypeRepository.removeAll
     participantRepository.removeAll

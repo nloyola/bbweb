@@ -61,21 +61,8 @@ class ShipmentSpec extends DomainSpec {
 
       it("when valid arguments are used") {
         val shipment = factory.createShipment.copy(version = 0L)
-        createFrom(shipment).mustSucceed { s =>
-          s must have('id (shipment.id),
-                      'version (shipment.version),
-                      'courierName (shipment.courierName),
-                      'trackingNumber (shipment.trackingNumber),
-                      'originCentreId (shipment.originCentreId),
-                      'originLocationId (shipment.originLocationId),
-                      'destinationCentreId (shipment.destinationCentreId),
-                      'destinationLocationId (shipment.destinationLocationId),
-                      'timePacked (shipment.timePacked),
-                      'timeSent (shipment.timeSent),
-                      'timeReceived (shipment.timeReceived),
-                      'timeUnpacked (shipment.timeUnpacked))
-
-          s must beEntityWithTimeStamps(OffsetDateTime.now, None, 5L)
+        createFrom(shipment).mustSucceed {
+          _ must matchShipment(shipment)
         }
       }
 

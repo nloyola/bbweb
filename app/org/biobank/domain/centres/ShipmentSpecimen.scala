@@ -13,8 +13,15 @@ final case class ShipmentSpecimenId(id: String) extends IdentifiedValueObject[St
 
 object ShipmentSpecimenId {
 
-  implicit val shipmentSpecimenIdReader: Reads[ShipmentSpecimenId] =
-    (__).read[String].map(ShipmentSpecimenId(_))
+  // Do not want JSON to create a sub object, we just want it to be converted
+  // to a single string
+  implicit val shipmentSpecimenIdFormat: Format[ShipmentSpecimenId] = new Format[ShipmentSpecimenId] {
+
+    override def writes(id: ShipmentSpecimenId): JsValue = JsString(id.id)
+
+    override def reads(json: JsValue): JsResult[ShipmentSpecimenId] =
+      Reads.StringReads.reads(json).map(ShipmentSpecimenId.apply _)
+  }
 
 }
 
@@ -122,24 +129,6 @@ object ShipmentSpecimen extends ShipmentSpecimenValidations {
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val shipmentSpecimenFormat: Format[ShipmentSpecimen] = Json.format[ShipmentSpecimen]
-
-  // Do not want JSON to create a sub object, we just want it to be converted
-  // to a single string
-  implicit val shipmentIdFormat: Format[ShipmentId] = new Format[ShipmentId] {
-
-    override def writes(id: ShipmentId): JsValue = JsString(id.id)
-
-    override def reads(json: JsValue): JsResult[ShipmentId] =
-      Reads.StringReads.reads(json).map(ShipmentId.apply _)
-  }
-
-  implicit val shipmentSpecimenIdFormat: Format[ShipmentSpecimenId] = new Format[ShipmentSpecimenId] {
-
-    override def writes(id: ShipmentSpecimenId): JsValue = JsString(id.id)
-
-    override def reads(json: JsValue): JsResult[ShipmentSpecimenId] =
-      Reads.StringReads.reads(json).map(ShipmentSpecimenId.apply _)
-  }
 
   def compareByState(a: ShipmentSpecimen, b: ShipmentSpecimen): Boolean = (a.state compareTo b.state) < 0
 

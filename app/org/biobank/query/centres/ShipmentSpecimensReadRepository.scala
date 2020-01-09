@@ -137,4 +137,8 @@ class ShipmentSpecimensReadRepositorySlick @Inject()(
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def removeAll(): Future[Unit] = db.run(shipmentSpecimens.delete.map(_ => ()))
+
+  def init(): Future[Unit] = {
+    db.run(shipmentSpecimens.schema.createIfNotExists)
+  }
 }

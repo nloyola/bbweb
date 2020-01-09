@@ -91,7 +91,7 @@ sealed trait Container
   /** The ID of the container type that classifiies this [[Container]]. */
   val containerTypeId: ContainerTypeId
 
-  val storageType: ContainerStorageType
+  def storageType: ContainerStorageType
 
   def getLabel(): String
 
@@ -227,11 +227,12 @@ final case class RootContainer(
     locationId:      LocationId,
     temperature:     PreservationTemperature,
     constraints:     Option[ContainerConstraints])
-    extends { val storageType = Container.rootStorage } with Container with HasEnabled with HasConstraints
-with ContainerValidations {
+    extends Container with HasEnabled with HasConstraints with ContainerValidations {
 
   import org.biobank.CommonValidations._
   import org.biobank.domain.DomainValidations._
+
+  val storageType = Container.rootStorage
 
   def getLabel(): String = label
 
@@ -344,10 +345,11 @@ final case class StorageContainer(
     containerTypeId: ContainerTypeId,
     parentId:        ContainerId,
     constraints:     Option[ContainerConstraints])
-    extends { val storageType = Container.containerStorage } with Container with HasEnabled
-with HasConstraints with ChildContainer with ContainerValidations {
+    extends Container with HasEnabled with HasConstraints with ChildContainer with ContainerValidations {
 
   import org.biobank.domain.DomainValidations._
+
+  val storageType = Container.containerStorage
 
   def withLabel(label: String, timeModified: OffsetDateTime): DomainValidation[Container] = {
     val newLabel = schemaLabel.copy(label = label)
@@ -451,9 +453,10 @@ final case class SpecimenContainer(
     schemaLabel:     ContainerSchemaLabel,
     containerTypeId: ContainerTypeId,
     parentId:        ContainerId)
-    extends { val storageType = Container.specimenStorage } with Container with ChildContainer
-with ContainerValidations {
+    extends Container with ChildContainer with ContainerValidations {
   import org.biobank.domain.DomainValidations._
+
+  val storageType = Container.specimenStorage
 
   def withLabel(label: String, timeModified: OffsetDateTime): DomainValidation[Container] = {
     val newLabel = schemaLabel.copy(label = label)

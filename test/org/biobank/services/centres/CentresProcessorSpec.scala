@@ -9,7 +9,6 @@ import org.biobank.domain.studies.StudyRepository
 import org.biobank.services._
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
-import org.mockito.Mockito._
 import play.api.libs.json._
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -28,7 +27,7 @@ class CentresProcessorSpec extends ProcessorTestFixture {
 
   private val nameGenerator = new NameGenerator(this.getClass)
 
-  override def beforeEach() {
+  override def beforeEach() = {
     centreRepository.removeAll
     super.beforeEach()
   }

@@ -5,7 +5,6 @@ import org.biobank.domain._
 import org.biobank.domain.annotations._
 import org.biobank.fixtures.NameGenerator
 import org.slf4j.LoggerFactory
-import scalaz.Scalaz._
 
 class StudySpec extends DomainSpec with AnnotationTypeSetSharedSpec[DisabledStudy] {
   import org.biobank.TestUtils._
@@ -22,12 +21,8 @@ class StudySpec extends DomainSpec with AnnotationTypeSetSharedSpec[DisabledStud
 
     it("be created") {
       val study = factory.createDisabledStudy
-      createFrom(study).mustSucceed { s =>
-        s mustBe a[DisabledStudy]
-        s must have('id (study.id), 'version (0L), 'name (study.name), 'description (study.description))
-
-        s.annotationTypes mustBe empty
-        s must beEntityWithTimeStamps(OffsetDateTime.now, None, 5L)
+      createFrom(study).mustSucceed {
+        _ must matchStudy(study)
       }
     }
 
@@ -35,13 +30,14 @@ class StudySpec extends DomainSpec with AnnotationTypeSetSharedSpec[DisabledStud
       val study = factory.createDisabledStudy
       val name  = nameGenerator.next[Study]
 
-      study.withName(name) mustSucceed { updatedStudy =>
-        updatedStudy must have('id (study.id),
-                               'version (study.version + 1),
-                               'name (name),
-                               'description (study.description))
+      study.withName(name) mustSucceed { actual =>
+        actual.id must be(study.id)
+        actual.version must be(study.version + 1L)
+        actual.name must be(name)
+        actual.description must be(study.description)
+        actual.annotationTypes mustBe empty
 
-        updatedStudy must beEntityWithTimeStamps(study.timeAdded, Some(OffsetDateTime.now), 5L)
+        actual must beEntityWithTimeStamps(study.timeAdded, Some(OffsetDateTime.now), 5L)
       }
     }
 
@@ -49,13 +45,13 @@ class StudySpec extends DomainSpec with AnnotationTypeSetSharedSpec[DisabledStud
       val study       = factory.createDisabledStudy
       val description = Some(nameGenerator.next[Study])
 
-      study.withDescription(description) mustSucceed { updatedStudy =>
-        updatedStudy must have('id (study.id),
-                               'version (study.version + 1),
-                               'name (study.name),
-                               'description (description))
+      study.withDescription(description) mustSucceed { actual =>
+        actual.id must be(study.id)
+        actual.version must be(study.version + 1L)
+        actual.name must be(study.name)
+        actual.description must be(description)
 
-        updatedStudy must beEntityWithTimeStamps(study.timeAdded, Some(OffsetDateTime.now), 5L)
+        actual must beEntityWithTimeStamps(study.timeAdded, Some(OffsetDateTime.now), 5L)
       }
     }
 

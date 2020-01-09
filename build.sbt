@@ -152,10 +152,8 @@ coverageExcludedPackages := "<empty>;router.*;views.html.*;Reverse.*;org.biobank
 
 //compileOrder := CompileOrder.Mixed
 
-wartremoverErrors ++= Warts.unsafe
-
-// wartremoverErrors in (Compile, compile) ++= Warts
-//   .allBut(Wart.ArrayEquals, Wart.Nothing, Wart.Equals, Wart.ToString, Wart.StringPlusAny)
+wartremoverErrors in (Compile, compile) ++= Warts
+  .allBut(Wart.ArrayEquals, Wart.Nothing, Wart.Equals, Wart.ToString, Wart.StringPlusAny)
 
 wartremoverExcluded ++= Seq(sourceManaged.value, crossTarget.value / "routes" / "main")
 

@@ -3,7 +3,6 @@ package org.biobank.query.centres
 import akka.actor._
 import akka.persistence.jdbc.query.scaladsl.JdbcReadJournal
 import akka.persistence.query.{EventEnvelope, PersistenceQuery}
-import akka.stream.{ActorMaterializer, Materializer}
 import java.time.OffsetDateTime
 import javax.inject.Inject
 import org.biobank._
@@ -35,7 +34,6 @@ final case class SpecimenRemove(shipmentSpecimenId: ShipmentSpecimenId) extends 
 
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter", "org.wartremover.warts.NonUnitStatements"))
 class ShipmentsQuery @Inject()(
-    private val system:                        ActorSystem,
     private val testData:                      TestData,
     protected val dbConfigProvider:            DatabaseConfigProvider,
     protected val shipmentsRepository:         ShipmentsReadRepository,
@@ -43,13 +41,12 @@ class ShipmentsQuery @Inject()(
     protected val sequenceNumbersDao:          SequenceNumbersDao
   )(
     implicit
-    val ec: ExecutionContext)
+    val system: ActorSystem,
+    val ec:     ExecutionContext)
     extends DatabaseSchema {
   import dbConfig.profile.api._
 
   val persistenceId = "shipments-processor-id"
-
-  implicit val mat: Materializer = ActorMaterializer()(system)
 
   protected val log = LoggerFactory.getLogger(this.getClass)
 

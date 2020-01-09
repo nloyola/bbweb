@@ -950,7 +950,7 @@ class CeventTypesControllerSpec
 
   }
 
-  private def addOnNonDisabledStudySharedBehaviour(study: Study) {
+  private def addOnNonDisabledStudySharedBehaviour(study: Study) = {
 
     it("should be a bad request") {
       studyRepository.put(study)
@@ -965,7 +965,7 @@ class CeventTypesControllerSpec
     }
   }
 
-  private def updateWithInvalidVersionSharedBehaviour(func: CollectionEventType => (Url, JsValue)) {
+  private def updateWithInvalidVersionSharedBehaviour(func: CollectionEventType => (Url, JsValue)) = {
 
     it("should be a bad request") {
       val f   = new EventTypeFixture
@@ -982,7 +982,7 @@ class CeventTypesControllerSpec
     }
   }
 
-  private def updateOnInvalidCeventTypeSharedBehaviour(func: CollectionEventType => (Url, JsValue)) {
+  private def updateOnInvalidCeventTypeSharedBehaviour(func: CollectionEventType => (Url, JsValue)) = {
 
     it("should be not found") {
       val study = factory.createDisabledStudy
@@ -1002,7 +1002,7 @@ class CeventTypesControllerSpec
   private def updateOnNonDisabledStudySharedBehaviour(
       study: Study
     )(func:  CollectionEventType => (Url, JsValue)
-    ) {
+    ) = {
     it("show be a bad request") {
       study must not be an[DisabledStudy]
       studyRepository.put(study)
@@ -1024,7 +1024,7 @@ class CeventTypesControllerSpec
     }
   }
 
-  private def removeOnNonDisabledStudySharedBehaviour(study: Study) {
+  private def removeOnNonDisabledStudySharedBehaviour(study: Study) = {
 
     it("should be bad request") {
       studyRepository.put(study)

@@ -10,7 +10,6 @@ import org.biobank.domain.participants.CollectionEventRepository
 import org.biobank.services._
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
-import org.mockito.Mockito._
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
 import scalaz.Scalaz._
@@ -32,7 +31,7 @@ class CollectionEventTypesProcessorSpec extends ProcessorTestFixture {
 
   private val collectionEventTypeRepository = app.injector.instanceOf[CollectionEventTypeRepository]
 
-  override def beforeEach() {
+  override def beforeEach() = {
     collectionEventTypeRepository.removeAll
     super.beforeEach()
   }

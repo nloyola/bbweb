@@ -100,7 +100,7 @@ class UsersServiceSpec
                         id                = lockedUser.id.id,
                         expectedVersion   = lockedUser.version))
 
-  override def beforeEach() {
+  override def beforeEach() = {
     super.beforeEach()
     removeUsersFromRepository
     restoreRoles

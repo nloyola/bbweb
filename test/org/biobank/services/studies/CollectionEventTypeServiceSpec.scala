@@ -102,7 +102,7 @@ class CollectionEventTypeServiceSpec
                                                expectedVersion      = ceventType.version,
                                                specimenDefinitionId = specimenDefinition.id.id))
 
-  override def beforeEach() {
+  override def beforeEach() = {
     super.beforeEach()
     collectionEventTypeRepository.removeAll
   }

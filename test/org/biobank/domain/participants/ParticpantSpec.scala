@@ -28,28 +28,16 @@ class ParticipantSpec extends DomainSpec {
 
       it("when valid arguments are used and without annotations") {
         val participant = factory.createParticipant.copy(version = 0L)
-        createFrom(participant) mustSucceed { p =>
-          p must have('id (participant.id),
-                      'studyId (participant.studyId),
-                      'version (participant.version),
-                      'uniqueId (participant.uniqueId),
-                      'annotations (participant.annotations))
-
-          p must beEntityWithTimeStamps(participant.timeAdded, None, 5L)
+        createFrom(participant) mustSucceed {
+          _ must matchParticipant(participant)
         }
       }
 
       it("when valid arguments are used and with an annotation") {
         val annotation  = factory.createAnnotation
         val participant = factory.createParticipant.copy(annotations = Set(annotation), version = 0L)
-        createFrom(participant) mustSucceed { p =>
-          p must have('id (participant.id),
-                      'studyId (participant.studyId),
-                      'version (participant.version),
-                      'uniqueId (participant.uniqueId),
-                      'annotations (participant.annotations))
-
-          p must beEntityWithTimeStamps(participant.timeAdded, None, 5L)
+        createFrom(participant) mustSucceed {
+          _ must matchParticipant(participant)
         }
       }
 

@@ -6,7 +6,7 @@ import org.biobank.query.centres.ShipmentsQuery
 
 class BbwebModule extends AbstractModule {
 
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  //@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   override def configure() = {
     bind(classOf[Global]).asEagerSingleton
     bind(classOf[TestData]).asEagerSingleton

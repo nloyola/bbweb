@@ -18,7 +18,7 @@ trait AccessControllerSpecCommon extends ControllerFixture {
     )(
       implicit
       reads: Reads[D]
-    ) {
+    ) = {
 
     it("list multiple item names in ascending order") {
       val items = List(createEntity("ITEM2"), createEntity("ITEM1")).sortBy(_.name)

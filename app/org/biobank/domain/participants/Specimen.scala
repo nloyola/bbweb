@@ -23,7 +23,7 @@ import scalaz.Scalaz._
  */
 sealed trait Specimen extends ConcurrencySafeEntity[SpecimenId] with HasSlug {
 
-  val state: EntityState
+  def state: EntityState
 
   /** The inventory ID assigned to this specimen. */
   val inventoryId: String
@@ -172,11 +172,12 @@ final case class UsableSpecimen(
     schemaLabel:          Option[ContainerSchemaLabel],
     timeCreated:          OffsetDateTime,
     amount:               BigDecimal)
-    extends { val state: EntityState = Specimen.usableState } with HasSlug with Specimen
-with SpecimenValidations with ParticipantValidations with StudyValidations {
+    extends HasSlug with Specimen with SpecimenValidations with ParticipantValidations with StudyValidations {
 
   import org.biobank.domain.DomainValidations._
   import org.biobank.CommonValidations._
+
+  val state: EntityState = Specimen.usableState
 
   def withInventoryId(inventoryId: String): DomainValidation[Specimen] =
     validateNonEmptyString(inventoryId, InventoryIdInvalid).map { s =>
@@ -316,7 +317,9 @@ final case class UnusableSpecimen(
     schemaLabel:          Option[ContainerSchemaLabel],
     timeCreated:          OffsetDateTime,
     amount:               BigDecimal)
-    extends { val state: EntityState = Specimen.unusableState } with HasSlug with Specimen {
+    extends HasSlug with Specimen {
+
+  val state: EntityState = Specimen.unusableState
 
   def makeUsable(): DomainValidation[UsableSpecimen] =
     UsableSpecimen(id                   = this.id,

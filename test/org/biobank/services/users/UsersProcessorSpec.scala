@@ -25,7 +25,7 @@ class UsersProcessorSpec extends ProcessorTestFixture {
 
   private val userRepository = app.injector.instanceOf[UserRepository]
 
-  override def beforeEach() {
+  override def beforeEach() = {
     userRepository.removeAll
     super.beforeEach()
   }

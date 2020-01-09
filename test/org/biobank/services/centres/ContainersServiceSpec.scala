@@ -275,7 +275,7 @@ trait CommonContainerControllerSpec[
                                           expectedVersion = container.version,
                                           containerTypeId = container.containerTypeId.id))
 
-  override def beforeEach() {
+  override def beforeEach() = {
     super.beforeEach()
     removeUsersFromRepository
     restoreRoles

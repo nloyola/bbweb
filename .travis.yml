@@ -6,7 +6,7 @@ matrix:
   include:
     - language: scala
       jdk: oraclejdk8
-      scala: 2.12.8
+      scala: 2.13.1
       before_cache:
         # Cleanup the cached directories to avoid unnecessary cache updates
         - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete

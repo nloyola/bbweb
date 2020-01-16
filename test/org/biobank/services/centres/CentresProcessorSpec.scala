@@ -11,7 +11,7 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
 import play.api.libs.json._
 import scala.concurrent.duration._
-import scala.concurrent.Await
+import scala.concurrent.Future
 
 case class NamedCentresProcessor @Inject()(@Named("centresProcessor") processor: ActorRef)
 
@@ -21,7 +21,9 @@ class CentresProcessorSpec extends ProcessorTestFixture {
   import org.biobank.infrastructure.commands.CentreCommands._
   import org.biobank.infrastructure.events.CentreEvents._
 
-  private var centresProcessor = app.injector.instanceOf[NamedCentresProcessor].processor
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+
+  private var centresProcessor: ActorRef = app.injector.instanceOf[NamedCentresProcessor].processor
 
   private val centreRepository = app.injector.instanceOf[CentreRepository]
 
@@ -32,18 +34,17 @@ class CentresProcessorSpec extends ProcessorTestFixture {
     super.beforeEach()
   }
 
-  private def restartProcessor(processor: ActorRef) = {
-    val stopped = gracefulStop(processor, 5 seconds, PoisonPill)
-    Await.result(stopped, 6 seconds)
-
-    val actor = system.actorOf(Props(
-                                 new CentresProcessor(centreRepository,
-                                                      app.injector.instanceOf[StudyRepository],
-                                                      app.injector.instanceOf[SnapshotWriter])
-                               ),
-                               "centres")
-    Thread.sleep(250)
-    actor
+  private def restartProcessor(processor: ActorRef): Future[ActorRef] = {
+    gracefulStop(processor, 8 seconds, PoisonPill).map { _ =>
+      val actor = system.actorOf(Props(
+                                   new CentresProcessor(centreRepository,
+                                                        app.injector.instanceOf[StudyRepository],
+                                                        app.injector.instanceOf[SnapshotWriter])
+                                 ),
+                                 "centres")
+      Thread.sleep(250)
+      actor
+    }
   }
 
   describe("A centres processor must") {
@@ -60,8 +61,7 @@ class CentresProcessorSpec extends ProcessorTestFixture {
       } must contain(centre.name)
 
       centreRepository.removeAll
-      centresProcessor = restartProcessor(centresProcessor)
-
+      centresProcessor = restartProcessor(centresProcessor).futureValue
       centreRepository.getValues.size must be(1)
       centreRepository.getValues.map { c =>
         c.name
@@ -85,7 +85,7 @@ class CentresProcessorSpec extends ProcessorTestFixture {
 
       (centresProcessor ? "snap").mapTo[String].futureValue
       centreRepository.removeAll
-      centresProcessor = restartProcessor(centresProcessor)
+      centresProcessor = restartProcessor(centresProcessor).futureValue
 
       centreRepository.getValues.size must be(1)
       centreRepository.getByKey(snapshotCentre.id) mustSucceed { repoCentre =>

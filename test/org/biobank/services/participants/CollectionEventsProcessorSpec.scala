@@ -12,7 +12,6 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
 import play.api.libs.json._
 import scala.concurrent.duration._
-import scala.concurrent.Await
 
 case class NamedCollectionEventsProcessor @Inject()(@Named("collectionEventsProcessor") processor: ActorRef)
 
@@ -21,6 +20,8 @@ class CollectionEventsProcessorSpec extends ProcessorTestFixture {
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.CollectionEventCommands._
   import org.biobank.infrastructure.events.CollectionEventEvents._
+
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   private var collectionEventsProcessor = app.injector.instanceOf[NamedCollectionEventsProcessor].processor
 
@@ -40,21 +41,20 @@ class CollectionEventsProcessorSpec extends ProcessorTestFixture {
   }
 
   private def restartProcessor(processor: ActorRef) = {
-    val stopped = gracefulStop(processor, 5 seconds, PoisonPill)
-    Await.result(stopped, 6 seconds)
-
-    val actor = system.actorOf(
-      Props(
-        new CollectionEventsProcessor(collectionEventRepository,
-                                      collectionEventTypeRepository,
-                                      participantRepository,
-                                      app.injector.instanceOf[StudyRepository],
-                                      app.injector.instanceOf[SnapshotWriter])
-      ),
-      "collectionEvents"
-    )
-    Thread.sleep(250)
-    actor
+    gracefulStop(processor, 5 seconds, PoisonPill).map { _ =>
+      val actor = system.actorOf(
+        Props(
+          new CollectionEventsProcessor(collectionEventRepository,
+                                        collectionEventTypeRepository,
+                                        participantRepository,
+                                        app.injector.instanceOf[StudyRepository],
+                                        app.injector.instanceOf[SnapshotWriter])
+        ),
+        "collectionEvents"
+      )
+      Thread.sleep(250)
+      actor
+    }
   }
 
   describe("A collectionEvents processor must") {
@@ -81,7 +81,7 @@ class CollectionEventsProcessorSpec extends ProcessorTestFixture {
         s.visitNumber
       } must contain(collectionEvent.visitNumber)
       collectionEventRepository.removeAll
-      collectionEventsProcessor = restartProcessor(collectionEventsProcessor)
+      collectionEventsProcessor = restartProcessor(collectionEventsProcessor).futureValue
 
       collectionEventRepository.getValues.size must be(1)
       collectionEventRepository.getValues.map { s =>
@@ -107,7 +107,7 @@ class CollectionEventsProcessorSpec extends ProcessorTestFixture {
       (collectionEventsProcessor ? "snap").mapTo[String].futureValue
 
       collectionEventRepository.removeAll
-      collectionEventsProcessor = restartProcessor(collectionEventsProcessor)
+      collectionEventsProcessor = restartProcessor(collectionEventsProcessor).futureValue
 
       collectionEventRepository.getValues.size must be(1)
       collectionEventRepository.getByKey(snapshotCollectionEvent.id) mustSucceed { repoCollectionEvent =>

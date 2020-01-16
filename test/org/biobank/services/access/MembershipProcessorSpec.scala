@@ -14,7 +14,6 @@ import org.scalatest.Inside
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
 import scala.concurrent.duration._
-import scala.concurrent.Await
 
 final case class NamedMembershipProcessor @Inject()(@Named("membershipProcessor") processor: ActorRef)
 
@@ -30,6 +29,8 @@ class MembershipProcessorSpec extends ProcessorTestFixture with Inside {
   }
 
   val log = LoggerFactory.getLogger(this.getClass)
+
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   var membershipProcessor = app.injector.instanceOf[NamedMembershipProcessor].processor
 
@@ -49,15 +50,14 @@ class MembershipProcessorSpec extends ProcessorTestFixture with Inside {
     }
 
   private def restartProcessor(processor: ActorRef) = {
-    val stopped = gracefulStop(processor, 5 seconds, PoisonPill)
-    Await.result(stopped, 6 seconds)
-
-    val actor = system.actorOf(
-      Props(new MembershipProcessor(membershipRepository, app.injector.instanceOf[SnapshotWriter])),
-      "access"
-    )
-    Thread.sleep(250)
-    actor
+    gracefulStop(processor, 5 seconds, PoisonPill).map { _ =>
+      val actor = system.actorOf(
+        Props(new MembershipProcessor(membershipRepository, app.injector.instanceOf[SnapshotWriter])),
+        "access"
+      )
+      Thread.sleep(250)
+      actor
+    }
   }
 
   describe("An membership processor must") {
@@ -78,7 +78,7 @@ class MembershipProcessorSpec extends ProcessorTestFixture with Inside {
       v mustSucceed { event =>
         membershipRepository.getByKey(MembershipId(event.id)) mustSucceed { membership =>
           membership.userIds must contain(user.id)
-          membershipProcessor = restartProcessor(membershipProcessor)
+          membershipProcessor = restartProcessor(membershipProcessor).futureValue
 
           membershipRepository.getByKey(MembershipId(event.id)).isSuccess must be(true)
         }
@@ -101,7 +101,7 @@ class MembershipProcessorSpec extends ProcessorTestFixture with Inside {
       (membershipProcessor ? "snap").mapTo[String].futureValue
 
       membershipRepository.removeAll
-      membershipProcessor = restartProcessor(membershipProcessor)
+      membershipProcessor = restartProcessor(membershipProcessor).futureValue
 
       membershipRepository.getByKey(snapshotMembership.id) mustSucceed { repoAccess =>
         repoAccess.userIds must contain(user.id)

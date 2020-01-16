@@ -13,13 +13,14 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
 import play.api.libs.json._
 import scala.concurrent.duration._
-import scala.concurrent.Await
 
 case class NamedContainerSchemasProcessor @Inject()(@Named("containerSchemasProcessor") processor: ActorRef)
 
 class ContainerSchemasProcessorSpec extends ProcessorTestFixture with PresistenceQueryEvents {
 
   import org.biobank.TestUtils._
+
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   private var schemaProcessor = app.injector.instanceOf[NamedContainerSchemasProcessor].processor
 
@@ -37,20 +38,19 @@ class ContainerSchemasProcessorSpec extends ProcessorTestFixture with Presistenc
   }
 
   private def restartProcessor(processor: ActorRef) = {
-    val stopped = gracefulStop(processor, 5 seconds, PoisonPill)
-    Await.result(stopped, 6 seconds)
-
-    val actor = system.actorOf(
-      Props(
-        new ContainerSchemasProcessor(schemaRepository,
-                                      centreRepository,
-                                      containerTypeRepository,
-                                      app.injector.instanceOf[SnapshotWriter])
-      ),
-      "containerSchemas"
-    )
-    Thread.sleep(250)
-    actor
+    gracefulStop(processor, 5 seconds, PoisonPill).map { _ =>
+      val actor = system.actorOf(
+        Props(
+          new ContainerSchemasProcessor(schemaRepository,
+                                        centreRepository,
+                                        containerTypeRepository,
+                                        app.injector.instanceOf[SnapshotWriter])
+        ),
+        "containerSchemas"
+      )
+      Thread.sleep(250)
+      actor
+    }
   }
 
   describe("A containerSchema processor must") {
@@ -70,7 +70,7 @@ class ContainerSchemasProcessorSpec extends ProcessorTestFixture with Presistenc
       } must contain(schema.name)
 
       schemaRepository.removeAll
-      schemaProcessor = restartProcessor(schemaProcessor)
+      schemaProcessor = restartProcessor(schemaProcessor).futureValue
 
       schemaRepository.getValues.map { c =>
         c.name
@@ -95,7 +95,7 @@ class ContainerSchemasProcessorSpec extends ProcessorTestFixture with Presistenc
       (schemaProcessor ? "snap").mapTo[String].futureValue
 
       schemaRepository.removeAll
-      schemaProcessor = restartProcessor(schemaProcessor)
+      schemaProcessor = restartProcessor(schemaProcessor).futureValue
 
       schemaRepository.getByKey(snapshotContainerSchema.id) mustSucceed { repoContainerSchema =>
         repoContainerSchema.name must be(snapshotContainerSchema.name)

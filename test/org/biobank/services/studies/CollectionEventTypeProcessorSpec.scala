@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory
 import play.api.libs.json._
 import scalaz.Scalaz._
 import scala.concurrent.duration._
-import scala.concurrent.Await
 
 case class NamedCollectionEventTypeProcessor @Inject()(@Named("collectionEventType") processor: ActorRef)
 
@@ -25,6 +24,8 @@ class CollectionEventTypesProcessorSpec extends ProcessorTestFixture {
   import org.biobank.infrastructure.events.CollectionEventTypeEvents._
 
   val log = LoggerFactory.getLogger(this.getClass)
+
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   private var collectionEventTypeProcessor =
     app.injector.instanceOf[NamedCollectionEventTypeProcessor].processor
@@ -37,19 +38,18 @@ class CollectionEventTypesProcessorSpec extends ProcessorTestFixture {
   }
 
   private def restartProcessor(processor: ActorRef) = {
-    val stopped = gracefulStop(processor, 5 seconds, PoisonPill)
-    Await.result(stopped, 6 seconds)
-
-    val actor = system.actorOf(
-      Props(
-        new CollectionEventTypeProcessor(collectionEventTypeRepository,
-                                         app.injector.instanceOf[CollectionEventRepository],
-                                         app.injector.instanceOf[SnapshotWriter])
-      ),
-      "actor"
-    )
-    Thread.sleep(250)
-    actor
+    gracefulStop(processor, 5 seconds, PoisonPill).map { _ =>
+      val actor = system.actorOf(
+        Props(
+          new CollectionEventTypeProcessor(collectionEventTypeRepository,
+                                           app.injector.instanceOf[CollectionEventRepository],
+                                           app.injector.instanceOf[SnapshotWriter])
+        ),
+        "actor"
+      )
+      Thread.sleep(250)
+      actor
+    }
   }
 
   describe("A collectionEventTypes processor must") {
@@ -70,7 +70,7 @@ class CollectionEventTypesProcessorSpec extends ProcessorTestFixture {
         cet.name
       } must contain(collectionEventType.name)
       collectionEventTypeRepository.removeAll
-      collectionEventTypeProcessor = restartProcessor(collectionEventTypeProcessor)
+      collectionEventTypeProcessor = restartProcessor(collectionEventTypeProcessor).futureValue
 
       collectionEventTypeRepository.getValues.size must be(1)
       collectionEventTypeRepository.getValues.map { cet =>
@@ -95,7 +95,7 @@ class CollectionEventTypesProcessorSpec extends ProcessorTestFixture {
       (collectionEventTypeProcessor ? "snap").mapTo[String].futureValue
 
       collectionEventTypeRepository.removeAll
-      collectionEventTypeProcessor = restartProcessor(collectionEventTypeProcessor)
+      collectionEventTypeProcessor = restartProcessor(collectionEventTypeProcessor).futureValue
 
       collectionEventTypeRepository.getValues.size must be(1)
       collectionEventTypeRepository

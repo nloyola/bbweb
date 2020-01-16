@@ -11,7 +11,6 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
 import play.api.libs.json._
 import scala.concurrent.duration._
-import scala.concurrent.Await
 
 case class NamedParticipantsProcessor @Inject()(@Named("participantsProcessor") processor: ActorRef)
 
@@ -20,6 +19,8 @@ class ParticipantsProcessorSpec extends ProcessorTestFixture {
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.ParticipantCommands._
   import org.biobank.infrastructure.events.ParticipantEvents._
+
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   private var participantsProcessor = app.injector.instanceOf[NamedParticipantsProcessor].processor
 
@@ -35,17 +36,16 @@ class ParticipantsProcessorSpec extends ProcessorTestFixture {
   }
 
   private def restartProcessor(processor: ActorRef) = {
-    val stopped = gracefulStop(processor, 5 seconds, PoisonPill)
-    Await.result(stopped, 6 seconds)
-
-    val actor = system.actorOf(Props(
-                                 new ParticipantsProcessor(participantRepository,
-                                                           studyRepository,
-                                                           app.injector.instanceOf[SnapshotWriter])
-                               ),
-                               "participants")
-    Thread.sleep(250)
-    actor
+    gracefulStop(processor, 5 seconds, PoisonPill).map { _ =>
+      val actor = system.actorOf(Props(
+                                   new ParticipantsProcessor(participantRepository,
+                                                             studyRepository,
+                                                             app.injector.instanceOf[SnapshotWriter])
+                                 ),
+                                 "participants")
+      Thread.sleep(250)
+      actor
+    }
   }
 
   describe("A participants processor must") {
@@ -64,7 +64,7 @@ class ParticipantsProcessorSpec extends ProcessorTestFixture {
         s.uniqueId
       } must contain(participant.uniqueId)
       participantRepository.removeAll
-      participantsProcessor = restartProcessor(participantsProcessor)
+      participantsProcessor = restartProcessor(participantsProcessor).futureValue
 
       participantRepository.getValues.size must be(1)
       participantRepository.getValues.map { s =>
@@ -89,7 +89,7 @@ class ParticipantsProcessorSpec extends ProcessorTestFixture {
       (participantsProcessor ? "snap").mapTo[String].futureValue
 
       participantRepository.removeAll
-      participantsProcessor = restartProcessor(participantsProcessor)
+      participantsProcessor = restartProcessor(participantsProcessor).futureValue
 
       participantRepository.getValues.size must be(1)
       participantRepository.getByKey(snapshotParticipant.id) mustSucceed { repoParticipant =>

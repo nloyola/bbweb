@@ -10,7 +10,6 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
 import play.api.libs.json._
 import scala.concurrent.duration._
-import scala.concurrent.Await
 
 final case class NamedStudiesProcessor @Inject()(@Named("studiesProcessor") processor: ActorRef)
 
@@ -19,6 +18,8 @@ class StudiesProcessorSpec extends ProcessorTestFixture {
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.StudyCommands._
   import org.biobank.infrastructure.events.StudyEvents._
+
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   private var studiesProcessor = app.injector.instanceOf[NamedStudiesProcessor].processor
 
@@ -30,17 +31,17 @@ class StudiesProcessorSpec extends ProcessorTestFixture {
   }
 
   private def restartProcessor(processor: ActorRef) = {
-    val stopped = gracefulStop(processor, 5 seconds, PoisonPill)
-    Await.result(stopped, 6 seconds)
-
-    val actor = system.actorOf(Props(
-                                 new StudiesProcessor(studyRepository,
-                                                      app.injector.instanceOf[CollectionEventTypeRepository],
-                                                      app.injector.instanceOf[SnapshotWriter])
-                               ),
-                               "studies")
-    Thread.sleep(250)
-    actor
+    gracefulStop(processor, 5 seconds, PoisonPill).map { _ =>
+      val actor =
+        system.actorOf(Props(
+                         new StudiesProcessor(studyRepository,
+                                              app.injector.instanceOf[CollectionEventTypeRepository],
+                                              app.injector.instanceOf[SnapshotWriter])
+                       ),
+                       "studies")
+      Thread.sleep(250)
+      actor
+    }
   }
 
   describe("A studies processor must") {
@@ -55,7 +56,7 @@ class StudiesProcessorSpec extends ProcessorTestFixture {
       } must contain(study.name)
 
       studyRepository.removeAll
-      studiesProcessor = restartProcessor(studiesProcessor)
+      studiesProcessor = restartProcessor(studiesProcessor).futureValue
 
       studyRepository.getValues.size must be(1)
       studyRepository.getValues.map { s =>
@@ -80,7 +81,7 @@ class StudiesProcessorSpec extends ProcessorTestFixture {
       (studiesProcessor ? "snap").mapTo[String].futureValue
 
       studyRepository.removeAll
-      studiesProcessor = restartProcessor(studiesProcessor)
+      studiesProcessor = restartProcessor(studiesProcessor).futureValue
 
       studyRepository.getValues.size must be(1)
       studyRepository.getByKey(snapshotStudy.id) mustSucceed { repoStudy =>

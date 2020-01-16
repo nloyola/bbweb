@@ -15,7 +15,6 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
 import play.api.libs.json._
 import scala.concurrent.duration._
-import scala.concurrent.Await
 
 final case class NamedShipmentsProcessor @Inject()(@Named("shipmentsProcessor") processor: ActorRef)
 
@@ -24,6 +23,8 @@ class ShipmentsProcessorSpec extends ProcessorTestFixture with ShipmentSpecFixtu
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.ShipmentCommands._
   import org.biobank.infrastructure.events.ShipmentEvents._
+
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   private var shipmentsProcessor = app.injector.instanceOf[NamedShipmentsProcessor].processor
 
@@ -54,22 +55,21 @@ class ShipmentsProcessorSpec extends ProcessorTestFixture with ShipmentSpecFixtu
   }
 
   private def restartProcessor(processor: ActorRef) = {
-    val stopped = gracefulStop(processor, 5 seconds, PoisonPill)
-    Await.result(stopped, 6 seconds)
-
-    val actor = system.actorOf(
-      Props(
-        new ShipmentsProcessor(app.injector.instanceOf[ShipmentsWriteRepository],
-                               app.injector.instanceOf[ShipmentSpecimensWriteRepository],
-                               centreRepository,
-                               app.injector.instanceOf[SpecimenRepository],
-                               app.injector.instanceOf[SpecimensService],
-                               app.injector.instanceOf[SnapshotWriter])
-      ),
-      "shipments-processor-id-2"
-    )
-    Thread.sleep(250)
-    actor
+    gracefulStop(processor, 5 seconds, PoisonPill).map { _ =>
+      val actor = system.actorOf(
+        Props(
+          new ShipmentsProcessor(app.injector.instanceOf[ShipmentsWriteRepository],
+                                 app.injector.instanceOf[ShipmentSpecimensWriteRepository],
+                                 centreRepository,
+                                 app.injector.instanceOf[SpecimenRepository],
+                                 app.injector.instanceOf[SpecimensService],
+                                 app.injector.instanceOf[SnapshotWriter])
+        ),
+        "shipments-processor-id-2"
+      )
+      Thread.sleep(250)
+      actor
+    }
   }
 
   describe("A shipments processor must") {
@@ -89,7 +89,7 @@ class ShipmentsProcessorSpec extends ProcessorTestFixture with ShipmentSpecFixtu
       } must contain(f.shipment.courierName)
 
       shipmentRepository.removeAll
-      shipmentsProcessor = restartProcessor(shipmentsProcessor)
+      shipmentsProcessor = restartProcessor(shipmentsProcessor).futureValue
 
       shipmentRepository.getValues.size must be(1)
       shipmentRepository.getValues.map { s =>
@@ -111,7 +111,7 @@ class ShipmentsProcessorSpec extends ProcessorTestFixture with ShipmentSpecFixtu
 
       (shipmentsProcessor ? "snap").mapTo[String].futureValue
       shipmentRepository.removeAll
-      shipmentsProcessor = restartProcessor(shipmentsProcessor)
+      shipmentsProcessor = restartProcessor(shipmentsProcessor).futureValue
 
       shipmentRepository.getValues.size must be(1)
       shipmentRepository.getByKey(snapshotShipment.id) mustSucceed { repoShipment =>

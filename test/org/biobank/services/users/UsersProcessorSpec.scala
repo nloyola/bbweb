@@ -13,13 +13,14 @@ import org.mockito.Mockito
 import play.api.{Configuration, Environment}
 import play.api.libs.json._
 import scala.concurrent.duration._
-import scala.concurrent.Await
 
 case class NamedUsersProcessor @Inject()(@Named("usersProcessor") processor: ActorRef)
 
 class UsersProcessorSpec extends ProcessorTestFixture {
 
   import org.biobank.TestUtils._
+
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   private var usersProcessor = app.injector.instanceOf[NamedUsersProcessor].processor
 
@@ -31,22 +32,21 @@ class UsersProcessorSpec extends ProcessorTestFixture {
   }
 
   private def restartProcessor(processor: ActorRef) = {
-    val stopped = gracefulStop(processor, 5 seconds, PoisonPill)
-    Await.result(stopped, 6 seconds)
-
-    val actor = system.actorOf(
-      Props(
-        new UsersProcessor(app.injector.instanceOf[Configuration],
-                           userRepository,
-                           app.injector.instanceOf[PasswordHasher],
-                           app.injector.instanceOf[EmailService],
-                           app.injector.instanceOf[Environment],
-                           app.injector.instanceOf[SnapshotWriter])
-      ),
-      "users"
-    )
-    Thread.sleep(250)
-    actor
+    gracefulStop(processor, 5 seconds, PoisonPill).map { _ =>
+      val actor = system.actorOf(
+        Props(
+          new UsersProcessor(app.injector.instanceOf[Configuration],
+                             userRepository,
+                             app.injector.instanceOf[PasswordHasher],
+                             app.injector.instanceOf[EmailService],
+                             app.injector.instanceOf[Environment],
+                             app.injector.instanceOf[SnapshotWriter])
+        ),
+        "users"
+      )
+      Thread.sleep(250)
+      actor
+    }
   }
 
   describe("A user processor must") {
@@ -64,7 +64,7 @@ class UsersProcessorSpec extends ProcessorTestFixture {
       } must contain(user.name)
 
       userRepository.removeAll
-      usersProcessor = restartProcessor(usersProcessor)
+      usersProcessor = restartProcessor(usersProcessor).futureValue
 
       userRepository.getValues.map { c =>
         c.name
@@ -88,7 +88,7 @@ class UsersProcessorSpec extends ProcessorTestFixture {
       (usersProcessor ? "snap").mapTo[String].futureValue
 
       userRepository.removeAll
-      usersProcessor = restartProcessor(usersProcessor)
+      usersProcessor = restartProcessor(usersProcessor).futureValue
 
       userRepository.getByKey(snapshotUser.id) mustSucceed { repoUser =>
         repoUser.name must be(snapshotUser.name)

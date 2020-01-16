@@ -13,7 +13,6 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
 import play.api.libs.json._
 import scala.concurrent.duration._
-import scala.concurrent.Await
 
 final case class NamedAccessProcessor @Inject()(@Named("accessProcessor") processor: ActorRef)
 
@@ -29,6 +28,8 @@ class AccesssProcessorSpec extends ProcessorTestFixture with Inside {
     Set(role, permission).foreach(addToRepository)
   }
 
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+
   private var accesssProcessor = app.injector.instanceOf[NamedAccessProcessor].processor
 
   private val accessItemRepository = app.injector.instanceOf[AccessItemRepository]
@@ -42,15 +43,14 @@ class AccesssProcessorSpec extends ProcessorTestFixture with Inside {
   }
 
   private def restartProcessor(processor: ActorRef) = {
-    val stopped = gracefulStop(processor, 5 seconds, PoisonPill)
-    Await.result(stopped, 6 seconds)
-
-    val actor = system.actorOf(
-      Props(new AccessProcessor(accessItemRepository, app.injector.instanceOf[SnapshotWriter])),
-      "access"
-    )
-    Thread.sleep(250)
-    actor
+    gracefulStop(processor, 5 seconds, PoisonPill).map { _ =>
+      val actor = system.actorOf(
+        Props(new AccessProcessor(accessItemRepository, app.injector.instanceOf[SnapshotWriter])),
+        "access"
+      )
+      Thread.sleep(250)
+      actor
+    }
   }
 
   protected def addToRepository[T <: ConcurrencySafeEntity[_]](entity: T): Unit =
@@ -79,7 +79,7 @@ class AccesssProcessorSpec extends ProcessorTestFixture with Inside {
               repoRole.userIds must contain(user.id)
 
               accessItemRepository.removeAll
-              accesssProcessor = restartProcessor(accesssProcessor)
+              accesssProcessor = restartProcessor(accesssProcessor).futureValue
 
               accessItemRepository.getByKey(AccessItemId(event.getRole.getId)).isSuccess must be(true)
           }
@@ -103,7 +103,7 @@ class AccesssProcessorSpec extends ProcessorTestFixture with Inside {
       (accesssProcessor ? "snap").mapTo[String].futureValue
 
       accessItemRepository.removeAll
-      accesssProcessor = restartProcessor(accesssProcessor)
+      accesssProcessor = restartProcessor(accesssProcessor).futureValue
 
       accessItemRepository.getByKey(snapshotRole.id) mustSucceed { accessItem =>
         inside(accessItem) {

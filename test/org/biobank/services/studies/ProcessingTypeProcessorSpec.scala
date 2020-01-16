@@ -14,7 +14,6 @@ import org.mockito.Mockito
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
 import scala.concurrent.duration._
-import scala.concurrent.Await
 import scalaz.Scalaz._
 
 /*
@@ -32,6 +31,8 @@ class ProcessingTypesProcessorSpec extends ProcessorTestFixture with ProcessingT
   import org.biobank.infrastructure.events.ProcessingTypeEvents._
 
   val log = LoggerFactory.getLogger(this.getClass)
+
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   // processor is recreated in these tests
   var processingTypeProcessor =
@@ -68,51 +69,42 @@ class ProcessingTypesProcessorSpec extends ProcessorTestFixture with ProcessingT
   }
 
   private def restartProcessor(processor: ActorRef) = {
-    val stopped = gracefulStop(processor, 5 seconds, PoisonPill)
-    Await.result(stopped, 6 seconds)
-
-    val actor = system.actorOf(
-      Props(
-        new ProcessingTypeProcessor(app.injector.instanceOf[ProcessingTypeRepository],
-                                    app.injector.instanceOf[CollectionEventTypeRepository],
-                                    app.injector.instanceOf[SnapshotWriter])
-      ),
-      "processing-type-processor-id-2"
-    )
-    Thread.sleep(100)
-    actor
+    gracefulStop(processor, 5 seconds, PoisonPill).map { _ =>
+      val actor = system.actorOf(
+        Props(
+          new ProcessingTypeProcessor(app.injector.instanceOf[ProcessingTypeRepository],
+                                      app.injector.instanceOf[CollectionEventTypeRepository],
+                                      app.injector.instanceOf[SnapshotWriter])
+        ),
+        "processing-type-processor-id-2"
+      )
+      Thread.sleep(100)
+      actor
+    }
   }
 
   describe("A processingTypes processor must") {
 
     it("allow recovery from journal", PersistenceTest) {
       val f = collectedSpecimenDefinitionFixtures
-      val cmdInput = ProcessingTypeCommands.InputSpecimenProcessing(expectedChange =
-                                                                      f.processingType.input.expectedChange,
-                                                                    count = f.processingType.input.count,
-                                                                    containerTypeId =
-                                                                      f.processingType.input.containerTypeId
-                                                                        .map(_.id),
-                                                                    definitionType =
-                                                                      ProcessingType.collectedDefinition.id,
-                                                                    entityId =
-                                                                      f.processingType.input.entityId.toString,
-                                                                    specimenDefinitionId =
-                                                                      f.processingType.input.specimenDefinitionId.id)
+      val cmdInput = ProcessingTypeCommands
+        .InputSpecimenProcessing(expectedChange = f.processingType.input.expectedChange,
+                                 count          = f.processingType.input.count,
+                                 containerTypeId = f.processingType.input.containerTypeId
+                                   .map(_.id),
+                                 definitionType       = ProcessingType.collectedDefinition.id,
+                                 entityId             = f.processingType.input.entityId.toString,
+                                 specimenDefinitionId = f.processingType.input.specimenDefinitionId.id)
 
       val specimenDefinition = f.processingType.output.specimenDefinition
-      val cmdSpecimenDefintition = ProcessingTypeCommands.SpecimenDefinition(name = specimenDefinition.name,
-                                                                             description =
-                                                                               specimenDefinition.description,
-                                                                             units = specimenDefinition.units,
-                                                                             anatomicalSourceType =
-                                                                               specimenDefinition.anatomicalSourceType,
-                                                                             preservationType =
-                                                                               specimenDefinition.preservationType,
-                                                                             preservationTemperature =
-                                                                               specimenDefinition.preservationTemperature,
-                                                                             specimenType =
-                                                                               specimenDefinition.specimenType)
+      val cmdSpecimenDefintition = ProcessingTypeCommands
+        .SpecimenDefinition(name                    = specimenDefinition.name,
+                            description             = specimenDefinition.description,
+                            units                   = specimenDefinition.units,
+                            anatomicalSourceType    = specimenDefinition.anatomicalSourceType,
+                            preservationType        = specimenDefinition.preservationType,
+                            preservationTemperature = specimenDefinition.preservationTemperature,
+                            specimenType            = specimenDefinition.specimenType)
 
       val output = f.processingType.output
       val cmdOutput =
@@ -139,7 +131,7 @@ class ProcessingTypesProcessorSpec extends ProcessorTestFixture with ProcessingT
       } must contain(f.processingType.name)
 
       processingTypeRepository.removeAll
-      processingTypeProcessor = restartProcessor(processingTypeProcessor)
+      processingTypeProcessor = restartProcessor(processingTypeProcessor).futureValue
 
       processingTypeRepository.getValues.size must be(1)
       processingTypeRepository.getValues.map { pt =>
@@ -168,7 +160,7 @@ class ProcessingTypesProcessorSpec extends ProcessorTestFixture with ProcessingT
       (processingTypeProcessor ? "snap").mapTo[String].futureValue
 
       processingTypeRepository.removeAll
-      processingTypeProcessor = restartProcessor(processingTypeProcessor)
+      processingTypeProcessor = restartProcessor(processingTypeProcessor).futureValue
 
       processingTypeRepository.getValues.size must be(1)
       processingTypeRepository

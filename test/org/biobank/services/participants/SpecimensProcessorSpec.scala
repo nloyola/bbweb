@@ -14,7 +14,6 @@ import org.mockito.Mockito
 import play.api.libs.json._
 import scala.language.reflectiveCalls
 import scala.concurrent.duration._
-import scala.concurrent.Await
 
 case class NamedSpecimensProcessor @Inject()(@Named("specimensProcessor") processor: ActorRef)
 
@@ -24,6 +23,8 @@ class SpecimensProcessorSpec
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.SpecimenCommands._
   import org.biobank.infrastructure.events.SpecimenEvents._
+
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   private var specimensProcessor = app.injector.instanceOf[NamedSpecimensProcessor].processor
 
@@ -47,22 +48,21 @@ class SpecimensProcessorSpec
   }
 
   private def restartProcessor(processor: ActorRef) = {
-    val stopped = gracefulStop(processor, 5 seconds, PoisonPill)
-    Await.result(stopped, 6 seconds)
-
-    val actor = system.actorOf(
-      Props(
-        new SpecimensProcessor(specimenRepository,
-                               collectionEventRepository,
-                               collectionEventTypeRepository,
-                               app.injector.instanceOf[CeventSpecimenRepository],
-                               app.injector.instanceOf[ProcessingEventInputSpecimenRepository],
-                               app.injector.instanceOf[SnapshotWriter])
-      ),
-      "specimens-processor-id-2"
-    )
-    Thread.sleep(250)
-    actor
+    gracefulStop(processor, 5 seconds, PoisonPill).map { _ =>
+      val actor = system.actorOf(
+        Props(
+          new SpecimensProcessor(specimenRepository,
+                                 collectionEventRepository,
+                                 collectionEventTypeRepository,
+                                 app.injector.instanceOf[CeventSpecimenRepository],
+                                 app.injector.instanceOf[ProcessingEventInputSpecimenRepository],
+                                 app.injector.instanceOf[SnapshotWriter])
+        ),
+        "specimens-processor-id-2"
+      )
+      Thread.sleep(250)
+      actor
+    }
   }
 
   describe("A specimens processor must") {
@@ -95,7 +95,7 @@ class SpecimensProcessorSpec
       }
 
       specimenRepository.removeAll
-      specimensProcessor = restartProcessor(specimensProcessor)
+      specimensProcessor = restartProcessor(specimensProcessor).futureValue
 
       specimenRepository.getValues.size must be(f.specimens.size)
       f.specimens.foreach { specimen =>
@@ -126,7 +126,7 @@ class SpecimensProcessorSpec
       (specimensProcessor ? "snap").mapTo[String].futureValue
 
       specimenRepository.removeAll
-      specimensProcessor = restartProcessor(specimensProcessor)
+      specimensProcessor = restartProcessor(specimensProcessor).futureValue
 
       specimenRepository.getValues.size must be(1)
       specimenRepository.getByKey(snapshotSpecimen.id) mustSucceed { repoSpecimen =>

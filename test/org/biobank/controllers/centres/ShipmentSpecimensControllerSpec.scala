@@ -7,7 +7,6 @@ import org.biobank.domain.participants._
 import org.biobank.dto._
 import org.biobank.fixtures.Url
 import org.biobank.matchers.PagedResultsMatchers
-import org.scalatest.Ignore
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import play.api.libs.json._
@@ -18,7 +17,6 @@ import play.api.test.Helpers._
  *
  * Tests for [[Shipment]]s in ShipmentsControllerSpec.scala.
  */
-@Ignore
 class ShipmentSpecimensControllerSpec
     extends ShipmentsControllerSpecFixtures with PagedResultsSharedSpec with PagedResultsMatchers {
 
@@ -559,6 +557,290 @@ class ShipmentSpecimensControllerSpec
         reply must beBadRequestWithMessage("EntityCriteriaError: invalid centre for specimen inventory IDs")
       }
 
+    }
+
+    describe("POST /api/shipments/specimens/present/:id") {
+      it("can tag a non present specimen as present") {
+        val f        = shipmentSpecimensFixture(1)
+        val shipment = makeUnpackedShipment(f.shipment)
+        shipmentsReadRepository.put(shipment)
+        shipmentsWriteRepository.put(shipment)
+
+        f.shipmentSpecimenMap.values.foreach { v =>
+          val specimen = v.specimen
+          specimenRepository.put(specimen)
+
+          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Missing)
+          shipmentSpecimensReadRepository.put(shipmentSpecimen)
+          shipmentSpecimensRepository.put(shipmentSpecimen)
+
+          val url     = uri(shipment, "present")
+          val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
+          val reply   = makeAuthRequest(POST, url, reqJson).value
+          reply must beOkResponseWithJsonReply
+
+          val dto = (contentAsJson(reply) \ "data").validate[ShipmentDto]
+          dto must be(jsSuccess)
+          dto.get must matchDtoToShipment(shipment)
+
+          val repoShipmentSpecimens = shipmentSpecimensRepository.forShipment(ShipmentId(dto.get.id))
+          repoShipmentSpecimens must have size (1)
+          repoShipmentSpecimens.foreach { r =>
+            r.specimenId must be(specimen.id)
+            r.state must be(ShipmentItemState.Present)
+          }
+        }
+      }
+
+      it("replies whith an error if the specimen is already present") {
+        val f        = shipmentSpecimensFixture(1)
+        val shipment = makeUnpackedShipment(f.shipment)
+        shipmentsReadRepository.put(shipment)
+        shipmentsWriteRepository.put(shipment)
+
+        f.shipmentSpecimenMap.values.foreach { v =>
+          val specimen = v.specimen
+          specimenRepository.put(specimen)
+
+          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Present)
+          shipmentSpecimensReadRepository.put(shipmentSpecimen)
+          shipmentSpecimensRepository.put(shipmentSpecimen)
+
+          val url     = uri(shipment, "present")
+          val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
+          val reply   = makeAuthRequest(POST, url, reqJson).value
+          reply must beBadRequestWithMessage("EntityCriteriaError: shipment specimens are present")
+        }
+      }
+
+      it("replies with an error when attempting to tag a specimen not in the shipment") {
+        val f        = shipmentSpecimensFixture(1)
+        val shipment = makeUnpackedShipment(f.shipment)
+        shipmentsReadRepository.put(shipment)
+        shipmentsWriteRepository.put(shipment)
+
+        f.shipmentSpecimenMap.values.foreach { v =>
+          val specimen = factory.createUsableSpecimen
+          specimenRepository.put(specimen)
+
+          val url     = uri(shipment, "present")
+          val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
+          val reply   = makeAuthRequest(POST, url, reqJson).value
+          reply must beBadRequestWithMessage("EntityCriteriaError: specimens not in this shipment")
+        }
+      }
+    }
+
+    describe("POST /api/shipments/specimens/received/:id") {
+      it("can tag a present specimen as received") {
+        val f        = shipmentSpecimensFixture(1)
+        val shipment = makeUnpackedShipment(f.shipment)
+        shipmentsReadRepository.put(shipment)
+        shipmentsWriteRepository.put(shipment)
+
+        f.shipmentSpecimenMap.values.foreach { v =>
+          val specimen = v.specimen
+          specimenRepository.put(specimen)
+
+          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Present)
+          shipmentSpecimensReadRepository.put(shipmentSpecimen)
+          shipmentSpecimensRepository.put(shipmentSpecimen)
+
+          val url     = uri(shipment, "received")
+          val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
+          val reply   = makeAuthRequest(POST, url, reqJson).value
+          reply must beOkResponseWithJsonReply
+
+          val dto = (contentAsJson(reply) \ "data").validate[ShipmentDto]
+          dto must be(jsSuccess)
+          dto.get must matchDtoToShipment(shipment)
+
+          val repoShipmentSpecimens = shipmentSpecimensRepository.forShipment(ShipmentId(dto.get.id))
+          repoShipmentSpecimens must have size (1)
+          repoShipmentSpecimens.foreach { r =>
+            r.specimenId must be(specimen.id)
+            r.state must be(ShipmentItemState.Received)
+          }
+        }
+      }
+
+      it("replies whith an error if the specimen is already received") {
+        val f        = shipmentSpecimensFixture(1)
+        val shipment = makeUnpackedShipment(f.shipment)
+        shipmentsReadRepository.put(shipment)
+        shipmentsWriteRepository.put(shipment)
+
+        f.shipmentSpecimenMap.values.foreach { v =>
+          val specimen = v.specimen
+          specimenRepository.put(specimen)
+
+          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Received)
+          shipmentSpecimensReadRepository.put(shipmentSpecimen)
+          shipmentSpecimensRepository.put(shipmentSpecimen)
+
+          val url     = uri(shipment, "received")
+          val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
+          val reply   = makeAuthRequest(POST, url, reqJson).value
+          reply must beBadRequestWithMessage("EntityCriteriaError: shipment specimens not present")
+        }
+      }
+
+      it("replies with an error when attempting to tag a specimen not in the shipment") {
+        val f        = shipmentSpecimensFixture(1)
+        val shipment = makeUnpackedShipment(f.shipment)
+        shipmentsReadRepository.put(shipment)
+        shipmentsWriteRepository.put(shipment)
+
+        f.shipmentSpecimenMap.values.foreach { v =>
+          val specimen = factory.createUsableSpecimen
+          specimenRepository.put(specimen)
+
+          val url     = uri(shipment, "received")
+          val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
+          val reply   = makeAuthRequest(POST, url, reqJson).value
+          reply must beBadRequestWithMessage("EntityCriteriaError: specimens not in this shipment")
+        }
+      }
+    }
+
+    describe("POST /api/shipments/specimens/missing/:id") {
+      it("can tag a present specimen as missing") {
+        val f        = shipmentSpecimensFixture(1)
+        val shipment = makeUnpackedShipment(f.shipment)
+        shipmentsReadRepository.put(shipment)
+        shipmentsWriteRepository.put(shipment)
+
+        f.shipmentSpecimenMap.values.foreach { v =>
+          val specimen = v.specimen
+          specimenRepository.put(specimen)
+
+          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Present)
+          shipmentSpecimensReadRepository.put(shipmentSpecimen)
+          shipmentSpecimensRepository.put(shipmentSpecimen)
+
+          val url     = uri(shipment, "missing")
+          val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
+          val reply   = makeAuthRequest(POST, url, reqJson).value
+          reply must beOkResponseWithJsonReply
+
+          val dto = (contentAsJson(reply) \ "data").validate[ShipmentDto]
+          dto must be(jsSuccess)
+          dto.get must matchDtoToShipment(shipment)
+
+          val repoShipmentSpecimens = shipmentSpecimensRepository.forShipment(ShipmentId(dto.get.id))
+          repoShipmentSpecimens must have size (1)
+          repoShipmentSpecimens.foreach { r =>
+            r.specimenId must be(specimen.id)
+            r.state must be(ShipmentItemState.Missing)
+          }
+        }
+      }
+
+      it("replies whith an error if the specimen is already missing") {
+        val f        = shipmentSpecimensFixture(1)
+        val shipment = makeUnpackedShipment(f.shipment)
+        shipmentsReadRepository.put(shipment)
+        shipmentsWriteRepository.put(shipment)
+
+        f.shipmentSpecimenMap.values.foreach { v =>
+          val specimen = v.specimen
+          specimenRepository.put(specimen)
+
+          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Missing)
+          shipmentSpecimensReadRepository.put(shipmentSpecimen)
+          shipmentSpecimensRepository.put(shipmentSpecimen)
+
+          val url     = uri(shipment, "missing")
+          val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
+          val reply   = makeAuthRequest(POST, url, reqJson).value
+          reply must beBadRequestWithMessage("EntityCriteriaError: shipment specimens not present")
+        }
+      }
+
+      it("replies with an error when attempting to tag a specimen not in the shipment") {
+        val f        = shipmentSpecimensFixture(1)
+        val shipment = makeUnpackedShipment(f.shipment)
+        shipmentsReadRepository.put(shipment)
+        shipmentsWriteRepository.put(shipment)
+
+        f.shipmentSpecimenMap.values.foreach { v =>
+          val specimen = factory.createUsableSpecimen
+          specimenRepository.put(specimen)
+
+          val url     = uri(shipment, "received")
+          val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
+          val reply   = makeAuthRequest(POST, url, reqJson).value
+          reply must beBadRequestWithMessage("EntityCriteriaError: specimens not in this shipment")
+        }
+      }
+    }
+
+    describe("POST /api/shipments/specimens/extra/:id") {
+      it("can tag a specimen as extra") {
+        val f        = shipmentSpecimensFixture(1)
+        val shipment = makeUnpackedShipment(f.shipment)
+        shipmentsReadRepository.put(shipment)
+        shipmentsWriteRepository.put(shipment)
+
+        f.shipmentSpecimenMap.values.foreach { v =>
+          val extraSpecimen = factory.createUsableSpecimen.copy(originLocationId = f.originLocation.id,
+                                                                locationId = f.originLocation.id)
+          specimenRepository.put(extraSpecimen)
+          ceventSpecimenRepository.put(CeventSpecimen(f.cevent.id, extraSpecimen.id))
+
+          val url     = uri(shipment, "extra")
+          val reqJson = Json.obj("specimenInventoryIds" -> List(extraSpecimen.inventoryId))
+          val reply   = makeAuthRequest(POST, url, reqJson).value
+          reply must beOkResponseWithJsonReply
+
+          val dto = (contentAsJson(reply) \ "data").validate[ShipmentDto]
+          dto must be(jsSuccess)
+          dto.get must matchDtoToShipment(shipment)
+
+          shipmentSpecimensRepository.getBySpecimen(shipment.id, extraSpecimen) mustSucceed {
+            _.state must be(ShipmentItemState.Extra)
+          }
+        }
+      }
+
+      it("replies with an error if the specimen is already present in another shipment") {
+        val f        = shipmentSpecimensFixture(1)
+        val f2       = shipmentSpecimensFixture(1)
+        val shipment = makeUnpackedShipment(f.shipment)
+        shipmentsReadRepository.put(shipment)
+        shipmentsWriteRepository.put(shipment)
+
+        f.shipmentSpecimenMap.values.foreach { v =>
+          val extraSpecimen = f2.specimens.headOption.value
+          specimenRepository.put(extraSpecimen)
+
+          val url     = uri(shipment, "extra")
+          val reqJson = Json.obj("specimenInventoryIds" -> List(extraSpecimen.inventoryId))
+          val reply   = makeAuthRequest(POST, url, reqJson).value
+          reply must beBadRequestWithMessage(
+            "EntityCriteriaError: specimens are already in an active shipment"
+          )
+        }
+      }
+
+      it("replies with an error when attempting to add an extra specimen that is already in the shipment") {
+        val f        = shipmentSpecimensFixture(1)
+        val shipment = makeUnpackedShipment(f.shipment)
+        shipmentsReadRepository.put(shipment)
+        shipmentsWriteRepository.put(shipment)
+
+        f.shipmentSpecimenMap.values.foreach { v =>
+          val specimen = v.specimen
+          specimenRepository.put(specimen)
+
+          val url     = uri(shipment, "extra")
+          val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
+          val reply   = makeAuthRequest(POST, url, reqJson).value
+          reply must beBadRequestWithMessage(
+            "EntityCriteriaError: specimen inventory IDs already in this shipment"
+          )
+        }
+      }
     }
 
     describe("DELETE /api/shipments/specimens/:shId/:shSpcId/:ver") {

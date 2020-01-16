@@ -444,6 +444,14 @@ class ShipmentsControllerSpec
         }
       }
 
+      describe("fail when updating courier name with invalid version") {
+
+        def urlFunc(shipment: Shipment) = uri("courier", shipment.id.id)
+        updateWithInvalidVersionSharedBehaviour(urlFunc,
+                                                Json.obj("courierName" -> nameGenerator.next[Shipment]))
+
+      }
+
     }
 
     describe("POST /api/shipments/tracking-number/:id") {
@@ -502,6 +510,14 @@ class ShipmentsControllerSpec
           val reply = makeAuthRequest(POST, uri("tracking-number", shipment.id.id), updateJson).value
           reply must beBadRequestWithMessage("InvalidState: shipment not created")
         }
+      }
+
+      describe("fail when updating courier name with invalid version") {
+
+        def urlFunc(shipment: Shipment) = uri("tracking-number", shipment.id.id)
+        updateWithInvalidVersionSharedBehaviour(urlFunc,
+                                                Json.obj("trackingNumber" -> nameGenerator.next[Shipment]))
+
       }
 
     }
@@ -566,6 +582,14 @@ class ShipmentsControllerSpec
         }
       }
 
+      describe("fail when updating courier name with invalid version") {
+
+        def urlFunc(shipment: Shipment) = uri("origin", shipment.id.id)
+        updateWithInvalidVersionSharedBehaviour(urlFunc,
+                                                Json.obj("locationId" -> nameGenerator.next[Shipment]))
+
+      }
+
     }
 
     describe("POST /api/shipments/destination/:id") {
@@ -626,6 +650,14 @@ class ShipmentsControllerSpec
           val reply = makeAuthRequest(POST, uri("destination", shipment.id.id), updateJson).value
           reply must beBadRequestWithMessage("InvalidState: shipment not created")
         }
+      }
+
+      describe("fail when updating courier name with invalid version") {
+
+        def urlFunc(shipment: Shipment) = uri("destination", shipment.id.id)
+        updateWithInvalidVersionSharedBehaviour(urlFunc,
+                                                Json.obj("locationId" -> nameGenerator.next[Shipment]))
+
       }
 
     }
@@ -1273,6 +1305,23 @@ class ShipmentsControllerSpec
       reply must beOkResponseWithJsonReply
       reply must matchUpdatedShipment(info.updatedShipment)
     }
+
+  private def updateWithInvalidVersionSharedBehaviour(urlFunc: Shipment => Url, json: JsValue) = {
+
+    it("should return bad request") {
+      val f        = createdShipmentFixture
+      val shipment = f.shipment
+      shipmentsReadRepository.put(shipment)
+      shipmentsWriteRepository.put(shipment)
+      var requestJson = Json.obj("expectedVersion" -> Json.toJson(Some(shipment.version + 1)))
+      if (json != JsNull) {
+        requestJson = requestJson ++ json.as[JsObject]
+      }
+      val reply = makeAuthRequest(POST, urlFunc(shipment), requestJson)
+      reply.value must beBadRequestWithMessage("InvalidVersion")
+    }
+
+  }
 
   private case class SkipStateInfo(shipment: Shipment, updatedShipment: Shipment, url: Url, json: JsValue)
 

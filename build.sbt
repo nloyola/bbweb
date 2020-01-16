@@ -70,7 +70,9 @@ lazy val root = (project in file("."))
     }
   )
 
-(testOptions in Test) += Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/report")
+// disable following line for now since it causes a compilation error when generating
+// code coverage report
+// (testOptions in Test) += Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/report")
 
 (testOptions in Test) += Tests.Argument(TestFrameworks.ScalaTest, "-oDS")
 

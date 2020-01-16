@@ -5,7 +5,7 @@ dist: xenial
 matrix:
   include:
     - language: scala
-      jdk: oraclejdk8
+      jdk: openjdk11
       scala: 2.13.1
       before_cache:
         # Cleanup the cached directories to avoid unnecessary cache updates

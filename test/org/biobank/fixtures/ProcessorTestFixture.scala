@@ -29,7 +29,7 @@ trait ProcessorTestFixture
 
   // need to configure scalatest to have more patience when waiting for future results
   implicit val defaultPatience =
-    PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
+    PatienceConfig(timeout = Span(5, Seconds), interval = Span(5, Millis))
 
   /**
    * Shuts down the actor system.

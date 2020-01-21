@@ -86,7 +86,7 @@ javaOptions in Test ++= Seq("-Xms512M",
 
 javacOptions in ThisBuild ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint")
 
-javaOptions in run ++= Seq("-Xms256M", "-Xmx2G", "-XX:+UseConcMarkSweepGC")
+javaOptions in run ++= Seq("-Xms256M", "-Xmx2G")
 
 sources in (Compile, doc) ~= (_ filter (_.getParent contains "org/biobank"))
 

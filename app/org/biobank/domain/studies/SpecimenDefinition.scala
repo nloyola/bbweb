@@ -179,7 +179,6 @@ object CollectedSpecimenDefinition extends SpecimenDefinitionValidations {
                                   amount                  = amount)
     }
 
-  //@silent
   def validate(
       name:                    String,
       description:             Option[String],
@@ -245,7 +244,6 @@ object ProcessedSpecimenDefinition extends SpecimenDefinitionValidations {
                                   specimenType            = specimenType)
     }
 
-  //@silent
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def validate(
       name:                    String,

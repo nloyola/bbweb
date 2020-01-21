@@ -174,11 +174,9 @@ class SpecimensProcessor @Inject()(
       }
     )
 
-  //@silent
   private def moveCmdToEvent(cmd: MoveSpecimensCmd): ServiceValidation[SpecimenEvent] =
     ???
 
-  //@silent
   private def assignPositionCmdToEvent(
       cmd:      SpecimenAssignPositionCmd,
       cevent:   CollectionEvent,
@@ -186,7 +184,6 @@ class SpecimensProcessor @Inject()(
     ): ServiceValidation[SpecimenEvent] =
     ???
 
-  //@silent
   private def removeAmountCmdToEvent(
       cmd:      SpecimenRemoveAmountCmd,
       cevent:   CollectionEvent,
@@ -194,7 +191,6 @@ class SpecimensProcessor @Inject()(
     ): ServiceValidation[SpecimenEvent] =
     ???
 
-  //@silent
   private def updateUsableCmdToEvent(
       cmd:      SpecimenUpdateUsableCmd,
       cevent:   CollectionEvent,
@@ -253,19 +249,15 @@ class SpecimensProcessor @Inject()(
     }
   }
 
-  //@silent
   private def applyMovedEvent(event: SpecimenEvent): Unit =
     ???
 
-  //@silent
   private def applyPositionAssignedEvent(event: SpecimenEvent): Unit =
     ???
 
-  //@silent
   private def applyAmountRemovedEvent(event: SpecimenEvent): Unit =
     ???
 
-  //@silent
   private def applyUsableUpdatedEvent(event: SpecimenEvent): Unit =
     ???
 

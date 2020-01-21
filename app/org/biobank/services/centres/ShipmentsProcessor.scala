@@ -480,7 +480,6 @@ class ShipmentsProcessor @Inject()(
         InvalidState(s"shipment not sent: ${shipment.state}").failureNel[ShipmentEvent]
     }
 
-  //@silent
   private def removeCmdToEvent(
       cmd:      ShipmentRemoveCmd,
       shipment: CreatedShipment
@@ -508,7 +507,7 @@ class ShipmentsProcessor @Inject()(
     val shipmentContainerId = cmd.shipmentContainerId.map(ShipmentContainerId.apply)
 
     for {
-      shipment <- shipmentRepository.getCreated(shipmentId)
+      shipment          <- shipmentRepository.getCreated(shipmentId)
       specimens         <- specimensService.getByInventoryIds(sessionUserId, cmd.specimenInventoryIds: _*)
       shipmentSpecimens <- createShipmentSpecimens(shipment, shipmentContainerId, specimens)
     } yield {
@@ -569,7 +568,6 @@ class ShipmentsProcessor @Inject()(
                                                          _.removed.shipmentSpecimenId := cmd.shipmentSpecimenId)
   }
 
-  //@silent
   private def updateSpecimenContainerCmdToEvent(
       cmd:      ShipmentSpecimenUpdateContainerCmd,
       shipment: Shipment
@@ -1147,8 +1145,8 @@ class ShipmentsProcessor @Inject()(
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def createShipmentSpecimens(
-      shipment:             Shipment,
-      shipmentContainerId:  Option[ShipmentContainerId],
+      shipment:            Shipment,
+      shipmentContainerId: Option[ShipmentContainerId],
       specimens:           List[Specimen]
     ): ServiceValidation[Seq[ShipmentSpecimen]] =
     for {

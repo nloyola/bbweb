@@ -662,7 +662,7 @@ class ShipmentsControllerSpec
 
     }
 
-    describe("POST /api/shipments/state/:id") {
+    describe("POST /api/shipments/state/:state/:id") {
 
       describe("for all states") {
 

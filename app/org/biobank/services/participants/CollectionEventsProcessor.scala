@@ -177,7 +177,6 @@ class CollectionEventsProcessor @Inject()(
               })
   }
 
-  //@silent
   private def updateVisitNumberCmdToEvent(
       cmd:                 UpdateCollectionEventVisitNumberCmd,
       participant:         Participant,
@@ -195,7 +194,6 @@ class CollectionEventsProcessor @Inject()(
               _.visitNumberUpdated.version     := cmd.expectedVersion,
               _.visitNumberUpdated.visitNumber := updatedCevent.visitNumber)
 
-  //@silent
   private def updateTimeCompletedCmdToEvent(
       cmd:                 UpdateCollectionEventTimeCompletedCmd,
       participant:         Participant,

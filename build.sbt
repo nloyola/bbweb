@@ -18,7 +18,6 @@ scalaVersion := "2.13.1"
 
 val akkaVer           = "2.6.1"
 val silhouetteVersion = "6.1.1"
-//val silencerVersion   = "1.4.3"
 
 organization in ThisBuild := "org.biobank"
 

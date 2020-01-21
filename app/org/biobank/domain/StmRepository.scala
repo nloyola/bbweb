@@ -8,7 +8,6 @@ import scalaz.Scalaz._
 /**
  * A read-only wrapper around an STM Ref of a Map.
  */
-//@silent
 abstract class StmReadRepositoryImpl[K, A](keyGetter: (A) => K) extends ReadRepository[K, A] {
   import org.biobank.CommonValidations._
 

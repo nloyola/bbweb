@@ -22,7 +22,6 @@ trait BbwebServiceImpl {
 
   val processor: ActorRef
 
-  //@silent
   def snapshotRequest(requestUserId: UserId): ServiceValidation[Unit] =
     (processor ! "snap").successNel[String]
 
@@ -102,7 +101,7 @@ trait ServicePermissionChecks {
     ): FutureValidation[T] = {
     FutureValidation(accessService.hasPermissionAndIsMember(requestUserId, permissionId, studyId, centreId))
       .flatMap { permission =>
-              if (permission) block()
+        if (permission) block()
         else FutureValidation(Unauthorized.failureNel[T])
       }
   }

@@ -155,7 +155,6 @@ class ParticipantsProcessor @Inject()(
                 annotationToEvent(_)
               })
 
-  //@silent
   private def updateUniqueIdCmdToEvent(
       cmd:         UpdateParticipantUniqueIdCmd,
       study:       Study,

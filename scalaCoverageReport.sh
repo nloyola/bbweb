@@ -1,3 +1,3 @@
 #!/bin/bash
-sbt clean coverage test
-sbt coverageReport
+sbt -Dsbt.color=false clean coverage test
+sbt -Dsbt.color=false coverageReport

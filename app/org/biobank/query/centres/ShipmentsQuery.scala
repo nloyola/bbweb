@@ -63,6 +63,8 @@ class ShipmentsQuery @Inject()(
     val f = for {
       _ <- db.run(shipments.delete)
       _ <- shipmentsRepository.putAll(testData.testShipments)
+      _ <- db.run(shipmentSpecimens.delete)
+      _ <- shipmentSpecimensRepository.putAll(testData.testShipmentSpecimens)
     } yield ()
 
     f.onComplete {
@@ -75,6 +77,7 @@ class ShipmentsQuery @Inject()(
   def handleEvents(): Unit = {
     // stream does not complete
     def handleEventsFrom(startSeqNo: Long): Unit = {
+      log.debug(s"handleEventsFrom: startSeqNo: $startSeqNo")
       readJournal
         .eventsByPersistenceId(persistenceId, startSeqNo, Long.MaxValue)
         .runForeach { envelope =>
@@ -94,7 +97,8 @@ class ShipmentsQuery @Inject()(
             handleEventsFrom(0L)
         }
       case Failure(err) =>
-        log.error(s"error retrieving sequence number: ${err.getMessage}")
+        //log.error(s"error retrieving sequence number: ${err.getMessage}")
+        handleEventsFrom(0L)
     }
     ()
   }
@@ -110,7 +114,7 @@ class ShipmentsQuery @Inject()(
       f.map(_ => sequenceNumbersDao.insertOrUpdate(SequenceNumber(persistenceId, envelope.sequenceNr)))
       f.onComplete {
         case Failure(err) =>
-          log.error(s"error processing event queue: {err.getMessage}")
+          log.error(s"error processing event queue: ${err.getMessage}")
         case Success(_) =>
           currentOperation = None
           processEventQueue

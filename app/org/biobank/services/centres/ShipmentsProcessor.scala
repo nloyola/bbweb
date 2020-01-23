@@ -55,7 +55,7 @@ class ShipmentsProcessor @Inject()(
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
   val receiveRecover: Receive = {
     case event: ShipmentEvent =>
-      log.debug(s"ShipmentsProcessor: $event")
+      log.debug(s"ShipmentsProcessor: receiveRecover: $event")
 
       val result = event.eventType match {
         case et: ShipmentEvent.EventType.Added => applyAddedEvent(event)
@@ -1251,7 +1251,7 @@ class ShipmentsProcessor @Inject()(
       .map { specimen =>
         shipmentSpecimenRepository
           .getBySpecimen(shipmentId, specimen).fold(err => specimen.successNel[String],
-                                                    _ => specimen.inventoryId.failureNel[Specimen])
+                                                    _   => specimen.inventoryId.failureNel[Specimen])
       }.toList.sequenceU.leftMap(
         err =>
           EntityCriteriaError(

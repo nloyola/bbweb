@@ -658,7 +658,7 @@ class TestData @Inject()(
       log.debug(s"testShipments")
 
       /*
-       * - creates 3 shipments, each in a different state
+       * - creates mutliple shipments, each in a different state
        */
       val originCentreId        = centreCalgaryId
       val originLocationId      = LocationId(s"${originCentreId.id}:Primary")

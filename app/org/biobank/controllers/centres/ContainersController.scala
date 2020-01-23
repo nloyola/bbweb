@@ -2,7 +2,7 @@ package org.biobank.controllers.centres
 
 import javax.inject.{Inject, Singleton}
 import org.biobank.controllers._
-import org.biobank.dto.ContainerDto
+import org.biobank.dto.containers.ContainerDto
 import org.biobank.domain.Slug
 import org.biobank.domain.centres.CentreId
 import org.biobank.domain.containers.ContainerId

@@ -2,7 +2,7 @@ package org.biobank.domain.participants
 
 import org.biobank.domain.Factory
 import org.scalatest.OptionValues._
-import org.biobank.dto.CentreLocationInfo
+import org.biobank.dto.centres.CentreLocationInfo
 import scala.language.reflectiveCalls
 
 trait SpecimenSpecFixtures {

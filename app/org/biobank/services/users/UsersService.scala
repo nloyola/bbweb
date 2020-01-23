@@ -3,7 +3,6 @@ package org.biobank.services.users
 import akka.actor.ActorRef
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
-import java.time.format.DateTimeFormatter
 import javax.inject._
 import org.biobank.{FutureValidation, ValidationKey}
 import org.biobank.domain.Slug
@@ -67,7 +66,7 @@ trait UsersService extends BbwebService {
   def getUserNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): FutureValidation[Seq[EntityInfoAndStateDto]]
+    ): FutureValidation[Seq[UserInfoAndStateDto]]
 
   /**
    * Returns the counts of all users and also counts of users categorized by state.
@@ -86,7 +85,7 @@ trait UsersService extends BbwebService {
    *
    * @param sort the string representation of the sort expression to use when sorting the studies.
    */
-  def getUserStudies(userId: UserId, query: FilterAndSortQuery): FutureValidation[Seq[EntityInfoAndStateDto]]
+  def getUserStudies(userId: UserId, query: FilterAndSortQuery): FutureValidation[Seq[StudyInfoAndStateDto]]
 
   /**
    * Permissions not checked since anyone can attempt a login.
@@ -161,14 +160,10 @@ class UsersServiceImpl @javax.inject.Inject()(
   def getUserNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): FutureValidation[Seq[EntityInfoAndStateDto]] =
+    ): FutureValidation[Seq[UserInfoAndStateDto]] =
     FutureValidation {
       whenPermitted(requestUserId, PermissionId.UserRead) { () =>
-        filterUsers(query.filter, query.sort).map {
-          _.map { u =>
-            EntityInfoAndStateDto(u.id, u.slug, u.name, u.state)
-          }
-        }
+        filterUsers(query.filter, query.sort).map(_.map(UserInfoAndStateDto(_)))
       }
     }
 
@@ -214,10 +209,7 @@ class UsersServiceImpl @javax.inject.Inject()(
     }
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  def getUserStudies(
-      userId: UserId,
-      query:  FilterAndSortQuery
-    ): FutureValidation[Seq[EntityInfoAndStateDto]] =
+  def getUserStudies(userId: UserId, query: FilterAndSortQuery): FutureValidation[Seq[StudyInfoAndStateDto]] =
     FutureValidation {
       for {
         membership <- accessService.getUserMembership(userId)
@@ -228,11 +220,7 @@ class UsersServiceImpl @javax.inject.Inject()(
         dtos <- {
           studyIds
             .map(studyRepository.getByKey).toList.sequenceU
-            .map {
-              _.toSeq.map { s =>
-                EntityInfoAndStateDto(s.id.id, s.slug, s.name, s.state.id)
-              }
-            }
+            .map(_.toSeq.map(StudyInfoAndStateDto(_)))
         }
       } yield dtos
     }
@@ -382,11 +370,11 @@ class UsersServiceImpl @javax.inject.Inject()(
       userRoles: ServiceValidation[Set[UserRoleDto]]
     ): ServiceValidation[UserDto] =
     userRoles.map { roles =>
-      val dto = UserDto(id = user.id.id,
+      val dto = UserDto(id = user.id,
                         version      = user.version,
-                        timeAdded    = user.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                        timeModified = user.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                        state        = user.state.id,
+                        timeAdded    = user.timeAdded,
+                        timeModified = user.timeModified,
+                        state        = user.state,
                         slug         = user.slug,
                         name         = user.name,
                         email        = user.email,

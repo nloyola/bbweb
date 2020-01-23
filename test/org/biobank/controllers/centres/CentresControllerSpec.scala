@@ -5,7 +5,8 @@ import org.biobank.controllers.PagedResultsSharedSpec
 import org.biobank.domain.{Location, Slug}
 import org.biobank.domain.centres._
 import org.biobank.domain.studies.{Study, StudyId}
-import org.biobank.dto.{CentreDto, CentreLocationInfo, EntityInfoAndStateDto}
+import org.biobank.dto._
+import org.biobank.dto.centres._
 import org.biobank.fixtures.{ControllerFixture, Url}
 import org.biobank.matchers.PagedResultsMatchers
 import org.biobank.services.centres.{CentreCountsByStatus}
@@ -296,7 +297,7 @@ class CentresControllerSpec extends ControllerFixture with PagedResultsSharedSpe
         val replyCentre = (json \ "data").validate[CentreDto]
         replyCentre must be(jsSuccess)
 
-        val newCentreId   = CentreId(replyCentre.get.id)
+        val newCentreId   = replyCentre.get.id
         val updatedCentre = centre.copy(id = newCentreId)
 
         replyCentre.get must matchDtoToCentre(updatedCentre)
@@ -754,7 +755,7 @@ class CentresControllerSpec extends ControllerFixture with PagedResultsSharedSpe
         val centres = (1 to 2).map { _ =>
           factory.createDisabledCentre
         }
-        val nameDtos = centres.map(_.nameDto).toSeq
+        val nameDtos = centres.map(CentreInfoAndStateDto(_)).toSeq
         centres.foreach(centreRepository.put)
 
         val sortTable = Table(("order", "dtos"), ("name", nameDtos.sortWith { (a, b) =>
@@ -767,7 +768,7 @@ class CentresControllerSpec extends ControllerFixture with PagedResultsSharedSpe
           val reply = makeAuthRequest(GET, uri("names").addQueryString(s"sort=$order")).value
           reply must beOkResponseWithJsonReply
 
-          val replyDtos = (contentAsJson(reply) \ "data").validate[List[EntityInfoAndStateDto]]
+          val replyDtos = (contentAsJson(reply) \ "data").validate[List[CentreInfoAndStateDto]]
           replyDtos must be(jsSuccess)
 
           replyDtos.get.size must be(nameDtos.size)
@@ -788,12 +789,12 @@ class CentresControllerSpec extends ControllerFixture with PagedResultsSharedSpe
         val reply = makeAuthRequest(GET, uri("names").addQueryString(s"filter=name::${centre.name}")).value
         reply must beOkResponseWithJsonReply
 
-        val replyDtos = (contentAsJson(reply) \ "data").validate[List[EntityInfoAndStateDto]]
+        val replyDtos = (contentAsJson(reply) \ "data").validate[List[CentreInfoAndStateDto]]
         replyDtos must be(jsSuccess)
 
         replyDtos.get.size must be(1)
         replyDtos.get.foreach { replyDto =>
-          replyDto must equal(EntityInfoAndStateDto(centre))
+          replyDto must equal(CentreInfoAndStateDto(centre))
         }
       }
 

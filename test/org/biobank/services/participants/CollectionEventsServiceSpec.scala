@@ -175,7 +175,7 @@ class CollectionEventServiceSpec
                                           annotations           = f.cevent.annotations.toList)
 
           collectionEventRepository.removeAll
-          ceventsService.processCommand(cmd).mustSucceed { reply =>
+          ceventsService.processCommand(cmd).futval.futureValue mustSucceed { reply =>
             reply.participantId must be(f.participant.id.id)
           }
         }

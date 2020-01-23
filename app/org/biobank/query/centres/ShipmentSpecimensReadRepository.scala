@@ -6,6 +6,7 @@ import org.biobank._
 import org.biobank.domain._
 import org.biobank.domain.centres._
 import org.biobank.domain.participants._
+import org.biobank.dto.centres.ShipmentSpecimenDto
 import org.biobank.query.db.DatabaseSchema
 import play.api.db.slick.DatabaseConfigProvider
 import scala.concurrent.{ExecutionContext, Future}
@@ -15,26 +16,32 @@ import scalaz._
 import org.slf4j.LoggerFactory
 
 @ImplementedBy(classOf[ShipmentSpecimensReadRepositorySlick])
-trait ShipmentSpecimensReadRepository extends AsyncReadRepository[ShipmentSpecimenId, ShipmentSpecimen] {
+trait ShipmentSpecimensReadRepository extends AsyncReadRepository[ShipmentSpecimenId, ShipmentSpecimenDto] {
 
-  def forShipment(id: ShipmentId): Future[Seq[ShipmentSpecimen]]
+  def forShipment(id: ShipmentId): Future[Seq[ShipmentSpecimenDto]]
 
-  def forShipments(shipmentIds: ShipmentId*): Future[Seq[ShipmentSpecimen]]
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  def forShipment(
+      shipmentId:          ShipmentId,
+      shipmentSpecimenIds: ShipmentSpecimenId*
+    ): FutureValidation[Seq[ShipmentSpecimenDto]]
+
+  def forShipments(shipmentIds: ShipmentId*): Future[Seq[ShipmentSpecimenDto]]
 
   def countsForShipments(shipmentIds: ShipmentId*): Future[Map[ShipmentId, ShipmentSpecimenCounts]]
 
-  def allForSpecimens(speciemnIds: SpecimenId*): Future[Seq[ShipmentSpecimen]]
+  def allForSpecimens(speciemnIds: SpecimenId*): Future[Seq[ShipmentSpecimenDto]]
 
-  def getBySpecimen(shipmentId: ShipmentId, specimenId: SpecimenId): FutureValidation[ShipmentSpecimen]
+  def getBySpecimen(shipmentId: ShipmentId, specimenId: SpecimenId): FutureValidation[ShipmentSpecimenDto]
 
   def getBySpecimens(
       shipmentId:  ShipmentId,
       specimenIds: SpecimenId*
-    ): FutureValidation[Seq[ShipmentSpecimen]]
+    ): FutureValidation[Seq[ShipmentSpecimenDto]]
 
-  def putAll(shipments: Seq[ShipmentSpecimen]): Future[Unit]
+  def putAll(shipments: Seq[ShipmentSpecimenDto]): Future[Unit]
 
-  def put(shipment: ShipmentSpecimen): Future[Unit]
+  def put(shipment: ShipmentSpecimenDto): Future[Unit]
 
   def remove(shipmentSpecimenId: ShipmentSpecimenId): Future[Unit]
 
@@ -56,16 +63,16 @@ class ShipmentSpecimensReadRepositorySlick @Inject()(
 
   protected def notFound(id: ShipmentSpecimenId): IdNotFound = IdNotFound(s"shipment specimen id: $id")
 
-  def exists(predicate: ShipmentSpecimen => Boolean): Future[Boolean] = ???
+  def exists(predicate: ShipmentSpecimenDto => Boolean): Future[Boolean] = ???
 
   def getKeys: scala.concurrent.Future[Iterable[ShipmentSpecimenId]] = ???
 
-  def getValues: scala.concurrent.Future[Iterable[ShipmentSpecimen]] = ???
+  def getValues: scala.concurrent.Future[Iterable[ShipmentSpecimenDto]] = ???
 
   def isEmpty: scala.concurrent.Future[Boolean] = ???
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  def getByKey(shipmentSpecimenId: ShipmentSpecimenId): FutureValidation[ShipmentSpecimen] = {
+  def getByKey(shipmentSpecimenId: ShipmentSpecimenId): FutureValidation[ShipmentSpecimenDto] = {
     FutureValidation(
       db.run(shipmentSpecimens.filter(ss => ss.id === shipmentSpecimenId).result.headOption)
         .map(_.toSuccessNel(notFound(shipmentSpecimenId).toString))
@@ -73,12 +80,27 @@ class ShipmentSpecimensReadRepositorySlick @Inject()(
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  def forShipment(id: ShipmentId): Future[Seq[ShipmentSpecimen]] = {
+  def forShipment(id: ShipmentId): Future[Seq[ShipmentSpecimenDto]] = {
     db.run(shipmentSpecimens.filter(ss => ss.shipmentId === id).result)
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  def forShipments(shipmentIds: ShipmentId*): Future[Seq[ShipmentSpecimen]] = {
+  def forShipment(
+      shipmentId:          ShipmentId,
+      shipmentSpecimenIds: ShipmentSpecimenId*
+    ): FutureValidation[Seq[ShipmentSpecimenDto]] = {
+    FutureValidation {
+      forShipment(shipmentId).map { all =>
+        val filtered = all.filter(ss => shipmentSpecimenIds.contains(ss.id))
+
+        if (filtered.size == shipmentSpecimenIds.size) filtered.successNel[String]
+        else EntityCriteriaError("shipment specimens not in shipment").failureNel[Seq[ShipmentSpecimenDto]]
+      }
+    }
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  def forShipments(shipmentIds: ShipmentId*): Future[Seq[ShipmentSpecimenDto]] = {
     val query = shipmentSpecimens.filter(ss => ss.shipmentId.inSet(shipmentIds))
     db.run(query.result)
   }
@@ -102,29 +124,29 @@ class ShipmentSpecimensReadRepositorySlick @Inject()(
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  def allForSpecimens(specimenIds: SpecimenId*): Future[Seq[ShipmentSpecimen]] = {
+  def allForSpecimens(specimenIds: SpecimenId*): Future[Seq[ShipmentSpecimenDto]] = {
     val query = shipmentSpecimens.filter(ss => ss.specimenId.inSet(specimenIds))
     db.run(query.result)
   }
 
-  def getBySpecimen(shipmentId: ShipmentId, specimenId: SpecimenId): FutureValidation[ShipmentSpecimen] = {
+  def getBySpecimen(shipmentId: ShipmentId, specimenId: SpecimenId): FutureValidation[ShipmentSpecimenDto] = {
     ???
   }
 
   def getBySpecimens(
       shipmentId:  ShipmentId,
       specimenIds: SpecimenId*
-    ): FutureValidation[Seq[ShipmentSpecimen]] = {
+    ): FutureValidation[Seq[ShipmentSpecimenDto]] = {
     ???
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  def putAll(shipmentSpecimensToAdd: Seq[ShipmentSpecimen]): Future[Unit] = {
-    db.run(shipmentSpecimens ++= shipmentSpecimensToAdd).map(_ => ())
+  def putAll(shipmentSpecimensToAdd: Seq[ShipmentSpecimenDto]): Future[Unit] = {
+    db.run(DBIO.sequence(shipmentSpecimensToAdd.map(shipmentSpecimens.insertOrUpdate(_)))).map(_ => ())
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  def put(shipmentSpecimen: ShipmentSpecimen): Future[Unit] = {
+  def put(shipmentSpecimen: ShipmentSpecimenDto): Future[Unit] = {
     db.run(shipmentSpecimens.insertOrUpdate(shipmentSpecimen).map(_ => ()))
   }
 

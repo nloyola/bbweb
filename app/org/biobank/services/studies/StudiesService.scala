@@ -12,6 +12,7 @@ import org.biobank.domain.participants.CollectionEventRepository
 import org.biobank.domain.studies._
 import org.biobank.domain.users.UserId
 import org.biobank.dto._
+import org.biobank.dto.centres._
 import org.biobank.infrastructure._
 import org.biobank.infrastructure.commands.StudyCommands._
 import org.biobank.infrastructure.events.StudyEvents._
@@ -37,7 +38,7 @@ trait StudiesService extends BbwebService {
   def collectionStudies(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): FutureValidation[Seq[EntityInfoAndStateDto]]
+    ): FutureValidation[Seq[StudyInfoAndStateDto]]
 
   def getStudyCount(requestUserId: UserId): ServiceValidation[Long]
 
@@ -61,7 +62,7 @@ trait StudiesService extends BbwebService {
   def getStudyNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): FutureValidation[Seq[EntityInfoAndStateDto]]
+    ): FutureValidation[Seq[StudyInfoAndStateDto]]
 
   def getCentresForStudy(requestUserId: UserId, studyId: StudyId): ServiceValidation[Set[CentreLocationInfo]]
 
@@ -106,7 +107,7 @@ class StudiesServiceImpl @Inject()(
   def collectionStudies(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): FutureValidation[Seq[EntityInfoAndStateDto]] =
+    ): FutureValidation[Seq[StudyInfoAndStateDto]] =
     FutureValidation {
       val v: ServiceValidation[Seq[Study]] =
         for {
@@ -137,11 +138,7 @@ class StudiesServiceImpl @Inject()(
       for {
         studies  <- v
         filtered <- filterStudiesInternal(studies.toSet, query.filter, query.sort)
-      } yield {
-        filtered.map { s =>
-          EntityInfoAndStateDto(s.id.id, s.slug, s.name, s.state.id)
-        }
-      }
+      } yield filtered.map(StudyInfoAndStateDto(_))
     }
 
   def getStudyCount(requestUserId: UserId): ServiceValidation[Long] =
@@ -172,14 +169,10 @@ class StudiesServiceImpl @Inject()(
   def getStudyNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): FutureValidation[Seq[EntityInfoAndStateDto]] =
+    ): FutureValidation[Seq[StudyInfoAndStateDto]] =
     FutureValidation {
       withPermittedStudies(requestUserId) { studies =>
-        filterStudiesInternal(studies, query.filter, query.sort).map {
-          _.map { s =>
-            EntityInfoAndStateDto(s.id.id, s.slug, s.name, s.state.id)
-          }
-        }
+        filterStudiesInternal(studies, query.filter, query.sort).map(_.map(StudyInfoAndStateDto(_)))
       }
     }
 

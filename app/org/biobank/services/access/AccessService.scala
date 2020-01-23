@@ -3,15 +3,14 @@ package org.biobank.services.access
 import akka.actor._
 import akka.pattern.ask
 import com.google.inject.ImplementedBy
-import java.time.format.DateTimeFormatter
 import javax.inject._
 import org.biobank._
-import org.biobank.domain.{ConcurrencySafeEntity, HasName, HasSlug, IdentifiedValueObject, Slug}
+import org.biobank.domain.{ConcurrencySafeEntity, IdentifiedValueObject, Slug}
 import org.biobank.domain.access._
 import org.biobank.domain.access.PermissionId._
-import org.biobank.domain.users.{UserId, UserRepository}
 import org.biobank.domain.studies.{StudyId, StudyRepository}
 import org.biobank.domain.centres.{CentreId, CentreRepository}
+import org.biobank.domain.users.{UserId, UserRepository}
 import org.biobank.dto._
 import org.biobank.dto.access._
 import org.biobank.infrastructure.AscendingOrder
@@ -34,7 +33,7 @@ trait AccessService extends BbwebService {
       requestUserId: UserId,
       filter:        FilterString,
       sort:          SortString
-    ): FutureValidation[Seq[AccessItemNameDto]]
+    ): FutureValidation[Seq[AccessItemInfoDto]]
 
   def getRole(requestUserId: UserId, roleId: AccessItemId): ServiceValidation[RoleDto]
 
@@ -42,10 +41,7 @@ trait AccessService extends BbwebService {
 
   def getRoles(requestUserId: UserId, pagedQuery: PagedQuery): FutureValidation[PagedResults[RoleDto]]
 
-  def getRoleNames(
-      requestUserId: UserId,
-      query:         FilterAndSortQuery
-    ): FutureValidation[Seq[NamedEntityInfoDto]]
+  def getRoleNames(requestUserId: UserId, query: FilterAndSortQuery): FutureValidation[Seq[AccessItemInfoDto]]
 
   def getUserRoles(userId: UserId): ServiceValidation[Set[UserRoleDto]]
 
@@ -86,7 +82,7 @@ trait AccessService extends BbwebService {
   def getMembershipNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): FutureValidation[Seq[NamedEntityInfoDto]]
+    ): FutureValidation[Seq[MembershipInfoDto]]
 
   def getUserMembership(userId: UserId): ServiceValidation[UserMembership]
 
@@ -132,7 +128,7 @@ class AccessServiceImpl @Inject()(
       requestUserId: UserId,
       filter:        FilterString,
       sort:          SortString
-    ): FutureValidation[Seq[AccessItemNameDto]] =
+    ): FutureValidation[Seq[AccessItemInfoDto]] =
     FutureValidation {
       whenPermitted(requestUserId, PermissionId.RoleRead) { () =>
         val allItems = accessItemRepository.getValues.toSet
@@ -153,7 +149,7 @@ class AccessServiceImpl @Inject()(
           }
         } yield {
           val sortedItems = items.toSeq.sortWith(sortFunc)
-          val dtos        = sortedItems.map(i => AccessItemNameDto(i.id.id, i.slug, i.name, i.accessItemType.id))
+          val dtos        = sortedItems.map(i => AccessItemInfoDto(i.id, i.slug, i.name, i.accessItemType))
           if (firstSort.order == AscendingOrder) dtos
           else dtos.reverse
         }
@@ -198,13 +194,9 @@ class AccessServiceImpl @Inject()(
   def getRoleNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): FutureValidation[Seq[NamedEntityInfoDto]] =
+    ): FutureValidation[Seq[AccessItemInfoDto]] =
     FutureValidation {
-      getRolesInternal(query.filter, query.sort).map {
-        _.map { r =>
-          NamedEntityInfoDto(r.id.id, r.slug, r.name)
-        }
-      }
+      getRolesInternal(query.filter, query.sort).map(_.map(AccessItemInfoDto(_)))
     }
 
   private def getRolesInternal(filter: FilterString, sort: SortString): ServiceValidation[Seq[Role]] = {
@@ -273,7 +265,7 @@ class AccessServiceImpl @Inject()(
       centreId: Option[CentreId]
     ): ServiceValidation[Unit] = {
     isMember(userId, studyId, centreId).fold(
-      err => err.failure[Unit],
+      err           => err.failure[Unit],
       hasMembership => if (hasMembership) ().successNel[String] else Unauthorized.failureNel[Unit]
     )
   }
@@ -322,13 +314,9 @@ class AccessServiceImpl @Inject()(
   def getMembershipNames(
       requestUserId: UserId,
       query:         FilterAndSortQuery
-    ): FutureValidation[Seq[NamedEntityInfoDto]] =
+    ): FutureValidation[Seq[MembershipInfoDto]] =
     FutureValidation {
-      getMembershipsInternal(query.filter, query.sort).map {
-        _.map { m =>
-          NamedEntityInfoDto(m.id.id, m.slug, m.name)
-        }
-      }
+      getMembershipsInternal(query.filter, query.sort).map(_.map(MembershipInfoDto(_)))
     }
 
   private def getMembershipsInternal(
@@ -431,9 +419,9 @@ class AccessServiceImpl @Inject()(
                for {
                  event <- FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[AccessEvent]])
                  dto <- FutureValidation(if (event.eventType.isRole) {
-                     accessItemRepository.getRole(AccessItemId(event.getRole.getId)).flatMap(roleToDto)
-                   } else {
-                     ServiceError("Server Error: event is not for role").failureNel[RoleDto]
+                         accessItemRepository.getRole(AccessItemId(event.getRole.getId)).flatMap(roleToDto)
+                       } else {
+                         ServiceError("Server Error: event is not for role").failureNel[RoleDto]
                        })
                } yield dto
              }
@@ -447,7 +435,7 @@ class AccessServiceImpl @Inject()(
           FutureValidation(Unauthorized.failureNel[Boolean])
         } else {
           FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[AccessEvent]]).map(_ => true)
-          }
+        }
       })
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
@@ -465,8 +453,8 @@ class AccessServiceImpl @Inject()(
         cmd match {
           case c: AddMembershipCmd => {
             for {
-              validUsers   <- c.userIds.map(id => userRepository.getByKey(UserId(id))).toList.sequenceU
-              validStudies <- c.studyIds.map(id => studyRepository.getByKey(StudyId(id))).toList.sequenceU
+              validUsers   <- c.userIds.map(id   => userRepository.getByKey(UserId(id))).toList.sequenceU
+              validStudies <- c.studyIds.map(id  => studyRepository.getByKey(StudyId(id))).toList.sequenceU
               validCentres <- c.centreIds.map(id => centreRepository.getByKey(CentreId(id))).toList.sequenceU
             } yield true
           }
@@ -518,7 +506,7 @@ class AccessServiceImpl @Inject()(
                            ask(membershipProcessor, cmd).mapTo[ServiceValidation[MembershipEvent]]
                          )
                  dto <- FutureValidation(
-                   membershipRepository.getByKey(MembershipId(event.id)).flatMap(membershipToDto)
+                         membershipRepository.getByKey(MembershipId(event.id)).flatMap(membershipToDto)
                        )
                } yield dto
              }
@@ -620,17 +608,17 @@ class AccessServiceImpl @Inject()(
       parents  <- getAccessItems(role.parentIds)
       children <- getAccessItems(role.childrenIds)
     } yield {
-      RoleDto(id             = role.id.id,
+      RoleDto(id             = role.id,
               version        = role.version,
-              timeAdded      = role.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-              timeModified   = role.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
+              timeAdded      = role.timeAdded,
+              timeModified   = role.timeModified,
               accessItemType = role.accessItemType.id,
               slug           = role.slug,
               name           = role.name,
               description    = role.description,
-              userData       = entityInfoDto(users),
-              parentData     = entityInfoDto(parents),
-              childData      = entityInfoDto(children))
+              userData       = users.map(UserInfoDto(_)),
+              parentData     = parents.map(AccessItemInfoDto(_)),
+              childData      = children.map(AccessItemInfoDto(_)))
     }
   }
 
@@ -647,49 +635,41 @@ class AccessServiceImpl @Inject()(
       }.sequenceU
 
     getAccessItems(role.childrenIds) map { children =>
-      UserRoleDto(id        = role.id.id,
+      UserRoleDto(id        = role.id,
                   version   = role.version,
                   slug      = role.slug,
                   name      = role.name,
-                  childData = entityInfoDto(children.toSet))
+                  childData = children.map(AccessItemInfoDto(_)).toSet)
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  private def membershipToDto(membership: Membership): ServiceValidation[MembershipDto] =
+  private def membershipToDto(membership: Membership): ServiceValidation[MembershipDto] = {
     for {
       users           <- membership.userIds.map(userRepository.getByKey).toList.sequenceU.map(_.toSet)
       studyEntitySet  <- membershipStudyDataToEntitySet(membership)
       centreEntitySet <- membershipCentreDataToEntitySet(membership)
-    } yield {
-      val userData     = entityInfoDto(users)
-      val timeAdded    = membership.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-      val timeModified = membership.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
-
-      MembershipDto(id           = membership.id.id,
-                    version      = membership.version,
-                    timeAdded    = timeAdded,
-                    timeModified = timeModified,
-                    slug         = membership.slug,
-                    name         = membership.name,
-                    description  = membership.description,
-                    userData     = userData,
-                    studyData    = studyEntitySet,
-                    centreData   = centreEntitySet)
-    }
+    } yield MembershipDto(id           = membership.id,
+                          version      = membership.version,
+                          timeAdded    = membership.timeAdded,
+                          timeModified = membership.timeModified,
+                          slug         = membership.slug,
+                          name         = membership.name,
+                          description  = membership.description,
+                          userData     = users.map(UserInfoDto(_)),
+                          studyData    = studyEntitySet,
+                          centreData   = centreEntitySet)
+  }
 
   private def userMembershipToDto(membership: UserMembership): ServiceValidation[UserMembershipDto] =
     for {
       studyEntitySet  <- membershipStudyDataToEntitySet(membership)
       centreEntitySet <- membershipCentreDataToEntitySet(membership)
     } yield {
-      val timeAdded    = membership.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-      val timeModified = membership.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
-
-      UserMembershipDto(id           = membership.id.id,
+      UserMembershipDto(id           = membership.id,
                         version      = membership.version,
-                        timeAdded    = timeAdded,
-                        timeModified = timeModified,
+                        timeAdded    = membership.timeAdded,
+                        timeModified = membership.timeModified,
                         slug         = membership.slug,
                         name         = membership.name,
                         description  = membership.description,
@@ -697,15 +677,13 @@ class AccessServiceImpl @Inject()(
                         centreData   = centreEntitySet)
     }
 
-  private def membershipStudyDataToEntitySet(membership: MembershipBase): ServiceValidation[EntitySetDto] =
-    idsToEntities(membership.studyData.ids, studyRepository.getByKey).map { studies =>
-      entitySetDto(membership.studyData.allEntities, studies)
-    }
+  private def membershipStudyDataToEntitySet(membership: MembershipBase): ServiceValidation[StudySetDto] =
+    idsToEntities(membership.studyData.ids, studyRepository.getByKey)
+      .map(studies => StudySetDto(membership.studyData.allEntities, studies.map(StudyInfoDto(_))))
 
-  private def membershipCentreDataToEntitySet(membership: MembershipBase): ServiceValidation[EntitySetDto] =
-    idsToEntities(membership.centreData.ids, centreRepository.getByKey).map { centres =>
-      entitySetDto(membership.centreData.allEntities, centres)
-    }
+  private def membershipCentreDataToEntitySet(membership: MembershipBase): ServiceValidation[CentreSetDto] =
+    idsToEntities(membership.centreData.ids, centreRepository.getByKey)
+      .map(centres => CentreSetDto(membership.centreData.allEntities, centres.map(CentreInfoDto(_))))
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def idsToEntities[I <: IdentifiedValueObject[_], E <: ConcurrencySafeEntity[I]](
@@ -718,16 +696,16 @@ class AccessServiceImpl @Inject()(
       .sequenceU
       .map(_.toSet)
 
-  private def entityInfoDto[T <: ConcurrencySafeEntity[_] with HasName with HasSlug](
-      entities: Set[T]
-    ): Set[NamedEntityInfoDto] =
-    entities.map { entity =>
-      NamedEntityInfoDto(entity.id.toString, entity.slug, entity.name)
-    }
+  // private def entityInfoDto[ID, T <: ConcurrencySafeEntity[ID] with HasName with HasSlug](
+  //     entities: Set[T]
+  //   ): Set[NamedEntityInfoDto[ID]] =
+  //   entities.map { entity =>
+  //     NamedEntityInfoDto(entity.id, entity.slug, entity.name)
+  //   }
 
-  private def entitySetDto[T <: ConcurrencySafeEntity[_] with HasName with HasSlug](
-      hasAllEntities: Boolean,
-      entities:       Set[T]
-    ): EntitySetDto =
-    EntitySetDto(hasAllEntities, entityInfoDto(entities))
+  // private def entitySetDto[ID, T <: ConcurrencySafeEntity[ID] with HasName with HasSlug](
+  //     hasAllEntities: Boolean,
+  //     entities:       Set[T]
+  //   ): EntitySetDto[ID] =
+  //   EntitySetDto(hasAllEntities, entityInfoDto(entities))
 }

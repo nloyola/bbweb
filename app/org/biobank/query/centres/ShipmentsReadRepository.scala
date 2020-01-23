@@ -5,26 +5,28 @@ import javax.inject.Inject
 import org.biobank._
 import org.biobank.domain._
 import org.biobank.domain.centres._
+import org.biobank.dto.centres.ShipmentDto
 import org.biobank.query.db.DatabaseSchema
 import play.api.db.slick.DatabaseConfigProvider
 import scala.concurrent.{ExecutionContext, Future}
 import scalaz.Scalaz._
-//import scalaz.Validation.FlatMap._
+// import scalaz.Validation.FlatMap._
 import scalaz._
 import org.slf4j.LoggerFactory
+import scala.concurrent.Future
 
 @ImplementedBy(classOf[ShipmentsReadRepositorySlick])
-trait ShipmentsReadRepository extends AsyncReadRepository[ShipmentId, Shipment] {
+trait ShipmentsReadRepository extends AsyncReadRepository[ShipmentId, ShipmentDto] {
 
-  def withCentres(centreIds: Set[CentreId]): Future[Seq[Shipment]]
+  def withCentres(centreIds: Set[CentreId]): Future[Seq[ShipmentDto]]
 
-  def getCreated(id: ShipmentId): FutureValidation[CreatedShipment]
+  def getCreated(id: ShipmentId): FutureValidation[ShipmentDto]
 
-  def getUnpacked(id: ShipmentId): FutureValidation[UnpackedShipment]
+  def getUnpacked(id: ShipmentId): FutureValidation[ShipmentDto]
 
-  def putAll(shipments: Seq[Shipment]): Future[Unit]
+  def putAll(shipments: Seq[ShipmentDto]): Future[Unit]
 
-  def put(shipment: Shipment): Future[Unit]
+  def put(shipment: ShipmentDto): Future[Unit]
 
   def remove(shipmentId: ShipmentId): Future[Unit]
 
@@ -46,40 +48,40 @@ class ShipmentsReadRepositorySlick @Inject()(
 
   protected def notFound(id: ShipmentId): IdNotFound = IdNotFound(s"shipment id: $id")
 
-  def exists(predicate: Shipment => Boolean): Future[Boolean] = ???
+  def exists(predicate: ShipmentDto => Boolean): Future[Boolean] = ???
 
-  def getKeys: scala.concurrent.Future[Iterable[org.biobank.domain.centres.ShipmentId]] = ???
+  def getKeys: Future[Iterable[ShipmentId]] = ???
 
-  def getValues: scala.concurrent.Future[Iterable[org.biobank.domain.centres.Shipment]] = ???
+  def getValues: Future[Iterable[ShipmentDto]] = ???
 
-  def isEmpty: scala.concurrent.Future[Boolean] = ???
+  def isEmpty: Future[Boolean] = ???
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  def getByKey(shipmentId: ShipmentId): FutureValidation[Shipment] = {
+  def getByKey(shipmentId: ShipmentId): FutureValidation[ShipmentDto] = {
     FutureValidation(
-    db.run(shipments.filter(s => s.id === shipmentId).result.headOption)
-      .map(_.toSuccessNel(notFound(shipmentId).toString))
+      db.run(shipments.filter(s => s.id === shipmentId).result.headOption)
+        .map(_.toSuccessNel(notFound(shipmentId).toString))
     )
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  def withCentres(centreIds: Set[CentreId]): Future[Seq[Shipment]] = {
+  def withCentres(centreIds: Set[CentreId]): Future[Seq[ShipmentDto]] = {
     val query = shipments
       .filter(s => s.originCentreId.inSet(centreIds) || s.destinationCentreId.inSet(centreIds))
     db.run(query.result)
   }
 
-  def getCreated(id: ShipmentId): FutureValidation[CreatedShipment] = ???
+  def getCreated(id: ShipmentId): FutureValidation[ShipmentDto] = ???
 
-  def getUnpacked(id: ShipmentId): FutureValidation[UnpackedShipment] = ???
+  def getUnpacked(id: ShipmentId): FutureValidation[ShipmentDto] = ???
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  def putAll(shipmentsToAdd: Seq[Shipment]): Future[Unit] = {
-    db.run(shipments ++= shipmentsToAdd).map(_ => ())
+  def putAll(shipmentsToAdd: Seq[ShipmentDto]): Future[Unit] = {
+    db.run(DBIO.sequence(shipmentsToAdd.map(shipments.insertOrUpdate(_)))).map(_ => ())
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  def put(shipment: Shipment): Future[Unit] = {
+  def put(shipment: ShipmentDto): Future[Unit] = {
     db.run(shipments.insertOrUpdate(shipment).map(_ => ()))
   }
 
@@ -94,7 +96,6 @@ class ShipmentsReadRepositorySlick @Inject()(
   def removeAll(): Future[Unit] = db.run(shipments.delete.map(_ => ()))
 
   def init(): Future[Unit] = {
-    org.slf4j.LoggerFactory.getLogger(this.getClass).info("----------> HERE")
     db.run(shipments.schema.createIfNotExists)
   }
 }

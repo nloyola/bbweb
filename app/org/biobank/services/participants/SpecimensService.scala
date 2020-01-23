@@ -11,7 +11,9 @@ import org.biobank.domain.centres.CentreRepository
 import org.biobank.domain.participants._
 import org.biobank.domain.studies._
 import org.biobank.domain.users.UserId
-import org.biobank.dto.{CentreLocationInfo, CollectionEventDto, SpecimenDto}
+import org.biobank.dto.{CollectionEventDto}
+import org.biobank.dto.centres.CentreLocationInfo
+import org.biobank.dto.participants.{SpecimenDto}
 import org.biobank.infrastructure.AscendingOrder
 import org.biobank.infrastructure.commands.SpecimenCommands._
 import org.biobank.infrastructure.events.SpecimenEvents._
@@ -178,26 +180,26 @@ class SpecimensServiceImpl @Inject()(
 
     validCommand
       .fold(err => FutureValidation(err.failure[CollectionEventDto]),
-                      _ =>
-                        whenSpecimenPermittedAsync(cmd) { () =>
-                            for {
+            _ =>
+              whenSpecimenPermittedAsync(cmd) { () =>
+                for {
                   event <- FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[SpecimenEvent]])
                   cevent <- FutureValidation(
                              collectionEventRepository
-                                         .getByKey(CollectionEventId(event.getAdded.getCollectionEventId))
+                               .getByKey(CollectionEventId(event.getAdded.getCollectionEventId))
                            )
                   dto <- FutureValidation(
                           eventsService.collectionEventToDto(UserId(cmd.sessionUserId), cevent)
                         )
-                            } yield dto
-                        })
+                } yield dto
+              })
   }
 
   def processRemoveCommand(cmd: SpecimenCommand): FutureValidation[Boolean] = {
     whenSpecimenPermittedAsync(cmd) { () =>
       FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[SpecimenEvent]]).map(_ => true)
-      }
     }
+  }
 
   //
   // Invokes function "block" if user that invoked this service has the permission and membership
@@ -268,13 +270,14 @@ class SpecimensServiceImpl @Inject()(
     } yield {
       val originLocationInfo = CentreLocationInfo(originCentre, originLocation)
       val locationInfo       = CentreLocationInfo(centre, location)
-      specimen.createDto(cevent,
-                         ceventType,
-                         specimenDefinition,
-                         originLocationInfo,
-                         locationInfo,
-                         study,
-                         participant)
+      SpecimenDto.from(specimen,
+                       cevent,
+                       ceventType,
+                       specimenDefinition,
+                       originLocationInfo,
+                       locationInfo,
+                       study,
+                       participant)
     }
 
 }

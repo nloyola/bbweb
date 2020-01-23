@@ -25,14 +25,6 @@ object ShipmentSpecimenId {
 
 }
 
-trait ShipmentSpecimenPredicates {
-  type ShipmentSpecimenFilter = ShipmentSpecimen => Boolean
-
-  val stateIsOneOf: Set[ShipmentItemState] => ShipmentSpecimenFilter =
-    states => shipmentSpecimen => states.contains(shipmentSpecimen.state)
-
-}
-
 trait ShipmentSpecimenValidations {
 
   case object ShipmentIdRequired extends ValidationKey

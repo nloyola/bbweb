@@ -5,7 +5,7 @@ import org.biobank.controllers.PagedResultsSharedSpec
 import org.biobank.domain._
 import org.biobank.domain.PreservationTemperature._
 import org.biobank.domain.containers._
-import org.biobank.dto._
+import org.biobank.dto.containers._
 import org.biobank.fixtures._
 import org.biobank.matchers.PagedResultsMatchers
 import play.api.libs.json._
@@ -534,7 +534,7 @@ trait CommonStorageContainerControllerSpec[
 
         replyInfo.get.container must matchDtoToContainerInfo(f.container)
 
-        (replyInfo.get.children.toList.sortBy(_.id) zip children).foreach {
+        (replyInfo.get.children.toList.sortBy(_.id.id) zip children).foreach {
           case (replyChild, child) =>
             replyChild must matchDtoToContainerInfo(child)
         }

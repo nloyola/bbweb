@@ -11,6 +11,7 @@ import org.biobank.domain.containers._
 import org.biobank.domain.participants._
 import org.biobank.domain.studies._
 import org.biobank.domain.users._
+import org.biobank.dto.centres.{ShipmentDto, ShipmentSpecimenDto}
 import org.biobank.services.PasswordHasher
 import play.api.{Configuration, Environment, Logger, Mode}
 import scalaz.Scalaz._
@@ -758,6 +759,14 @@ class TestData @Inject()(
                          timeCompleted         = None)
       )
     }
+  }
+
+  def testShipmentDtos(): List[ShipmentDto] = {
+    ???
+  }
+
+  def testShipmentSpecimenDtos(): List[ShipmentSpecimenDto] = {
+    ???
   }
 
   def testShipmentSpecimens(): List[ShipmentSpecimen] =

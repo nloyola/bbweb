@@ -7,7 +7,6 @@ import org.biobank.domain.access._
 import org.biobank.domain.users._
 import org.biobank.fixtures.Url
 import org.biobank.matchers.PagedResultsMatchers
-import org.biobank.dto._
 import org.biobank.dto.access._
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.prop.TableDrivenPropertyChecks._
@@ -102,10 +101,10 @@ class AccessControllerSpec
       val createEntity = (name: String) => factory.createRole.copy(name = name)
       val baseUrl      = uri("roles", "names")
       it must behave like accessEntityNameSharedBehaviour(createEntity, baseUrl) {
-        (dtos: List[NamedEntityInfoDto], roles: List[Role]) =>
+        (dtos: List[AccessItemInfoDto], roles: List[Role]) =>
           (dtos zip roles).foreach {
             case (dto, role) =>
-              dto must matchNamedEntityInfoDtoToRole(role)
+              dto must matchRoleInfoDtoToRole(role)
           }
       }
     }
@@ -114,7 +113,7 @@ class AccessControllerSpec
       val createEntity = (name: String) => factory.createPermission.copy(name = name)
       val baseUrl      = uri("items", "names")
       it should behave like accessEntityNameSharedBehaviour(createEntity, baseUrl) {
-        (replyAccessItemNames: List[AccessItemNameDto], accessItems: List[AccessItem]) =>
+        (replyAccessItemNames: List[AccessItemInfoDto], accessItems: List[AccessItem]) =>
           (replyAccessItemNames zip accessItems).foreach {
             case (replyAccessItemName, accessItem) =>
               replyAccessItemName must matchDtoToAccessItem(accessItem)

@@ -248,7 +248,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
         val cmd =
           AddCentreCmd(sessionUserId = user.id.id, name = f.centre.name, description = f.centre.description)
         centreRepository.removeAll
-        centresService.processCommand(cmd) mustSucceed { s =>
+        centresService.processCommand(cmd).futval.futureValue mustSucceed { s =>
           s.name must be(f.centre.name)
         }
       }
@@ -283,8 +283,8 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
           }
 
           centreRepository.put(centre) // restore the centre to it's previous state
-          centresService.processCommand(cmd).mustSucceed { c =>
-            c.id must be(centre.id.id)
+          centresService.processCommand(cmd) mustSucceed { c =>
+            c.id must be(centre.id)
           }
         }
       }
@@ -313,7 +313,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
         forAll(stateChangeCommandsTable(user.id, f.disabledCentre, f.enabledCentre)) { cmd =>
           Set(f.disabledCentre, f.enabledCentre).foreach(addToRepository)
           centresService.processCommand(cmd).mustSucceed { c =>
-            c.id must be(cmd.id)
+            c.id.id must be(cmd.id)
           }
         }
       }
@@ -340,7 +340,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
       val query = PagedQuery(new FilterString(""), new SortString(""), 0, 10)
       centresService.getCentres(f.allCentresAdminUser.id, query).mustSucceed { reply =>
         reply.items.length must be > 1
-        val centreIds = reply.items.map(c => c.id).sorted
+        val centreIds = reply.items.map(c => c.id.id).sorted
         centreIds must equal(List(f.centre.id.id, secondCentre.id.id).sorted)
       }
     }
@@ -353,7 +353,7 @@ class CentresServiceSpec extends CentresServiceFixtures with ScalaFutures {
       val query = PagedQuery(new FilterString(""), new SortString(""), 0, 10)
       centresService.getCentres(f.centreOnlyAdminUser.id, query).mustSucceed { reply =>
         reply.items must have size (1)
-        reply.items.map(c => c.id) must contain(f.centre.id.id)
+        reply.items.map(c => c.id) must contain(f.centre.id)
       }
     }
 

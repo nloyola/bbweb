@@ -24,45 +24,6 @@ object ShipmentId {
 
 }
 
-trait ShipmentPredicates {
-  type ShipmentFilter = Shipment => Boolean
-
-  val originCentreIdIsOneOf: Set[CentreId] => ShipmentFilter =
-    centreIds => shipment => centreIds.contains(shipment.originCentreId)
-
-  val destinationCentreIdIsOneOf: Set[CentreId] => ShipmentFilter =
-    centreIds => shipment => centreIds.contains(shipment.destinationCentreId)
-
-  val withCentreIdIsOneOf: Set[CentreId] => ShipmentFilter =
-    centreIds =>
-      shipment =>
-        centreIds.contains(shipment.destinationCentreId) || centreIds.contains(shipment.originCentreId)
-
-  val courierNameIsOneOf: Set[String] => ShipmentFilter =
-    courierNames => shipment => courierNames.contains(shipment.courierName)
-
-  val trackingNumberIsOneOf: Set[String] => ShipmentFilter =
-    trackingNumbers => shipment => trackingNumbers.contains(shipment.trackingNumber)
-
-  val stateIsOneOf: Set[EntityState] => ShipmentFilter =
-    states => shipment => states.contains(shipment.state)
-
-  val courierNameIsLike: Set[String] => ShipmentFilter =
-    courierNames =>
-      shipment => {
-        val lc = shipment.courierName.toLowerCase
-        courierNames.forall(n => lc.contains(n.toLowerCase))
-      }
-
-  val trackingNumberIsLike: Set[String] => ShipmentFilter =
-    trackingNumbers =>
-      shipment => {
-        val lc = shipment.trackingNumber.toLowerCase
-        trackingNumbers.forall(n => lc.contains(n.toLowerCase))
-      }
-
-}
-
 /**
  * Represents a transfer of [org.biobank.domain.participants.Specimen]s and / or
  * [org.biobank.domain.containers.Container]s from one [org.biobank.domain.centres.Centre] to another.

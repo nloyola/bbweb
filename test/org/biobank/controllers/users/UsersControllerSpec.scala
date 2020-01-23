@@ -6,11 +6,11 @@ import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
 import java.time.{Duration, OffsetDateTime}
 import org.biobank.Global
 import org.biobank.controllers.PagedResultsSharedSpec
-import org.biobank.dto._
-import org.biobank.dto.access._
 import org.biobank.domain.access._
 import org.biobank.domain.Slug
 import org.biobank.domain.users._
+import org.biobank.dto._
+import org.biobank.dto.access._
 import org.biobank.fixtures.{ControllerFixture, Url}
 import org.biobank.matchers.PagedResultsMatchers
 import org.biobank.services.users.UserCountsByStatus
@@ -212,7 +212,7 @@ class UsersControllerSpec
         val users = (1 to 2).map { _ =>
           factory.createActiveUser
         }.toSeq :+ defaultUser
-        val nameDtos = users.map(EntityInfoAndStateDto.apply(_)).toSeq
+        val nameDtos = users.map(UserInfoAndStateDto(_)).toSeq
         users.foreach(userRepository.put)
       }
 
@@ -225,7 +225,7 @@ class UsersControllerSpec
         val reply = makeAuthRequest(GET, uri("names").addQueryString("sort=name")).value
         reply must beOkResponseWithJsonReply
 
-        (contentAsJson(reply) \ "data").get must matchEntityInfoAndStateDtos(nameDtos)
+        (contentAsJson(reply) \ "data").get must matchEntityInfoAndStateDtos[UserInfoAndStateDto](nameDtos)
       }
 
       it("in reverse order") {
@@ -250,7 +250,7 @@ class UsersControllerSpec
         val reply = makeAuthRequest(GET, uri("names").addQueryString(s"filter=name::${user.name}")).value
         reply must beOkResponseWithJsonReply
 
-        (contentAsJson(reply) \ "data").get must matchEntityInfoAndStateDtos(Seq(EntityInfoAndStateDto(user)))
+        (contentAsJson(reply) \ "data").get must matchEntityInfoAndStateDtos(Seq(UserInfoAndStateDto(user)))
       }
 
     }
@@ -320,7 +320,7 @@ class UsersControllerSpec
         val replyDto = (contentAsJson(reply) \ "data").validate[UserDto]
         replyDto must be(jsSuccess)
 
-        val userId = UserId(replyDto.get.id)
+        val userId = replyDto.get.id
         userRepository.getByKey(userId) mustSucceed { repoStudy =>
           val updatedUser = user.copy(id = userId)
           replyDto.get must matchDtoToUser(updatedUser)
@@ -412,7 +412,7 @@ class UsersControllerSpec
           val replyDto = (contentAsJson(reply) \ "data").validate[UserDto]
           replyDto must be(jsSuccess)
 
-          replyDto.get.id must equal(users(0).id.id)
+          replyDto.get.id must equal(users(0).id)
           replyDto.get.slug must not equal (Slug(dupName))
           replyDto.get.slug.toString must include(Slug(dupName).toString)
           replyDto.get.name must equal(dupName)
@@ -976,9 +976,9 @@ class UsersControllerSpec
       it("returns no studies for default user") {
         val reply = makeAuthRequest(GET, uri("studies")).value
         reply must beOkResponseWithJsonReply
-        val dtos = (contentAsJson(reply) \ "data").validate[Seq[EntityInfoAndStateDto]]
+        val dtos = (contentAsJson(reply) \ "data").validate[Seq[UserInfoAndStateDto]]
         dtos must be(jsSuccess)
-        dtos.get must equal(Seq.empty[EntityInfoAndStateDto])
+        dtos.get must equal(Seq.empty[UserInfoAndStateDto])
 
       }
 
@@ -987,9 +987,9 @@ class UsersControllerSpec
         studyRepository.put(study)
         val reply = makeAuthRequest(GET, uri("studies")).value
         reply must beOkResponseWithJsonReply
-        val dtos = (contentAsJson(reply) \ "data").validate[Seq[EntityInfoAndStateDto]]
+        val dtos = (contentAsJson(reply) \ "data").validate[Seq[StudyInfoAndStateDto]]
         dtos must be(jsSuccess)
-        dtos.get must equal(Seq(EntityInfoAndStateDto(study)))
+        dtos.get must equal(Seq(StudyInfoAndStateDto(study)))
       }
 
     }

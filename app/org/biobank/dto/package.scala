@@ -1,16 +1,14 @@
 package org.biobank
 
+import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import org.biobank.domain._
-import org.biobank.domain.AnatomicalSourceType._
-import org.biobank.domain.PreservationType._
-import org.biobank.domain.PreservationTemperature._
-import org.biobank.domain.SpecimenType._
 import org.biobank.domain.annotations.Annotation
 import org.biobank.domain.centres._
 import org.biobank.domain.containers._
 import org.biobank.domain.studies._
 import org.biobank.domain.participants._
+import org.biobank.domain.users.{User, UserId}
 import org.biobank.dto.access.{UserMembershipDto, UserRoleDto}
 import play.api.libs.json._
 
@@ -18,155 +16,231 @@ package dto {
 
   trait Dto
 
-  trait EntityInfo {
-    val id:   String
+  trait EntityInfo[ID] extends HasSlug {
+    val id:   ID
     val slug: Slug
   }
 
-  trait NamedEntityInfo extends EntityInfo {
+  trait NamedEntityInfo[ID] extends EntityInfo[ID] with HasName {
     val name: String
   }
 
-  final case class NamedEntityInfoDto(id: String, slug: Slug, name: String) extends NamedEntityInfo
+  trait EntitySetDto[T <: NamedEntityInfo[_]] {
+    val allEntities: Boolean
+    val entityData:  Set[T]
+  }
 
-  object NamedEntityInfoDto {
+  trait EntityInfoAndState[ID] extends NamedEntityInfo[ID] {
+    val state: EntityState
+  }
+
+  final case class StudyInfoDto(id: StudyId, slug: Slug, name: String) extends NamedEntityInfo[StudyId]
+
+  object StudyInfoDto {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply[T <: IdentifiedDomainObject[_] with HasSlug with HasName](entity: T): NamedEntityInfoDto =
-      NamedEntityInfoDto(entity.id.toString, entity.slug, entity.name)
-
-    def compareByName(a: NamedEntityInfoDto, b: NamedEntityInfoDto): Boolean =
-      (a.name compareToIgnoreCase b.name) < 0
+    def apply(study: Study): StudyInfoDto = StudyInfoDto(study.id, study.slug, study.name)
 
     @SuppressWarnings(Array("org.wartremover.warts.Any"))
-    implicit val namedEntityInfoDtoFormat: Format[NamedEntityInfoDto] = Json.format[NamedEntityInfoDto]
+    implicit val studyInfoDtoFormat: Format[StudyInfoDto] = Json.format[StudyInfoDto]
 
   }
 
-  final case class EntitySetDto(allEntities: Boolean, entityData: Set[NamedEntityInfoDto])
+  final case class StudyInfoAndStateDto(id: StudyId, slug: Slug, name: String, state: EntityState)
+      extends EntityInfoAndState[StudyId]
 
-  object EntitySetDto {
+  object StudyInfoAndStateDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(study: Study): StudyInfoAndStateDto =
+      StudyInfoAndStateDto(study.id, study.slug, study.name, study.state)
 
     @SuppressWarnings(Array("org.wartremover.warts.Any"))
-    implicit val entitySetInfoDtoFormat: Format[EntitySetDto] = Json.format[EntitySetDto]
+    implicit val studyInfoAndStateDtoFormat: Format[StudyInfoAndStateDto] =
+      Json.format[StudyInfoAndStateDto]
 
   }
 
-  final case class EntityInfoAndStateDto(id: String, slug: Slug, name: String, state: String)
+  final case class StudySetDto(allEntities: Boolean, entityData: Set[StudyInfoDto])
+      extends EntitySetDto[StudyInfoDto]
 
-  object EntityInfoAndStateDto {
-
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply[T <: ConcurrencySafeEntity[_] with HasSlug with HasName with HasState](
-        entity: T
-      ): EntityInfoAndStateDto =
-      EntityInfoAndStateDto(entity.id.toString, entity.slug, entity.name, entity.state.id)
-
-    def compareByName(a: EntityInfoAndStateDto, b: EntityInfoAndStateDto): Boolean =
-      (a.name compareToIgnoreCase b.name) < 0
+  object StudySetDto {
 
     @SuppressWarnings(Array("org.wartremover.warts.Any"))
-    implicit val entityInfoAndStateDtoFormat: Format[EntityInfoAndStateDto] =
-      Json.format[EntityInfoAndStateDto]
-  }
-
-  final case class CentreDto(
-      id:           String,
-      version:      Long,
-      timeAdded:    String,
-      timeModified: Option[String],
-      state:        String,
-      slug:         Slug,
-      name:         String,
-      description:  Option[String],
-      studyNames:   Set[EntityInfoAndStateDto],
-      locations:    Set[Location])
-
-  object CentreDto {
-
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply(centre: Centre, studies: Set[Study]): CentreDto =
-      CentreDto(id           = centre.id.id,
-                version      = centre.version,
-                timeAdded    = centre.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                timeModified = centre.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                state        = centre.state.id,
-                slug         = centre.slug,
-                name         = centre.name,
-                description  = centre.description,
-                studyNames   = studies.map(EntityInfoAndStateDto(_)),
-                locations    = centre.locations)
-
-    @SuppressWarnings(Array("org.wartremover.warts.Any"))
-    implicit val centreDtoFormat: Format[CentreDto] = Json.format[CentreDto]
+    implicit val studySetDtoFormat: Format[StudySetDto] = Json.format[StudySetDto]
 
   }
 
-  final case class CentreLocationInfo(
-      id:           String,
-      slug:         Slug,
-      name:         String,
-      location:     NamedEntityInfoDto,
-      combinedName: String)
-      extends EntityInfo
+  final case class CollectionEventTypeInfoDto(id: CollectionEventTypeId, slug: Slug, name: String)
+      extends NamedEntityInfo[CollectionEventTypeId]
 
-  object CentreLocationInfo {
+  object CollectionEventTypeInfoDto {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply(centre: Centre, location: Location): CentreLocationInfo =
-      CentreLocationInfo(id           = centre.id.id,
-                         slug         = centre.slug,
-                         name         = centre.name,
-                         location     = NamedEntityInfoDto(location),
-                         combinedName = s"${centre.name}: ${location.name}")
+    def apply(eventType: CollectionEventType): CollectionEventTypeInfoDto =
+      CollectionEventTypeInfoDto(eventType.id, eventType.slug, eventType.name)
 
     @SuppressWarnings(Array("org.wartremover.warts.Any"))
-    implicit val centreLocationInfoFormat: Format[CentreLocationInfo] = Json.format[CentreLocationInfo]
+    implicit val collectionEventTypeInfoDtoFormat: Format[CollectionEventTypeInfoDto] =
+      Json.format[CollectionEventTypeInfoDto]
+
+  }
+
+  final case class CentreInfoDto(id: CentreId, slug: Slug, name: String) extends NamedEntityInfo[CentreId]
+
+  object CentreInfoDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(centre: Centre): CentreInfoDto = CentreInfoDto(centre.id, centre.slug, centre.name)
+
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
+    implicit val centreInfoDtoFormat: Format[CentreInfoDto] = Json.format[CentreInfoDto]
+
+  }
+
+  final case class CentreSetDto(allEntities: Boolean, entityData: Set[CentreInfoDto])
+      extends EntitySetDto[CentreInfoDto]
+
+  object CentreSetDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
+    implicit val centreSetDtoFormat: Format[CentreSetDto] = Json.format[CentreSetDto]
+
+  }
+
+  final case class CentreInfoAndStateDto(id: CentreId, slug: Slug, name: String, state: EntityState)
+      extends EntityInfoAndState[CentreId]
+
+  object CentreInfoAndStateDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(centre: Centre): CentreInfoAndStateDto =
+      CentreInfoAndStateDto(centre.id, centre.slug, centre.name, centre.state)
+
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
+    implicit val centreInfoAndStateDtoFormat: Format[CentreInfoAndStateDto] =
+      Json.format[CentreInfoAndStateDto]
+
+  }
+
+  final case class LocationInfoDto(id: LocationId, slug: Slug, name: String)
+      extends NamedEntityInfo[LocationId]
+
+  object LocationInfoDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(location: Location): LocationInfoDto =
+      LocationInfoDto(location.id, location.slug, location.name)
+
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
+    implicit val locationInfoDtoFormat: Format[LocationInfoDto] = Json.format[LocationInfoDto]
+
+  }
+
+  final case class UserInfoDto(id: UserId, slug: Slug, name: String) extends NamedEntityInfo[UserId]
+
+  object UserInfoDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(user: User): UserInfoDto = UserInfoDto(user.id, user.slug, user.name)
+
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
+    implicit val userInfoDtoFormat: Format[UserInfoDto] = Json.format[UserInfoDto]
+
+  }
+
+  final case class UserInfoAndStateDto(id: UserId, slug: Slug, name: String, state: EntityState)
+      extends EntityInfoAndState[UserId]
+
+  object UserInfoAndStateDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(user: User): UserInfoAndStateDto =
+      UserInfoAndStateDto(user.id, user.slug, user.name, user.state)
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(user: UserDto): UserInfoAndStateDto =
+      UserInfoAndStateDto(user.id, user.slug, user.name, user.state)
+
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
+    implicit val userInfoAndStateDtoFormat: Format[UserInfoAndStateDto] =
+      Json.format[UserInfoAndStateDto]
+
+  }
+
+  final case class ContainerTypeInfoDto(id: ContainerTypeId, slug: Slug, name: String)
+      extends NamedEntityInfo[ContainerTypeId]
+
+  object ContainerTypeInfoDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(containerType: ContainerType): ContainerTypeInfoDto =
+      ContainerTypeInfoDto(containerType.id, containerType.slug, containerType.name)
+
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
+    implicit val containerTypeInfoDtoFormat: Format[ContainerTypeInfoDto] = Json.format[ContainerTypeInfoDto]
+
+  }
+
+  final case class ContainerSchemaInfoDto(id: ContainerSchemaId, slug: Slug, name: String)
+      extends NamedEntityInfo[ContainerSchemaId]
+
+  object ContainerSchemaInfoDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(containerSchema: ContainerSchema): ContainerSchemaInfoDto =
+      ContainerSchemaInfoDto(containerSchema.id, containerSchema.slug, containerSchema.name)
+
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
+    implicit val containerSchemaInfoDtoFormat: Format[ContainerSchemaInfoDto] =
+      Json.format[ContainerSchemaInfoDto]
+
+  }
+
+  final case class SpecimenDefinitionInfoDto(id: SpecimenDefinitionId, slug: Slug, name: String)
+      extends NamedEntityInfo[SpecimenDefinitionId]
+
+  object SpecimenDefinitionInfoDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(specimenDefinition: SpecimenDefinition): SpecimenDefinitionInfoDto =
+      SpecimenDefinitionInfoDto(specimenDefinition.id, specimenDefinition.slug, specimenDefinition.name)
+
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
+    implicit val specimenDefinitionInfoDtoFormat: Format[SpecimenDefinitionInfoDto] =
+      Json.format[SpecimenDefinitionInfoDto]
 
   }
 
   final case class ContainerSchemaDto(
-      id:           String,
+      id:           ContainerSchemaId,
       version:      Long,
-      timeAdded:    String,
-      timeModified: Option[String],
+      timeAdded:    OffsetDateTime,
+      timeModified: Option[OffsetDateTime],
       slug:         Slug,
       name:         String,
       description:  Option[String],
       shared:       Boolean,
-      centre:       NamedEntityInfoDto,
+      centre:       CentreInfoDto,
       labels:       Set[String]) {
 
-    override def toString: String =
-      s"""|${this.getClass.getSimpleName}: {
-          |  id:           $id,
-          |  version:      $version,
-          |  timeAdded:    $timeAdded,
-          |  timeModified: $timeModified,
-          |  slug:         $slug,
-          |  name:         $name,
-          |  description:  $description,
-          |  shared:       $shared,
-          |  centre:       $centre,
-          |  labels:       $labels
-          |}""".stripMargin
+    override def toString: String = s"|${this.getClass.getSimpleName}: ${Json.prettyPrint(Json.toJson(this))}"
   }
 
   object ContainerSchemaDto {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def apply(schema: ContainerSchema, centre: Centre): ContainerSchemaDto =
-      ContainerSchemaDto(id        = schema.id.id,
-                         version   = schema.version,
-                         timeAdded = schema.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                         timeModified =
-                           schema.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                         slug        = schema.slug,
-                         name        = schema.name,
-                         description = schema.description,
-                         shared      = schema.shared,
-                         centre      = NamedEntityInfoDto(centre),
-                         labels      = schema.labels)
+      ContainerSchemaDto(id           = schema.id,
+                         version      = schema.version,
+                         timeAdded    = schema.timeAdded,
+                         timeModified = schema.timeModified,
+                         slug         = schema.slug,
+                         name         = schema.name,
+                         description  = schema.description,
+                         shared       = schema.shared,
+                         centre       = CentreInfoDto(centre),
+                         labels       = schema.labels)
 
     @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val containerSchemaDtoFormat: Format[ContainerSchemaDto] = Json.format[ContainerSchemaDto]
@@ -174,34 +248,20 @@ package dto {
   }
 
   final case class ContainerTypeDto(
-      id:           String,
+      id:           ContainerTypeId,
       version:      Long,
-      timeAdded:    String,
-      timeModified: Option[String],
+      timeAdded:    OffsetDateTime,
+      timeModified: Option[OffsetDateTime],
       slug:         Slug,
       name:         String,
       description:  Option[String],
-      centre:       EntityInfoAndStateDto,
-      schema:       NamedEntityInfoDto,
+      centre:       CentreInfoAndStateDto,
+      schema:       ContainerSchemaInfoDto,
       shared:       Boolean,
       enabled:      Boolean,
       storageType:  String) {
 
-    override def toString: String =
-      s"""|${this.getClass.getSimpleName}: {
-          |  id:           $id,
-          |  version:      $version,
-          |  timeAdded:    $timeAdded,
-          |  timeModified: $timeModified,
-          |  slug:         $slug,
-          |  name:         $name,
-          |  description:  $description,
-          |  centre:       $centre,
-          |  schema:       $schema,
-          |  shared:       $shared,
-          |  enabled       $enabled,
-          |  storageType   $storageType
-          |}""".stripMargin
+    override def toString: String = s"|${this.getClass.getSimpleName}: ${Json.prettyPrint(Json.toJson(this))}"
 
   }
 
@@ -209,258 +269,21 @@ package dto {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def apply(containerType: ContainerType, centre: Centre, schema: ContainerSchema): ContainerTypeDto =
-      ContainerTypeDto(id        = containerType.id.id,
-                       version   = containerType.version,
-                       timeAdded = containerType.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                       timeModified =
-                         containerType.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                       slug        = containerType.slug,
-                       name        = containerType.name,
-                       description = containerType.description,
-                       centre      = EntityInfoAndStateDto(centre),
-                       schema      = NamedEntityInfoDto(schema),
-                       shared      = containerType.shared,
-                       enabled     = containerType.enabled,
-                       storageType = containerType.storageType.id)
+      ContainerTypeDto(id           = containerType.id,
+                       version      = containerType.version,
+                       timeAdded    = containerType.timeAdded,
+                       timeModified = containerType.timeModified,
+                       slug         = containerType.slug,
+                       name         = containerType.name,
+                       description  = containerType.description,
+                       centre       = CentreInfoAndStateDto(centre),
+                       schema       = ContainerSchemaInfoDto(schema),
+                       shared       = containerType.shared,
+                       enabled      = containerType.enabled,
+                       storageType  = containerType.storageType.id)
 
     @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val containerTypeDtoFormat: Format[ContainerTypeDto] = Json.format[ContainerTypeDto]
-
-  }
-
-  final case class ContainerConstraintsDto(
-      name:              String,
-      description:       Option[String],
-      anatomicalSources: Set[AnatomicalSourceType],
-      preservationTypes: Set[PreservationType],
-      specimenTypes:     Set[SpecimenType])
-
-  object ContainerConstraintsDto {
-
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply(constraints: ContainerConstraints): ContainerConstraintsDto =
-      ContainerConstraintsDto(name              = constraints.name,
-                              description       = constraints.description,
-                              anatomicalSources = constraints.anatomicalSources,
-                              preservationTypes = constraints.preservationTypes,
-                              specimenTypes     = constraints.specimenTypes)
-
-    @SuppressWarnings(Array("org.wartremover.warts.Any"))
-    implicit val containerConstraintsDtoFormat: Format[ContainerConstraintsDto] =
-      Json.format[ContainerConstraintsDto]
-
-  }
-
-  trait ContainerDto {
-    val id:            String
-    val version:       Long
-    val timeAdded:     String
-    val timeModified:  Option[String]
-    val slug:          Slug
-    val inventoryId:   String
-    val containerType: NamedEntityInfoDto
-    val storageType:   String
-
-    override def toString: String = Json.prettyPrint(Json.toJson(this))
-
-  }
-
-  object ContainerDto {
-
-    implicit val containerDtoWrites: Format[ContainerDto] = new Format[ContainerDto] {
-
-      override def writes(container: ContainerDto): JsValue =
-        container match {
-          case c: RootContainerDto     => Json.toJson(c)(RootContainerDto.rootContainerDtoFormat)
-          case c: StorageContainerDto  => Json.toJson(c)(StorageContainerDto.storageContainerDtoFormat)
-          case c: SpecimenContainerDto => Json.toJson(c)(SpecimenContainerDto.specimenContainerDtoFormat)
-        }
-
-      override def reads(json: JsValue): JsResult[ContainerDto] = (json \ "storageType") match {
-        case JsDefined(JsString(Container.rootStorage.id))      => json.validate[RootContainerDto]
-        case JsDefined(JsString(Container.containerStorage.id)) => json.validate[StorageContainerDto]
-        case JsDefined(JsString(Container.specimenStorage.id))  => json.validate[SpecimenContainerDto]
-        case _                                                  => JsError("error")
-      }
-    }
-
-  }
-
-  final case class RootContainerDto(
-      id:                 String,
-      version:            Long,
-      timeAdded:          String,
-      timeModified:       Option[String],
-      slug:               Slug,
-      label:              String,
-      inventoryId:        String,
-      enabled:            Boolean,
-      containerType:      NamedEntityInfoDto,
-      centreLocationInfo: CentreLocationInfo,
-      temperature:        PreservationTemperature,
-      constraints:        Option[ContainerConstraintsDto],
-      storageType:        String)
-      extends ContainerDto {}
-
-  object RootContainerDto {
-
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply(
-        c:             RootContainer,
-        containerType: ContainerType,
-        centre:        Centre,
-        location:      Location
-      ): RootContainerDto =
-      RootContainerDto(id                 = c.id.id,
-                       version            = c.version,
-                       timeAdded          = c.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                       timeModified       = c.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                       slug               = c.slug,
-                       label              = c.label,
-                       inventoryId        = c.inventoryId,
-                       enabled            = c.enabled,
-                       containerType      = NamedEntityInfoDto(containerType),
-                       centreLocationInfo = CentreLocationInfo(centre, location),
-                       temperature        = c.temperature,
-                       constraints        = c.constraints.map(ContainerConstraintsDto(_)),
-                       storageType        = c.storageType.id)
-
-    @SuppressWarnings(Array("org.wartremover.warts.Any"))
-    implicit val rootContainerDtoFormat: Format[RootContainerDto] = Json.format[RootContainerDto]
-
-  }
-
-  final case class ContainerInfoDto(id: String, slug: String, label: String)
-
-  object ContainerInfoDto {
-
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply(container: Container): ContainerInfoDto =
-      container match {
-        case c: RootContainer     => apply(c)
-        case c: StorageContainer  => apply(c)
-        case c: SpecimenContainer => apply(c)
-      }
-
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply(container: RootContainer): ContainerInfoDto =
-      ContainerInfoDto(id = container.id.id, slug = container.slug.id, label = container.label)
-
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply(container: StorageContainer): ContainerInfoDto =
-      ContainerInfoDto(id = container.id.id, slug = container.slug.id, label = container.schemaLabel.label)
-
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply(container: SpecimenContainer): ContainerInfoDto =
-      ContainerInfoDto(id = container.id.id, slug = container.slug.id, label = container.schemaLabel.label)
-
-    @SuppressWarnings(Array("org.wartremover.warts.Any"))
-    implicit val containerInfoDtoFormat: Format[ContainerInfoDto] = Json.format[ContainerInfoDto]
-
-  }
-
-  final case class StorageContainerDto(
-      id:            String,
-      version:       Long,
-      timeAdded:     String,
-      timeModified:  Option[String],
-      slug:          Slug,
-      inventoryId:   String,
-      enabled:       Boolean,
-      containerType: NamedEntityInfoDto,
-      parent:        ContainerInfoDto,
-      label:         String,
-      constraints:   Option[ContainerConstraintsDto],
-      storageType:   String)
-      extends ContainerDto {}
-
-  object StorageContainerDto {
-
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply(c: StorageContainer, containerType: ContainerType, parent: Container): StorageContainerDto = {
-      val constraintsDto = c.constraints match {
-        case Some(constraints) => Some(ContainerConstraintsDto(constraints))
-        case _                 => None
-      }
-
-      StorageContainerDto(id            = c.id.id,
-                          version       = c.version,
-                          timeAdded     = c.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                          timeModified  = c.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                          slug          = c.slug,
-                          inventoryId   = c.inventoryId,
-                          enabled       = c.enabled,
-                          containerType = NamedEntityInfoDto(containerType),
-                          parent        = ContainerInfoDto(parent),
-                          label         = c.schemaLabel.label,
-                          constraints   = constraintsDto,
-                          storageType   = c.storageType.id)
-    }
-
-    @SuppressWarnings(Array("org.wartremover.warts.Any"))
-    implicit val storageContainerDtoFormat: Format[StorageContainerDto] = Json.format[StorageContainerDto]
-
-  }
-
-  final case class SpecimenContainerDto(
-      id:            String,
-      version:       Long,
-      timeAdded:     String,
-      timeModified:  Option[String],
-      slug:          Slug,
-      inventoryId:   String,
-      containerType: NamedEntityInfoDto,
-      parent:        ContainerInfoDto,
-      label:         String,
-      storageType:   String)
-      extends ContainerDto {}
-
-  object SpecimenContainerDto {
-
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply(c: SpecimenContainer, containerType: ContainerType, parent: Container): SpecimenContainerDto =
-      SpecimenContainerDto(id            = c.id.id,
-                           version       = c.version,
-                           timeAdded     = c.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                           timeModified  = c.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                           slug          = c.slug,
-                           inventoryId   = c.inventoryId,
-                           containerType = NamedEntityInfoDto(containerType),
-                           parent        = ContainerInfoDto(parent),
-                           label         = c.schemaLabel.label,
-                           storageType   = c.storageType.id)
-
-    @SuppressWarnings(Array("org.wartremover.warts.Any"))
-    implicit val specimenContainerDtoFormat: Format[SpecimenContainerDto] = Json.format[SpecimenContainerDto]
-
-  }
-
-  final case class ContainerInfo(id: String, slug: String, inventoryId: String, label: String)
-
-  object ContainerInfo {
-
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply(container: Container): ContainerInfo = {
-      ContainerInfo(container.id.id, container.slug.id, container.inventoryId, container.getLabel)
-    }
-
-    @SuppressWarnings(Array("org.wartremover.warts.Any"))
-    implicit val containerInfoFormat: Format[ContainerInfo] = Json.format[ContainerInfo]
-
-  }
-
-  final case class ContainerChildrenInfo(container: ContainerInfo, children: Set[ContainerInfo])
-
-  object ContainerChildrenInfo {
-
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply(container: Container, children: Set[ContainerInfo]): ContainerChildrenInfo = {
-      ContainerChildrenInfo(ContainerInfo(container), children)
-    }
-
-    @SuppressWarnings(Array("org.wartremover.warts.Any"))
-    implicit val containerChildrenInfoFormat: Format[ContainerChildrenInfo] =
-      Json.format[ContainerChildrenInfo]
 
   }
 
@@ -473,17 +296,18 @@ package dto {
   }
 
   final case class CollectedSpecimenDefinitionNames(
-      id:                      String,
+      id:                      CollectionEventTypeId,
       slug:                    Slug,
       name:                    String,
-      specimenDefinitionNames: Set[NamedEntityInfoDto])
+      specimenDefinitionNames: Set[SpecimenDefinitionInfoDto])
+      extends NamedEntityInfo[CollectionEventTypeId]
 
   object CollectedSpecimenDefinitionNames {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def apply(eventType: CollectionEventType): CollectedSpecimenDefinitionNames = {
-      val definitionNames = eventType.specimenDefinitions.map(sd => NamedEntityInfoDto(sd))
-      CollectedSpecimenDefinitionNames(eventType.id.id, eventType.slug, eventType.name, definitionNames)
+      val definitionNames = eventType.specimenDefinitions.map(sd => SpecimenDefinitionInfoDto(sd))
+      CollectedSpecimenDefinitionNames(eventType.id, eventType.slug, eventType.name, definitionNames)
     }
 
     @SuppressWarnings(Array("org.wartremover.warts.Any"))
@@ -493,19 +317,20 @@ package dto {
   }
 
   final case class ProcessedSpecimenDefinitionName(
-      id:                     String,
+      id:                     ProcessingTypeId,
       slug:                   Slug,
       name:                   String,
-      specimenDefinitionName: NamedEntityInfoDto)
+      specimenDefinitionName: SpecimenDefinitionInfoDto)
+      extends NamedEntityInfo[ProcessingTypeId]
 
   object ProcessedSpecimenDefinitionName {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def apply(processingType: ProcessingType): ProcessedSpecimenDefinitionName =
-      ProcessedSpecimenDefinitionName(processingType.id.id,
+      ProcessedSpecimenDefinitionName(processingType.id,
                                       processingType.slug,
                                       processingType.name,
-                                      NamedEntityInfoDto(processingType.output.specimenDefinition))
+                                      SpecimenDefinitionInfoDto(processingType.output.specimenDefinition))
 
     @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val specimenDefinitionNamesFormat: Format[ProcessedSpecimenDefinitionName] =
@@ -514,41 +339,46 @@ package dto {
   }
 
   final case class ParticipantDto(
-      id:           String,
+      id:           ParticipantId,
       slug:         Slug,
-      study:        NamedEntityInfoDto,
+      study:        StudyInfoDto,
       version:      Long,
-      timeAdded:    String,
-      timeModified: Option[String],
+      timeAdded:    OffsetDateTime,
+      timeModified: Option[OffsetDateTime],
       uniqueId:     String,
       annotations:  Set[Annotation])
+      extends Dto {
+
+    override def toString: String = s"|${this.getClass.getSimpleName}: ${Json.prettyPrint(Json.toJson(this))}"
+
+  }
 
   object ParticipantDto {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def apply(participant: Participant, study: Study): ParticipantDto =
-      ParticipantDto(id        = participant.id.id,
-                     slug      = participant.slug,
-                     study     = NamedEntityInfoDto(study),
-                     version   = participant.version,
-                     timeAdded = participant.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                     timeModified =
-                       participant.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                     uniqueId    = participant.uniqueId,
-                     annotations = participant.annotations)
+      ParticipantDto(id           = participant.id,
+                     slug         = participant.slug,
+                     study        = StudyInfoDto(study),
+                     version      = participant.version,
+                     timeAdded    = participant.timeAdded,
+                     timeModified = participant.timeModified,
+                     uniqueId     = participant.uniqueId,
+                     annotations  = participant.annotations)
 
     @SuppressWarnings(Array("org.wartremover.warts.Any"))
-    implicit val participantDtoForma: Format[ParticipantDto] = Json.format[ParticipantDto]
+    implicit val participantDtoFormat: Format[ParticipantDto] = Json.format[ParticipantDto]
 
   }
 
-  final case class ParticipantInfoDto(id: String, slug: Slug, uniqueId: String) extends EntityInfo
+  final case class ParticipantInfoDto(id: ParticipantId, slug: Slug, uniqueId: String)
+      extends EntityInfo[ParticipantId]
 
   object ParticipantInfoDto {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def apply(participant: Participant): ParticipantInfoDto =
-      ParticipantInfoDto(participant.id.toString, participant.slug, participant.uniqueId)
+      ParticipantInfoDto(participant.id, participant.slug, participant.uniqueId)
 
     @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val participantInfoDtoFormat: Format[ParticipantInfoDto] = Json.format[ParticipantInfoDto]
@@ -595,13 +425,14 @@ package dto {
 
   }
 
-  final case class CollectionEventInfoDto(id: String, slug: Slug, visitNumber: Int) extends EntityInfo
+  final case class CollectionEventInfoDto(id: CollectionEventId, slug: Slug, visitNumber: Int)
+      extends EntityInfo[CollectionEventId]
 
   object CollectionEventInfoDto {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def apply(collectionEvent: CollectionEvent): CollectionEventInfoDto =
-      CollectionEventInfoDto(collectionEvent.id.toString, collectionEvent.slug, collectionEvent.visitNumber)
+      CollectionEventInfoDto(collectionEvent.id, collectionEvent.slug, collectionEvent.visitNumber)
 
     @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val collectionEventInfoDtoFormat: Format[CollectionEventInfoDto] =
@@ -610,11 +441,11 @@ package dto {
   }
 
   final case class UserDto(
-      id:           String,
+      id:           UserId,
       version:      Long,
-      timeAdded:    String,
-      timeModified: Option[String],
-      state:        String,
+      timeAdded:    OffsetDateTime,
+      timeModified: Option[OffsetDateTime],
+      state:        EntityState,
       slug:         Slug,
       name:         String,
       email:        String,
@@ -627,179 +458,6 @@ package dto {
     @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val userDtoFormat: Format[UserDto] = Json.format[UserDto]
 
-  }
-
-  final case class SpecimenDto(
-      id:                      String,
-      version:                 Long,
-      timeAdded:               String,
-      timeModified:            Option[String],
-      state:                   String,
-      slug:                    Slug,
-      inventoryId:             String,
-      collectionEvent:         CollectionEventInfoDto,
-      specimenDefinitionId:    String,
-      specimenDefinitionName:  String,
-      specimenDefinitionUnits: String,
-      originLocationInfo:      CentreLocationInfo,
-      locationInfo:            CentreLocationInfo,
-      containerId:             Option[String],
-      label:                   Option[String],
-      timeCreated:             String,
-      amount:                  BigDecimal,
-      units:                   String,
-      isDefaultAmount:         Boolean,
-      study:                   NamedEntityInfoDto,
-      participant:             ParticipantInfoDto,
-      eventType:               NamedEntityInfoDto) {
-
-    override def toString: String = s"${this.getClass.getSimpleName}: ${Json.prettyPrint(Json.toJson(this))}"
-
-  }
-
-  object SpecimenDto {
-
-    @SuppressWarnings(Array("org.wartremover.warts.Any"))
-    implicit val specimenDtoFormat: Format[SpecimenDto] = Json.format[SpecimenDto]
-
-  }
-
-  final case class ShipmentDto(
-      id:                   String,
-      version:              Long,
-      timeAdded:            String,
-      timeModified:         Option[String],
-      state:                String,
-      courierName:          String,
-      trackingNumber:       String,
-      origin:               CentreLocationInfo,
-      destination:          CentreLocationInfo,
-      timePacked:           Option[String],
-      timeSent:             Option[String],
-      timeReceived:         Option[String],
-      timeUnpacked:         Option[String],
-      timeCompleted:        Option[String],
-      specimenCount:        Int,
-      presentSpecimenCount: Int,
-      containerCount:       Int)
-
-  object ShipmentDto {
-
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply(
-        shipment:             Shipment,
-        origin:               CentreLocationInfo,
-        destination:          CentreLocationInfo,
-        specimenCount:        Int,
-        presentSpecimenCount: Int,
-        containerCount:       Int
-      ): ShipmentDto =
-      ShipmentDto(id                   = shipment.id.id,
-                  version              = shipment.version,
-                  timeAdded            = shipment.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                  timeModified         = shipment.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                  courierName          = shipment.courierName,
-                  trackingNumber       = shipment.trackingNumber,
-                  origin               = origin,
-                  destination          = destination,
-                  timePacked           = shipment.timePacked.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                  timeSent             = shipment.timeSent.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                  timeReceived         = shipment.timeReceived.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                  timeUnpacked         = shipment.timeUnpacked.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                  timeCompleted        = shipment.timeCompleted.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                  specimenCount        = specimenCount,
-                  presentSpecimenCount = presentSpecimenCount,
-                  containerCount       = containerCount,
-                  state                = shipment.state.id)
-
-    val sort2Compare: Map[String, (ShipmentDto, ShipmentDto) => Boolean] =
-      Map[String, (ShipmentDto, ShipmentDto) => Boolean]("courierName" -> compareByCourier,
-                                                         "trackingNumber" -> compareByTrackingNumber,
-                                                         "state"          -> compareByState,
-                                                         "origin"         -> compareByOrigin,
-                                                         "destination"    -> compareByDestination)
-
-    def compareByCourier(a: ShipmentDto, b: ShipmentDto): Boolean =
-      (a.courierName compareToIgnoreCase b.courierName) < 0
-
-    def compareByTrackingNumber(a: ShipmentDto, b: ShipmentDto): Boolean =
-      (a.trackingNumber compareToIgnoreCase b.trackingNumber) < 0
-
-    def compareByState(a: ShipmentDto, b: ShipmentDto): Boolean =
-      (a.state.toString compareToIgnoreCase b.state.toString) < 0
-
-    def compareByOrigin(a: ShipmentDto, b: ShipmentDto): Boolean =
-      (a.origin.combinedName compareToIgnoreCase b.origin.combinedName) < 0
-
-    def compareByDestination(a: ShipmentDto, b: ShipmentDto): Boolean =
-      (a.destination.combinedName compareToIgnoreCase b.destination.combinedName) < 0
-
-    @SuppressWarnings(Array("org.wartremover.warts.Any"))
-    implicit val shipmentDtoFormat: Format[ShipmentDto] = Json.format[ShipmentDto]
-
-  }
-
-  final case class ShipmentSpecimenDto(
-      id:                  String,
-      version:             Long,
-      timeAdded:           String,
-      timeModified:        Option[String],
-      state:               String,
-      shipmentId:          String,
-      shipmentContainerId: Option[String],
-      specimen:            SpecimenDto) {
-
-    override def toString: String =
-      s"""|${this.getClass.getSimpleName}: {
-          |  id:                  $id,
-          |  version:             $version,
-          |  timeAdded:           $timeAdded,
-          |  timeModified:        $timeModified,
-          |  state:               $state,
-          |  shipmentId:          $shipmentId,
-          |  shipmentContainerId: $shipmentContainerId,
-          |  specimen:            $specimen,
-          |}""".stripMargin
-
-  }
-
-  object ShipmentSpecimenDto {
-
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    def apply(shipmentSpecimen: ShipmentSpecimen, specimen: SpecimenDto): ShipmentSpecimenDto =
-      ShipmentSpecimenDto(id      = shipmentSpecimen.id.id,
-                          version = shipmentSpecimen.version,
-                          timeAdded =
-                            shipmentSpecimen.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                          timeModified = shipmentSpecimen.timeModified
-                            .map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                          shipmentId          = shipmentSpecimen.shipmentId.id,
-                          shipmentContainerId = shipmentSpecimen.shipmentContainerId.map(id => id.id),
-                          state               = shipmentSpecimen.state.toString,
-                          specimen            = specimen)
-
-    val sort2Compare: Map[String, (ShipmentSpecimenDto, ShipmentSpecimenDto) => Boolean] =
-      Map[String, (ShipmentSpecimenDto, ShipmentSpecimenDto) => Boolean](
-        "inventoryId" -> compareByInventoryId,
-        "state"       -> compareByState,
-        "specName"    -> compareBySpecName,
-        "timeCreated" -> compareByTimeCreated
-      )
-
-    def compareByInventoryId(a: ShipmentSpecimenDto, b: ShipmentSpecimenDto): Boolean =
-      (a.specimen.inventoryId compareTo b.specimen.inventoryId) < 0
-
-    def compareByState(a: ShipmentSpecimenDto, b: ShipmentSpecimenDto): Boolean =
-      (a.state compareTo b.state) < 0
-
-    def compareBySpecName(a: ShipmentSpecimenDto, b: ShipmentSpecimenDto): Boolean =
-      (a.specimen.specimenDefinitionName compareTo b.specimen.specimenDefinitionName) < 0
-
-    def compareByTimeCreated(a: ShipmentSpecimenDto, b: ShipmentSpecimenDto): Boolean =
-      (a.specimen.timeCreated compareTo b.specimen.timeCreated) < 0
-
-    @SuppressWarnings(Array("org.wartremover.warts.Any"))
-    implicit val shipmentSpecimenDtoFormat: Format[ShipmentSpecimenDto] = Json.format[ShipmentSpecimenDto]
   }
 
 }

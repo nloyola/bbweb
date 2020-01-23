@@ -1,49 +1,48 @@
 package org.biobank.dto
 
+import java.time.OffsetDateTime
 import org.biobank.domain.Slug
+import org.biobank.domain.access._
 import play.api.libs.json._
 
 package access {
 
-  final case class AccessItemNameDto(id: String, slug: Slug, name: String, accessItemType: String) extends Dto
+  final case class AccessItemInfoDto(
+      id:             AccessItemId,
+      slug:           Slug,
+      name:           String,
+      accessItemType: AccessItemType)
+      extends NamedEntityInfo[AccessItemId]
 
-  object AccessItemNameDto {
+  object AccessItemInfoDto {
 
-    def compareByName(a: AccessItemNameDto, b: AccessItemNameDto): Boolean =
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(item: AccessItem): AccessItemInfoDto =
+      AccessItemInfoDto(item.id, item.slug, item.name, item.accessItemType)
+
+    def compareByName(a: AccessItemInfoDto, b: AccessItemInfoDto): Boolean =
       (a.name compareToIgnoreCase b.name) < 0
 
     @SuppressWarnings(Array("org.wartremover.warts.Any"))
-    implicit val accessItemNameDtoFormat: Format[AccessItemNameDto] = Json.format[AccessItemNameDto]
+    implicit val accessItemInfoDtoFormat: Format[AccessItemInfoDto] = Json.format[AccessItemInfoDto]
+
   }
 
   final case class RoleDto(
-      id:             String,
+      id:             AccessItemId,
       version:        Long,
-      timeAdded:      String,
-      timeModified:   Option[String],
+      timeAdded:      OffsetDateTime,
+      timeModified:   Option[OffsetDateTime],
       accessItemType: String,
       slug:           Slug,
       name:           String,
       description:    Option[String],
-      userData:       Set[NamedEntityInfoDto],
-      parentData:     Set[NamedEntityInfoDto],
-      childData:      Set[NamedEntityInfoDto])
+      userData:       Set[UserInfoDto],
+      parentData:     Set[AccessItemInfoDto],
+      childData:      Set[AccessItemInfoDto])
       extends Dto {
 
-    override def toString: String =
-      s"""|${this.getClass.getSimpleName}: {
-          |  id:             $id,
-          |  version:        $version,
-          |  timeAdded:      $timeAdded,
-          |  timeModified:   $timeModified,
-          |  accessItemType: $accessItemType,
-          |  slug:           $slug,
-          |  name:           $name,
-          |  description:    $description,
-          |  userData:       $userData,
-          |  parentData:     $parentData,
-          |  childData:      $childData
-          |}""".stripMargin
+    override def toString: String = s"|${this.getClass.getSimpleName}: ${Json.prettyPrint(Json.toJson(this))}"
   }
 
   object RoleDto {
@@ -54,11 +53,11 @@ package access {
   }
 
   final case class UserRoleDto(
-      id:        String,
+      id:        AccessItemId,
       version:   Long,
       slug:      Slug,
       name:      String,
-      childData: Set[NamedEntityInfoDto])
+      childData: Set[AccessItemInfoDto])
       extends Dto
 
   object UserRoleDto {
@@ -69,30 +68,19 @@ package access {
   }
 
   final case class MembershipDto(
-      id:           String,
+      id:           MembershipId,
       version:      Long,
-      timeAdded:    String,
-      timeModified: Option[String],
+      timeAdded:    OffsetDateTime,
+      timeModified: Option[OffsetDateTime],
       slug:         Slug,
       name:         String,
       description:  Option[String],
-      userData:     Set[NamedEntityInfoDto],
-      studyData:    EntitySetDto,
-      centreData:   EntitySetDto)
+      userData:     Set[UserInfoDto],
+      studyData:    StudySetDto,
+      centreData:   CentreSetDto)
       extends Dto {
-    override def toString: String =
-      s"""|${this.getClass.getSimpleName}: {
-          |  id:             $id,
-          |  version:        $version,
-          |  timeAdded:      $timeAdded,
-          |  timeModified:   $timeModified,
-          |  slug:           $slug,
-          |  name:           $name,
-          |  description:    $description,
-          |  userData:       $userData,
-          |  studyData:      $studyData,
-          |  centreData:     $centreData
-          |}""".stripMargin
+
+    override def toString: String = s"|${this.getClass.getSimpleName}: ${Json.prettyPrint(Json.toJson(this))}"
 
   }
 
@@ -104,21 +92,35 @@ package access {
   }
 
   final case class UserMembershipDto(
-      id:           String,
+      id:           MembershipId,
       version:      Long,
-      timeAdded:    String,
-      timeModified: Option[String],
+      timeAdded:    OffsetDateTime,
+      timeModified: Option[OffsetDateTime],
       slug:         Slug,
       name:         String,
       description:  Option[String],
-      studyData:    EntitySetDto,
-      centreData:   EntitySetDto)
+      studyData:    StudySetDto,
+      centreData:   CentreSetDto)
       extends Dto
 
   object UserMembershipDto {
 
     @SuppressWarnings(Array("org.wartremover.warts.Any"))
     implicit val userMembershipDtoFormat: Format[UserMembershipDto] = Json.format[UserMembershipDto]
+
+  }
+
+  final case class MembershipInfoDto(id: MembershipId, slug: Slug, name: String)
+      extends NamedEntityInfo[MembershipId]
+
+  object MembershipInfoDto {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    def apply(membership: Membership): MembershipInfoDto =
+      MembershipInfoDto(membership.id, membership.slug, membership.name)
+
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
+    implicit val membershipInfoDtoFormat: Format[MembershipInfoDto] = Json.format[MembershipInfoDto]
 
   }
 

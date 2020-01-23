@@ -421,7 +421,7 @@ trait ContainerTypesControllerSpec[T <: ContainerType, F <: ContainerTypeFixture
     val containerTypeFromJson = json.validate[ContainerTypeDto]
     containerTypeFromJson must be(jsSuccess)
 
-    val newContainerTypeId = ContainerTypeId(containerTypeFromJson.get.id)
+    val newContainerTypeId = containerTypeFromJson.get.id
     val updatedContainerType = containerType match {
       case ct: StorageContainerType  => ct.copy(id = newContainerTypeId)
       case ct: SpecimenContainerType => ct.copy(id = newContainerTypeId)

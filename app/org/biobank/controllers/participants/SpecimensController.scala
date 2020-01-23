@@ -4,7 +4,7 @@ import javax.inject.{Inject, Singleton}
 import org.biobank.controllers._
 import org.biobank.domain.Slug
 import org.biobank.domain.participants.{CollectionEventId, SpecimenId}
-import org.biobank.dto.SpecimenDto
+import org.biobank.dto.participants.SpecimenDto
 import org.biobank.services._
 import org.biobank.services.participants.SpecimensService
 import play.api.libs.json._

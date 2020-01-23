@@ -2,7 +2,6 @@ package org.biobank.domain.centres
 
 import java.time.OffsetDateTime
 import org.biobank.ValidationKey
-import org.biobank.dto.EntityInfoAndStateDto
 import org.biobank.domain._
 import org.biobank.domain.studies.StudyId
 import play.api.libs.json._
@@ -50,8 +49,6 @@ sealed trait Centre
 
   def locationName(locationId: LocationId): DomainValidation[String] =
     locationWithId(locationId).map(loc => s"${this.name}: ${loc.name}")
-
-  def nameDto(): EntityInfoAndStateDto = EntityInfoAndStateDto(id.id, slug, name, state.id)
 
   override def toString: String =
     s"""|${this.getClass.getSimpleName}: {

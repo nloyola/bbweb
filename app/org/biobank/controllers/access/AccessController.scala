@@ -47,7 +47,7 @@ class AccessController @Inject()(
   def listItemNames: Action[Unit] =
     action.async(parse.empty) { implicit request =>
       FilterAndSortQueryHelper(request.rawQueryString).fold(err => {
-        validationReply(FutureValidation(err.failure[Seq[AccessItemNameDto]]))
+        validationReply(FutureValidation(err.failure[Seq[AccessItemInfoDto]]))
       }, query => {
         validationReply(accessService.getAccessItems(request.identity.user.id, query.filter, query.sort))
       })
@@ -65,7 +65,7 @@ class AccessController @Inject()(
   def listRoleNames: Action[Unit] =
     action.async(parse.empty) { implicit request =>
       FilterAndSortQueryHelper(request.rawQueryString).fold(err => {
-        validationReply(Future.successful(err.failure[Seq[AccessItemNameDto]]))
+        validationReply(Future.successful(err.failure[Seq[AccessItemInfoDto]]))
       }, query => {
         validationReply(accessService.getRoleNames(request.identity.user.id, query))
       })
@@ -95,7 +95,7 @@ class AccessController @Inject()(
   def listMembershipNames: Action[Unit] =
     action.async(parse.empty) { implicit request =>
       FilterAndSortQueryHelper(request.rawQueryString).fold(err => {
-        validationReply(Future.successful(err.failure[Seq[AccessItemNameDto]]))
+        validationReply(Future.successful(err.failure[Seq[AccessItemInfoDto]]))
       }, query => {
         validationReply(accessService.getMembershipNames(request.identity.user.id, query))
       })

@@ -112,7 +112,7 @@ class SpecimensServiceSpec extends ProcessorTestFixture with ParticipantsService
         val f = new UsersWithSpecimenAccessFixture
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
-          specimensService.get(user.id, f.specimen.id).mustSucceed { _.id must be(f.specimen.id.id) }
+          specimensService.get(user.id, f.specimen.id).mustSucceed { _.id must be(f.specimen.id) }
         }
       }
 

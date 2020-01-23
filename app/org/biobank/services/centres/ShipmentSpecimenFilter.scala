@@ -4,7 +4,8 @@ import org.biobank.services._
 import org.biobank.services.Comparator._
 import org.biobank.services.{ServiceError, ServiceValidation}
 import org.biobank.domain.PredicateHelper
-import org.biobank.domain.centres.{ShipmentItemState, ShipmentSpecimen, ShipmentSpecimenPredicates}
+import org.biobank.domain.centres.ShipmentItemState
+import org.biobank.dto.centres.{ShipmentSpecimenDto, ShipmentSpecimenPredicates}
 import org.slf4j.{Logger, LoggerFactory}
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
@@ -14,22 +15,22 @@ import scalaz.Validation.FlatMap._
  *
  */
 object ShipmentSpecimenFilter
-    extends EntityFilter[ShipmentSpecimen] with PredicateHelper with ShipmentSpecimenPredicates {
+    extends EntityFilter[ShipmentSpecimenDto] with PredicateHelper with ShipmentSpecimenPredicates {
   import org.biobank.CommonValidations._
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
   def filterShipmentSpecimens(
-      shipmentSpecimens: Set[ShipmentSpecimen],
+      shipmentSpecimens: Set[ShipmentSpecimenDto],
       filter:            FilterString
-    ): ServiceValidation[Set[ShipmentSpecimen]] =
+    ): ServiceValidation[Set[ShipmentSpecimenDto]] =
     filterEntities(shipmentSpecimens, filter, shipmentSpecimens.filter)
 
   protected def predicateFromSelector(
       selector:   String,
       comparator: Comparator,
       args:       List[String]
-    ): ServiceValidation[ShipmentSpecimen => Boolean] =
+    ): ServiceValidation[ShipmentSpecimenDto => Boolean] =
     selector match {
       case "state" => stateFilter(comparator, args)
       case _ =>

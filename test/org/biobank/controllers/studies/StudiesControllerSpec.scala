@@ -6,7 +6,8 @@ import org.biobank.domain._
 import org.biobank.domain.annotations._
 import org.biobank.domain.Slug
 import org.biobank.domain.studies._
-import org.biobank.dto.{CentreLocationInfo, EntityInfoAndStateDto}
+import org.biobank.dto._
+import org.biobank.dto.centres._
 import org.biobank.fixtures._
 import org.biobank.matchers.PagedResultsMatchers
 import org.biobank.services.studies.StudyCountsByStatus
@@ -64,12 +65,10 @@ class StudiesControllerSpec
         reply must beOkResponseWithJsonReply
 
         val json = contentAsJson(reply)
-        val dtos = (json \ "data").validate[List[EntityInfoAndStateDto]]
+        val dtos = (json \ "data").validate[List[StudyInfoAndStateDto]]
         dtos must be(jsSuccess)
         dtos.get must have size 1
-        dtos.get(0) must equal(
-          EntityInfoAndStateDto(f.study.id.id, f.study.slug, f.study.name, f.study.state.id)
-        )
+        dtos.get(0) must equal(StudyInfoAndStateDto(f.study.id, f.study.slug, f.study.name, f.study.state))
       }
 
       it("when study disabled, returns zero studies") {
@@ -80,7 +79,7 @@ class StudiesControllerSpec
         reply must beOkResponseWithJsonReply
 
         val json = contentAsJson(reply)
-        val dtos = (json \ "data").validate[List[EntityInfoAndStateDto]]
+        val dtos = (json \ "data").validate[List[StudyInfoAndStateDto]]
         dtos must be(jsSuccess)
         dtos.get must have size 0
       }
@@ -93,7 +92,7 @@ class StudiesControllerSpec
         reply must beOkResponseWithJsonReply
 
         val json = contentAsJson(reply)
-        val dtos = (json \ "data").validate[List[EntityInfoAndStateDto]]
+        val dtos = (json \ "data").validate[List[StudyInfoAndStateDto]]
         dtos must be(jsSuccess)
         dtos.get must have size 0
       }
@@ -953,27 +952,27 @@ class StudiesControllerSpec
         val f     = fixture
         val reply = makeAuthRequest(GET, uri("names").addQueryString("order=asc")).value
         reply must beOkResponseWithJsonReply
-        val dtos = (contentAsJson(reply) \ "data").validate[Seq[EntityInfoAndStateDto]]
+        val dtos = (contentAsJson(reply) \ "data").validate[Seq[StudyInfoAndStateDto]]
         dtos must be(jsSuccess)
-        dtos.get must equal(Seq(EntityInfoAndStateDto(f.studies(0)), EntityInfoAndStateDto(f.studies(1))))
+        dtos.get must equal(Seq(StudyInfoAndStateDto(f.studies(0)), StudyInfoAndStateDto(f.studies(1))))
       }
 
       it("list single study when using a filter") {
         val f     = fixture
         val reply = makeAuthRequest(GET, uri("names").addQueryString("filter=name::ABC")).value
         reply must beOkResponseWithJsonReply
-        val dtos = (contentAsJson(reply) \ "data").validate[Seq[EntityInfoAndStateDto]]
+        val dtos = (contentAsJson(reply) \ "data").validate[Seq[StudyInfoAndStateDto]]
         dtos must be(jsSuccess)
-        dtos.get must equal(Seq(EntityInfoAndStateDto(f.studies(0))))
+        dtos.get must equal(Seq(StudyInfoAndStateDto(f.studies(0))))
       }
 
       it("list nothing when using a name filter for name not in system") {
         fixture // create studies to populate repository
         val reply = makeAuthRequest(GET, uri("names").addQueryString("filter=name::xxx")).value
         reply must beOkResponseWithJsonReply
-        val dtos = (contentAsJson(reply) \ "data").validate[Seq[EntityInfoAndStateDto]]
+        val dtos = (contentAsJson(reply) \ "data").validate[Seq[StudyInfoAndStateDto]]
         dtos must be(jsSuccess)
-        dtos.get must equal(Seq.empty[EntityInfoAndStateDto])
+        dtos.get must equal(Seq.empty[StudyInfoAndStateDto])
       }
 
       it("fail for invalid sort field") {

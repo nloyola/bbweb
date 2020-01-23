@@ -4,14 +4,35 @@ import java.time.OffsetDateTime
 import org.biobank.domain.{EntityState, Factory, Location}
 import org.biobank.domain.studies._
 import org.biobank.domain.participants._
+import org.biobank.dto.centres.{CentreLocationInfo, ShipmentDto}
 import org.scalatest.Assertions._
+import org.biobank.dto.centres.CentreLocationInfo
+import org.scalatest.OptionValues._
 
 trait ShipmentSpecFixtures {
 
-  class ToFromCentres(val originCentre: Centre, val destinationCentre: Centre)
+  trait ShipmentDtoCoverter {
+    val originCentre: Centre
+
+    val destinationCentre: Centre
+
+    def dtoFrom(shipment: Shipment) =
+      ShipmentDto(shipment,
+                  CentreLocationInfo(originCentre, originCentre.locations.headOption.value),
+                  CentreLocationInfo(destinationCentre, destinationCentre.locations.headOption.value),
+                  0,
+                  0,
+                  0)
+
+  }
+
+  class ToFromCentres(val originCentre: Centre, val destinationCentre: Centre) extends ShipmentDtoCoverter
 
   class ShipmentFixture[T <: Shipment](originCentre: Centre, destinationCentre: Centre, val shipment: T)
-      extends ToFromCentres(originCentre, destinationCentre)
+      extends ToFromCentres(originCentre, destinationCentre) {
+
+    val shipmentDto = dtoFrom(shipment)
+  }
 
   class ShipmentsFixture(
       originCentre:      Centre,
@@ -47,6 +68,7 @@ trait ShipmentSpecFixtures {
       originCentre:            Centre,
       destinationCentre:       Centre,
       shipment:                Shipment,
+      shipmentDto:             ShipmentDto,
       val originLocation:      Location,
       val destinationLocation: Location,
       val study:               Study,
@@ -63,6 +85,7 @@ trait ShipmentSpecFixtures {
       originCentre:            Centre,
       destinationCentre:       Centre,
       shipment:                Shipment,
+      shipmentDto:             ShipmentDto,
       study:                   Study,
       specimenDefinition:      CollectedSpecimenDefinition,
       ceventType:              CollectionEventType,
@@ -73,6 +96,7 @@ trait ShipmentSpecFixtures {
       extends SpecimensFixture(originCentre,
                                destinationCentre,
                                shipment,
+                               shipmentDto,
                                originCentre.locations.head,
                                destinationCentre.locations.head,
                                study,
@@ -99,10 +123,9 @@ trait ShipmentSpecFixtures {
   }
 
   def createdShipmentFixture = {
-    val f = centresFixture
-    new ShipmentFixture(f.originCentre,
-                        f.destinationCentre,
-                        factory.createShipment(f.originCentre, f.destinationCentre))
+    val f        = centresFixture
+    val shipment = factory.createShipment(f.originCentre, f.destinationCentre)
+    new ShipmentFixture(f.originCentre, f.destinationCentre, shipment)
   }
 
   def makePackedShipment(shipment: Shipment): PackedShipment =
@@ -197,8 +220,8 @@ trait ShipmentSpecFixtures {
   def specimensFixture(numSpecimens: Int) = {
     val f                   = createdShipmentFixture
     val ceventFixture       = new CollectionEventFixture
-    val originLocation      = f.originCentre.locations.head
-    val destinationLocation = f.destinationCentre.locations.head
+    val originLocation      = f.originCentre.locations.headOption.value
+    val destinationLocation = f.destinationCentre.locations.headOption.value
 
     val specimens = (1 to numSpecimens).map { _ =>
       factory.createUsableSpecimen.copy(originLocationId = originLocation.id, locationId = originLocation.id)
@@ -214,7 +237,8 @@ trait ShipmentSpecFixtures {
                          participant         = ceventFixture.participant,
                          cevent              = ceventFixture.cevent,
                          specimens           = specimens,
-                         shipment            = f.shipment)
+                         shipment            = f.shipment,
+                         shipmentDto         = f.shipmentDto)
   }
 
   def shipmentSpecimensFixture(numSpecimens: Int) = {
@@ -230,13 +254,14 @@ trait ShipmentSpecFixtures {
 
     new ShipmentSpecimensFixture(originCentre        = f.originCentre,
                                  destinationCentre   = f.destinationCentre,
+                                 shipment            = f.shipment,
+                                 shipmentDto         = f.shipmentDto,
                                  study               = f.study,
                                  specimenDefinition  = f.specimenDefinition,
                                  ceventType          = f.ceventType,
                                  participant         = f.participant,
                                  cevent              = f.cevent,
                                  specimens           = f.specimens,
-                                 shipment            = f.shipment,
                                  shipmentSpecimenMap = map)
   }
 

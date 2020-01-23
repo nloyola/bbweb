@@ -10,7 +10,7 @@ import org.biobank.domain.processing.{
   ProcessingEventInputSpecimenId
 }
 import org.biobank.fixtures.Url
-import org.biobank.dto.SpecimenDto
+import org.biobank.dto.participants.SpecimenDto
 import org.biobank.fixtures.ControllerFixture
 import org.biobank.matchers.PagedResultsMatchers
 import org.scalatest.matchers.{MatchResult, Matcher}

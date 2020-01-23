@@ -111,7 +111,7 @@ class RootContainersServiceSpec
 
         containersService.search(f.allCentresAdminUser.id, f.centre.id, query).mustSucceed { reply =>
           reply.items must have size (2)
-          val containerIds = reply.items.map(c => c.id).sorted
+          val containerIds = reply.items.map(c => c.id.id).sorted
           containerIds must equal(List(f.container.id.id, siblingContainer.id.id).sorted)
         }
       }
@@ -220,7 +220,7 @@ trait ChildContainerControllerSpec[
           containersService.processCommand(cmd).mustSucceed { c =>
             c.inventoryId must be(f.container.inventoryId)
 
-            val repoContainer = containerRepository.getByKey(ContainerId(c.id)).toOption.value
+            val repoContainer = containerRepository.getByKey(c.id).toOption.value
             containerRepository.remove(repoContainer)
           }
         }
@@ -293,7 +293,7 @@ trait CommonContainerControllerSpec[
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
           containersService.getBySlug(user.id, f.container.slug).mustSucceed { result =>
-            result.id must be(f.container.id.id)
+            result.id must be(f.container.id)
           }
         }
       }
@@ -326,7 +326,7 @@ trait CommonContainerControllerSpec[
           forAll(updateCommandsTable(user.id, f.container)) { cmd =>
             containerRepository.put(f.container) // restore the container to it's previous state
             containersService.processCommand(cmd).mustSucceed { c =>
-              c.id must be(f.container.id.id)
+              c.id must be(f.container.id)
             }
           }
         }

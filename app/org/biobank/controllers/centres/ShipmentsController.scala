@@ -7,7 +7,7 @@ import play.api.{Environment, Logger}
 import play.api.mvc._
 import org.biobank.controllers._
 import org.biobank.domain.centres.{CentreId, ShipmentId, ShipmentSpecimenId}
-import org.biobank.dto.ShipmentDto
+import org.biobank.dto.centres.ShipmentDto
 import org.biobank.services.{FilterString, PagedResults, ServiceValidation, SortString}
 import org.biobank.services.centres.{CentresService, ShipmentsService}
 import org.biobank.services.participants.SpecimensService
@@ -76,7 +76,7 @@ class ShipmentsController @Inject()(
   def getSpecimen(shipmentId: ShipmentId, shipmentSpecimenId: String): Action[Unit] =
     action.async(parse.empty) { implicit request =>
       val f = shipmentsService
-          .getShipmentSpecimen(request.identity.user.id, shipmentId, ShipmentSpecimenId(shipmentSpecimenId))
+        .getShipmentSpecimen(request.identity.user.id, shipmentId, ShipmentSpecimenId(shipmentSpecimenId))
       validationReply(f)
     }
 

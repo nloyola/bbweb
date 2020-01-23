@@ -5,8 +5,10 @@ import javax.inject.Inject
 import org.biobank.services._
 import org.biobank.services.Comparator._
 import org.biobank.services.{ServiceError, ServiceValidation}
-import org.biobank.domain.PredicateHelper
+import org.biobank.domain.{EntityState, PredicateHelper}
 import org.biobank.domain.centres._
+import org.biobank.dto.centres._
+import org.biobank.query.centres.ShipmentsReadRepository
 import org.slf4j.{Logger, LoggerFactory}
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
@@ -14,7 +16,45 @@ import scalaz.Validation.FlatMap._
 @ImplementedBy(classOf[ShipmentFilterImpl])
 trait ShipmentFilter {
 
-  def filterShipments(shipments: Set[Shipment], filter: FilterString): ServiceValidation[Set[Shipment]]
+  def filterShipments(shipments: Set[ShipmentDto], filter: FilterString): ServiceValidation[Set[ShipmentDto]]
+
+}
+
+trait ShipmentPredicates {
+  type ShipmentFilter = ShipmentDto => Boolean
+
+  val originNameIsOneOf: Set[String] => ShipmentFilter =
+    centreIds => shipment => centreIds.contains(shipment.origin.name)
+
+  val destinationNameIsOneOf: Set[String] => ShipmentFilter =
+    centreIds => shipment => centreIds.contains(shipment.destination.name)
+
+  val withCentreNameIsOneOf: Set[String] => ShipmentFilter =
+    centreIds =>
+      shipment => centreIds.contains(shipment.destination.name) || centreIds.contains(shipment.origin.name)
+
+  val courierNameIsOneOf: Set[String] => ShipmentFilter =
+    courierNames => shipment => courierNames.contains(shipment.courierName)
+
+  val trackingNumberIsOneOf: Set[String] => ShipmentFilter =
+    trackingNumbers => shipment => trackingNumbers.contains(shipment.trackingNumber)
+
+  val stateIsOneOf: Set[EntityState] => ShipmentFilter =
+    states => shipment => states.contains(shipment.state)
+
+  val courierNameIsLike: Set[String] => ShipmentFilter =
+    courierNames =>
+      shipment => {
+        val lc = shipment.courierName.toLowerCase
+        courierNames.forall(n => lc.contains(n.toLowerCase))
+      }
+
+  val trackingNumberIsLike: Set[String] => ShipmentFilter =
+    trackingNumbers =>
+      shipment => {
+        val lc = shipment.trackingNumber.toLowerCase
+        trackingNumbers.forall(n => lc.contains(n.toLowerCase))
+      }
 
 }
 
@@ -23,21 +63,24 @@ trait ShipmentFilter {
  *
  */
 class ShipmentFilterImpl @Inject()(
-    val shipmentRepository: ShipmentsWriteRepository,
+    val shipmentRepository: ShipmentsReadRepository,
     val centreRepository:   CentreRepository)
-    extends ShipmentFilter with EntityFilter[Shipment] with PredicateHelper with ShipmentPredicates {
+    extends ShipmentFilter with EntityFilter[ShipmentDto] with PredicateHelper with ShipmentPredicates {
   import org.biobank.CommonValidations._
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
-  def filterShipments(shipments: Set[Shipment], filter: FilterString): ServiceValidation[Set[Shipment]] =
+  def filterShipments(
+      shipments: Set[ShipmentDto],
+      filter:    FilterString
+    ): ServiceValidation[Set[ShipmentDto]] =
     filterEntities(shipments, filter, shipments.filter)
 
   protected def predicateFromSelector(
       selector:   String,
       comparator: Comparator,
       args:       List[String]
-    ): ServiceValidation[Shipment => Boolean] =
+    ): ServiceValidation[ShipmentDto => Boolean] =
     selector match {
       case "origin"         => originCentreFilter(comparator, args)
       case "destination"    => destinationCentreFilter(comparator, args)
@@ -50,36 +93,35 @@ class ShipmentFilterImpl @Inject()(
     }
 
   private def originCentreFilter(comparator: Comparator, names: List[String]) =
-    centreIdsFilter(comparator,
-                    originCentreIdIsOneOf,
-                    names,
-                    ServiceError(s"invalid filter on 'from centre' name: $comparator"))
+    centreNamesFilter(comparator,
+                      originNameIsOneOf,
+                      names,
+                      ServiceError(s"invalid filter on 'from centre' name: $comparator"))
 
   private def destinationCentreFilter(comparator: Comparator, names: List[String]) =
-    centreIdsFilter(comparator,
-                    destinationCentreIdIsOneOf,
-                    names,
-                    ServiceError(s"invalid filter on 'to centre' name: $comparator"))
+    centreNamesFilter(comparator,
+                      destinationNameIsOneOf,
+                      names,
+                      ServiceError(s"invalid filter on 'to centre' name: $comparator"))
 
   private def withCentreFilter(comparator: Comparator, names: List[String]) =
-    centreIdsFilter(comparator,
-                    withCentreIdIsOneOf,
-                    names,
-                    ServiceError(s"invalid filter on 'with centre' name: $comparator"))
+    centreNamesFilter(comparator,
+                      withCentreNameIsOneOf,
+                      names,
+                      ServiceError(s"invalid filter on 'with centre' name: $comparator"))
 
-  private def centreIdsFilter(
+  private def centreNamesFilter(
       comparator:     Comparator,
-      shipmentFilter: Set[CentreId] => ShipmentFilter,
+      shipmentFilter: Set[String] => ShipmentFilter,
       names:          List[String],
       error:          ServiceError
     ) = {
-    val centreIds = centreRepository.getByNames(names.toSet).map(_.id)
-
+    val centreNamesSet = names.toSet
     comparator match {
       case Equal | In =>
-        shipmentFilter(centreIds).successNel[String]
+        shipmentFilter(centreNamesSet).successNel[String]
       case NotEqualTo | NotIn =>
-        complement(shipmentFilter(centreIds)).successNel[String]
+        complement(shipmentFilter(centreNamesSet)).successNel[String]
       case _ =>
         error.failureNel[ShipmentFilter]
     }

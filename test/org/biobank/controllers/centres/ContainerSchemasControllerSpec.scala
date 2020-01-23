@@ -389,7 +389,7 @@ class ContainerSchemasControllerSpec
     val schemaFromJson = json.validate[ContainerSchemaDto]
     schemaFromJson must be(jsSuccess)
 
-    val newSchemaId   = ContainerSchemaId(schemaFromJson.get.id)
+    val newSchemaId   = schemaFromJson.get.id
     val updatedSchema = schema.copy(id = newSchemaId)
 
     schemaFromJson.get must matchDtoToContainerSchema(updatedSchema)
@@ -449,7 +449,7 @@ class ContainerSchemasControllerSpec
       val replySchemas = (json \ "data" \ "items").validate[List[ContainerSchemaDto]]
       replySchemas must be(jsSuccess)
 
-      (replySchemas.get.sortWith(_.id < _.id) zip expectedSchemas.sortWith(_.id.id < _.id.id)).foreach {
+      (replySchemas.get.sortWith(_.id.id < _.id.id) zip expectedSchemas.sortWith(_.id.id < _.id.id)).foreach {
         case (replySchema, expectedSchema) =>
           replySchema must matchDtoToContainerSchema(expectedSchema)
       }

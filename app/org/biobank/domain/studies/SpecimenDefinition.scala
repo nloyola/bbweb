@@ -39,7 +39,7 @@ object SpecimenDefinitionId {
  * specimen types collected from participants, or for specimen types that are processed.
  */
 trait SpecimenDefinition
-    extends IdentifiedValueObject[SpecimenDefinitionId] with HasUniqueName with HasSlug
+    extends IdentifiedValueObject[SpecimenDefinitionId] with HasSlug with HasUniqueName
     with HasOptionalDescription {
 
   /** A short identifying name that is unique to the study. */

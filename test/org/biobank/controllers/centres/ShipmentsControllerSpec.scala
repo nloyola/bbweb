@@ -4,7 +4,7 @@ import java.time.OffsetDateTime
 import org.biobank.controllers.PagedResultsSharedSpec
 import org.biobank.domain.{EntityState, LocationId}
 import org.biobank.domain.centres._
-import org.biobank.dto._
+import org.biobank.dto.centres._
 import org.biobank.fixtures.Url
 import org.biobank.matchers.PagedResultsMatchers
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -55,7 +55,7 @@ class ShipmentsControllerSpec
         describe("when filtered by 'origin centre'") {
           listSingleShipment() { () =>
             val f = createdShipmentFixture
-            shipmentsReadRepository.put(f.shipment)
+            shipmentsReadRepository.put(f.shipmentDto)
             (uri(s"list?filter=origin:in:${f.originCentre.name}"), f.shipment)
           }
         }
@@ -63,7 +63,7 @@ class ShipmentsControllerSpec
         describe("when filtered by 'destination centre'") {
           listSingleShipment() { () =>
             val f = createdShipmentFixture
-            shipmentsReadRepository.put(f.shipment)
+            shipmentsReadRepository.put(f.shipmentDto)
             (uri(s"list?filter=destination:in:${f.destinationCentre.name}"), f.shipment)
           }
         }
@@ -71,7 +71,7 @@ class ShipmentsControllerSpec
         describe("when filtered by 'with centre'") {
           listSingleShipment() { () =>
             val f = createdShipmentFixture
-            shipmentsReadRepository.put(f.shipment)
+            shipmentsReadRepository.put(f.shipmentDto)
             (uri(s"list?filter=withCentre:in:(${f.originCentre.name},${f.destinationCentre.name})"),
              f.shipment)
           }
@@ -85,7 +85,7 @@ class ShipmentsControllerSpec
           listMultipleShipments() { () =>
             val f         = createdShipmentsFixture(2)
             val shipments = f.shipmentMap.values.toList.sortWith(_.courierName < _.courierName)
-            shipments.foreach(shipmentsReadRepository.put)
+            shipments.foreach(s => shipmentsReadRepository.put(f.dtoFrom(s)))
             (uri(s"list?filter=origin:in:${f.originCentre.name}"), shipments)
           }
         }
@@ -94,7 +94,7 @@ class ShipmentsControllerSpec
           listMultipleShipments() { () =>
             val f         = createdShipmentsFixture(2)
             val shipments = f.shipmentMap.values.toList.sortWith(_.courierName < _.courierName)
-            shipments.foreach(shipmentsReadRepository.put)
+            shipments.foreach(s => shipmentsReadRepository.put(f.dtoFrom(s)))
             (uri(s"list?filter=destination:in:${f.destinationCentre.name}"), shipments)
           }
         }
@@ -103,7 +103,7 @@ class ShipmentsControllerSpec
           listMultipleShipments() { () =>
             val f         = createdShipmentsFixture(2)
             val shipments = f.shipmentMap.values.toList.sortWith(_.courierName < _.courierName)
-            shipments.foreach(shipmentsReadRepository.put)
+            shipments.foreach(s => shipmentsReadRepository.put(f.dtoFrom(s)))
             (uri(s"list?filter=withCentre:in:(${f.originCentre.name},${f.destinationCentre.name})"),
              shipments)
           }
@@ -114,7 +114,7 @@ class ShipmentsControllerSpec
       it("list a shipment when using a 'not equal to' filter on centre name") {
         val f         = createdShipmentsFixture(2)
         val shipments = f.shipmentMap.values.toList.sortWith(_.courierName < _.courierName)
-        shipments.foreach(shipmentsReadRepository.put)
+        shipments.foreach(s => shipmentsReadRepository.put(f.dtoFrom(s)))
 
         val filters = Table("centre filters",
                             s"origin:ne:${f.originCentre.name}",
@@ -128,7 +128,7 @@ class ShipmentsControllerSpec
 
       it("list a single shipment when filtered by state") {
         val f = allShipmentsFixture
-        f.shipments.values.foreach(shipmentsReadRepository.put)
+        f.shipments.values.foreach(s => shipmentsReadRepository.put(f.dtoFrom(s)))
 
         forAll(centreFilters(f.originCentre, f.destinationCentre)) { centreNameFilter =>
           forAll(states) { state =>
@@ -151,7 +151,7 @@ class ShipmentsControllerSpec
         listMultipleShipments() { () =>
           val shipmentStates = List(Shipment.createdState, Shipment.unpackedState)
           val f              = allShipmentsFixture
-          f.shipments.values.foreach(shipmentsReadRepository.put)
+          f.shipments.values.foreach(s => shipmentsReadRepository.put(f.dtoFrom(s)))
           val url = uri(s"""list?filter=state:in:(${shipmentStates.mkString(",")})&sort=state""")
           val expectedShipments =
             List(f.shipments(Shipment.createdState), f.shipments(Shipment.unpackedState))
@@ -174,7 +174,7 @@ class ShipmentsControllerSpec
       describe("list a single shipment when filtered by courier name") {
         listSingleShipment() { () =>
           val f = createdShipmentsFixture(2)
-          f.shipmentMap.values.foreach(shipmentsReadRepository.put)
+          f.shipmentMap.values.foreach(s => shipmentsReadRepository.put(f.dtoFrom(s)))
           val shipment = f.shipmentMap.values.head
           val filter   = s"courierName::${shipment.courierName}"
           (uri(s"list?filter=$filter"), shipment)
@@ -188,8 +188,8 @@ class ShipmentsControllerSpec
           val shipment  = shipments(0).copy(courierName = "ABC")
           val filter    = s"courierName:like:b"
 
-          shipmentsReadRepository.put(shipment)
-          shipmentsReadRepository.put(shipments(1).copy(courierName = "DEF"))
+          shipmentsReadRepository.put(f.dtoFrom(shipment))
+          shipmentsReadRepository.put(f.dtoFrom(shipments(1).copy(courierName = "DEF")))
 
           (uri(s"list?filter=$filter"), shipment)
         }
@@ -202,7 +202,7 @@ class ShipmentsControllerSpec
           val shipments    = f.shipmentMap.values.toList
           val courierNames = shipments.map(_.courierName)
 
-          shipments.foreach(shipmentsReadRepository.put)
+          shipments.foreach(s => shipmentsReadRepository.put(f.dtoFrom(s)))
           val filter = s"""courierName:in:(${courierNames.mkString(",")})"""
 
           (uri(s"list?filter=$filter"), List(shipments(0), shipments(1)))
@@ -212,7 +212,7 @@ class ShipmentsControllerSpec
       describe("list a single shipment when filtered by tracking number") {
         listSingleShipment() { () =>
           val f = createdShipmentsFixture(2)
-          f.shipmentMap.values.foreach(shipmentsReadRepository.put)
+          f.shipmentMap.values.foreach(s => shipmentsReadRepository.put(f.dtoFrom(s)))
           val shipment = f.shipmentMap.values.head
           val url      = uri(s"list?filter=trackingNumber::${shipment.trackingNumber}")
           (url, shipment)
@@ -225,7 +225,7 @@ class ShipmentsControllerSpec
           val shipments = f.shipmentMap.values.toList
           val shipment  = shipments(0)
           val filter    = s"""courierName::${shipment.courierName};trackingNumber::${shipment.trackingNumber}"""
-          shipments.foreach(shipmentsReadRepository.put)
+          shipments.foreach(s => shipmentsReadRepository.put(f.dtoFrom(s)))
           (uri(s"list?filter=$filter"), shipment)
         }
       }
@@ -236,7 +236,7 @@ class ShipmentsControllerSpec
           val shipments = List("FedEx", "UPS", "Canada Post").map { name =>
             factory.createShipment(f.originCentre, f.destinationCentre).copy(courierName = name)
           }.toList
-          shipments.foreach(shipmentsReadRepository.put)
+          shipments.foreach(s => shipmentsReadRepository.put(f.dtoFrom(s)))
           shipments
         }
 
@@ -261,7 +261,7 @@ class ShipmentsControllerSpec
           val shipments = List("TN2", "TN3", "TN1").map { trackingNumber =>
             factory.createShipment(f.originCentre, f.destinationCentre).copy(trackingNumber = trackingNumber)
           }.toList
-          shipments.foreach(shipmentsReadRepository.put)
+          shipments.foreach(s => shipmentsReadRepository.put(f.dtoFrom(s)))
           shipments
         }
 
@@ -286,7 +286,7 @@ class ShipmentsControllerSpec
           val shipments = List("FedEx", "UPS", "Canada Post").map { name =>
             factory.createShipment(f.originCentre, f.destinationCentre).copy(courierName = name)
           }.toList
-          shipments.foreach(shipmentsReadRepository.put)
+          shipments.foreach(s => shipmentsReadRepository.put(f.dtoFrom(s)))
           shipments
         }
 
@@ -311,8 +311,8 @@ class ShipmentsControllerSpec
           val shipments = f.shipmentMap.values.toList
           val shipment  = shipments(0).copy(trackingNumber = "ABC")
           val filter    = s"trackingNumber:like:b"
-          shipmentsReadRepository.put(shipment)
-          shipmentsReadRepository.put(shipments(1).copy(trackingNumber = "DEF"))
+          shipmentsReadRepository.put(f.dtoFrom(shipment))
+          shipmentsReadRepository.put(f.dtoFrom(shipments(1).copy(trackingNumber = "DEF")))
           (uri(s"list?filter=$filter"), shipment)
         }
       }
@@ -327,7 +327,7 @@ class ShipmentsControllerSpec
 
       it("get a shipment") {
         val f = createdShipmentFixture
-        Await.ready(shipmentsReadRepository.put(f.shipment), Duration.Inf)
+        Await.ready(shipmentsReadRepository.put(f.shipmentDto), Duration.Inf)
 
         val reply = makeAuthRequest(GET, uri(f.shipment.id.id)).value
         reply must beOkResponseWithJsonReply
@@ -366,7 +366,7 @@ class ShipmentsControllerSpec
 
       it("fail when adding a shipment with an existing tracking number") {
         val f = createdShipmentFixture
-        shipmentsReadRepository.put(f.shipment)
+        shipmentsReadRepository.put(f.shipmentDto)
         shipmentsWriteRepository.put(f.shipment)
         val reply = makeAuthRequest(POST, uri(""), shipmentToAddJson(f.shipment)).value
         reply must beForbiddenRequestWithMessage(
@@ -405,7 +405,7 @@ class ShipmentsControllerSpec
       it("allow updating the courier name") {
         val f          = createdShipmentFixture
         val newCourier = nameGenerator.next[Shipment]
-        shipmentsReadRepository.put(f.shipment)
+        shipmentsReadRepository.put(f.shipmentDto)
         shipmentsWriteRepository.put(f.shipment)
 
         val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "courierName" -> newCourier)
@@ -420,7 +420,7 @@ class ShipmentsControllerSpec
 
       it("not allow updating the courier name to an empty string") {
         val f = createdShipmentFixture
-        shipmentsReadRepository.put(f.shipment)
+        shipmentsReadRepository.put(f.shipmentDto)
         shipmentsWriteRepository.put(f.shipment)
 
         val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "courierName" -> "")
@@ -433,7 +433,7 @@ class ShipmentsControllerSpec
 
         nonCreatedStates.foreach { state =>
           val shipment = f.shipments(state)
-          shipmentsReadRepository.put(shipment)
+          shipmentsReadRepository.put(f.dtoFrom(shipment))
           shipmentsWriteRepository.put(shipment)
 
           val updateJson =
@@ -459,7 +459,7 @@ class ShipmentsControllerSpec
       it("allow updating the tracking number") {
         val f                 = createdShipmentFixture
         val newTrackingNumber = nameGenerator.next[Shipment]
-        shipmentsReadRepository.put(f.shipment)
+        shipmentsReadRepository.put(f.shipmentDto)
         shipmentsWriteRepository.put(f.shipment)
 
         val updateJson =
@@ -477,7 +477,7 @@ class ShipmentsControllerSpec
         val f         = createdShipmentsFixture(2)
         val shipments = f.shipmentMap.values.toList
         shipments.foreach(addToRepository)
-        shipments.foreach(shipmentsReadRepository.put)
+        shipments.foreach(s => shipmentsReadRepository.put(f.dtoFrom(s)))
         val updateJson =
           Json.obj("expectedVersion" -> shipments(0).version, "trackingNumber" -> shipments(1).trackingNumber)
         val reply = makeAuthRequest(POST, uri("tracking-number", shipments(0).id.id), updateJson).value
@@ -488,7 +488,7 @@ class ShipmentsControllerSpec
 
       it("not allow updating the tracking number to an empty string") {
         val f = createdShipmentFixture
-        shipmentsReadRepository.put(f.shipment)
+        shipmentsReadRepository.put(f.shipmentDto)
         shipmentsWriteRepository.put(f.shipment)
 
         val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "trackingNumber" -> "")
@@ -501,7 +501,7 @@ class ShipmentsControllerSpec
 
         nonCreatedStates.foreach { state =>
           val shipment = f.shipments(state)
-          shipmentsReadRepository.put(shipment)
+          shipmentsReadRepository.put(f.dtoFrom(shipment))
           shipmentsWriteRepository.put(shipment)
 
           val updateJson =
@@ -526,7 +526,7 @@ class ShipmentsControllerSpec
 
       it("allow updating the location the shipment is from") {
         val f = createdShipmentFixture
-        shipmentsReadRepository.put(f.shipment)
+        shipmentsReadRepository.put(f.shipmentDto)
         shipmentsWriteRepository.put(f.shipment)
 
         val newLocation = factory.createLocation
@@ -546,7 +546,7 @@ class ShipmentsControllerSpec
 
       it("not allow updating the from location to an empty string") {
         val f = createdShipmentFixture
-        shipmentsReadRepository.put(f.shipment)
+        shipmentsReadRepository.put(f.shipmentDto)
         shipmentsWriteRepository.put(f.shipment)
 
         val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "locationId" -> "")
@@ -556,7 +556,7 @@ class ShipmentsControllerSpec
 
       it("not allow updating the from location to an invalid id") {
         val f = createdShipmentFixture
-        shipmentsReadRepository.put(f.shipment)
+        shipmentsReadRepository.put(f.shipmentDto)
         shipmentsWriteRepository.put(f.shipment)
 
         val badLocation = factory.createLocation
@@ -572,7 +572,7 @@ class ShipmentsControllerSpec
 
         nonCreatedStates.foreach { state =>
           val shipment = f.shipments(state)
-          shipmentsReadRepository.put(shipment)
+          shipmentsReadRepository.put(f.dtoFrom(shipment))
           shipmentsWriteRepository.put(shipment)
 
           val updateJson = Json.obj("expectedVersion" -> shipment.version, "locationId" -> badLocation.id.id)
@@ -596,7 +596,7 @@ class ShipmentsControllerSpec
 
       it("allow updating the location the shipment is going to") {
         val f = createdShipmentFixture
-        shipmentsReadRepository.put(f.shipment)
+        shipmentsReadRepository.put(f.shipmentDto)
         shipmentsWriteRepository.put(f.shipment)
 
         val newLocation = factory.createLocation
@@ -616,7 +616,7 @@ class ShipmentsControllerSpec
 
       it("not allow updating the TO location to an empty string") {
         val f = createdShipmentFixture
-        shipmentsReadRepository.put(f.shipment)
+        shipmentsReadRepository.put(f.shipmentDto)
         shipmentsWriteRepository.put(f.shipment)
 
         val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "locationId" -> "")
@@ -626,7 +626,7 @@ class ShipmentsControllerSpec
 
       it("not allow updating the TO location to an invalid id") {
         val f = createdShipmentFixture
-        shipmentsReadRepository.put(f.shipment)
+        shipmentsReadRepository.put(f.shipmentDto)
         shipmentsWriteRepository.put(f.shipment)
 
         val badLocation = factory.createLocation
@@ -642,7 +642,7 @@ class ShipmentsControllerSpec
 
         nonCreatedStates.foreach { state =>
           val shipment = f.shipments(state)
-          shipmentsReadRepository.put(shipment)
+          shipmentsReadRepository.put(f.dtoFrom(shipment))
           shipmentsWriteRepository.put(shipment)
 
           val updateJson = Json.obj("expectedVersion" -> shipment.version, "locationId" -> badLocation.id.id)
@@ -687,14 +687,14 @@ class ShipmentsControllerSpec
           changeStateSharedBehaviour { () =>
             val f               = packedShipmentFixture
             val updatedShipment = f.shipment.created
-            ChangeStateInfo(f.shipment, updatedShipment, Shipment.createdState, None)
+            ChangeStateInfo(f.shipment, f.shipmentDto, updatedShipment, Shipment.createdState, None)
           }
         }
 
         it("not change to CREATED state from a state other than PACKED") {
           val f = allShipmentsFixture
           f.shipments.values.foreach { s =>
-            shipmentsReadRepository.put(s)
+            shipmentsReadRepository.put(f.dtoFrom(s))
             shipmentsWriteRepository.put(s)
           }
 
@@ -723,7 +723,11 @@ class ShipmentsControllerSpec
             addSpecimenToShipment(shipment, f.originCentre)
             val stateChangeTime = OffsetDateTime.now.minusDays(10)
             val updatedShipment = shipment.pack(stateChangeTime)
-            ChangeStateInfo(shipment, updatedShipment, Shipment.packedState, Some(stateChangeTime))
+            ChangeStateInfo(shipment,
+                            f.dtoFrom(shipment),
+                            updatedShipment,
+                            Shipment.packedState,
+                            Some(stateChangeTime))
           }
         }
 
@@ -734,14 +738,18 @@ class ShipmentsControllerSpec
             addSpecimenToShipment(shipment, f.originCentre)
             val stateChangeTime = OffsetDateTime.now.minusDays(10)
             val updatedShipment = shipment.backToPacked
-            ChangeStateInfo(shipment, updatedShipment, Shipment.packedState, Some(stateChangeTime))
+            ChangeStateInfo(shipment,
+                            f.dtoFrom(shipment),
+                            updatedShipment,
+                            Shipment.packedState,
+                            Some(stateChangeTime))
           }
         }
 
         it("not change to PACKED state if no specimens in shipment") {
           val f = allShipmentsFixture
           f.shipments.values.foreach { s =>
-            shipmentsReadRepository.put(s)
+            shipmentsReadRepository.put(f.dtoFrom(s))
             shipmentsWriteRepository.put(s)
           }
 
@@ -759,7 +767,7 @@ class ShipmentsControllerSpec
         it("not change to PACKED state from an invalid state") {
           val f = allShipmentsFixture
           f.shipments.values.foreach { s =>
-            shipmentsReadRepository.put(s)
+            shipmentsReadRepository.put(f.dtoFrom(s))
             shipmentsWriteRepository.put(s)
           }
 
@@ -791,7 +799,11 @@ class ShipmentsControllerSpec
             addSpecimenToShipment(shipment, f.originCentre)
             val stateChangeTime = OffsetDateTime.now.minusDays(10)
             val updatedShipment = shipment.send(stateChangeTime).toOption.value
-            ChangeStateInfo(shipment, updatedShipment, Shipment.sentState, Some(stateChangeTime))
+            ChangeStateInfo(shipment,
+                            f.dtoFrom(shipment),
+                            updatedShipment,
+                            Shipment.sentState,
+                            Some(stateChangeTime))
           }
         }
 
@@ -802,7 +814,11 @@ class ShipmentsControllerSpec
             addSpecimenToShipment(shipment, f.originCentre)
             val stateChangeTime = OffsetDateTime.now.minusDays(10)
             val updatedShipment = shipment.backToSent
-            ChangeStateInfo(shipment, updatedShipment, Shipment.sentState, Some(stateChangeTime))
+            ChangeStateInfo(shipment,
+                            f.dtoFrom(shipment),
+                            updatedShipment,
+                            Shipment.sentState,
+                            Some(stateChangeTime))
           }
         }
 
@@ -813,13 +829,17 @@ class ShipmentsControllerSpec
             addSpecimenToShipment(shipment, f.originCentre)
             val stateChangeTime = OffsetDateTime.now.minusDays(10)
             val updatedShipment = shipment.backToSent
-            ChangeStateInfo(shipment, updatedShipment, Shipment.sentState, Some(stateChangeTime))
+            ChangeStateInfo(shipment,
+                            f.dtoFrom(shipment),
+                            updatedShipment,
+                            Shipment.sentState,
+                            Some(stateChangeTime))
           }
         }
 
         it("fail when updating state to SENT where time is less than packed time") {
           val f = packedShipmentFixture
-          shipmentsReadRepository.put(f.shipment)
+          shipmentsReadRepository.put(f.shipmentDto)
           shipmentsWriteRepository.put(f.shipment)
 
           val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
@@ -831,7 +851,7 @@ class ShipmentsControllerSpec
         it("not change to SENT state from an invalid state") {
           val f = allShipmentsFixture
           f.shipments.values.foreach { s =>
-            shipmentsReadRepository.put(s)
+            shipmentsReadRepository.put(f.dtoFrom(s))
             shipmentsWriteRepository.put(s)
           }
 
@@ -857,7 +877,11 @@ class ShipmentsControllerSpec
             addSpecimenToShipment(shipment, f.originCentre)
             val stateChangeTime = shipment.timeSent.get.plusDays(1)
             val updatedShipment = shipment.receive(stateChangeTime).toOption.value
-            ChangeStateInfo(shipment, updatedShipment, Shipment.receivedState, Some(stateChangeTime))
+            ChangeStateInfo(shipment,
+                            f.dtoFrom(shipment),
+                            updatedShipment,
+                            Shipment.receivedState,
+                            Some(stateChangeTime))
           }
         }
 
@@ -868,14 +892,18 @@ class ShipmentsControllerSpec
             addSpecimenToShipment(shipment, f.originCentre)
             val stateChangeTime = shipment.timeSent.get.plusDays(1)
             val updatedShipment = shipment.backToReceived
-            ChangeStateInfo(shipment, updatedShipment, Shipment.receivedState, Some(stateChangeTime))
+            ChangeStateInfo(shipment,
+                            f.dtoFrom(shipment),
+                            updatedShipment,
+                            Shipment.receivedState,
+                            Some(stateChangeTime))
           }
         }
 
         it("not change to RECEIVED state from an invalid state") {
           val f = allShipmentsFixture
           f.shipments.values.foreach { s =>
-            shipmentsReadRepository.put(s)
+            shipmentsReadRepository.put(f.dtoFrom(s))
             shipmentsWriteRepository.put(s)
           }
 
@@ -896,7 +924,7 @@ class ShipmentsControllerSpec
 
         it("fail for updating state to RECEIVED where time is less than sent time") {
           val f = sentShipmentFixture
-          shipmentsReadRepository.put(f.shipment)
+          shipmentsReadRepository.put(f.shipmentDto)
           shipmentsWriteRepository.put(f.shipment)
 
           val updateJson = Json.obj("expectedVersion" -> f.shipment.version,
@@ -910,7 +938,7 @@ class ShipmentsControllerSpec
           val f = specimensFixture(1)
 
           val shipment = makeUnpackedShipment(f.shipment)
-          shipmentsReadRepository.put(shipment)
+          shipmentsReadRepository.put(f.dtoFrom(shipment))
           shipmentsWriteRepository.put(shipment)
 
           val specimen = f.specimens.head
@@ -943,7 +971,11 @@ class ShipmentsControllerSpec
             addSpecimenToShipment(shipment, f.originCentre)
             val stateChangeTime = OffsetDateTime.now.plusDays(1)
             val updatedShipment = shipment.unpack(stateChangeTime).toOption.value
-            ChangeStateInfo(shipment, updatedShipment, Shipment.unpackedState, Some(stateChangeTime))
+            ChangeStateInfo(shipment,
+                            f.dtoFrom(shipment),
+                            updatedShipment,
+                            Shipment.unpackedState,
+                            Some(stateChangeTime))
           }
         }
 
@@ -954,14 +986,18 @@ class ShipmentsControllerSpec
             addSpecimenToShipment(shipment, f.originCentre)
             val stateChangeTime = OffsetDateTime.now.plusDays(1)
             val updatedShipment = shipment.backToUnpacked
-            ChangeStateInfo(shipment, updatedShipment, Shipment.unpackedState, Some(stateChangeTime))
+            ChangeStateInfo(shipment,
+                            f.dtoFrom(shipment),
+                            updatedShipment,
+                            Shipment.unpackedState,
+                            Some(stateChangeTime))
           }
         }
 
         it("not change to UNPACKED state from an invalid state") {
           val f = allShipmentsFixture
           f.shipments.values.foreach { s =>
-            shipmentsReadRepository.put(s)
+            shipmentsReadRepository.put(f.dtoFrom(s))
             shipmentsWriteRepository.put(s)
           }
           val states = Table("state",
@@ -989,7 +1025,11 @@ class ShipmentsControllerSpec
             val shipment        = f.shipments(Shipment.unpackedState).asInstanceOf[UnpackedShipment]
             val stateChangeTime = OffsetDateTime.now.plusDays(1)
             val updatedShipment = shipment.complete(stateChangeTime).toOption.value
-            ChangeStateInfo(shipment, updatedShipment, Shipment.completedState, Some(stateChangeTime))
+            ChangeStateInfo(shipment,
+                            f.dtoFrom(shipment),
+                            updatedShipment,
+                            Shipment.completedState,
+                            Some(stateChangeTime))
           }
         }
 
@@ -997,7 +1037,7 @@ class ShipmentsControllerSpec
           val f             = unpackedShipmentFixture
           val timeCompleted = f.shipment.timeUnpacked.get.plusDays(1)
 
-          shipmentsReadRepository.put(f.shipment)
+          shipmentsReadRepository.put(f.shipmentDto)
           shipmentsWriteRepository.put(f.shipment)
 
           addSpecimenToShipment(f.shipment, f.originCentre)
@@ -1010,7 +1050,7 @@ class ShipmentsControllerSpec
         it("not change to COMPLETED state from an invalid state") {
           val f = allShipmentsFixture
           f.shipments.values.foreach { s =>
-            shipmentsReadRepository.put(s)
+            shipmentsReadRepository.put(f.dtoFrom(s))
             shipmentsWriteRepository.put(s)
           }
           val states = Table("state",
@@ -1039,14 +1079,18 @@ class ShipmentsControllerSpec
             val shipment        = f.shipments(Shipment.sentState).asInstanceOf[SentShipment]
             val stateChangeTime = OffsetDateTime.now.plusDays(1)
             val updatedShipment = shipment.lost
-            ChangeStateInfo(shipment, updatedShipment, Shipment.lostState, Some(stateChangeTime))
+            ChangeStateInfo(shipment,
+                            f.dtoFrom(shipment),
+                            updatedShipment,
+                            Shipment.lostState,
+                            Some(stateChangeTime))
           }
         }
 
         it("not change to LOST state from an invalid state") {
           val f = allShipmentsFixture
           f.shipments.values.foreach { s =>
-            shipmentsReadRepository.put(s)
+            shipmentsReadRepository.put(f.dtoFrom(s))
             shipmentsWriteRepository.put(s)
           }
 
@@ -1079,7 +1123,7 @@ class ShipmentsControllerSpec
                                     "timePacked" -> timePacked,
                                     "timeSent"   -> timeSent)
           val updatedShipment = f.shipment.skipToSent(timePacked, timeSent).toOption.value
-          SkipStateInfo(f.shipment, updatedShipment, uri("state/skip-to-sent"), updateJson)
+          SkipStateInfo(f.shipment, f.shipmentDto, updatedShipment, uri("state/skip-to-sent"), updateJson)
         }
       }
 
@@ -1099,7 +1143,7 @@ class ShipmentsControllerSpec
           val updateJson =
             Json.obj("expectedVersion" -> shipment.version, "timePacked" -> time, "timeSent" -> time)
 
-          shipmentsReadRepository.put(shipment)
+          shipmentsReadRepository.put(f.dtoFrom(shipment))
           shipmentsWriteRepository.put(shipment)
 
           val reply = makeAuthRequest(POST, uri("state/skip-to-sent", shipment.id.id), updateJson).value
@@ -1122,7 +1166,7 @@ class ShipmentsControllerSpec
                                     "timeReceived" -> timeReceived,
                                     "timeUnpacked" -> timeUnpacked)
           val updatedShipment = f.shipment.skipToUnpacked(timeReceived, timeUnpacked).toOption.value
-          SkipStateInfo(f.shipment, updatedShipment, uri("state/skip-to-unpacked"), updateJson)
+          SkipStateInfo(f.shipment, f.shipmentDto, updatedShipment, uri("state/skip-to-unpacked"), updateJson)
         }
       }
 
@@ -1143,7 +1187,7 @@ class ShipmentsControllerSpec
           }
           val updateJson =
             Json.obj("expectedVersion" -> shipment.version, "timeReceived" -> time, "timeUnpacked" -> time)
-          shipmentsReadRepository.put(shipment)
+          shipmentsReadRepository.put(f.dtoFrom(shipment))
           shipmentsWriteRepository.put(shipment)
 
           val reply = makeAuthRequest(POST, uri("state/skip-to-unpacked", shipment.id.id), updateJson).value
@@ -1157,7 +1201,7 @@ class ShipmentsControllerSpec
 
       it("must delete a shipment in created state") {
         val f = createdShipmentFixture
-        shipmentsReadRepository.put(f.shipment)
+        shipmentsReadRepository.put(f.shipmentDto)
         shipmentsWriteRepository.put(f.shipment)
 
         val reply = makeAuthRequest(DELETE, uri(f.shipment.id.id, s"${f.shipment.version}")).value
@@ -1176,7 +1220,7 @@ class ShipmentsControllerSpec
 
         nonCreatedStates.foreach { state =>
           val shipment = f.shipments(state)
-          shipmentsReadRepository.put(shipment)
+          shipmentsReadRepository.put(f.dtoFrom(shipment))
           shipmentsWriteRepository.put(shipment)
 
           val reply = makeAuthRequest(DELETE, uri(shipment.id.id, s"${shipment.version}")).value
@@ -1286,6 +1330,7 @@ class ShipmentsControllerSpec
 
   private case class ChangeStateInfo(
       shipment:        Shipment,
+      shipmentDto:     ShipmentDto,
       updatedShipment: Shipment,
       newState:        EntityState,
       timeMaybe:       Option[OffsetDateTime])
@@ -1293,7 +1338,7 @@ class ShipmentsControllerSpec
   private def changeStateSharedBehaviour(setupFunc: () => ChangeStateInfo) =
     it("must change state") {
       val info = setupFunc()
-      shipmentsReadRepository.put(info.shipment)
+      shipmentsReadRepository.put(info.shipmentDto)
       shipmentsWriteRepository.put(info.shipment)
 
       val baseJson = Json.obj("expectedVersion" -> info.shipment.version)
@@ -1311,7 +1356,7 @@ class ShipmentsControllerSpec
     it("should return bad request") {
       val f        = createdShipmentFixture
       val shipment = f.shipment
-      shipmentsReadRepository.put(shipment)
+      shipmentsReadRepository.put(f.dtoFrom(shipment))
       shipmentsWriteRepository.put(shipment)
       var requestJson = Json.obj("expectedVersion" -> Json.toJson(Some(shipment.version + 1)))
       if (json != JsNull) {
@@ -1323,12 +1368,17 @@ class ShipmentsControllerSpec
 
   }
 
-  private case class SkipStateInfo(shipment: Shipment, updatedShipment: Shipment, url: Url, json: JsValue)
+  private case class SkipStateInfo(
+      shipment:        Shipment,
+      shipmentDto:     ShipmentDto,
+      updatedShipment: Shipment,
+      url:             Url,
+      json:            JsValue)
 
   private def skipStateSharedBehaviour(setupFunc: () => SkipStateInfo) =
     it("must change state") {
       val info = setupFunc()
-      shipmentsReadRepository.put(info.shipment)
+      shipmentsReadRepository.put(info.shipmentDto)
       shipmentsWriteRepository.put(info.shipment)
       val url   = info.url.append(info.shipment.id.id)
       val reply = makeAuthRequest(POST, url, info.json).value

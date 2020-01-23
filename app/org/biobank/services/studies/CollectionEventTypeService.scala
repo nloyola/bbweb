@@ -10,7 +10,7 @@ import org.biobank.domain.access._
 import org.biobank.domain.studies._
 import org.biobank.domain.participants.CollectionEventRepository
 import org.biobank.domain.users.UserId
-import org.biobank.dto.{CollectedSpecimenDefinitionNames, NamedEntityInfoDto}
+import org.biobank.dto.{CollectedSpecimenDefinitionNames, CollectionEventTypeInfoDto}
 import org.biobank.infrastructure.AscendingOrder
 import org.biobank.infrastructure.commands.CollectionEventTypeCommands._
 import org.biobank.infrastructure.events.CollectionEventTypeEvents._
@@ -65,13 +65,13 @@ trait CollectionEventTypeService extends BbwebService {
       requestUserId: UserId,
       studySlug:     Slug,
       query:         FilterAndSortQuery
-    ): FutureValidation[Seq[NamedEntityInfoDto]]
+    ): FutureValidation[Seq[CollectionEventTypeInfoDto]]
 
   def listNamesByStudyId(
       requestUserId: UserId,
       studyId:       StudyId,
       query:         FilterAndSortQuery
-    ): FutureValidation[Seq[NamedEntityInfoDto]]
+    ): FutureValidation[Seq[CollectionEventTypeInfoDto]]
 
   def processCommand(cmd: CollectionEventTypeCommand): FutureValidation[CollectionEventType]
 
@@ -169,15 +169,13 @@ class CollectionEventTypeServiceImpl @Inject()(
       requestUserId: UserId,
       studyId:       StudyId,
       query:         FilterAndSortQuery
-    ): FutureValidation[Seq[NamedEntityInfoDto]] =
+    ): FutureValidation[Seq[CollectionEventTypeInfoDto]] =
     FutureValidation {
       for {
         study <- studiesService.getStudy(requestUserId, studyId)
         types <- queryInternal(requestUserId, study.id, query.filter, query.sort)
       } yield {
-        types.map { t =>
-          NamedEntityInfoDto(t.id.id, t.slug, t.name)
-        }
+        types.map(CollectionEventTypeInfoDto(_))
       }
     }
 
@@ -185,15 +183,13 @@ class CollectionEventTypeServiceImpl @Inject()(
       requestUserId: UserId,
       studySlug:     Slug,
       query:         FilterAndSortQuery
-    ): FutureValidation[Seq[NamedEntityInfoDto]] =
+    ): FutureValidation[Seq[CollectionEventTypeInfoDto]] =
     FutureValidation {
       for {
         study <- studiesService.getStudyBySlug(requestUserId, studySlug)
         types <- queryInternal(requestUserId, study.id, query.filter, query.sort)
       } yield {
-        types.map { t =>
-          NamedEntityInfoDto(t.id.id, t.slug, t.name)
-        }
+        types.map(CollectionEventTypeInfoDto(_))
       }
     }
 

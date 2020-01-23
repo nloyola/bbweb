@@ -3,6 +3,7 @@ package org.biobank.controllers.centres
 import org.biobank.domain.centres._
 import org.biobank.fixtures.ControllerFixture
 import org.biobank.domain.participants._
+import org.biobank.dto.centres.ShipmentSpecimenDto
 
 abstract private[centres] class ShipmentsControllerSpecFixtures
     extends ControllerFixture with ShipmentSpecFixtures {
@@ -27,7 +28,7 @@ abstract private[centres] class ShipmentsControllerSpecFixtures
       specimenRepository.put(specimen)
       ceventSpecimenRepository.put(CeventSpecimen(f.cevent.id, specimen.id))
     }
-    shipmentsReadRepository.put(f.shipment)
+    shipmentsReadRepository.put(f.shipmentDto)
     shipmentsWriteRepository.put(f.shipment)
     f
   }
@@ -37,7 +38,7 @@ abstract private[centres] class ShipmentsControllerSpecFixtures
     f.shipmentSpecimenMap.values.foreach { v =>
       specimenRepository.put(v.specimen)
       shipmentSpecimensRepository.put(v.shipmentSpecimen)
-      shipmentSpecimensReadRepository.put(v.shipmentSpecimen)
+      shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(v.shipmentSpecimen))
     }
     f
   }
@@ -46,7 +47,7 @@ abstract private[centres] class ShipmentsControllerSpecFixtures
     val f = super.addSpecimenToShipment(shipment, originCentre)
     specimenRepository.put(f.specimen)
     shipmentSpecimensRepository.put(f.shipmentSpecimen)
-    shipmentSpecimensReadRepository.put(f.shipmentSpecimen)
+    shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(f.shipmentSpecimen))
     f
   }
 

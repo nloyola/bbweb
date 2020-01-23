@@ -8,27 +8,29 @@ import javax.inject.Inject
 import org.biobank._
 import org.biobank.domain._
 import org.biobank.domain.centres._
-import org.biobank.domain.participants._
+import org.biobank.domain.participants.SpecimenId
+import org.biobank.dto.centres.{CentreLocationInfo, ShipmentDto, ShipmentSpecimenDto}
 import org.biobank.infrastructure.events.ShipmentEvents._
 import org.biobank.infrastructure.events.ShipmentSpecimenEvents._
 import org.biobank.query.db._
 import org.slf4j.LoggerFactory
 import play.api.db.slick.DatabaseConfigProvider
 import scala.concurrent.{ExecutionContext, Future}
-//import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 import scalaz._
 import scala.collection.mutable.Queue
 
-final case class AddOrUpdate(shipment: Shipment) extends DbOperation
+final case class AddOrUpdate(shipment: ShipmentDto) extends DbOperation
 
 final case class Remove(shipmentId: ShipmentId) extends DbOperation
 
-final case class SpecimensAdded(shipmentSepecimens: List[ShipmentSpecimen]) extends DbOperation
+final case class SpecimensAdded(shipmentSepecimens: List[ShipmentSpecimenDto]) extends DbOperation
 
-final case class SpecimenAddOrUpdate(shipmentSpecimen: ShipmentSpecimen) extends DbOperation
+final case class SpecimensUpdated(shipmentSepecimens: List[ShipmentSpecimenDto]) extends DbOperation
+
+final case class SpecimenAddOrUpdate(shipmentSpecimen: ShipmentSpecimenDto) extends DbOperation
 
 final case class SpecimenRemove(shipmentSpecimenId: ShipmentSpecimenId) extends DbOperation
 
@@ -36,6 +38,7 @@ final case class SpecimenRemove(shipmentSpecimenId: ShipmentSpecimenId) extends 
 class ShipmentsQuery @Inject()(
     private val testData:                      TestData,
     protected val dbConfigProvider:            DatabaseConfigProvider,
+    protected val centreRepository:            CentreRepository,
     protected val shipmentsRepository:         ShipmentsReadRepository,
     protected val shipmentSpecimensRepository: ShipmentSpecimensReadRepository,
     protected val sequenceNumbersDao:          SequenceNumbersDao
@@ -45,6 +48,7 @@ class ShipmentsQuery @Inject()(
     val ec:     ExecutionContext)
     extends DatabaseSchema {
   import dbConfig.profile.api._
+  import org.biobank.CommonValidations._
 
   val persistenceId = "shipments-processor-id"
 
@@ -62,9 +66,9 @@ class ShipmentsQuery @Inject()(
   private def init(): Unit = {
     val f = for {
       _ <- db.run(shipments.delete)
-      _ <- shipmentsRepository.putAll(testData.testShipments)
+      _ <- shipmentsRepository.putAll(testData.testShipmentDtos)
       _ <- db.run(shipmentSpecimens.delete)
-      _ <- shipmentSpecimensRepository.putAll(testData.testShipmentSpecimens)
+      _ <- shipmentSpecimensRepository.putAll(testData.testShipmentSpecimenDtos)
     } yield ()
 
     f.onComplete {
@@ -126,9 +130,10 @@ class ShipmentsQuery @Inject()(
     val f = processEvent(event)
     f.map {
       _ match {
-        case AddOrUpdate(s)     => shipmentsRepository.put(s)
-        case Remove(id)         => shipmentsRepository.remove(id)
-        case SpecimensAdded(ss) => shipmentSpecimensRepository.putAll(ss.toSeq)
+        case AddOrUpdate(s)       => shipmentsRepository.put(s)
+        case Remove(id)           => shipmentsRepository.remove(id)
+        case SpecimensAdded(ss)   => shipmentSpecimensRepository.putAll(ss.toSeq)
+        case SpecimensUpdated(ss) => shipmentSpecimensRepository.putAll(ss.toSeq)
       }
     }
     f.futval.map(_ => ())
@@ -164,7 +169,7 @@ class ShipmentsQuery @Inject()(
           case et: ShipmentSpecimenEvent.EventType.Removed          => specimenRemoved(event)
           case et: ShipmentSpecimenEvent.EventType.ContainerUpdated => specimenContainerUpdated(event)
           case et: ShipmentSpecimenEvent.EventType.Present          => specimenPresent(event)
-          case et: ShipmentSpecimenEvent.EventType.Received         => specimenReceived(event)
+          case et: ShipmentSpecimenEvent.EventType.Received         => specimensReceived(event)
           case et: ShipmentSpecimenEvent.EventType.Missing          => specimenMissing(event)
           case et: ShipmentSpecimenEvent.EventType.Extra            => specimenExtra(event)
 
@@ -181,35 +186,45 @@ class ShipmentsQuery @Inject()(
   }
 
   private def added(event: ShipmentEvent): FutureValidation[DbOperation] = {
-    FutureValidation(Future {
+    FutureValidation {
       val companion = event.getAdded
-      val eventTime = OffsetDateTime.parse(event.getTime)
       val v = for {
-        valid <- eventIsOfType(event, event.eventType.isAdded)
-        shipment <- CreatedShipment.create(id = ShipmentId(event.id),
-                                           version             = 0L,
-                                           timeAdded           = eventTime,
-                                           courierName         = companion.getCourierName,
-                                           trackingNumber      = companion.getTrackingNumber,
-                                           originCentreId      = CentreId(companion.getOriginCentreId),
-                                           originLocationId    = LocationId(companion.getOriginLocationId),
-                                           destinationCentreId = CentreId(companion.getDestinationCentreId),
-                                           destinationLocationId =
-                                             LocationId(companion.getDestinationLocationId))
-      } yield shipment
+        valid               <- eventIsOfType(event, event.eventType.isAdded)
+        origin              <- centreRepository.getByKey(CentreId(companion.getOriginCentreId))
+        originLocation      <- origin.locationWithId(LocationId(companion.getOriginLocationId))
+        destination         <- centreRepository.getByKey(CentreId(companion.getDestinationCentreId))
+        destinationLocation <- origin.locationWithId(LocationId(companion.getDestinationLocationId))
+      } yield ShipmentDto(id                   = ShipmentId(event.id),
+                          version              = 0L,
+                          timeAdded            = OffsetDateTime.parse(event.getTime),
+                          timeModified         = None,
+                          state                = Shipment.createdState,
+                          courierName          = companion.getCourierName,
+                          trackingNumber       = companion.getTrackingNumber,
+                          origin               = CentreLocationInfo(origin, originLocation),
+                          destination          = CentreLocationInfo(destination, destinationLocation),
+                          timePacked           = None,
+                          timeSent             = None,
+                          timeReceived         = None,
+                          timeUnpacked         = None,
+                          timeCompleted        = None,
+                          specimenCount        = 0,
+                          presentSpecimenCount = 0,
+                          containerCount       = 0)
 
       v.map(AddOrUpdate(_))
-    })
+    }
   }
 
   private def courierNameUpdated(event: ShipmentEvent): DbOperationResult = {
     val companion = event.getCourierNameUpdated
     onValidEvent(event, event.eventType.isCourierNameUpdated, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        for {
-          created <- shipment.isCreated
-          updated <- created.withCourier(companion.getCourierName)
-        } yield AddOrUpdate(updated.copy(timeModified = Some(eventTime)))
+        AddOrUpdate(
+          shipment.copy(courierName  = companion.getCourierName,
+                        version      = shipment.version + 1L,
+                        timeModified = Some(eventTime))
+        ).successNel[String]
     }
   }
 
@@ -217,10 +232,11 @@ class ShipmentsQuery @Inject()(
     val companion = event.getTrackingNumberUpdated
     onValidEvent(event, event.eventType.isTrackingNumberUpdated, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        for {
-          created <- shipment.isCreated
-          updated <- created.withTrackingNumber(companion.getTrackingNumber)
-        } yield AddOrUpdate(updated.copy(timeModified = Some(eventTime)))
+        AddOrUpdate(
+          shipment.copy(trackingNumber = companion.getTrackingNumber,
+                        version        = shipment.version + 1L,
+                        timeModified   = Some(eventTime))
+        ).successNel[String]
     }
   }
 
@@ -229,9 +245,13 @@ class ShipmentsQuery @Inject()(
     onValidEvent(event, event.eventType.isOriginLocationUpdated, companion.getVersion) {
       case (shipment, _, eventTime) =>
         for {
-          created <- shipment.isCreated
-          updated <- created.withOrigin(CentreId(companion.getCentreId), LocationId(companion.getLocationId))
-        } yield AddOrUpdate(updated.copy(timeModified = Some(eventTime)))
+          origin         <- centreRepository.getByKey(CentreId(companion.getCentreId))
+          originLocation <- origin.locationWithId(LocationId(companion.getLocationId))
+        } yield AddOrUpdate(
+          shipment.copy(origin       = CentreLocationInfo(origin, originLocation),
+                        version      = shipment.version + 1L,
+                        timeModified = Some(eventTime))
+        )
     }
   }
 
@@ -240,21 +260,31 @@ class ShipmentsQuery @Inject()(
     onValidEvent(event, event.eventType.isDestinationLocationUpdated, companion.getVersion) {
       case (shipment, _, eventTime) =>
         for {
-          created <- shipment.isCreated
-          updated <- created.withDestination(CentreId(companion.getCentreId),
-                                             LocationId(companion.getLocationId))
-        } yield AddOrUpdate(updated.copy(timeModified = Some(eventTime)))
+          destination         <- centreRepository.getByKey(CentreId(companion.getCentreId))
+          destinationLocation <- destination.locationWithId(LocationId(companion.getLocationId))
+        } yield AddOrUpdate(
+          shipment.copy(destination  = CentreLocationInfo(destination, destinationLocation),
+                        version      = shipment.version + 1L,
+                        timeModified = Some(eventTime))
+        )
     }
+  }
+
+  private def changeState(
+      shipment:  ShipmentDto,
+      newState:  EntityState,
+      eventTime: OffsetDateTime
+    ): SystemValidation[DbOperation] = {
+    AddOrUpdate(
+      shipment.copy(state = newState, version = shipment.version + 1L, timeModified = Some(eventTime))
+    ).successNel[String]
   }
 
   private def created(event: ShipmentEvent): DbOperationResult = {
     val companion = event.getCreated
     onValidEvent(event, event.eventType.isCreated, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        for {
-          packed  <- shipment.isPacked
-          created <- packed.created.successNel[String]
-        } yield AddOrUpdate(created.copy(timeModified = Some(eventTime)))
+        changeState(shipment, Shipment.createdState, eventTime)
     }
   }
 
@@ -262,13 +292,7 @@ class ShipmentsQuery @Inject()(
     val companion = event.getPacked
     onValidEvent(event, event.eventType.isPacked, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        val v = shipment match {
-          case s: CreatedShipment =>
-            s.pack(OffsetDateTime.parse(companion.getStateChangeTime)).successNel[String]
-          case s: SentShipment => s.backToPacked.successNel[String]
-          case _ => s"shipment state invalid for event: $event".failureNel[PackedShipment]
-        }
-        v.map(s => AddOrUpdate(s.copy(timeModified = Some(eventTime))))
+        changeState(shipment, Shipment.packedState, eventTime)
     }
   }
 
@@ -276,13 +300,7 @@ class ShipmentsQuery @Inject()(
     val companion = event.getSent
     onValidEvent(event, event.eventType.isSent, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        val v = shipment match {
-          case s: PackedShipment   => s.send(OffsetDateTime.parse(companion.getStateChangeTime))
-          case s: ReceivedShipment => s.backToSent.successNel[String]
-          case s: LostShipment     => s.backToSent.successNel[String]
-          case _ => s"shipment state invalid for event: $event".failureNel[SentShipment]
-        }
-        v.map(s => AddOrUpdate(s.copy(timeModified = Some(eventTime))))
+        changeState(shipment, Shipment.sentState, eventTime)
     }
   }
 
@@ -290,12 +308,7 @@ class ShipmentsQuery @Inject()(
     val companion = event.getReceived
     onValidEvent(event, event.eventType.isReceived, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        val v = shipment match {
-          case s: SentShipment     => s.receive(OffsetDateTime.parse(companion.getStateChangeTime))
-          case s: UnpackedShipment => s.backToReceived.successNel[String]
-          case _ => s"shipment state invalid for event: $event".failureNel[ReceivedShipment]
-        }
-        v.map(s => AddOrUpdate(s.copy(timeModified = Some(eventTime))))
+        changeState(shipment, Shipment.receivedState, eventTime)
     }
   }
 
@@ -303,12 +316,7 @@ class ShipmentsQuery @Inject()(
     val companion = event.getUnpacked
     onValidEvent(event, event.eventType.isUnpacked, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        val v = shipment match {
-          case s: ReceivedShipment  => s.unpack(OffsetDateTime.parse(companion.getStateChangeTime))
-          case s: CompletedShipment => s.backToUnpacked.successNel[String]
-          case _ => s"shipment state invalid for event: $event".failureNel[UnpackedShipment]
-        }
-        v.map(s => AddOrUpdate(s.copy(timeModified = Some(eventTime))))
+        changeState(shipment, Shipment.unpackedState, eventTime)
     }
   }
 
@@ -316,10 +324,7 @@ class ShipmentsQuery @Inject()(
     val companion = event.getCompleted
     onValidEvent(event, event.eventType.isCompleted, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        for {
-          unpacked  <- shipment.isUnpacked
-          completed <- unpacked.complete(OffsetDateTime.parse(companion.getStateChangeTime))
-        } yield AddOrUpdate(completed.copy(timeModified = Some(eventTime)))
+        changeState(shipment, Shipment.completedState, eventTime)
     }
   }
 
@@ -327,10 +332,7 @@ class ShipmentsQuery @Inject()(
     val companion = event.getLost
     onValidEvent(event, event.eventType.isLost, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        for {
-          sent <- shipment.isSent
-          lost <- sent.lost.successNel[String]
-        } yield AddOrUpdate(lost.copy(timeModified = Some(eventTime)))
+        changeState(shipment, Shipment.lostState, eventTime)
     }
   }
 
@@ -338,7 +340,8 @@ class ShipmentsQuery @Inject()(
     val companion = event.getRemoved
     onValidEvent(event, event.eventType.isRemoved, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        shipment.isCreated.map(_ => Remove(shipment.id))
+        if (shipment.state == Shipment.createdState) Remove(shipment.id).successNel[String]
+        else InvalidState(s"shipment not in created state: ${shipment.id}").failureNel[DbOperation]
     }
   }
 
@@ -346,11 +349,7 @@ class ShipmentsQuery @Inject()(
     val companion = event.getSkippedToSentState
     onValidEvent(event, event.eventType.isSkippedToSentState, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        for {
-          created <- shipment.isCreated
-          sent <- created.skipToSent(OffsetDateTime.parse(companion.getTimePacked),
-                                     OffsetDateTime.parse(companion.getTimeSent))
-        } yield AddOrUpdate(sent.copy(timeModified = Some(eventTime)))
+        changeState(shipment, Shipment.sentState, eventTime)
     }
   }
 
@@ -358,35 +357,27 @@ class ShipmentsQuery @Inject()(
     val companion = event.getSkippedToUnpackedState
     onValidEvent(event, event.eventType.isSkippedToUnpackedState, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        for {
-          sent <- shipment.isSent
-          unpacked <- sent.skipToUnpacked(OffsetDateTime.parse(companion.getTimeReceived),
-                                          OffsetDateTime.parse(companion.getTimeUnpacked))
-        } yield AddOrUpdate(unpacked.copy(timeModified = Some(eventTime)))
+        changeState(shipment, Shipment.unpackedState, eventTime)
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def specimensAdded(event: ShipmentSpecimenEvent): DbOperationResult = {
     FutureValidation {
-      val companionEvent      = event.getAdded
-      val eventTime           = OffsetDateTime.parse(event.getTime)
-      val shipmentId          = ShipmentId(event.shipmentId)
-      val shipmentContainerId = companionEvent.shipmentContainerId.map(ShipmentContainerId.apply)
+      val companionEvent = event.getAdded
+      val dtos = companionEvent.shipmentSpecimenAddData.map { info =>
+        ShipmentSpecimenDto(id           = ShipmentSpecimenId(info.getShipmentSpecimenId),
+                            version      = 0L,
+                            timeAdded    = OffsetDateTime.parse(event.getTime),
+                            timeModified = None,
+                            state        = ShipmentItemState.Present,
+                            shipmentId   = ShipmentId(event.shipmentId),
+                            specimenId   = SpecimenId(info.getSpecimenId),
+                            shipmentContainerId =
+                              companionEvent.shipmentContainerId.map(ShipmentContainerId(_)))
+      }.toList
 
-      companionEvent.shipmentSpecimenAddData
-        .map { info =>
-          ShipmentSpecimen
-            .create(id                  = ShipmentSpecimenId(info.getShipmentSpecimenId),
-                    version             = 0L,
-                    shipmentId          = shipmentId,
-                    specimenId          = SpecimenId(info.getSpecimenId),
-                    state               = ShipmentItemState.Present,
-                    shipmentContainerId = shipmentContainerId)
-            .map(_.copy(timeAdded = eventTime))
-        }
-        .toList.sequenceU
-        .map(SpecimensAdded(_))
+      SpecimensAdded(dtos).successNel[String]
     }
   }
 
@@ -402,8 +393,22 @@ class ShipmentsQuery @Inject()(
     ???
   }
 
-  private def specimenReceived(event: ShipmentSpecimenEvent) = {
-    ???
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  private def specimensReceived(event: ShipmentSpecimenEvent): DbOperationResult = {
+    val companionEvent      = event.getReceived.shipmentSpecimenData
+    val versionsData        = companionEvent.map(e => e.getShipmentSpecimenId -> e.getVersion).toMap
+    val shipmentSpecimenIds = versionsData.keys.map(ShipmentSpecimenId(_)).toSeq
+    val shipmentId          = ShipmentId(event.shipmentId)
+    for {
+      shipment          <- shipmentsRepository.getByKey(shipmentId)
+      shipmentSpecimens <- shipmentSpecimensRepository.forShipment(shipmentId, shipmentSpecimenIds: _*)
+    } yield {
+      val timeModified = Some(OffsetDateTime.parse(event.getTime))
+      val updated = shipmentSpecimens.map { ss =>
+        ss.copy(state = ShipmentItemState.Received, version = ss.version + 1L, timeModified = timeModified)
+      }
+      SpecimensUpdated(updated.toList)
+    }
   }
 
   private def specimenMissing(event: ShipmentSpecimenEvent) = {
@@ -419,7 +424,7 @@ class ShipmentsQuery @Inject()(
       event:        ShipmentEvent,
       eventType:    Boolean,
       eventVersion: Long
-    )(applyEvent:   (Shipment, ShipmentEvent, OffsetDateTime) => SystemValidation[DbOperation]
+    )(applyEvent:   (ShipmentDto, ShipmentEvent, OffsetDateTime) => SystemValidation[DbOperation]
     ): FutureValidation[DbOperation] = {
     if (!eventType) {
       FutureValidation(Future { s"invalid event type: $event".failureNel[DbOperation] })
@@ -428,18 +433,7 @@ class ShipmentsQuery @Inject()(
 
       for {
         shipment <- shipmentsRepository.getByKey(shipmentId)
-        valid <- FutureValidation(Future {
-                  for {
-                    validVersion <- shipment
-                                     .requireVersion(eventVersion).leftMap(
-                                       _ =>
-                                         NonEmptyList(
-                                           s"invalid version for event: shipment version: ${shipment.version}, event: $event"
-                                         )
-                                     )
-                    updated <- applyEvent(shipment, event, OffsetDateTime.parse(event.getTime))
-                  } yield updated
-                })
+        valid    <- FutureValidation { applyEvent(shipment, event, OffsetDateTime.parse(event.getTime)) }
       } yield valid
     }
   }

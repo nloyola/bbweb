@@ -99,7 +99,7 @@ class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceF
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
           schemasService.getBySlug(user.id, f.schema.slug).mustSucceed { result =>
-            result.id must be(f.schema.id.id)
+            result.id must be(f.schema.id)
           }
         }
       }
@@ -131,7 +131,7 @@ class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceF
           forAll(updateCommandsTable(user.id, f.schema)) { cmd =>
             schemaRepository.put(f.schema) // restore the containerSchema to it's previous state
             schemasService.processCommand(cmd).mustSucceed { c =>
-              c.id must be(f.schema.id.id)
+              c.id must be(f.schema.id)
             }
           }
         }
@@ -164,7 +164,7 @@ class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceF
 
         schemasService.search(f.allCentresAdminUser.id, f.centre.id, query).mustSucceed { reply =>
           reply.items.length must be > 1
-          val containerSchemaIds = reply.items.map(c => c.id).sorted
+          val containerSchemaIds = reply.items.map(c => c.id.id).sorted
           containerSchemaIds must equal(List(f.schema.id.id, sibling.id.id).sorted)
         }
       }

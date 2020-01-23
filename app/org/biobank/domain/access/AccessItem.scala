@@ -23,6 +23,20 @@ class AccessItemType(val id: String) extends AnyVal {
   override def toString: String = id
 }
 
+object AccessItemType {
+
+  // Do not want JSON to create a sub object, we just want it to be converted
+  // to a single string
+  implicit val accessItemTypeFormat: Format[AccessItemType] = new Format[AccessItemType] {
+
+    override def writes(id: AccessItemType): JsValue = JsString(id.id)
+
+    override def reads(json: JsValue): JsResult[AccessItemType] =
+      Reads.StringReads.reads(json).map(new AccessItemType(_))
+  }
+
+}
+
 /** Identifies a unique [[AccessItem]] in the system.
  *
  * Used as a value object to maintain associations to with other entities in the system.

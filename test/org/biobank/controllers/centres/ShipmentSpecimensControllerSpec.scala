@@ -4,7 +4,7 @@ import java.time.OffsetDateTime
 import org.biobank.controllers.PagedResultsSharedSpec
 import org.biobank.domain.centres._
 import org.biobank.domain.participants._
-import org.biobank.dto._
+import org.biobank.dto.centres._
 import org.biobank.fixtures.Url
 import org.biobank.matchers.PagedResultsMatchers
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -37,7 +37,7 @@ class ShipmentSpecimensControllerSpec
 
       it("works for shipment with no specimens") {
         val f = createdShipmentFixture
-        shipmentsReadRepository.put(f.shipment)
+        shipmentsReadRepository.put(f.shipmentDto).futureValue
         uri(f.shipment) must beEmptyResults
       }
 
@@ -48,7 +48,7 @@ class ShipmentSpecimensControllerSpec
           val shipmentSpecimen =
             factory.createShipmentSpecimen.copy(shipmentId = f.shipment.id, specimenId = specimen.id)
           shipmentSpecimensRepository.put(shipmentSpecimen)
-          shipmentSpecimensReadRepository.put(shipmentSpecimen)
+          shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(shipmentSpecimen))
           (uri(f.shipment), shipmentSpecimen)
         }
       }
@@ -62,7 +62,7 @@ class ShipmentSpecimensControllerSpec
             val shipmentSpecimen =
               factory.createShipmentSpecimen.copy(shipmentId = f.shipment.id, specimenId = specimen.id)
             shipmentSpecimensRepository.put(shipmentSpecimen)
-            shipmentSpecimensReadRepository.put(shipmentSpecimen)
+            shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(shipmentSpecimen))
             shipmentSpecimen
           }.toList
 
@@ -81,7 +81,7 @@ class ShipmentSpecimensControllerSpec
               case (shipmentSpecimenData, itemState) =>
                 val shipmentSpecimen = shipmentSpecimenData.shipmentSpecimen.copy(state = itemState)
                 shipmentSpecimensRepository.put(shipmentSpecimen)
-                shipmentSpecimensReadRepository.put(shipmentSpecimen)
+                shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(shipmentSpecimen))
                 (itemState, shipmentSpecimen)
             }
 
@@ -105,7 +105,7 @@ class ShipmentSpecimensControllerSpec
       it("fail for an invalid item state for a shipment specimen") {
         val f                = createdShipmentFixture
         val invalidStateName = "state::" + nameGenerator.next[ShipmentSpecimen]
-        shipmentsReadRepository.put(f.shipment)
+        shipmentsReadRepository.put(f.shipmentDto)
         val reply = makeAuthRequest(GET, uri(f.shipment).addQueryString(s"filter=$invalidStateName")).value
         reply must beBadRequestWithMessage("InvalidState: shipment specimen state does not exist")
       }
@@ -141,11 +141,11 @@ class ShipmentSpecimensControllerSpec
               case (shipmentSpecimenData, itemState) =>
                 val shipmentSpecimen = shipmentSpecimenData.shipmentSpecimen.copy(state = itemState)
                 shipmentSpecimensRepository.put(shipmentSpecimen)
-                shipmentSpecimensReadRepository.put(shipmentSpecimen)
+                shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(shipmentSpecimen))
                 shipmentSpecimen
             }
             .toList
-            .sortWith(_.state.toString > _.state.toString)
+            .sortWith(_.state.id > _.state.id)
 
           (uri(s"${f.shipment.id.id}?sort=-state"), shipmentSpecimens)
         }
@@ -189,7 +189,7 @@ class ShipmentSpecimensControllerSpec
 
       it("can add a specimen inventory Id") {
         val f = specimensFixture(1)
-        shipmentsReadRepository.put(f.shipment)
+        shipmentsReadRepository.put(f.shipmentDto)
         val specimen = f.specimens.head
         specimenRepository.put(specimen)
 
@@ -213,7 +213,7 @@ class ShipmentSpecimensControllerSpec
 
       it("not add a specimen inventory Id that does not exist") {
         val f = createdShipmentFixture
-        shipmentsReadRepository.put(f.shipment)
+        shipmentsReadRepository.put(f.shipmentDto)
 
         val invalidInventoryId = nameGenerator.next[Specimen]
         val url                = uri("canadd", f.shipment.id.id, invalidInventoryId)
@@ -235,7 +235,8 @@ class ShipmentSpecimensControllerSpec
         val f           = shipmentSpecimensFixture(1)
         val specimen    = f.shipmentSpecimenMap.values.head.specimen
         val newShipment = factory.createShipment(f.originCentre, f.destinationCentre)
-        shipmentsReadRepository.put(newShipment)
+        val dto         = f.dtoFrom(newShipment)
+        shipmentsReadRepository.put(dto)
 
         val url   = uri("canadd", newShipment.id.id, specimen.inventoryId)
         val reply = makeAuthRequest(GET, url).value
@@ -256,7 +257,7 @@ class ShipmentSpecimensControllerSpec
         dto must be(jsSuccess)
         dto.get must matchDtoToShipment(f.shipment)
 
-        val repoShipmentSpecimens = shipmentSpecimensRepository.forShipment(ShipmentId(dto.get.id))
+        val repoShipmentSpecimens = shipmentSpecimensRepository.forShipment(dto.get.id)
         repoShipmentSpecimens must have size (1)
 
         val repoShSpc = repoShipmentSpecimens.headOption.value
@@ -289,9 +290,11 @@ class ShipmentSpecimensControllerSpec
                                         makeLostShipment(f.shipment))
 
         forAll(nonCreatedShipments) { shipment =>
+          val dto = f.dtoFrom(shipment)
+
           info(s"${shipment.state} shipment")
           val addJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
-          shipmentsReadRepository.put(shipment)
+          shipmentsReadRepository.put(dto)
           shipmentsWriteRepository.put(shipment)
 
           val reply = makeAuthRequest(POST, uri(shipment), addJson).value
@@ -301,7 +304,7 @@ class ShipmentSpecimensControllerSpec
 
       it("not add a specimen from a different centre to a shipment") {
         val f = specimensFixture(1)
-        shipmentsReadRepository.put(f.shipment)
+        shipmentsReadRepository.put(f.shipmentDto)
         val specimen = f.specimens.head.copy(locationId = f.destinationCentre.locations.head.id)
         specimenRepository.put(specimen)
 
@@ -321,7 +324,7 @@ class ShipmentSpecimensControllerSpec
         val f = specimensFixture(1)
 
         val shipment = makeUnpackedShipment(f.shipment)
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         val specimen = f.specimens.head
@@ -362,7 +365,7 @@ class ShipmentSpecimensControllerSpec
 
           forAll(stateData) {
             case (state, urlPath) =>
-              shipmentsReadRepository.put(shipment)
+              shipmentsReadRepository.put(f.dtoFrom(shipment))
               shipmentSpecimensRepository.put(shipmentSpecimen)
 
               val url     = uri(shipment, urlPath)
@@ -378,7 +381,7 @@ class ShipmentSpecimensControllerSpec
         val shipment = makeUnpackedShipment(f.shipment)
         val specimen = f.specimens.headOption.value
 
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         forAll(stateData) {
@@ -395,7 +398,7 @@ class ShipmentSpecimensControllerSpec
         val shipment = makeUnpackedShipment(f.shipment)
         val specimen = f.specimens.headOption.value
 
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         specimenRepository.remove(specimen)
@@ -415,7 +418,7 @@ class ShipmentSpecimensControllerSpec
         val shipmentSpecimen =
           factory.createShipmentSpecimen.copy(shipmentId = shipment.id, specimenId = specimen.id)
 
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         forAll(stateData) {
@@ -435,7 +438,7 @@ class ShipmentSpecimensControllerSpec
         val shipmentSpecimen =
           factory.createShipmentSpecimen.copy(shipmentId = shipment.id, specimenId = specimen.id)
 
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         forAll(stateData) {
@@ -467,7 +470,7 @@ class ShipmentSpecimensControllerSpec
         val shipmentSpecimen =
           factory.createShipmentSpecimen.copy(shipmentId = shipment.id, specimenId = specimen.id)
 
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         shipmentSpecimensRepository.put(shipmentSpecimen.copy(state = ShipmentItemState.Present))
@@ -482,7 +485,7 @@ class ShipmentSpecimensControllerSpec
         val f        = specimensFixture(1)
         val shipment = makeUnpackedShipment(f.shipment)
         val specimen = f.specimens.headOption.value
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         val url     = uri(shipment, "extra")
@@ -494,7 +497,7 @@ class ShipmentSpecimensControllerSpec
         dto must be(jsSuccess)
         dto.get must matchDtoToShipment(shipment)
 
-        val repoShipmentSpecimens = shipmentSpecimensRepository.forShipment(ShipmentId(dto.get.id))
+        val repoShipmentSpecimens = shipmentSpecimensRepository.forShipment(dto.get.id)
         repoShipmentSpecimens must have size (1)
         repoShipmentSpecimens.foreach { _.specimenId must be(specimen.id) }
       }
@@ -503,7 +506,7 @@ class ShipmentSpecimensControllerSpec
         val f        = specimensFixture(1)
         val f2       = createdShipmentFixture
         val shipment = makeUnpackedShipment(f.shipment)
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         val specimen = f.specimens.headOption.value
@@ -523,7 +526,7 @@ class ShipmentSpecimensControllerSpec
       it("not add an EXTRA shipment specimen to a shipment if it is already part of the shipment") {
         val f        = specimensFixture(1)
         val shipment = makeUnpackedShipment(f.shipment)
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         val specimen = f.specimens.headOption.value
@@ -545,7 +548,7 @@ class ShipmentSpecimensControllerSpec
       it("not add an EXTRA shipment specimen to a shipment if specimen at a different centre") {
         val f        = specimensFixture(1)
         val shipment = makeUnpackedShipment(f.shipment)
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         val specimen = f.specimens.headOption.value.copy(locationId = f.destinationCentre.locations.head.id)
@@ -563,7 +566,7 @@ class ShipmentSpecimensControllerSpec
       it("can tag a non present specimen as present") {
         val f        = shipmentSpecimensFixture(1)
         val shipment = makeUnpackedShipment(f.shipment)
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         f.shipmentSpecimenMap.values.foreach { v =>
@@ -571,7 +574,7 @@ class ShipmentSpecimensControllerSpec
           specimenRepository.put(specimen)
 
           val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Missing)
-          shipmentSpecimensReadRepository.put(shipmentSpecimen)
+          shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(shipmentSpecimen))
           shipmentSpecimensRepository.put(shipmentSpecimen)
 
           val url     = uri(shipment, "present")
@@ -583,7 +586,7 @@ class ShipmentSpecimensControllerSpec
           dto must be(jsSuccess)
           dto.get must matchDtoToShipment(shipment)
 
-          val repoShipmentSpecimens = shipmentSpecimensRepository.forShipment(ShipmentId(dto.get.id))
+          val repoShipmentSpecimens = shipmentSpecimensRepository.forShipment(dto.get.id)
           repoShipmentSpecimens must have size (1)
           repoShipmentSpecimens.foreach { r =>
             r.specimenId must be(specimen.id)
@@ -595,7 +598,7 @@ class ShipmentSpecimensControllerSpec
       it("replies whith an error if the specimen is already present") {
         val f        = shipmentSpecimensFixture(1)
         val shipment = makeUnpackedShipment(f.shipment)
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         f.shipmentSpecimenMap.values.foreach { v =>
@@ -603,7 +606,7 @@ class ShipmentSpecimensControllerSpec
           specimenRepository.put(specimen)
 
           val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Present)
-          shipmentSpecimensReadRepository.put(shipmentSpecimen)
+          shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(shipmentSpecimen))
           shipmentSpecimensRepository.put(shipmentSpecimen)
 
           val url     = uri(shipment, "present")
@@ -616,7 +619,7 @@ class ShipmentSpecimensControllerSpec
       it("replies with an error when attempting to tag a specimen not in the shipment") {
         val f        = shipmentSpecimensFixture(1)
         val shipment = makeUnpackedShipment(f.shipment)
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         f.shipmentSpecimenMap.values.foreach { v =>
@@ -635,7 +638,7 @@ class ShipmentSpecimensControllerSpec
       it("can tag a present specimen as received") {
         val f        = shipmentSpecimensFixture(1)
         val shipment = makeUnpackedShipment(f.shipment)
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         f.shipmentSpecimenMap.values.foreach { v =>
@@ -643,7 +646,7 @@ class ShipmentSpecimensControllerSpec
           specimenRepository.put(specimen)
 
           val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Present)
-          shipmentSpecimensReadRepository.put(shipmentSpecimen)
+          shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(shipmentSpecimen))
           shipmentSpecimensRepository.put(shipmentSpecimen)
 
           val url     = uri(shipment, "received")
@@ -655,7 +658,7 @@ class ShipmentSpecimensControllerSpec
           dto must be(jsSuccess)
           dto.get must matchDtoToShipment(shipment)
 
-          val repoShipmentSpecimens = shipmentSpecimensRepository.forShipment(ShipmentId(dto.get.id))
+          val repoShipmentSpecimens = shipmentSpecimensRepository.forShipment(dto.get.id)
           repoShipmentSpecimens must have size (1)
           repoShipmentSpecimens.foreach { r =>
             r.specimenId must be(specimen.id)
@@ -667,7 +670,7 @@ class ShipmentSpecimensControllerSpec
       it("replies whith an error if the specimen is already received") {
         val f        = shipmentSpecimensFixture(1)
         val shipment = makeUnpackedShipment(f.shipment)
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         f.shipmentSpecimenMap.values.foreach { v =>
@@ -675,7 +678,7 @@ class ShipmentSpecimensControllerSpec
           specimenRepository.put(specimen)
 
           val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Received)
-          shipmentSpecimensReadRepository.put(shipmentSpecimen)
+          shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(shipmentSpecimen))
           shipmentSpecimensRepository.put(shipmentSpecimen)
 
           val url     = uri(shipment, "received")
@@ -688,7 +691,7 @@ class ShipmentSpecimensControllerSpec
       it("replies with an error when attempting to tag a specimen not in the shipment") {
         val f        = shipmentSpecimensFixture(1)
         val shipment = makeUnpackedShipment(f.shipment)
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         f.shipmentSpecimenMap.values.foreach { v =>
@@ -707,7 +710,7 @@ class ShipmentSpecimensControllerSpec
       it("can tag a present specimen as missing") {
         val f        = shipmentSpecimensFixture(1)
         val shipment = makeUnpackedShipment(f.shipment)
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         f.shipmentSpecimenMap.values.foreach { v =>
@@ -715,7 +718,7 @@ class ShipmentSpecimensControllerSpec
           specimenRepository.put(specimen)
 
           val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Present)
-          shipmentSpecimensReadRepository.put(shipmentSpecimen)
+          shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(shipmentSpecimen))
           shipmentSpecimensRepository.put(shipmentSpecimen)
 
           val url     = uri(shipment, "missing")
@@ -727,7 +730,7 @@ class ShipmentSpecimensControllerSpec
           dto must be(jsSuccess)
           dto.get must matchDtoToShipment(shipment)
 
-          val repoShipmentSpecimens = shipmentSpecimensRepository.forShipment(ShipmentId(dto.get.id))
+          val repoShipmentSpecimens = shipmentSpecimensRepository.forShipment(dto.get.id)
           repoShipmentSpecimens must have size (1)
           repoShipmentSpecimens.foreach { r =>
             r.specimenId must be(specimen.id)
@@ -739,7 +742,7 @@ class ShipmentSpecimensControllerSpec
       it("replies whith an error if the specimen is already missing") {
         val f        = shipmentSpecimensFixture(1)
         val shipment = makeUnpackedShipment(f.shipment)
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         f.shipmentSpecimenMap.values.foreach { v =>
@@ -747,7 +750,7 @@ class ShipmentSpecimensControllerSpec
           specimenRepository.put(specimen)
 
           val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Missing)
-          shipmentSpecimensReadRepository.put(shipmentSpecimen)
+          shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(shipmentSpecimen))
           shipmentSpecimensRepository.put(shipmentSpecimen)
 
           val url     = uri(shipment, "missing")
@@ -760,7 +763,7 @@ class ShipmentSpecimensControllerSpec
       it("replies with an error when attempting to tag a specimen not in the shipment") {
         val f        = shipmentSpecimensFixture(1)
         val shipment = makeUnpackedShipment(f.shipment)
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         f.shipmentSpecimenMap.values.foreach { v =>
@@ -779,7 +782,7 @@ class ShipmentSpecimensControllerSpec
       it("can tag a specimen as extra") {
         val f        = shipmentSpecimensFixture(1)
         val shipment = makeUnpackedShipment(f.shipment)
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         f.shipmentSpecimenMap.values.foreach { v =>
@@ -807,7 +810,7 @@ class ShipmentSpecimensControllerSpec
         val f        = shipmentSpecimensFixture(1)
         val f2       = shipmentSpecimensFixture(1)
         val shipment = makeUnpackedShipment(f.shipment)
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         f.shipmentSpecimenMap.values.foreach { v =>
@@ -826,7 +829,7 @@ class ShipmentSpecimensControllerSpec
       it("replies with an error when attempting to add an extra specimen that is already in the shipment") {
         val f        = shipmentSpecimensFixture(1)
         val shipment = makeUnpackedShipment(f.shipment)
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         f.shipmentSpecimenMap.values.foreach { v =>
@@ -865,7 +868,7 @@ class ShipmentSpecimensControllerSpec
         val shipmentSpecimen = factory.createShipmentSpecimen.copy(shipmentId = f.shipment.id,
                                                                    specimenId = specimen.id,
                                                                    state      = ShipmentItemState.Extra)
-        shipmentsReadRepository.put(shipment)
+        shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
         shipmentSpecimensRepository.put(shipmentSpecimen)
@@ -889,7 +892,7 @@ class ShipmentSpecimensControllerSpec
         forAll(shipments) { shipment =>
           forAll(stateData) { shipSpecimenState =>
             info(s"shipment state: ${shipment.state}, shipment specimen state: $shipSpecimenState")
-            shipmentsReadRepository.put(shipment)
+            shipmentsReadRepository.put(f.dtoFrom(shipment))
             val shipmentSpecimen = factory.createShipmentSpecimen.copy(shipmentId = shipment.id,
                                                                        specimenId = specimen.id,
                                                                        state      = shipSpecimenState)

@@ -7,6 +7,7 @@ import org.biobank.dto._
 import org.biobank.domain.Slug
 import org.biobank.domain.access.{AccessItemId, MembershipId}
 import org.biobank.domain.users._
+import org.biobank.dto.centres.CentreDto
 import org.biobank.controllers._
 import org.biobank.infrastructure.commands.Commands._
 import org.biobank.infrastructure.commands.UserCommands._
@@ -31,6 +32,13 @@ object UsersController {
 
   final case class Token(user: UserDto, token: String, expiresOn: DateTime)
 
+  object Token {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Any"))
+    implicit val tokenWrites: Writes[Token] = Json.writes[Token]
+
+  }
+
   /** JSON reader for [[LoginCredentials]]. */
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val loginCredentialsFormat: Format[LoginCredentials] = Json.format[LoginCredentials]
@@ -43,9 +51,6 @@ object UsersController {
   implicit val jodaDateReads: Reads[DateTime] = JodaReads.jodaDateReads("yyyy-MM-dd'T'HH:mm:ss'Z'")
 
   implicit val jodaDateWrites: Writes[DateTime] = JodaWrites.jodaDateWrites("yyyy-MM-dd'T'HH:mm:ss'Z'")
-
-  @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  implicit val tokenFormat: Format[Token] = Json.format[Token]
 
 }
 
@@ -85,7 +90,7 @@ class UsersController @Inject()(
                         .as[JsObject].validate[LoginCredentials].asOpt.toSuccessNel("bad credentials")
         user <- usersService.loginAllowed(credentials.email, credentials.password)
       } yield {
-        val loginInfo = LoginInfo(CredentialsProvider.ID, user.id)
+        val loginInfo = LoginInfo(CredentialsProvider.ID, user.id.id)
         for {
           authenticator <- silhouette.env.authenticatorService.create(loginInfo)
           token         <- silhouette.env.authenticatorService.init(authenticator)
@@ -144,7 +149,7 @@ class UsersController @Inject()(
   def listNames: Action[Unit] =
     action.async(parse.empty) { implicit request =>
       FilterAndSortQueryHelper(request.rawQueryString).fold(err => {
-        validationReply(Future.successful(err.failure[PagedResults[EntityInfoAndStateDto]]))
+        validationReply(Future.successful(err.failure[PagedResults[UserInfoAndStateDto]]))
       }, query => {
         validationReply(usersService.getUserNames(request.identity.user.id, query))
       })

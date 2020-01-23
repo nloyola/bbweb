@@ -8,6 +8,7 @@ import org.biobank.domain.centres._
 import org.biobank.domain.studies._
 import org.biobank.domain.participants._
 import org.biobank.domain.users._
+import org.biobank.dto.centres.ShipmentSpecimenDto
 import org.biobank.query.centres._
 import org.biobank.services.{FilterString, PagedQuery, SortString}
 import org.scalatest.concurrent.ScalaFutures
@@ -25,12 +26,13 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
   import org.biobank.infrastructure.commands.ShipmentCommands._
   import org.biobank.infrastructure.commands.ShipmentSpecimenCommands._
 
-  class UsersWithShipmentAccessFixture {
+  class UsersWithShipmentAccessFixture extends ShipmentDtoCoverter {
     val originLocation      = factory.createLocation
     val destinationLocation = factory.createLocation
     val originCentre        = factory.createEnabledCentre.copy(locations = Set(originLocation))
     val destinationCentre   = factory.createEnabledCentre.copy(locations = Set(destinationLocation))
     val shipment            = factory.createShipment(originCentre, destinationCentre)
+    val shipmentDto         = dtoFrom(shipment)
 
     val allCentresAdminUser         = factory.createActiveUser
     val centreOnlyShippingAdminUser = factory.createActiveUser
@@ -82,7 +84,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
         centreOnlyMembership,
         noCentresMembership).foreach(addToRepository)
 
-    Await.ready(shipmentsReadRepository.put(shipment), Duration.Inf)
+    Await.ready(shipmentsReadRepository.put(shipmentDto), Duration.Inf)
 
     addUserToRole(allCentresAdminUser, RoleId.ShippingAdministrator)
     addUserToRole(centreOnlyShippingAdminUser, RoleId.ShippingAdministrator)
@@ -124,10 +126,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
 
   override protected def addToRepository[T <: ConcurrencySafeEntity[_]](entity: T): Unit = {
     entity match {
-      case e: Shipment =>
-        shipmentsWriteRepository.put(e)
-        shipmentsReadRepository.put(e)
-
+      case e: Shipment            => shipmentsWriteRepository.put(e)
       case e: ShipmentSpecimen    => shipmentSpecimensRepository.put(e)
       case e: Specimen            => specimenRepository.put(e)
       case e: CollectionEventType => collectionEventTypeRepository.put(e)
@@ -169,7 +168,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
         specimen,
         shipmentSpecimen).foreach(addToRepository)
 
-    Await.ready(shipmentSpecimensReadRepository.put(shipmentSpecimen), Duration.Inf)
+    Await.ready(shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(shipmentSpecimen)), Duration.Inf)
 
     (f, specimen, shipmentSpecimen)
   }
@@ -319,13 +318,14 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
           shipmentsService.getShipment(user.id, f.shipment.id) mustSucceed { dto =>
-            dto.id must be(f.shipment.id.id)
+            dto.id must be(f.shipment.id)
           }
         }
       }
 
       it("users cannot access") {
         val f = new UsersWithShipmentAccessFixture
+        shipmentsReadRepository.put(f.shipmentDto)
         info("no membership user")
         shipmentsService
           .getShipment(f.noMembershipUser.id, f.shipment.id)
@@ -335,7 +335,6 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
         shipmentsService
           .getShipment(f.noShippingPermissionUser.id, f.shipment.id)
           .mustFail("Unauthorized")
-
       }
 
     }
@@ -377,7 +376,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
           info(label)
           shipmentsService
             .getShipmentSpecimen(user.id, f.shipment.id, shipmentSpecimen.id)
-            .mustSucceed { _.id must be(shipmentSpecimen.id.id) }
+            .mustSucceed { _.id must be(shipmentSpecimen.id) }
         }
       }
 
@@ -492,7 +491,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
           forAll(updateCommandsTable(user.id, f.shipment)) { cmd =>
             shipmentsWriteRepository.put(f.shipment) // restore it to it's previous state
 
-            shipmentsService.processCommand(cmd).mustSucceed { _.id must be(f.shipment.id.id) }
+            shipmentsService.processCommand(cmd).mustSucceed { _.id must be(f.shipment.id) }
           }
         }
       }
@@ -523,7 +522,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
             }
 
             addToRepository(shipment)
-            shipmentsService.processCommand(cmd) mustSucceed { _.id must be(shipment.id.id) }
+            shipmentsService.processCommand(cmd) mustSucceed { _.id must be(shipment.id) }
           }
         }
       }
@@ -561,7 +560,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
               }
 
               val v = shipmentsService.processShipmentSpecimenCommand(cmd)
-              v mustSucceed { _.id must be(f.shipment.id.id) }
+              v mustSucceed { _.id must be(f.shipment.id) }
           }
         }
       }

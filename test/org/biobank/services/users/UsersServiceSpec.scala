@@ -109,7 +109,7 @@ class UsersServiceSpec
     it("retrieve a user") {
       val f = usersFixture
       usersService.getUserIfAuthorized(f.adminUser.id, f.user.id) mustSucceed { u =>
-        u.id must be(f.user.id.id)
+        u.id must be(f.user.id)
       }
     }
 
@@ -134,7 +134,7 @@ class UsersServiceSpec
       forAll(commandsTable(f.adminUser.id, f.user, f.userPlainPassword)) { cmd =>
         userRepository.put(f.user) // restore the user to it's previous state
         usersService.processCommand(cmd).mustSucceed { u =>
-          u.id must be(f.user.id.id)
+          u.id must be(f.user.id)
         }
       }
     }
@@ -146,7 +146,7 @@ class UsersServiceSpec
       Set(u.registeredUser, u.activeUser, u.lockedUser).foreach(userRepository.put)
       forAll(table) { cmd =>
         usersService.processCommand(cmd).mustSucceed { u =>
-          u.id must be(cmd.id)
+          u.id.id must be(cmd.id)
         }
       }
     }
@@ -203,7 +203,7 @@ class UsersServiceSpec
       Set(f.user, f.study, membership).foreach(addToRepository)
       usersService.getUserStudies(f.user.id, query).mustSucceed { reply =>
         reply must have size (1)
-        reply.foreach(_.id must be(f.study.id.id))
+        reply.foreach(_.id must be(f.study.id))
       }
     }
 
@@ -214,7 +214,7 @@ class UsersServiceSpec
       Set(f.user, f.study, f.membership).foreach(addToRepository)
       usersService.getUserStudies(f.user.id, query).mustSucceed { reply =>
         reply must have size (1)
-        reply.foreach(_.id must be(f.study.id.id))
+        reply.foreach(_.id must be(f.study.id))
       }
     }
 

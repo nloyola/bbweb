@@ -1,13 +1,10 @@
 package org.biobank.domain.participants
 
 import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
 import org.biobank.ValidationKey
-import org.biobank.dto._
 import org.biobank.domain._
 import org.biobank.domain.containers._
 import org.biobank.domain.studies._
-import org.biobank.domain.{ConcurrencySafeEntity, DomainValidation}
 import play.api.libs.json._
 import scalaz.Scalaz._
 
@@ -60,39 +57,6 @@ sealed trait Specimen extends ConcurrencySafeEntity[SpecimenId] with HasSlug {
    */
   val amount: scala.math.BigDecimal
 
-  def createDto(
-      event:              CollectionEvent,
-      eventType:          CollectionEventType,
-      specimenDefinition: CollectedSpecimenDefinition,
-      originLocationInfo: CentreLocationInfo,
-      locationInfo:       CentreLocationInfo,
-      study:              Study,
-      participant:        Participant
-    ): SpecimenDto = {
-    SpecimenDto(id                      = this.id.id,
-                version                 = this.version,
-                timeAdded               = this.timeAdded.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                timeModified            = this.timeModified.map(_.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)),
-                state                   = this.state.id,
-                slug                    = this.slug,
-                inventoryId             = this.inventoryId,
-                collectionEvent         = CollectionEventInfoDto(event),
-                specimenDefinitionId    = this.specimenDefinitionId.id,
-                specimenDefinitionName  = specimenDefinition.name,
-                specimenDefinitionUnits = specimenDefinition.units,
-                originLocationInfo      = originLocationInfo,
-                locationInfo            = locationInfo,
-                containerId             = this.containerId.map(_.id),
-                label                   = this.schemaLabel.map(_.label),
-                timeCreated             = this.timeCreated.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                amount                  = this.amount,
-                units                   = specimenDefinition.units,
-                isDefaultAmount         = (this.amount == specimenDefinition.amount),
-                eventType               = NamedEntityInfoDto(eventType),
-                study                   = NamedEntityInfoDto(study),
-                participant             = ParticipantInfoDto(participant))
-  }
-
   override def toString: String = s"${this.getClass.getSimpleName}: ${Json.prettyPrint(Json.toJson(this))}"
 }
 
@@ -100,7 +64,7 @@ object Specimen {
   val usableState:   EntityState = new EntityState("usable")
   val unusableState: EntityState = new EntityState("unusable")
 
-  implicit val specimenWrites: Format[Specimen] = new Format[Specimen] {
+  implicit val specimenFormat: Format[Specimen] = new Format[Specimen] {
 
     override def writes(specimen: Specimen): JsValue =
       ConcurrencySafeEntity.toJson(specimen) ++
@@ -228,6 +192,8 @@ final case class UsableSpecimen(
   private def update() =
     copy(version = version + 1L, timeModified = Some(OffsetDateTime.now))
 }
+
+import org.biobank.domain.studies._
 
 object UsableSpecimen extends SpecimenValidations with ParticipantValidations with StudyValidations {
 

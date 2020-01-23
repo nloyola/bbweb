@@ -227,7 +227,7 @@ trait CommonContainerTypeControllerSpec[
         forAll(f.usersCanReadTable) { (user, label) =>
           info(label)
           containerTypesService.getBySlug(user.id, f.containerType.slug).mustSucceed { result =>
-            result.id must be(f.containerType.id.id)
+            result.id must be(f.containerType.id)
           }
         }
       }
@@ -260,7 +260,7 @@ trait CommonContainerTypeControllerSpec[
           forAll(updateCommandsTable(user.id, f.containerType)) { cmd =>
             containerTypeRepository.put(f.containerType) // restore the containerType to it's previous state
             containerTypesService.processCommand(cmd).mustSucceed { c =>
-              c.id must be(f.containerType.id.id)
+              c.id must be(f.containerType.id)
             }
           }
         }
@@ -293,7 +293,7 @@ trait CommonContainerTypeControllerSpec[
 
         containerTypesService.search(f.allCentresAdminUser.id, f.centre.id, query).mustSucceed { reply =>
           reply.items.length must be > 1
-          val containerTypeIds = reply.items.map(c => c.id).sorted
+          val containerTypeIds = reply.items.map(c => c.id.id).sorted
           containerTypeIds must equal(List(f.containerType.id.id, sibling.id.id).sorted)
         }
       }

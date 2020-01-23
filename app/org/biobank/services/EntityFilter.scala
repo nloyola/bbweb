@@ -8,7 +8,7 @@ import scalaz.Validation.FlatMap._
  * Functions that filter a set of studys from an expression contained in a filter string.
  *
  */
-trait EntityFilter[T <: ConcurrencySafeEntity[_]] extends PredicateHelper {
+trait EntityFilter[T] extends PredicateHelper {
 
   import org.biobank.services.Comparator._
   import org.biobank.services.QueryFilterParserGrammar._

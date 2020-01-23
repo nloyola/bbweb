@@ -24,6 +24,7 @@
   <!-- uncomment "org.biobank.controllers" when debugging tests -->
 
   <!--
+      <logger name="slick.jdbc.JdbcBackend.statement"  level="DEBUG" />
       <logger name="org.biobank.controllers" level="DEBUG" />
       <logger name="play" level="INFO" />
       <logger name="net.sf.ehcache" level="INFO" />

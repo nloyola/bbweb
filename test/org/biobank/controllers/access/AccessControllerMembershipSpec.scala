@@ -8,7 +8,6 @@ import org.biobank.domain.centres._
 import org.biobank.domain.studies._
 import org.biobank.domain.users._
 import org.biobank.fixtures.Url
-import org.biobank.dto._
 import org.biobank.dto.access._
 import org.biobank.matchers.PagedResultsMatchers
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -236,10 +235,10 @@ class AccessControllerMembershipSpec
       val baseUrl      = uri("memberships", "names")
 
       it should behave like accessEntityNameSharedBehaviour(createEntity, baseUrl) {
-        (dtos: List[NamedEntityInfoDto], memberships: List[Membership]) =>
+        (dtos: List[MembershipInfoDto], memberships: List[Membership]) =>
           (dtos zip memberships).foreach {
             case (dto, membership) =>
-              dto must matchNamedEntityInfoDtoToMembership(membership)
+              dto must matchMembershipInfoDtoToMembership(membership)
           }
       }
     }

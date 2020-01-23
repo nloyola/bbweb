@@ -1251,7 +1251,7 @@ class ShipmentsProcessor @Inject()(
       .map { specimen =>
         shipmentSpecimenRepository
           .getBySpecimen(shipmentId, specimen).fold(err => specimen.successNel[String],
-                                                    _   => specimen.inventoryId.failureNel[Specimen])
+                                                    _ => specimen.inventoryId.failureNel[Specimen])
       }.toList.sequenceU.leftMap(
         err =>
           EntityCriteriaError(

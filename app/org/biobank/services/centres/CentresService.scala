@@ -11,6 +11,7 @@ import org.biobank.domain.access.PermissionId
 import org.biobank.domain.centres._
 import org.biobank.domain.users.UserId
 import org.biobank.dto._
+import org.biobank.dto.centres.{CentreDto, CentreLocationInfo}
 import org.biobank.infrastructure._
 import org.biobank.infrastructure.commands.CentreCommands._
 import org.biobank.infrastructure.events.CentreEvents._
@@ -44,7 +45,7 @@ trait CentresService extends BbwebService {
       requestUserId: UserId,
       filter:        FilterString,
       sort:          SortString
-    ): FutureValidation[Seq[EntityInfoAndStateDto]]
+    ): FutureValidation[Seq[CentreInfoAndStateDto]]
 
   def getCentre(requestUserId: UserId, id: CentreId): ServiceValidation[Centre]
 
@@ -113,12 +114,10 @@ class CentresServiceImpl @Inject()(
       requestUserId: UserId,
       filter:        FilterString,
       sort:          SortString
-    ): FutureValidation[Seq[EntityInfoAndStateDto]] =
+    ): FutureValidation[Seq[CentreInfoAndStateDto]] =
     FutureValidation {
       withPermittedCentres(requestUserId) { centres =>
-        filterCentresInternal(centres, filter, sort).map { centres =>
-          centres.map(c => EntityInfoAndStateDto(c.id.id, c.slug, c.name, c.state.id))
-        }
+        filterCentresInternal(centres, filter, sort).map(_.map(CentreInfoAndStateDto(_)))
       }
     }
 
@@ -182,13 +181,13 @@ class CentresServiceImpl @Inject()(
     val requestUserId = UserId(cmd.sessionUserId)
 
     whenPermittedAndIsMemberAsync(requestUserId, permissionId, None, centreId) { () =>
-        for {
+      for {
         event  <- FutureValidation(ask(processor, cmd).mapTo[ServiceValidation[CentreEvent]])
         centre <- FutureValidation(centreRepository.getByKey(CentreId(event.id)))
         dto    <- FutureValidation(centreToDto(requestUserId, centre))
-        } yield dto
-      }
+      } yield dto
     }
+  }
 
   private def filterCentresInternal(
       unfilteredCentres: Set[Centre],

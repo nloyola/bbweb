@@ -131,6 +131,7 @@ libraryDependencies += "com.mohiva"                 %% "play-silhouette-password
 libraryDependencies += "com.mohiva"                 %% "play-silhouette-crypto-jca"      % silhouetteVersion % "compile"
 libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging"                   % "3.9.2"
 libraryDependencies += "com.chuusai"                %% "shapeless"                       % "2.3.3" % "compile"
+libraryDependencies += "io.underscore"              %% "slickless"                       % "0.3.6"
 
 // Testing
 libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.2" % "test" excludeAll (ExclusionRule(

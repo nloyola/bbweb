@@ -120,7 +120,7 @@ libraryDependencies += "com.typesafe.akka"   %% "akka-remote"            % akkaV
 libraryDependencies += "com.github.dnvriend" %% "akka-persistence-jdbc"  % "3.5.2" % "compile" excludeAll (ExclusionRule(
   organization = "com.typesafe.akka"
 ))
-libraryDependencies += "mysql"                      % "mysql-connector-java"             % "8.0.18"
+libraryDependencies += "mysql"                      % "mysql-connector-java"             % "8.0.19"
 libraryDependencies += "org.scalaz"                 %% "scalaz-core"                     % "7.2.30" % "compile"
 libraryDependencies += "com.github.t3hnar"          %% "scala-bcrypt"                    % "4.1"
 libraryDependencies += "com.typesafe.play"          %% "play-mailer"                     % "7.0.1"

@@ -3,7 +3,7 @@ package org.biobank.controllers.participants
 import javax.inject.{Inject, Singleton}
 import org.biobank.controllers._
 import org.biobank.domain.participants.{CollectionEventId, ParticipantId}
-import org.biobank.dto.CollectionEventDto
+import org.biobank.dto.participants.CollectionEventDto
 import org.biobank.infrastructure.commands.CollectionEventCommands._
 import org.biobank.services.PagedResults
 import org.biobank.services.participants.CollectionEventsService

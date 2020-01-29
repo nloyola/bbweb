@@ -10,7 +10,7 @@ import org.biobank.domain.access._
 import org.biobank.domain.participants._
 import org.biobank.domain.studies._
 import org.biobank.domain.users.UserId
-import org.biobank.dto._
+import org.biobank.dto.participants.ParticipantDto
 import org.biobank.infrastructure.commands.ParticipantCommands._
 import org.biobank.infrastructure.events.ParticipantEvents._
 import org.biobank.services._

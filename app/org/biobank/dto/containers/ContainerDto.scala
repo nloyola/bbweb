@@ -1,49 +1,23 @@
 package org.biobank.dto.containers
 
 import java.time.OffsetDateTime
-import org.biobank.domain.AnatomicalSourceType._
-import org.biobank.domain.PreservationType._
+import org.biobank.domain.{HasSlug, Location, Slug}
 import org.biobank.domain.PreservationTemperature._
-import org.biobank.domain.SpecimenType._
-import org.biobank.domain.{Location, Slug}
 import org.biobank.domain.centres.Centre
 import org.biobank.domain.containers.{
   Container,
-  ContainerConstraints,
   ContainerId,
   ContainerType,
   RootContainer,
   SpecimenContainer,
   StorageContainer
 }
-import org.biobank.dto.ContainerTypeInfoDto
+import org.biobank.dto.EntityDto
+import org.biobank.dto.containers.ContainerTypeInfoDto
 import org.biobank.dto.centres.CentreLocationInfo
 import play.api.libs.json._
 
-final case class ContainerConstraintsDto(
-    name:              String,
-    description:       Option[String],
-    anatomicalSources: Set[AnatomicalSourceType],
-    preservationTypes: Set[PreservationType],
-    specimenTypes:     Set[SpecimenType])
-
-object ContainerConstraintsDto {
-
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def apply(constraints: ContainerConstraints): ContainerConstraintsDto =
-    ContainerConstraintsDto(name              = constraints.name,
-                            description       = constraints.description,
-                            anatomicalSources = constraints.anatomicalSources,
-                            preservationTypes = constraints.preservationTypes,
-                            specimenTypes     = constraints.specimenTypes)
-
-  @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  implicit val containerConstraintsDtoFormat: Format[ContainerConstraintsDto] =
-    Json.format[ContainerConstraintsDto]
-
-}
-
-trait ContainerDto {
+trait ContainerDto extends EntityDto[ContainerId] with HasSlug {
   val id:            ContainerId
   val version:       Long
   val timeAdded:     OffsetDateTime

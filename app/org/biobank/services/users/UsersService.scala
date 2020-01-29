@@ -10,8 +10,9 @@ import org.biobank.domain.access.{AccessItemId, MembershipId, PermissionId}
 import org.biobank.domain.centres.CentreRepository
 import org.biobank.domain.studies.StudyRepository
 import org.biobank.domain.users._
-import org.biobank.dto._
 import org.biobank.dto.access.UserRoleDto
+import org.biobank.dto.studies.StudyInfoAndStateDto
+import org.biobank.dto.users.{UserDto, UserInfoAndStateDto}
 import org.biobank.infrastructure.AscendingOrder
 import org.biobank.infrastructure.commands.AccessCommands._
 import org.biobank.infrastructure.commands.MembershipCommands._

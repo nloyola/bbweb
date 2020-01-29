@@ -10,7 +10,7 @@ import org.biobank.domain.access.PermissionId
 import org.biobank.domain.centres.{CentreId, CentreRepository}
 import org.biobank.domain.containers._
 import org.biobank.domain.users.UserId
-import org.biobank.dto._
+import org.biobank.dto.containers.ContainerTypeDto
 import org.biobank.infrastructure.AscendingOrder
 import org.biobank.infrastructure.commands.ContainerTypeCommands._
 import org.biobank.infrastructure.events.ContainerTypeEvents._

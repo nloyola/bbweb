@@ -4,6 +4,7 @@ import java.time.OffsetDateTime
 import org.biobank.domain.centres.{ShipmentContainerId, ShipmentId, ShipmentSpecimen, ShipmentSpecimenId}
 import org.biobank.domain.centres.ShipmentItemState._
 import org.biobank.domain.participants.SpecimenId
+import org.biobank.dto.EntityDto
 import play.api.libs.json._
 
 trait ShipmentSpecimenPredicates {
@@ -22,18 +23,10 @@ final case class ShipmentSpecimenDto(
     state:               ShipmentItemState,
     shipmentId:          ShipmentId,
     specimenId:          SpecimenId,
-    shipmentContainerId: Option[ShipmentContainerId]) {
+    shipmentContainerId: Option[ShipmentContainerId])
+    extends EntityDto[ShipmentSpecimenId] {
 
-  override def toString: String =
-    s"""|${this.getClass.getSimpleName}: {
-        |  id:                  $id,
-        |  version:             $version,
-        |  timeAdded:           $timeAdded,
-        |  timeModified:        $timeModified,
-        |  state:               $state,
-        |  shipmentId:          $shipmentId,
-        |  shipmentContainerId: $shipmentContainerId
-        |}""".stripMargin
+  override def toString: String = s"|${this.getClass.getSimpleName}: ${Json.prettyPrint(Json.toJson(this))}"
 
 }
 

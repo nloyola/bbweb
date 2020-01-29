@@ -3,11 +3,11 @@ package org.biobank.controllers.users
 import com.mohiva.play.silhouette.api._
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
 import javax.inject.{Inject, Singleton}
-import org.biobank.dto._
 import org.biobank.domain.Slug
 import org.biobank.domain.access.{AccessItemId, MembershipId}
 import org.biobank.domain.users._
 import org.biobank.dto.centres.CentreDto
+import org.biobank.dto.users.{UserDto, UserInfoAndStateDto}
 import org.biobank.controllers._
 import org.biobank.infrastructure.commands.Commands._
 import org.biobank.infrastructure.commands.UserCommands._

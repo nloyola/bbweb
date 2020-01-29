@@ -5,7 +5,7 @@ import org.biobank.controllers.PagedResultsSharedSpec
 import org.biobank.domain.Slug
 import org.biobank.domain.centres.CentreId
 import org.biobank.domain.containers._
-import org.biobank.dto._
+import org.biobank.dto.containers.ContainerSchemaDto
 import org.biobank.fixtures.{ControllerFixture, Url}
 import org.biobank.matchers.PagedResultsMatchers
 import play.api.libs.json._

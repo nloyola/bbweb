@@ -9,7 +9,7 @@ import org.biobank.domain.access._
 import org.biobank.domain.participants._
 import org.biobank.domain.studies._
 import org.biobank.domain.users.UserId
-import org.biobank.dto.CollectionEventDto
+import org.biobank.dto.participants.CollectionEventDto
 import org.biobank.infrastructure.AscendingOrder
 import org.biobank.infrastructure.commands.CollectionEventCommands._
 import org.biobank.infrastructure.events.CollectionEventEvents._

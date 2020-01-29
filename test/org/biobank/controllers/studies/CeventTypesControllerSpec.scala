@@ -5,7 +5,7 @@ import org.biobank.controllers._
 import org.biobank.domain.Slug
 import org.biobank.domain.annotations._
 import org.biobank.domain.studies._
-import org.biobank.dto._
+import org.biobank.dto.studies.{CollectedSpecimenDefinitionNames, CollectionEventTypeInfoDto}
 import org.biobank.fixtures._
 import org.biobank.matchers.PagedResultsMatchers
 import org.scalatest.matchers.{MatchResult, Matcher}

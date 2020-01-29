@@ -7,7 +7,7 @@ import org.biobank.domain.annotations._
 import org.biobank.domain.participants._
 import org.biobank.domain.studies._
 import org.biobank.fixtures.Url
-import org.biobank.dto._
+import org.biobank.dto.participants._
 import org.scalatest.matchers.{MatchResult, Matcher}
 import play.api.libs.json._
 import play.api.mvc._

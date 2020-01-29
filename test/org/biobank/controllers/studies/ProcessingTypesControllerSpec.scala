@@ -6,7 +6,7 @@ import org.biobank.domain.Slug
 import org.biobank.domain.annotations._
 import org.biobank.domain.containers.{ContainerType, ContainerTypeId}
 import org.biobank.domain.studies._
-import org.biobank.dto.ProcessedSpecimenDefinitionName
+import org.biobank.dto.studies.ProcessedSpecimenDefinitionName
 import org.biobank.fixtures._
 import org.biobank.matchers.PagedResultsMatchers
 import org.scalatest.matchers.{MatchResult, Matcher}

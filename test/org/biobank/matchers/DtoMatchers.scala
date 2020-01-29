@@ -12,6 +12,8 @@ import org.biobank.dto.access._
 import org.biobank.dto.centres._
 import org.biobank.dto.containers._
 import org.biobank.dto.participants._
+import org.biobank.dto.studies._
+import org.biobank.dto.users._
 import play.api.libs.json._
 import org.scalatest.Matchers._
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -24,7 +26,7 @@ trait DtoMatchers {
     new Matcher[CentreDto] {
 
       def apply(left: CentreDto) = {
-        val dtoStudyIds = left.studyNames.map(_.id).toList.sortBy(_.id)
+        val dtoStudyIds = left.studies.map(_.id).toList.sortBy(_.id)
         val timeAddedMatcher =
           beTimeWithinSeconds(centre.timeAdded, 5L)(left.timeAdded)
         val timeModifiedMatcher = beOptionalTimeWithinSeconds(centre.timeModified, 5L)
@@ -178,9 +180,9 @@ trait DtoMatchers {
     new Matcher[RoleDto] {
 
       def apply(left: RoleDto) = {
-        val dtoUserIds     = left.userData.toList.map(ud   => ud.id).sortBy(_.id)
+        val dtoUserIds     = left.userData.toList.map(ud => ud.id).sortBy(_.id)
         val dtoParentIds   = left.parentData.toList.map(pd => pd.id).sortBy(_.id)
-        val dtoChildrenIds = left.childData.toList.map(cd  => cd.id).sortBy(_.id)
+        val dtoChildrenIds = left.childData.toList.map(cd => cd.id).sortBy(_.id)
 
         val matchers = Map(("id" -> (left.id equals role.id)),
                            ("version"     -> (left.version equals role.version)),

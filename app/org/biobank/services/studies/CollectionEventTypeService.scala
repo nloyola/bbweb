@@ -10,7 +10,7 @@ import org.biobank.domain.access._
 import org.biobank.domain.studies._
 import org.biobank.domain.participants.CollectionEventRepository
 import org.biobank.domain.users.UserId
-import org.biobank.dto.{CollectedSpecimenDefinitionNames, CollectionEventTypeInfoDto}
+import org.biobank.dto.studies.{CollectedSpecimenDefinitionNames, CollectionEventTypeInfoDto}
 import org.biobank.infrastructure.AscendingOrder
 import org.biobank.infrastructure.commands.CollectionEventTypeCommands._
 import org.biobank.infrastructure.events.CollectionEventTypeEvents._

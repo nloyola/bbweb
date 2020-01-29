@@ -4,7 +4,7 @@ import javax.inject.{Inject, Singleton}
 import org.biobank.controllers._
 import org.biobank.domain.Slug
 import org.biobank.domain.studies.{CollectionEventType, CollectionEventTypeId, StudyId}
-import org.biobank.dto.CollectedSpecimenDefinitionNames
+import org.biobank.dto.studies.CollectedSpecimenDefinitionNames
 import org.biobank.infrastructure.commands.CollectionEventTypeCommands._
 import org.biobank.services.PagedResults
 import org.biobank.services.studies.CollectionEventTypeService

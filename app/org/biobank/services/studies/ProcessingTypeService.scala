@@ -9,7 +9,7 @@ import org.biobank.domain.Slug
 import org.biobank.domain.access._
 import org.biobank.domain.studies._
 import org.biobank.domain.users.UserId
-import org.biobank.dto.ProcessedSpecimenDefinitionName
+import org.biobank.dto.studies.ProcessedSpecimenDefinitionName
 import org.biobank.infrastructure.AscendingOrder
 import org.biobank.infrastructure.commands.ProcessingTypeCommands._
 import org.biobank.infrastructure.events.ProcessingTypeEvents._

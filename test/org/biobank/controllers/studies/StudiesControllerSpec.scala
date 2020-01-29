@@ -6,8 +6,8 @@ import org.biobank.domain._
 import org.biobank.domain.annotations._
 import org.biobank.domain.Slug
 import org.biobank.domain.studies._
-import org.biobank.dto._
 import org.biobank.dto.centres._
+import org.biobank.dto.studies._
 import org.biobank.fixtures._
 import org.biobank.matchers.PagedResultsMatchers
 import org.biobank.services.studies.StudyCountsByStatus

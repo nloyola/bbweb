@@ -133,7 +133,7 @@ class UsersServiceSpec
       val f = usersFixture
       forAll(commandsTable(f.adminUser.id, f.user, f.userPlainPassword)) { cmd =>
         userRepository.put(f.user) // restore the user to it's previous state
-        usersService.processCommand(cmd).mustSucceed { u =>
+        usersService.processCommand(cmd).futval.futureValue mustSucceed { u =>
           u.id must be(f.user.id)
         }
       }

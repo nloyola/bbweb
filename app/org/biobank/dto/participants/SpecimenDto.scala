@@ -1,12 +1,13 @@
 package org.biobank.dto.participants
 
 import java.time.OffsetDateTime
-import org.biobank.domain.{EntityState, Slug}
+import org.biobank.domain.{EntityState, HasState, Slug}
 import org.biobank.domain.containers.ContainerId
 import org.biobank.domain.participants.{CollectionEvent, Participant, Specimen, SpecimenId}
 import org.biobank.domain.studies._
-import org.biobank.dto._
+import org.biobank.dto.EntityDto
 import org.biobank.dto.centres.CentreLocationInfo
+import org.biobank.dto.studies.{CollectionEventTypeInfoDto, StudyInfoDto}
 import play.api.libs.json._
 
 final case class SpecimenDto(
@@ -31,7 +32,8 @@ final case class SpecimenDto(
     isDefaultAmount:         Boolean,
     study:                   StudyInfoDto,
     participant:             ParticipantInfoDto,
-    eventType:               CollectionEventTypeInfoDto) {
+    eventType:               CollectionEventTypeInfoDto)
+    extends EntityDto[SpecimenId] with HasState {
 
   override def toString: String = s"${this.getClass.getSimpleName}: ${Json.prettyPrint(Json.toJson(this))}"
 

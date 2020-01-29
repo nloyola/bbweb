@@ -9,8 +9,9 @@ import org.biobank.controllers.PagedResultsSharedSpec
 import org.biobank.domain.access._
 import org.biobank.domain.Slug
 import org.biobank.domain.users._
-import org.biobank.dto._
 import org.biobank.dto.access._
+import org.biobank.dto.studies._
+import org.biobank.dto.users._
 import org.biobank.fixtures.{ControllerFixture, Url}
 import org.biobank.matchers.PagedResultsMatchers
 import org.biobank.services.users.UserCountsByStatus

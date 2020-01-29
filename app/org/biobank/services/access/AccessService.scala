@@ -11,8 +11,10 @@ import org.biobank.domain.access.PermissionId._
 import org.biobank.domain.studies.{StudyId, StudyRepository}
 import org.biobank.domain.centres.{CentreId, CentreRepository}
 import org.biobank.domain.users.{UserId, UserRepository}
-import org.biobank.dto._
 import org.biobank.dto.access._
+import org.biobank.dto.centres.{CentreInfoDto, CentreSetDto}
+import org.biobank.dto.studies.{StudyInfoDto, StudySetDto}
+import org.biobank.dto.users.UserInfoDto
 import org.biobank.infrastructure.AscendingOrder
 import org.biobank.infrastructure.commands.AccessCommands._
 import org.biobank.infrastructure.commands.MembershipCommands._
@@ -265,7 +267,7 @@ class AccessServiceImpl @Inject()(
       centreId: Option[CentreId]
     ): ServiceValidation[Unit] = {
     isMember(userId, studyId, centreId).fold(
-      err           => err.failure[Unit],
+      err => err.failure[Unit],
       hasMembership => if (hasMembership) ().successNel[String] else Unauthorized.failureNel[Unit]
     )
   }
@@ -453,8 +455,8 @@ class AccessServiceImpl @Inject()(
         cmd match {
           case c: AddMembershipCmd => {
             for {
-              validUsers   <- c.userIds.map(id   => userRepository.getByKey(UserId(id))).toList.sequenceU
-              validStudies <- c.studyIds.map(id  => studyRepository.getByKey(StudyId(id))).toList.sequenceU
+              validUsers   <- c.userIds.map(id => userRepository.getByKey(UserId(id))).toList.sequenceU
+              validStudies <- c.studyIds.map(id => studyRepository.getByKey(StudyId(id))).toList.sequenceU
               validCentres <- c.centreIds.map(id => centreRepository.getByKey(CentreId(id))).toList.sequenceU
             } yield true
           }
@@ -635,11 +637,14 @@ class AccessServiceImpl @Inject()(
       }.sequenceU
 
     getAccessItems(role.childrenIds) map { children =>
-      UserRoleDto(id        = role.id,
-                  version   = role.version,
-                  slug      = role.slug,
-                  name      = role.name,
-                  childData = children.map(AccessItemInfoDto(_)).toSet)
+      UserRoleDto(id           = role.id,
+                  version      = role.version,
+                  timeAdded    = role.timeAdded,
+                  timeModified = role.timeModified,
+                  slug         = role.slug,
+                  name         = role.name,
+                  description  = role.description,
+                  childData    = children.map(AccessItemInfoDto(_)).toSet)
     }
   }
 

@@ -11,8 +11,8 @@ import org.biobank.domain.centres.{Centre, CentreRepository}
 import org.biobank.domain.participants.CollectionEventRepository
 import org.biobank.domain.studies._
 import org.biobank.domain.users.UserId
-import org.biobank.dto._
 import org.biobank.dto.centres._
+import org.biobank.dto.studies.StudyInfoAndStateDto
 import org.biobank.infrastructure._
 import org.biobank.infrastructure.commands.StudyCommands._
 import org.biobank.infrastructure.events.StudyEvents._

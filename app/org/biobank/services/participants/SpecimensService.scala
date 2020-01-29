@@ -11,9 +11,8 @@ import org.biobank.domain.centres.CentreRepository
 import org.biobank.domain.participants._
 import org.biobank.domain.studies._
 import org.biobank.domain.users.UserId
-import org.biobank.dto.{CollectionEventDto}
 import org.biobank.dto.centres.CentreLocationInfo
-import org.biobank.dto.participants.{SpecimenDto}
+import org.biobank.dto.participants.{CollectionEventDto, SpecimenDto}
 import org.biobank.infrastructure.AscendingOrder
 import org.biobank.infrastructure.commands.SpecimenCommands._
 import org.biobank.infrastructure.events.SpecimenEvents._

@@ -33,18 +33,7 @@ sealed trait Study
   /** The annotation types associated with participants of this study. */
   val annotationTypes: Set[AnnotationType]
 
-  override def toString: String =
-    s"""|${this.getClass.getSimpleName}: {
-        |  id:              $id,
-        |  version:         $version,
-        |  timeAdded:       $timeAdded,
-        |  timeModified:    $timeModified,
-        |  state:           $state,
-        |  slug:            $slug,
-        |  name:            $name,
-        |  description:     $description,
-        |  annotationTypes: $annotationTypes
-        |}""".stripMargin
+  override def toString: String = s"${this.getClass.getSimpleName}: ${Json.prettyPrint(Json.toJson(this))}"
 
 }
 

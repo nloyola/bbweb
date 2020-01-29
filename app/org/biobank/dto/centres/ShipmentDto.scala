@@ -1,9 +1,9 @@
 package org.biobank.dto.centres
 
 import java.time.OffsetDateTime
-import org.biobank.domain.EntityState
+import org.biobank.domain.{EntityState, HasState}
 import org.biobank.domain.centres.{Shipment, ShipmentId}
-import org.biobank.dto.Dto
+import org.biobank.dto.EntityDto
 import play.api.libs.json._
 
 final case class ShipmentDto(
@@ -24,7 +24,7 @@ final case class ShipmentDto(
     specimenCount:        Int,
     presentSpecimenCount: Int,
     containerCount:       Int)
-    extends Dto {
+    extends EntityDto[ShipmentId] with HasState {
 
   override def toString: String = s"|${this.getClass.getSimpleName}: ${Json.prettyPrint(Json.toJson(this))}"
 

@@ -10,8 +10,7 @@ import org.biobank.domain.access._
 import org.biobank.domain.access.PermissionId
 import org.biobank.domain.centres._
 import org.biobank.domain.users.UserId
-import org.biobank.dto._
-import org.biobank.dto.centres.{CentreDto, CentreLocationInfo}
+import org.biobank.dto.centres.{CentreDto, CentreInfoAndStateDto, CentreLocationInfo}
 import org.biobank.infrastructure._
 import org.biobank.infrastructure.commands.CentreCommands._
 import org.biobank.infrastructure.events.CentreEvents._

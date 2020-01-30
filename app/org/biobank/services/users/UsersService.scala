@@ -20,7 +20,7 @@ import org.biobank.infrastructure.commands.UserCommands._
 import org.biobank.infrastructure.events.UserEvents._
 import org.biobank.services._
 import org.biobank.services.access.AccessService
-import org.biobank.services.studies.StudiesService
+import org.biobank.services.studies.{StudiesService, StudyServicePermissionChecks}
 import org.slf4j.{Logger, LoggerFactory}
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
@@ -111,7 +111,8 @@ class UsersServiceImpl @javax.inject.Inject()(
   )(
     implicit
     val executionContext: BbwebExecutionContext)
-    extends UsersService with AccessChecksSerivce with ServicePermissionChecks {
+    extends UsersService with AccessChecksSerivce with ServicePermissionChecks
+    with StudyServicePermissionChecks {
 
   import org.biobank.CommonValidations._
   import org.biobank.domain.access.AccessItem._
@@ -212,18 +213,7 @@ class UsersServiceImpl @javax.inject.Inject()(
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def getUserStudies(userId: UserId, query: FilterAndSortQuery): FutureValidation[Seq[StudyInfoAndStateDto]] =
     FutureValidation {
-      for {
-        membership <- accessService.getUserMembership(userId)
-        studyIds = {
-          if (membership.studyData.allEntities) studyRepository.getKeys.toSet
-          else membership.studyData.ids
-        }
-        dtos <- {
-          studyIds
-            .map(studyRepository.getByKey).toList.sequenceU
-            .map(_.toSeq.map(StudyInfoAndStateDto(_)))
-        }
-      } yield dtos
+      getMembershipStudies(userId).map(_.toSeq.map(StudyInfoAndStateDto(_)))
     }
 
   def loginAllowed(email: String, enteredPwd: String): ServiceValidation[UserDto] =
@@ -369,22 +359,10 @@ class UsersServiceImpl @javax.inject.Inject()(
   private def userToDto(
       user:      User,
       userRoles: ServiceValidation[Set[UserRoleDto]]
-    ): ServiceValidation[UserDto] =
-    userRoles.map { roles =>
-      val dto = UserDto(id = user.id,
-                        version      = user.version,
-                        timeAdded    = user.timeAdded,
-                        timeModified = user.timeModified,
-                        state        = user.state,
-                        slug         = user.slug,
-                        name         = user.name,
-                        email        = user.email,
-                        avatarUrl    = user.avatarUrl,
-                        roles        = roles,
-                        membership   = None)
-
-      accessService
-        .getUserMembershipDto(user.id).fold(err => dto, membership => dto.copy(membership = Some(membership)))
-    }
-
+    ): ServiceValidation[UserDto] = {
+    for {
+      roles      <- userRoles
+      membership <- accessService.getUserMembershipDto(user.id)
+    } yield UserDto.from(user, roles, membership)
+  }
 }

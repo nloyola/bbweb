@@ -7,13 +7,11 @@ import org.biobank.domain._
 import org.biobank.domain.centres.CentreId
 import org.biobank.domain.studies.StudyId
 import org.biobank.domain.users.UserId
-//import org.slf4j.{Logger, LoggerFactory}
-import scalaz.Scalaz._
 
 @ImplementedBy(classOf[MembershipRepositoryImpl])
 trait MembershipRepository extends ReadWriteRepositoryWithSlug[MembershipId, Membership] {
 
-  def getUserMembership(userId: UserId): DomainValidation[UserMembership]
+  def getUserMembership(userId: UserId): Option[UserMembership]
 
 }
 
@@ -52,13 +50,7 @@ class MembershipRepositoryImpl @Inject()(val testData: TestData)
   protected def slugNotFound(slug: Slug): EntityCriteriaNotFound =
     EntityCriteriaNotFound(s"membership slug: $slug")
 
-  def getUserMembership(userId: UserId): DomainValidation[UserMembership] =
-    getValues
-      .find { m =>
-        m.userIds.exists(_ == userId)
-      }
-      .map { m =>
-        UserMembership.create(m, userId)
-      }
-      .toSuccessNel(IdNotFound(s"membership for user ID: $userId").toString)
+  def getUserMembership(userId: UserId): Option[UserMembership] = {
+    getValues.find(m => m.userIds.exists(_ == userId)).map(m => UserMembership.create(m, userId))
+  }
 }

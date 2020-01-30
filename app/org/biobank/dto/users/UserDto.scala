@@ -23,6 +23,19 @@ final case class UserDto(
 
 object UserDto {
 
+  def from(user: User, userRoles: Set[UserRoleDto], userMembership: Option[UserMembershipDto]) =
+    UserDto(id           = user.id,
+            version      = user.version,
+            timeAdded    = user.timeAdded,
+            timeModified = user.timeModified,
+            state        = user.state,
+            slug         = user.slug,
+            name         = user.name,
+            email        = user.email,
+            avatarUrl    = user.avatarUrl,
+            roles        = userRoles,
+            membership   = userMembership)
+
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val userDtoFormat: Format[UserDto] = Json.format[UserDto]
 

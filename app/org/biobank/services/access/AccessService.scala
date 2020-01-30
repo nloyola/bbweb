@@ -86,9 +86,9 @@ trait AccessService extends BbwebService {
       query:         FilterAndSortQuery
     ): FutureValidation[Seq[MembershipInfoDto]]
 
-  def getUserMembership(userId: UserId): ServiceValidation[UserMembership]
+  def getUserMembership(userId: UserId): Option[UserMembership]
 
-  def getUserMembershipDto(userId: UserId): ServiceValidation[UserMembershipDto]
+  def getUserMembershipDto(userId: UserId): ServiceValidation[Option[UserMembershipDto]]
 
   def processRoleCommand(cmd: AccessCommand): FutureValidation[RoleDto]
 
@@ -256,8 +256,7 @@ class AccessServiceImpl @Inject()(
           user        <- userRepository.getByKey(userId)
           studyValid  <- studyId.map(studyRepository.getByKey(_).map(_ => true)).getOrElse(validBoolean)
           centreValid <- centreId.map(centreRepository.getByKey(_).map(_ => true)).getOrElse(validBoolean)
-          isMember    <- isMemberInternal(userId, studyId, centreId)
-        } yield isMember
+        } yield isMemberInternal(userId, studyId, centreId)
     }
   }
 
@@ -277,15 +276,12 @@ class AccessServiceImpl @Inject()(
       permissionId: AccessItemId,
       studyId:      Option[StudyId],
       centreId:     Option[CentreId]
-    ): ServiceValidation[Boolean] =
-    for {
-      permission <- hasPermissionInternal(userId, permissionId)
-      member     <- isMemberInternal(userId, studyId, centreId)
-    } yield {
+    ): ServiceValidation[Boolean] = {
+    hasPermissionInternal(userId, permissionId).map { permission =>
       //log.info(s"hasPermissionAndIsMember: permission: $permissionId, member: $member")
-
-      (permission && member)
+      (permission && isMemberInternal(userId, studyId, centreId))
     }
+  }
 
   def getMembership(requestUserId: UserId, membershipId: MembershipId): ServiceValidation[Membership] =
     whenPermitted(requestUserId, PermissionId.MembershipRead) { () =>
@@ -348,11 +344,14 @@ class AccessServiceImpl @Inject()(
     }
   }
 
-  def getUserMembership(userId: UserId): ServiceValidation[UserMembership] =
+  def getUserMembership(userId: UserId): Option[UserMembership] =
     membershipRepository.getUserMembership(userId)
 
-  def getUserMembershipDto(userId: UserId): ServiceValidation[UserMembershipDto] =
-    getUserMembership(userId).flatMap(userMembershipToDto)
+  def getUserMembershipDto(userId: UserId): ServiceValidation[Option[UserMembershipDto]] =
+    getUserMembership(userId) match {
+      case Some(membership) => userMembershipToDto(membership).map(Some(_))
+      case None             => None.successNel[String]
+    }
 
   def getAccessItem(requestUserId: UserId, accessItemId: AccessItemId): ServiceValidation[AccessItem] =
     whenPermitted(requestUserId, PermissionId.UserRead) { () =>
@@ -564,23 +563,21 @@ class AccessServiceImpl @Inject()(
     accessItemRepository.getByKey(permissionId).map(checkItemAccess)
   }
 
-  // should only called if userId is valid, studyId is None or valid, and centreId is None or valid
   private def isMemberInternal(
       userId:   UserId,
       studyId:  Option[StudyId],
       centreId: Option[CentreId]
-    ): ServiceValidation[Boolean] = {
+    ): Boolean = {
 
-    val membership = membershipRepository
-      .getUserMembership(userId)
-      .map { membership =>
-        membership.isMember(studyId, centreId)
-      }
+    val hasMembership = membershipRepository.getUserMembership(userId) match {
+      case Some(m) => m.isMember(studyId, centreId)
+      case None    => false
+    }
 
     log.debug(
-      s"isMemberInternal: userId: $userId, studyId: $studyId, centreId: $centreId, membership: $membership"
+      s"isMemberInternal: userId: $userId, studyId: $studyId, centreId: $centreId, hasMembership: $hasMembership"
     )
-    membership
+    hasMembership
   }
 
   private def whenPermitted[T](
@@ -666,21 +663,20 @@ class AccessServiceImpl @Inject()(
                           centreData   = centreEntitySet)
   }
 
-  private def userMembershipToDto(membership: UserMembership): ServiceValidation[UserMembershipDto] =
+  private def userMembershipToDto(membership: UserMembership): ServiceValidation[UserMembershipDto] = {
     for {
       studyEntitySet  <- membershipStudyDataToEntitySet(membership)
       centreEntitySet <- membershipCentreDataToEntitySet(membership)
-    } yield {
-      UserMembershipDto(id           = membership.id,
-                        version      = membership.version,
-                        timeAdded    = membership.timeAdded,
-                        timeModified = membership.timeModified,
-                        slug         = membership.slug,
-                        name         = membership.name,
-                        description  = membership.description,
-                        studyData    = studyEntitySet,
-                        centreData   = centreEntitySet)
-    }
+    } yield UserMembershipDto(id           = membership.id,
+                              version      = membership.version,
+                              timeAdded    = membership.timeAdded,
+                              timeModified = membership.timeModified,
+                              slug         = membership.slug,
+                              name         = membership.name,
+                              description  = membership.description,
+                              studyData    = studyEntitySet,
+                              centreData   = centreEntitySet)
+  }
 
   private def membershipStudyDataToEntitySet(membership: MembershipBase): ServiceValidation[StudySetDto] =
     idsToEntities(membership.studyData.ids, studyRepository.getByKey)

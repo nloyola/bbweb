@@ -71,15 +71,17 @@ trait CentreServicePermissionChecks extends ServicePermissionChecks {
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
   protected def getMembershipCentres(userId: UserId): ServiceValidation[Set[Centre]] =
-    accessService.getUserMembership(userId).flatMap { membership =>
-      if (membership.centreData.allEntities) {
-        centreRepository.getValues.toSet.successNel[String]
-      } else {
-        membership.centreData.ids
-          .map(centreRepository.getByKey)
-          .toList.sequenceU
-          .map(centres => centres.toSet)
-      }
+    accessService.getUserMembership(userId) match {
+      case None => Set.empty[Centre].successNel[String]
+      case Some(membership) =>
+        if (membership.centreData.allEntities) {
+          centreRepository.getValues.toSet.successNel[String]
+        } else {
+          membership.centreData.ids
+            .map(centreRepository.getByKey)
+            .toList.sequenceU
+            .map(centres => centres.toSet)
+        }
     }
 
 }

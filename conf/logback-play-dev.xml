@@ -3,7 +3,7 @@
 
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
-      <pattern>%coloredLevel %logger{15} - %message%n%xException{10}</pattern>
+      <pattern>%coloredLevel %date{mm:ss.SSS} %logger{15} - %message%n%xException{10}</pattern>
     </encoder>
   </appender>
 
@@ -17,13 +17,20 @@
     <appender-ref ref="STDOUT" />
   </appender>
 
+  <logger name="play" level="WARN" />
   <logger name="application" level="INFO" />
-  <logger name="play" level="DEBUG" />
   <logger name="org.biobank.services" level="INFO" />
   <logger name="org.biobank.domain" level="INFO" />
-  <logger name="org.biobank.query" level="INFO" />
+  <logger name="org.biobank.query" level="DEBUG" />
 
   <logger name="com.gargoylesoftware.htmlunit.javascript" level="OFF" />
+  <logger name="io.netty" level="INFO" />
+  <logger name="akka" level="WARN" />
+  <logger name="com.zaxxer.hikari" level="WARN" />
+  <logger name="net.sf.ehcache" level="WARN" />
+
+  <!--logger name="slick.jdbc.JdbcBackend.statement"  level="DEBUG" /-->
+  <!--logger name="slick.basic.BasicBackend.action"   level="DEBUG" /-->
 
   <root level="INFO">
     <appender-ref ref="ASYNCSTDOUT" />

@@ -17,14 +17,14 @@
     <appender-ref ref="STDOUT" />
   </appender>
 
+  <logger name="play" level="WARN" />
   <logger name="application" level="INFO" />
   <logger name="org.biobank.services" level="INFO" />
   <logger name="org.biobank.domain" level="INFO" />
-  <logger name="org.biobank.query" level="DEBUG" />
+  <logger name="org.biobank.query" level="INFO" />
 
   <logger name="com.gargoylesoftware.htmlunit.javascript" level="OFF" />
   <logger name="io.netty" level="INFO" />
-  <logger name="play" level="WARN" />
   <logger name="akka" level="WARN" />
   <logger name="com.zaxxer.hikari" level="WARN" />
   <logger name="net.sf.ehcache" level="WARN" />

@@ -255,7 +255,7 @@ trait DatabaseSchema extends HasDatabaseConfigProvider[JdbcProfile] {
 
   val shipments = TableQuery[Shipments]
 
-  class ShipmentSpecimens(tag: Tag) extends Table[ShipmentSpecimenDto](tag, "SHIPMENT_SPECMENS") {
+  class ShipmentSpecimens(tag: Tag) extends Table[ShipmentSpecimenDto](tag, "SHIPMENT_SPECIMENS") {
     def id                  = column[ShipmentSpecimenId]("ID", O.PrimaryKey)
     def version             = column[Long]("VERSION")
     def timeAdded           = column[OffsetDateTime]("TIME_ADDED")

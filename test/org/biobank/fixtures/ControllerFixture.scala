@@ -57,7 +57,8 @@ class BbwebTestModule extends AbstractModule {
 
   override def configure() = {
     bind(classOf[Global]).asEagerSingleton
-    //bind(classOf[ShipmentsQuery]).asEagerSingleton
+    bind(classOf[ShipmentsQuery]).to(classOf[ShipmentsQueryInMemory]).asEagerSingleton
+    ()
   }
 
 }

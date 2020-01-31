@@ -1,8 +1,11 @@
 package org.biobank.query.centres
 
+import akka.NotUsed
 import akka.actor._
+import akka.stream.scaladsl.Source
 import akka.persistence.jdbc.query.scaladsl.JdbcReadJournal
 import akka.persistence.query.{EventEnvelope, PersistenceQuery}
+import com.google.inject.ImplementedBy
 import java.time.OffsetDateTime
 import javax.inject.Inject
 import org.biobank._
@@ -21,6 +24,8 @@ import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 import scalaz._
 import scala.collection.mutable.Queue
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 
 final case class AddOrUpdate(shipment: ShipmentDto) extends DbOperation
 
@@ -34,47 +39,49 @@ final case class SpecimenAddOrUpdate(shipmentSpecimen: ShipmentSpecimenDto) exte
 
 final case class SpecimenRemove(shipmentSpecimenId: ShipmentSpecimenId) extends DbOperation
 
-@SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter", "org.wartremover.warts.NonUnitStatements"))
-class ShipmentsQuery @Inject()(
-    private val testData:                      TestData,
-    protected val dbConfigProvider:            DatabaseConfigProvider,
-    protected val centreRepository:            CentreRepository,
-    protected val shipmentsRepository:         ShipmentsReadRepository,
-    protected val shipmentSpecimensRepository: ShipmentSpecimensReadRepository,
-    protected val sequenceNumbersDao:          SequenceNumbersDao
-  )(
-    implicit
-    val system: ActorSystem,
-    val ec:     ExecutionContext)
-    extends DatabaseSchema {
-  import dbConfig.profile.api._
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+@ImplementedBy(classOf[ShipmentsQueryJdbc])
+trait ShipmentsQuery extends DatabaseSchema {
   import org.biobank.CommonValidations._
 
   val persistenceId = "shipments-processor-id"
 
   protected val log = LoggerFactory.getLogger(this.getClass)
 
-  val readJournal: JdbcReadJournal =
-    PersistenceQuery(system).readJournalFor[JdbcReadJournal](JdbcReadJournal.Identifier)
+  implicit protected val system: ActorSystem
+  implicit protected val ec:     ExecutionContext
+
+  protected val dbConfig: DatabaseConfig[JdbcProfile]
+  import dbConfig.profile.api._
+
+  protected val centreRepository:            CentreRepository
+  protected val shipmentsRepository:         ShipmentsReadRepository
+  protected val shipmentSpecimensRepository: ShipmentSpecimensReadRepository
+  protected val sequenceNumbersDao:          SequenceNumbersDao
 
   @SuppressWarnings(Array("org.wartremover.warts.Var"))
   var currentOperation: Option[Future[Unit]] = None
 
   val eventQueue = new Queue[EventEnvelope]
 
+  def eventsByPersistenceId(
+      persistenceId:  String,
+      fromSequenceNr: Long,
+      toSequenceNr:   Long
+    ): Source[EventEnvelope, NotUsed]
+
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  private def init(): Unit = {
+  protected def init(): Future[Unit] = {
     val f = for {
       _ <- db.run(shipments.delete)
-      _ <- shipmentsRepository.putAll(testData.testShipmentDtos)
       _ <- db.run(shipmentSpecimens.delete)
-      _ <- shipmentSpecimensRepository.putAll(testData.testShipmentSpecimenDtos)
     } yield ()
 
     f.onComplete {
       case Failure(err) => log.error("failed to initialize query side for shipments: " + err.getMessage)
-      case Success(_)   =>
+      case _            =>
     }
+    f
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
@@ -82,8 +89,7 @@ class ShipmentsQuery @Inject()(
     // stream does not complete
     def handleEventsFrom(startSeqNo: Long): Unit = {
       log.debug(s"handleEventsFrom: startSeqNo: $startSeqNo")
-      readJournal
-        .eventsByPersistenceId(persistenceId, startSeqNo, Long.MaxValue)
+      eventsByPersistenceId(persistenceId, startSeqNo, Long.MaxValue)
         .runForeach { envelope =>
           eventQueue += envelope
           processEventQueue
@@ -446,4 +452,43 @@ class ShipmentsQuery @Inject()(
   //private def shipmentLogInfo(shipment: Shipment): String = s"${shipment.id} | ${shipment.version}"
 
   handleEvents
+}
+
+@SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter", "org.wartremover.warts.NonUnitStatements"))
+class ShipmentsQueryJdbc @Inject()(
+    private val testData:                      TestData,
+    protected val dbConfigProvider:            DatabaseConfigProvider,
+    protected val centreRepository:            CentreRepository,
+    protected val shipmentsRepository:         ShipmentsReadRepository,
+    protected val shipmentSpecimensRepository: ShipmentSpecimensReadRepository,
+    protected val sequenceNumbersDao:          SequenceNumbersDao
+  )(
+    implicit
+    val system: ActorSystem,
+    val ec:     ExecutionContext)
+    extends ShipmentsQuery {
+
+  def eventsByPersistenceId(
+      persistenceId:  String,
+      fromSequenceNr: Long,
+      toSequenceNr:   Long
+    ): Source[EventEnvelope, NotUsed] =
+    PersistenceQuery(system)
+      .readJournalFor[JdbcReadJournal](JdbcReadJournal.Identifier)
+      .eventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr)
+
+  override protected def init(): Future[Unit] = {
+    val f = for {
+      _ <- super.init
+      _ <- shipmentsRepository.putAll(testData.testShipmentDtos)
+      _ <- shipmentSpecimensRepository.putAll(testData.testShipmentSpecimenDtos)
+    } yield ()
+
+    f.onComplete {
+      case Failure(err) => log.error("failed to initialize query side for shipments: " + err.getMessage)
+      case _            =>
+    }
+    f
+  }
+
 }

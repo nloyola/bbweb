@@ -22,6 +22,7 @@ class MembershipProcessorSpec extends ProcessorTestFixture with Inside {
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.MembershipCommands._
   import org.biobank.infrastructure.events.MembershipEvents._
+  import org.scalatest.matchers.must.Matchers._
 
   class MembershipFixture {
     val membership = factory.createMembership

@@ -6,11 +6,12 @@ import org.biobank.fixtures.NameGenerator
 import org.slf4j.LoggerFactory
 import org.biobank.domain._
 import org.biobank.domain.centres.CentreId
-import org.scalatest.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 
-trait ContainerTypeSharedSpec { this: FunSpec =>
+trait ContainerTypeSharedSpec { this: AnyFunSpec =>
   import org.biobank.TestUtils._
   import org.biobank.matchers.EntityMatchers._
+  import org.scalatest.matchers.must.Matchers._
 
   val factory: Factory
 
@@ -126,6 +127,7 @@ trait ContainerTypeSharedSpec { this: FunSpec =>
 class StorageContainerTypeSpec extends DomainSpec with ContainerTypeSharedSpec {
   import org.biobank.TestUtils._
   import org.biobank.matchers.EntityMatchers._
+  import org.scalatest.matchers.must.Matchers._
 
   val log = LoggerFactory.getLogger(this.getClass)
 
@@ -183,6 +185,7 @@ class StorageContainerTypeSpec extends DomainSpec with ContainerTypeSharedSpec {
 class SpecimenContainerTypeSpec extends DomainSpec with ContainerTypeSharedSpec {
   import org.biobank.TestUtils._
   import org.biobank.matchers.EntityMatchers._
+  import org.scalatest.matchers.must.Matchers._
 
   val log = LoggerFactory.getLogger(this.getClass)
 

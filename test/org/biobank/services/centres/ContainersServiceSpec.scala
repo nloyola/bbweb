@@ -19,6 +19,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class RootContainersServiceSpec
     extends CommonContainerControllerSpec[RootContainer, StorageContainerType, RootContainerAccessFixture] {
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
 
   describe("ContainersService (root container)") {
 
@@ -197,6 +198,7 @@ trait ChildContainerControllerSpec[
     extends CommonContainerControllerSpec[C, T, F] {
 
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
 
   val newLabel: String
 
@@ -250,6 +252,7 @@ trait CommonContainerControllerSpec[
     extends ProcessorTestFixture with UserServiceFixtures with ScalaFutures {
 
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
   // import org.biobank.infrastructure.commands.ContainerCommands._
 
   protected def fixture(): F
@@ -377,7 +380,7 @@ trait ContainerAccessFixture[C <: Container, T <: ContainerType] extends UserCen
   val containerEntities: ContainerFixture[C, T]
   val container:         C
 
-  override def allEntities: Set[ConcurrencySafeEntity[_]] =
+  override def allEntities(): Set[ConcurrencySafeEntity[_]] =
     containerEntities.allEntities ++ super.allEntities
 
   def allEntitiesButContainer: Set[ConcurrencySafeEntity[_]] =

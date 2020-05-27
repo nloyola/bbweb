@@ -8,7 +8,8 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.ExecutionContext
 import org.scalatest.concurrent.ScalaFutures
 
-object TestUtils extends MustMatchers with OptionValues with ScalaFutures {
+object TestUtils extends OptionValues with ScalaFutures {
+  import org.scalatest.matchers.must.Matchers._
 
   val log = LoggerFactory.getLogger(this.getClass)
 

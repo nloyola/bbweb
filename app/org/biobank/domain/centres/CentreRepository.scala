@@ -33,7 +33,7 @@ class CentreRepositoryImpl @Inject()(val testData: TestData)
     testData.testCentres.foreach(put)
   }
 
-  def nextIdentity: CentreId = new CentreId(nextIdentityAsString)
+  def nextIdentity(): CentreId = new CentreId(nextIdentityAsString)
 
   protected def notFound(id: CentreId): IdNotFound = IdNotFound(s"centre id: $id")
 

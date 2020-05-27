@@ -17,6 +17,7 @@ case class NamedParticipantsProcessor @Inject()(@Named("participantsProcessor") 
 class ParticipantsProcessorSpec extends ProcessorTestFixture {
 
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.infrastructure.commands.ParticipantCommands._
   import org.biobank.infrastructure.events.ParticipantEvents._
 

@@ -3,7 +3,6 @@ package org.biobank.domain.containers
 import java.time.OffsetDateTime
 import org.biobank.domain._
 import play.api.libs.json._
-import scalaz.Scalaz._
 import org.biobank.domain.centres.CentreId
 import scalaz.Scalaz._
 import scalaz.NonEmptyList._

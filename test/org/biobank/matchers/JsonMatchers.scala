@@ -14,7 +14,7 @@ import org.scalatest.matchers.{BeMatcher, MatchResult, Matcher}
 // https://github.com/lglossman/scala-oauth2-deadbolt-redis/blob/f48f0ba57d18963e4bbed47e967341e9fb71f4d6/test/matchers/CustomMatchers.scala
 
 trait JsonMatchers {
-  import org.scalatest.Matchers._
+  import org.scalatest.matchers.must.Matchers._
 
   /**
    * Checks to see if `play.api.libs.json.JsResult` is a specific JsSuccess element.

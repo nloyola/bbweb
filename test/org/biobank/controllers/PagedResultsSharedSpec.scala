@@ -8,6 +8,8 @@ import play.api.test.Helpers._
  */
 trait PagedResultsSharedSpec { this: ControllerFixture =>
 
+  import org.scalatest.matchers.must.Matchers._
+
   /**
    * Common behaviour for paged queries.
    */

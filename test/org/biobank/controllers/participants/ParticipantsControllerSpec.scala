@@ -19,6 +19,7 @@ import scala.concurrent.Future
  */
 class ParticipantsControllerSpec extends StudyAnnotationsControllerSharedSpec[Participant] {
 
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.AnnotationTestUtils._
   import org.biobank.matchers.JsonMatchers._
   import org.biobank.matchers.EntityMatchers._

@@ -21,7 +21,7 @@ final case class StudyDto(
 
 object StudyDto {
 
-  def from(study: Study) =
+  def from(study: Study): StudyDto =
     StudyDto(id              = study.id,
              version         = study.version,
              timeAdded       = study.timeAdded,

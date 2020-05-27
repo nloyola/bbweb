@@ -7,6 +7,7 @@ import play.api.test.Helpers._
 
 trait AccessControllerSpecCommon extends ControllerFixture {
 
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.matchers.JsonMatchers._
 
   protected val basePath = "access"

@@ -17,6 +17,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class StudiesServiceSpec extends ProcessorTestFixture with StudiesServiceFixtures with ScalaFutures {
 
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.infrastructure.commands.StudyCommands._
 
   class StudyOfAllStatesFixure extends UsersWithStudyAccessFixture {

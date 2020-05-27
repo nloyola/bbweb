@@ -27,6 +27,7 @@ case class NamedProcessingTypeProcessor @Inject()(@Named("processingType") proce
 class ProcessingTypesProcessorSpec extends ProcessorTestFixture with ProcessingTypeFixtures {
 
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.infrastructure.commands.ProcessingTypeCommands._
   import org.biobank.infrastructure.events.ProcessingTypeEvents._
 

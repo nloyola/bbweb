@@ -6,7 +6,6 @@ import org.biobank._
 import play.api.db.slick.DatabaseConfigProvider
 import scala.concurrent.{ExecutionContext, Future}
 import scalaz.Scalaz._
-import scalaz._
 import org.slf4j.LoggerFactory
 
 @ImplementedBy(classOf[SequenceNumbersDaoSlick])
@@ -46,8 +45,8 @@ class SequenceNumbersDaoSlick @Inject()(
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def sequenceNumberForId(persistenceId: String): FutureValidation[SequenceNumber] = {
     FutureValidation(
-    db.run(sequenceNumbers.filter(s => s.persistenceId === persistenceId).result.headOption)
-      .map(_.toSuccessNel(s"persistence ID not found: $persistenceId"))
+      db.run(sequenceNumbers.filter(s => s.persistenceId === persistenceId).result.headOption)
+        .map(_.toSuccessNel(s"persistence ID not found: $persistenceId"))
     )
   }
 

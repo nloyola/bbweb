@@ -25,6 +25,7 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.ShipmentCommands._
   import org.biobank.infrastructure.commands.ShipmentSpecimenCommands._
+  import org.scalatest.matchers.must.Matchers._
 
   class UsersWithShipmentAccessFixture extends ShipmentDtoCoverter {
     val originLocation      = factory.createLocation

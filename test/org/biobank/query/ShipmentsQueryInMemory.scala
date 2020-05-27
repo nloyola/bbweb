@@ -11,7 +11,6 @@ import org.biobank.domain.centres._
 import org.biobank.query.db._
 import play.api.db.slick.DatabaseConfigProvider
 import scala.concurrent.ExecutionContext
-import scalaz._
 
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
 class ShipmentsQueryInMemory @Inject()(

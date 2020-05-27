@@ -22,6 +22,7 @@ class CollectionEventTypesProcessorSpec extends ProcessorTestFixture {
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.CollectionEventTypeCommands._
   import org.biobank.infrastructure.events.CollectionEventTypeEvents._
+  import org.scalatest.matchers.must.Matchers._
 
   val log = LoggerFactory.getLogger(this.getClass)
 

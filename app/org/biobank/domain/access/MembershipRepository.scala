@@ -43,7 +43,7 @@ class MembershipRepositoryImpl @Inject()(val testData: TestData)
     testData.testMemberships.foreach(put)
   }
 
-  def nextIdentity: MembershipId = new MembershipId(nextIdentityAsString)
+  def nextIdentity(): MembershipId = new MembershipId(nextIdentityAsString)
 
   protected def notFound(id: MembershipId): IdNotFound = IdNotFound(s"membership id: $id")
 

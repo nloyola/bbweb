@@ -1,11 +1,11 @@
 package org.biobank.query
 
 // import org.slf4j.LoggerFactory
-import org.scalatest._
+import org.scalatest.wordspec.AnyWordSpec
 //import scala.slick.jdbc.{ GetResult, StaticQuery => Q }
 //import scala.slick.session.Session
 
-class StudyQuerySp extends WordSpecLike with MustMatchers {
+class StudyQuerySp extends AnyWordSpec {
 
   //  val log = LoggerFactory.getLogger(this.getClass)
   //

@@ -32,7 +32,7 @@ class ContainerTypeRepositoryImpl @Inject()(val testData: TestData)
     //testData.testContainerTypes.foreach(put)
   }
 
-  def nextIdentity: ContainerTypeId = new ContainerTypeId(nextIdentityAsString)
+  def nextIdentity(): ContainerTypeId = new ContainerTypeId(nextIdentityAsString)
 
   protected def notFound(id: ContainerTypeId): IdNotFound = IdNotFound(s"container type id: $id")
 

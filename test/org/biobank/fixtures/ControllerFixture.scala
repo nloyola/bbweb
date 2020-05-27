@@ -21,6 +21,7 @@ import org.biobank.query.centres._
 import org.biobank.services.PasswordHasher
 import org.biobank.utils.auth.DefaultEnv
 import org.scalatest._
+import org.scalatest.funspec.AnyFunSpec
 import org.scalatestplus.play._
 import org.scalatestplus.play.guice.GuiceOneServerPerTest
 import org.slf4j.{Logger, LoggerFactory}
@@ -70,8 +71,8 @@ class BbwebTestModule extends AbstractModule {
  * make it easier to drop all items in the database prior to running a test in a test suite.
  */
 abstract class ControllerFixture
-    extends FunSpec with GuiceOneServerPerTest with OneBrowserPerTest with HtmlUnitFactory with BeforeAndAfter
-    with MustMatchers with OptionValues with ApiResultMatchers {
+    extends AnyFunSpec with GuiceOneServerPerTest with OneBrowserPerTest with HtmlUnitFactory
+    with BeforeAndAfter with OptionValues with ApiResultMatchers {
 
   protected val log: Logger = LoggerFactory.getLogger(this.getClass)
 

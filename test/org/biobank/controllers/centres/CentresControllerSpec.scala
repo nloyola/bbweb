@@ -18,6 +18,7 @@ import play.api.test.Helpers._
  */
 class CentresControllerSpec extends ControllerFixture with PagedResultsSharedSpec with PagedResultsMatchers {
 
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.TestUtils._
   import org.biobank.matchers.JsonMatchers._
   import org.biobank.matchers.DtoMatchers._

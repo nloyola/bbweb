@@ -35,7 +35,7 @@ class SpecimenRepositoryImpl @Inject()(val testData: TestData)
     testData.testSpecimens.foreach(put)
   }
 
-  def nextIdentity: SpecimenId = new SpecimenId(nextIdentityAsString)
+  def nextIdentity(): SpecimenId = new SpecimenId(nextIdentityAsString)
 
   protected def notFound(id: SpecimenId): IdNotFound = IdNotFound(s"specimen id: $id")
 

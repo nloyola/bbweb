@@ -15,10 +15,10 @@ import org.biobank.dto.participants._
 import org.biobank.dto.studies._
 import org.biobank.dto.users._
 import play.api.libs.json._
-import org.scalatest.Matchers._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 trait DtoMatchers {
+  import org.scalatest.matchers.must.Matchers._
   import JsonMatchers._
   import DateMatchers._
 
@@ -180,9 +180,9 @@ trait DtoMatchers {
     new Matcher[RoleDto] {
 
       def apply(left: RoleDto) = {
-        val dtoUserIds     = left.userData.toList.map(ud => ud.id).sortBy(_.id)
+        val dtoUserIds     = left.userData.toList.map(ud   => ud.id).sortBy(_.id)
         val dtoParentIds   = left.parentData.toList.map(pd => pd.id).sortBy(_.id)
-        val dtoChildrenIds = left.childData.toList.map(cd => cd.id).sortBy(_.id)
+        val dtoChildrenIds = left.childData.toList.map(cd  => cd.id).sortBy(_.id)
 
         val matchers = Map(("id" -> (left.id equals role.id)),
                            ("version"     -> (left.version equals role.version)),

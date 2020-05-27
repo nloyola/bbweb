@@ -8,7 +8,7 @@ import org.biobank.domain.studies._
 import org.biobank.infrastructure.commands.StudyCommands._
 import org.biobank.services.PagedResults
 import org.biobank.services.studies.StudiesService
-import play.api.Logger
+//import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc.{Action, ControllerComponents, Result}
 import play.api.{Environment, Logger}
@@ -151,10 +151,10 @@ class StudiesController @Inject()(
   def specimenDefinitionValueTypes: Action[Unit] = Action(parse.empty) { request =>
     // FIXME add container types to this response
     Ok(
-      Map("anatomicalSourceType" -> AnatomicalSourceType.values.map(x => x),
-          "preservationType" -> PreservationType.values.map(x => x),
+      Map("anatomicalSourceType"    -> AnatomicalSourceType.values.map(x    => x),
+          "preservationType"        -> PreservationType.values.map(x        => x),
           "preservationTemperature" -> PreservationTemperature.values.map(x => x),
-          "specimenType" -> SpecimenType.values.map(x => x))
+          "specimenType"            -> SpecimenType.values.map(x            => x))
     )
   }
 

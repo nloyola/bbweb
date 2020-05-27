@@ -21,6 +21,7 @@ class AccesssProcessorSpec extends ProcessorTestFixture with Inside {
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.AccessCommands._
   import org.biobank.infrastructure.events.AccessEvents._
+  import org.scalatest.matchers.must.Matchers._
 
   class AccessItemsFixture {
     val role       = factory.createRole

@@ -6,7 +6,6 @@ import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Named}
 import org.biobank._
 import org.biobank.domain.{LocationId, Slug}
-import org.biobank.domain.access._
 import org.biobank.domain.access.PermissionId
 import org.biobank.domain.centres._
 import org.biobank.domain.users.UserId

@@ -38,7 +38,7 @@ class CollectionEventRepositoryImpl @Inject()(val testData: TestData)
     testData.testEvents.foreach(put)
   }
 
-  def nextIdentity: CollectionEventId = new CollectionEventId(nextIdentityAsString)
+  def nextIdentity(): CollectionEventId = new CollectionEventId(nextIdentityAsString)
 
   protected def notFound(id: CollectionEventId): IdNotFound = IdNotFound(s"collection event id: $id")
 

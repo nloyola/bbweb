@@ -64,7 +64,7 @@ sealed trait Shipment extends ConcurrencySafeEntity[ShipmentId] with HasState {
     InvalidState(s"shipment not unpacked: ${this.id}").failureNel[UnpackedShipment]
 
   def isCreatedOrUnpacked: DomainValidation[Shipment] =
-    InvalidState(s"shipment not created or unpacked: ${this.id}").failureNel[CreatedShipment]
+    InvalidState(s"shipment not created or unpacked: ${this.id}").failureNel[Shipment]
 
   override def toString: String =
     s"""|Shipment:{

@@ -1,7 +1,7 @@
 package org.biobank.services
 
 import org.slf4j.LoggerFactory
-import org.scalatest.{FunSpec, MustMatchers}
+import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.OptionValues._
 import org.scalatest.Inside._
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -57,7 +57,9 @@ trait CustomMatchers {
 
 object CustomMatchers extends CustomMatchers
 
-class QueryFilterParserSpec extends FunSpec with MustMatchers with CustomMatchers {
+class QueryFilterParserSpec extends AnyFunSpec with CustomMatchers {
+
+  import org.scalatest.matchers.must.Matchers._
 
   val log = LoggerFactory.getLogger(this.getClass)
 

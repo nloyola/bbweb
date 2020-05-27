@@ -15,7 +15,7 @@ import org.biobank.services.users.UsersService
 import org.biobank.services.{AuthToken, PagedResults}
 import org.biobank.utils.auth.DefaultEnv
 import org.joda.time.DateTime
-import play.api.Logger
+//import play.api.Logger
 import play.api.cache.SyncCacheApi
 import play.api.libs.json._
 import play.api.libs.json.Reads._
@@ -116,8 +116,8 @@ class UsersController @Inject()(
         dto  <- usersService.getUserIfAuthorized(userId, userId)
         user <- usersService.getUser(userId)
         isActive <- user match {
-                     case u: ActiveUser => dto.successNel
-                     case _ => ControllerError("user is not active").failureNel
+                     case u: ActiveUser => dto.successNel[String]
+                     case _ => ControllerError("user is not active").failureNel[UserDto]
                    }
       } yield dto
 

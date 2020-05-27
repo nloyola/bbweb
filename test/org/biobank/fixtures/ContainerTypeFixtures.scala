@@ -10,7 +10,7 @@ trait ContainerTypeFixture[T <: ContainerType] {
   val schema:        ContainerSchema
   val containerType: T
 
-  def allEntities: Set[ConcurrencySafeEntity[_]]
+  def allEntities(): Set[ConcurrencySafeEntity[_]]
 
   def allEntitiesButContainerType: Set[ConcurrencySafeEntity[_]]
 
@@ -26,7 +26,7 @@ case class StorageContainerTypeFixture(
     containerType: StorageContainerType)
     extends ContainerTypeFixture[StorageContainerType] {
 
-  def allEntities: Set[ConcurrencySafeEntity[_]] =
+  def allEntities(): Set[ConcurrencySafeEntity[_]] =
     Set(centre, schema, containerType)
 
   def allEntitiesButContainerType: Set[ConcurrencySafeEntity[_]] =
@@ -71,7 +71,7 @@ case class SpecimenContainerTypeFixture(
     containerType: SpecimenContainerType)
     extends ContainerTypeFixture[SpecimenContainerType] {
 
-  def allEntities: Set[ConcurrencySafeEntity[_]] =
+  def allEntities(): Set[ConcurrencySafeEntity[_]] =
     Set(centre, schema, containerType)
 
   def allEntitiesButContainerType: Set[ConcurrencySafeEntity[_]] =

@@ -24,6 +24,8 @@ import scala.concurrent.Future
 class AccessControllerSpec
     extends AccessControllerSpecCommon with UserFixtures with PagedResultsSharedSpec with PagedResultsMatchers
     with Inside {
+
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.TestUtils._
   import org.biobank.matchers.DtoMatchers._
   import org.biobank.matchers.EntityMatchers._

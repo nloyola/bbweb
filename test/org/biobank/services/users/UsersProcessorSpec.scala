@@ -19,6 +19,7 @@ case class NamedUsersProcessor @Inject()(@Named("usersProcessor") processor: Act
 class UsersProcessorSpec extends ProcessorTestFixture {
 
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
 
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 

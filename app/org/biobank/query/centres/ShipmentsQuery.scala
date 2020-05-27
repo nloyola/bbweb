@@ -22,7 +22,6 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
-import scalaz._
 import scala.collection.mutable.Queue
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile

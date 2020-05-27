@@ -22,6 +22,7 @@ class SpecimensControllerSpec
     extends ControllerFixture with PagedResultsMatchers with PagedResultsSharedSpec
     with SpecimenSpecFixtures {
 
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.matchers.DtoMatchers._
   import org.biobank.matchers.EntityMatchers._
   import org.biobank.matchers.JsonMatchers._

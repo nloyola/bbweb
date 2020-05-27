@@ -21,6 +21,7 @@ class SpecimensProcessorSpec
     extends ProcessorTestFixture with SpecimenSpecFixtures with PresistenceQueryEvents {
 
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.infrastructure.commands.SpecimenCommands._
   import org.biobank.infrastructure.events.SpecimenEvents._
 

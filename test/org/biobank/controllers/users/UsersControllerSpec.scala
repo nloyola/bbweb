@@ -20,7 +20,6 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import play.api.Configuration
 import play.api.libs.json._
-import play.api.mvc._
 import play.api.mvc.Result
 import play.api.test.Helpers._
 import play.api.test._
@@ -36,6 +35,7 @@ class UsersControllerSpec
     extends ControllerFixture with UserFixtures with PagedResultsSharedSpec with PagedResultsMatchers
     with Inside {
 
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.TestUtils._
   import org.biobank.matchers.EntityMatchers._
   import org.biobank.matchers.DtoMatchers._

@@ -11,6 +11,7 @@ import play.api.test.Helpers._
 trait AnnotationsControllerSharedSpec[T <: ConcurrencySafeEntity[_] with HasAnnotations[_]]
     extends ControllerFixture { this: ControllerFixture =>
 
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.AnnotationTestUtils._
   import org.biobank.matchers.JsonMatchers._
 
@@ -144,6 +145,7 @@ trait AnnotationsControllerSharedSpec[T <: ConcurrencySafeEntity[_] with HasAnno
 
 trait StudyAnnotationsControllerSharedSpec[T <: ConcurrencySafeEntity[_] with HasAnnotations[_]]
     extends AnnotationsControllerSharedSpec[T] {
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.TestUtils._
   import org.biobank.AnnotationTestUtils._
 

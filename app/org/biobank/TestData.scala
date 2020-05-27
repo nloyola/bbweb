@@ -27,9 +27,9 @@ object TestData {
   val centreCalgaryName = "100-Calgary AB"
   val centreLondonName  = "101-London ON"
 
-  val centreCBSRId    = CentreId(centreCBSRName + "_id")
-  val centreCalgaryId = CentreId(centreCalgaryName + "_id")
-  val centreLondonId  = CentreId(centreLondonName + "_id")
+  val centreCBSRId:    CentreId = CentreId(centreCBSRName + "_id")
+  val centreCalgaryId: CentreId = CentreId(centreCalgaryName + "_id")
+  val centreLondonId:  CentreId = CentreId(centreLondonName + "_id")
 
   val centreData: List[Tuple2[String, String]] =
     List(("CL1-Foothills", "CL1-Foothills"),

@@ -43,7 +43,7 @@ class UserRepositoryImpl @Inject()(val config: Configuration, val env: Environme
     testData.accessUsers.foreach(put)
   }
 
-  def nextIdentity: UserId = new UserId(nextIdentityAsString)
+  def nextIdentity(): UserId = new UserId(nextIdentityAsString)
 
   protected def notFound(id: UserId): IdNotFound = IdNotFound(s"user id: $id")
 

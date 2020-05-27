@@ -27,6 +27,7 @@ class AccessControllerMembershipSpec
     extends AccessControllerSpecCommon with UserFixtures with Inside with PagedResultsSharedSpec
     with PagedResultsMatchers {
 
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.matchers.DtoMatchers._
   import org.biobank.matchers.EntityMatchers._
   import org.biobank.matchers.JsonMatchers._

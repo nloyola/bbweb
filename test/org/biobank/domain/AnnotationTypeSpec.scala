@@ -6,6 +6,7 @@ import org.biobank.fixtures.NameGenerator
 class AnnotationTypeSpec extends DomainSpec {
   import org.biobank.TestUtils._
   import AnnotationTypeSpecUtil._
+  import org.scalatest.matchers.must.Matchers._
 
   val nameGenerator = new NameGenerator(this.getClass)
 

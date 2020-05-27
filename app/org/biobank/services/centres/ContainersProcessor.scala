@@ -14,7 +14,6 @@ import org.biobank.services.{Processor, ServiceError, ServiceValidation, Snapsho
 import play.api.libs.json._
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
-import org.biobank.CommonValidations.EntityCriteriaError
 import org.biobank.domain.participants.SpecimenRepository
 
 object ContainersProcessor {

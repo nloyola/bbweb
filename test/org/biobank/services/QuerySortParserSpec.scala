@@ -4,9 +4,11 @@ import org.biobank.infrastructure.{AscendingOrder, DescendingOrder}
 import org.slf4j.LoggerFactory
 import org.scalatest.Inside._
 import org.scalatest.OptionValues._
-import org.scalatest.{FunSpec, MustMatchers}
+import org.scalatest.funspec.AnyFunSpec
 
-class QuerySortParserSpec extends FunSpec with MustMatchers {
+class QuerySortParserSpec extends AnyFunSpec {
+
+  import org.scalatest.matchers.must.Matchers._
   import QuerySortParserGrammar._
 
   val log = LoggerFactory.getLogger(this.getClass)

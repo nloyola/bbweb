@@ -11,12 +11,18 @@ package infrastructure {
 
   object SortOrder {
 
-    def fromString(order: String): ValidationNel[String, SortOrder] =
+    def fromString(order: String): ValidationNel[String, SortOrder] = {
       order match {
-        case "asc"  => AscendingOrder.successNel
-        case "desc" => DescendingOrder.successNel
-        case _      => s"invalid order requested: $order".failureNel[SortOrder]
+        case "asc" | "desc" =>
+          val so: SortOrder = order match {
+            case "asc"  => AscendingOrder
+            case "desc" => DescendingOrder
+          }
+          so.successNel[String]
+        case _ =>
+          s"invalid order requested: $order".failureNel[SortOrder]
       }
+    }
 
   }
 

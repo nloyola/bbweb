@@ -25,6 +25,7 @@ class ShipmentsControllerSpec
     extends ShipmentsControllerSpecFixtures with ShipmentsControllerSpecUtils with PagedResultsSharedSpec
     with ScalaFutures with PagedResultsMatchers {
 
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.TestUtils._
   import org.biobank.matchers.JsonMatchers._
   import org.biobank.matchers.DtoMatchers._

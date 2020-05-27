@@ -23,7 +23,7 @@ class ContainerSchemaRepositoryImpl @Inject()(val testData: TestData)
     with ContainerSchemaRepository {
   import org.biobank.CommonValidations._
 
-  def nextIdentity: ContainerSchemaId = new ContainerSchemaId(nextIdentityAsString)
+  def nextIdentity(): ContainerSchemaId = new ContainerSchemaId(nextIdentityAsString)
 
   protected def notFound(id: ContainerSchemaId): IdNotFound = IdNotFound(s"container schema id: $id")
 

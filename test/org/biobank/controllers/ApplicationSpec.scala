@@ -7,6 +7,8 @@ import play.api.test.Helpers._
 
 class ApplicationSpec extends ControllerFixture {
 
+  import org.scalatest.matchers.must.Matchers._
+
   protected val basePath = ""
 
   describe("Application") {

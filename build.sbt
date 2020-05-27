@@ -4,9 +4,9 @@ import play.sbt.routes.RoutesKeys
 
 val conf = ConfigFactory.parseFile(new File("conf/application.conf")).resolve()
 
-name := "bbweb"
-
-version := conf.getString("app.version")
+ThisBuild / version      := conf.getString("app.version")
+ThisBuild / organization := "org.biobank"
+ThisBuild / scalaVersion := "2.13.2"
 
 maintainer in Linux := "Canadian BioSample Repository <tech@biosample.ca>"
 
@@ -14,12 +14,8 @@ packageSummary in Linux := "Biorepository application for tracking biospecimens.
 
 packageDescription := "Biorepository application for tracking biospecimens."
 
-scalaVersion := "2.13.1"
-
-val akkaVer           = "2.6.1"
-val silhouetteVersion = "6.1.1"
-
-organization in ThisBuild := "org.biobank"
+val akkaVer           = "2.6.5"
+val silhouetteVersion = "7.0.0"
 
 lazy val copyLogbackTest       = taskKey[Unit]("copyLogbackTest")
 lazy val forcedCopyLogbackTest = taskKey[Unit]("forcedCopyLogbackTest")
@@ -47,27 +43,26 @@ def forcedCopyTemplate(templateName: String, destName: String): Unit = {
   println(s"file $destName overwritten with $templateName")
 }
 
-lazy val root = (project in file("."))
+lazy val bbweb = (project in file("."))
   .enablePlugins(PlayScala, DebianPlugin)
-  .settings(
-    copyLogbackTest := {
-      copyTemplate("conf/logback-test.xml.template", "conf/logback-test.xml")
-    },
-    forcedCopyLogbackTest := {
-      forcedCopyTemplate("conf/logback-test.xml.template", "conf/logback-test.xml")
-    },
-    copyTestData := {
-      copyTemplate("conf/testdata.conf.template", "conf/testdata.conf")
-    },
-    copyEmailConf := {
-      copyTemplate("conf/email.conf.template", "conf/email.conf")
-    },
-    developmentInit := {
-      copyLogbackTest.value
-      copyTestData.value
-      copyEmailConf.value
-    }
-  )
+  .settings(name := "bbweb",
+            copyLogbackTest := {
+              copyTemplate("conf/logback-test.xml.template", "conf/logback-test.xml")
+            },
+            forcedCopyLogbackTest := {
+              forcedCopyTemplate("conf/logback-test.xml.template", "conf/logback-test.xml")
+            },
+            copyTestData := {
+              copyTemplate("conf/testdata.conf.template", "conf/testdata.conf")
+            },
+            copyEmailConf := {
+              copyTemplate("conf/email.conf.template", "conf/email.conf")
+            },
+            developmentInit := {
+              copyLogbackTest.value
+              copyTestData.value
+              copyEmailConf.value
+            })
 
 // disable following line for now since it causes a compilation error when generating
 // code coverage report
@@ -97,9 +92,6 @@ RoutesKeys.routesImport -= "controllers.Assets.Asset"
 run / javaOptions += "-Xmx2G"
 run / javaOptions += "-Duser.timezone=GMT"
 
-// https://scalameta.org/metals/docs/build-tools/sbt.html
-//addCompilerPlugin(MetalsPlugin.semanticdbModule) // enable SemanticDB
-
 resolvers += Resolver.sonatypeRepo("snapshots")
 resolvers += Resolver.jcenterRepo
 
@@ -117,14 +109,14 @@ libraryDependencies += "com.typesafe.akka" %% "akka-persistence"      % akkaVer 
 ))
 libraryDependencies += "com.typesafe.akka"   %% "akka-persistence-query" % akkaVer % "compile"
 libraryDependencies += "com.typesafe.akka"   %% "akka-remote"            % akkaVer % "compile"
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-jdbc"  % "3.5.2" % "compile" excludeAll (ExclusionRule(
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-jdbc"  % "3.5.3" % "compile" excludeAll (ExclusionRule(
   organization = "com.typesafe.akka"
 ))
-libraryDependencies += "mysql"                      % "mysql-connector-java"             % "8.0.19"
+libraryDependencies += "mysql"                      % "mysql-connector-java"             % "8.0.20"
 libraryDependencies += "org.scalaz"                 %% "scalaz-core"                     % "7.2.30" % "compile"
 libraryDependencies += "com.github.t3hnar"          %% "scala-bcrypt"                    % "4.1"
-libraryDependencies += "com.typesafe.play"          %% "play-mailer"                     % "7.0.1"
-libraryDependencies += "com.typesafe.play"          %% "play-mailer-guice"               % "7.0.1"
+libraryDependencies += "com.typesafe.play"          %% "play-mailer"                     % "8.0.1"
+libraryDependencies += "com.typesafe.play"          %% "play-mailer-guice"               % "8.0.1"
 libraryDependencies += "net.codingwell"             %% "scala-guice"                     % "4.2.6"
 libraryDependencies += "com.mohiva"                 %% "play-silhouette"                 % silhouetteVersion % "compile"
 libraryDependencies += "com.mohiva"                 %% "play-silhouette-password-bcrypt" % silhouetteVersion % "compile"
@@ -138,12 +130,13 @@ libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2
   organization = "com.typesafe.akka"
 ))
 libraryDependencies += "com.typesafe.akka"      %% "akka-testkit"            % akkaVer % "test"
-libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play"      % "5.0.0" % "test"
+libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play"      % "5.1.0" % "test"
 libraryDependencies += "com.mohiva"             %% "play-silhouette-testkit" % silhouetteVersion % "test"
 libraryDependencies += "org.pegdown"            % "pegdown"                  % "1.6.0" % "test"
-libraryDependencies += "org.codehaus.janino"    % "janino"                   % "3.1.0" % "test"
-libraryDependencies += "org.mockito"            % "mockito-core"             % "3.2.4" % "test"
-libraryDependencies += "org.gnieh"              %% "diffson-play-json"       % "4.0.1" % "test"
+libraryDependencies += "org.codehaus.janino"    % "janino"                   % "3.1.2" % "test"
+libraryDependencies += "org.scalatestplus"      %% "scalatestplus-mockito"   % "1.0.0-M2" % "test"
+libraryDependencies += "org.mockito"            % "mockito-core"             % "3.3.3" % "test"
+libraryDependencies += "org.gnieh"              %% "diffson-play-json"       % "4.0.2" % "test"
 libraryDependencies += "com.h2database"         % "h2"                       % "1.4.200" % "test"
 libraryDependencies += "com.github.pjfanning"   %% "scala-faker"             % "0.5.0"
 

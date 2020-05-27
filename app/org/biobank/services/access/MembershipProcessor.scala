@@ -16,7 +16,6 @@ import org.biobank.services.{Processor, ServiceError, ServiceValidation, Snapsho
 import play.api.libs.json._
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
-import scalaz._
 
 object MembershipProcessor {
 

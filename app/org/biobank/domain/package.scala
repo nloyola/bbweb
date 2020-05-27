@@ -1,6 +1,5 @@
 package org.biobank
 
-import org.biobank.domain.EntityState
 import scalaz._
 
 package domain {
@@ -78,7 +77,7 @@ package domain {
 package object domain {
 
   /** Used to validate commands received by the system that act on the domain model. */
-  type DomainValidation[A] = ValidationNel[DomainError, A]
+  type DomainValidation[+A] = ValidationNel[DomainError, A]
 
   /** Contains an error messsage when an invalid condition happens. */
   type DomainError = String

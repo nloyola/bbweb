@@ -24,7 +24,6 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.concurrent._
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
-import scalaz._
 
 @ImplementedBy(classOf[ShipmentsServiceImpl])
 trait ShipmentsService extends BbwebService {

@@ -17,6 +17,7 @@ class ParticipantsServiceSpec
     extends ProcessorTestFixture with ParticipantsServiceFixtures with ScalaFutures {
 
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.infrastructure.commands.ParticipantCommands._
 
   protected val nameGenerator = new NameGenerator(this.getClass)

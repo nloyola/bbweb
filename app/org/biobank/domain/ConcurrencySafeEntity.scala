@@ -2,7 +2,6 @@ package org.biobank.domain
 
 import java.time.OffsetDateTime
 import play.api.libs.json._
-import play.api.libs.json._
 import scalaz.Scalaz._
 
 /**

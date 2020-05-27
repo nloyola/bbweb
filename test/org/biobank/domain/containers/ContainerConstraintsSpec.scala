@@ -9,6 +9,7 @@ import org.biobank.domain.SpecimenType
 
 class ContainerConstraintsSpec extends DomainSpec {
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
 
   val nameGenerator = new NameGenerator(this.getClass)
 

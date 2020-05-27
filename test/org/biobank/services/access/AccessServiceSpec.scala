@@ -14,6 +14,7 @@ class AccessServiceSpec extends TestFixture with AccessServiceFixtures with Scal
 
   import org.biobank.TestUtils._
   import org.biobank.domain.access.AccessItem._
+  import org.scalatest.matchers.must.Matchers._
 
   // need to configure scalatest to have more patience when waiting for future results
   implicit val defaultPatience =

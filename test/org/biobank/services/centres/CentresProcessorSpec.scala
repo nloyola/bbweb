@@ -20,6 +20,7 @@ class CentresProcessorSpec extends ProcessorTestFixture {
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.CentreCommands._
   import org.biobank.infrastructure.events.CentreEvents._
+  import org.scalatest.matchers.must.Matchers._
 
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 

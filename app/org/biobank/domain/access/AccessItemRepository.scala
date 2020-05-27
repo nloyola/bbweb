@@ -34,7 +34,7 @@ class AccessItemRepositoryImpl @Inject()(val testData: TestData)
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
-  def nextIdentity: AccessItemId = new AccessItemId(nextIdentityAsString)
+  def nextIdentity(): AccessItemId = new AccessItemId(nextIdentityAsString)
 
   protected def notFound(id: AccessItemId): IdNotFound = IdNotFound(s"access item id: $id")
 

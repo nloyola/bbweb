@@ -16,6 +16,7 @@ final case class NamedStudiesProcessor @Inject()(@Named("studiesProcessor") proc
 class StudiesProcessorSpec extends ProcessorTestFixture {
 
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.infrastructure.commands.StudyCommands._
   import org.biobank.infrastructure.events.StudyEvents._
 

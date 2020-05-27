@@ -17,6 +17,7 @@ import scala.concurrent.Future
 class CeventTypesControllerSpec
     extends ControllerFixture with AnnotationTypeJson with PagedResultsSharedSpec with PagedResultsMatchers {
 
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.TestUtils._
   import org.biobank.matchers.EntityMatchers._
   import org.biobank.matchers.JsonMatchers._

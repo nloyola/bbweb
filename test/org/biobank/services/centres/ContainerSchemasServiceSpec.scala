@@ -18,6 +18,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
  */
 class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceFixtures with ScalaFutures {
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
 
   override def beforeEach() = {
     super.beforeEach()
@@ -270,7 +271,7 @@ class ContainerSchemaAccessFixture(factory: Factory) extends UsersWithCentreAcce
 
   val schema = factory.createContainerSchema.copy(centreId = centre.id)
 
-  override def allEntities: Set[ConcurrencySafeEntity[_]] = super.allEntities + schema
+  override def allEntities(): Set[ConcurrencySafeEntity[_]] = super.allEntities + schema
 
   def allEntitiesButSchema: Set[ConcurrencySafeEntity[_]] = super.allEntities
 

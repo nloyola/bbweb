@@ -30,7 +30,7 @@ class ProcessingTypeRepositoryImpl @Inject()(val testData: TestData)
     testData.testProcessingTypes.foreach(put)
   }
 
-  def nextIdentity: ProcessingTypeId = new ProcessingTypeId(nextIdentityAsString)
+  def nextIdentity(): ProcessingTypeId = new ProcessingTypeId(nextIdentityAsString)
 
   protected def notFound(id: ProcessingTypeId): IdNotFound = IdNotFound(s"processing type id: $id")
 

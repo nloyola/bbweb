@@ -23,7 +23,7 @@ final case class UserDto(
 
 object UserDto {
 
-  def from(user: User, userRoles: Set[UserRoleDto], userMembership: Option[UserMembershipDto]) =
+  def from(user: User, userRoles: Set[UserRoleDto], userMembership: Option[UserMembershipDto]): UserDto =
     UserDto(id           = user.id,
             version      = user.version,
             timeAdded    = user.timeAdded,

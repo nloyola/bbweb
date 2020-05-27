@@ -30,7 +30,7 @@ class StudyRepositoryImpl @Inject()(val testData: TestData)
     testData.testStudies.foreach(put)
   }
 
-  def nextIdentity: StudyId = new StudyId(nextIdentityAsString)
+  def nextIdentity(): StudyId = new StudyId(nextIdentityAsString)
 
   protected def notFound(id: StudyId): IdNotFound = IdNotFound(s"study id: $id")
 

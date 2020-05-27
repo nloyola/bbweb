@@ -18,6 +18,7 @@ case class NamedCollectionEventsProcessor @Inject()(@Named("collectionEventsProc
 class CollectionEventsProcessorSpec extends ProcessorTestFixture {
 
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.infrastructure.commands.CollectionEventCommands._
   import org.biobank.infrastructure.events.CollectionEventEvents._
 

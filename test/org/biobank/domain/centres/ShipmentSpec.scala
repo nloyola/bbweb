@@ -11,6 +11,7 @@ class ShipmentSpec extends DomainSpec {
 
   import org.biobank.TestUtils._
   import org.biobank.matchers.EntityMatchers._
+  import org.scalatest.matchers.must.Matchers._
 
   val log = LoggerFactory.getLogger(this.getClass)
 

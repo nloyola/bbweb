@@ -3,13 +3,14 @@ package org.biobank.domain.containers
 import java.time.OffsetDateTime
 import org.biobank.domain._
 import org.biobank.fixtures.NameGenerator
-import org.scalatest.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 import org.slf4j.LoggerFactory
 import scalaz.Scalaz._
 
-trait ContainerSharedSpec[T <: Container] { this: FunSpec =>
+trait ContainerSharedSpec[T <: Container] { this: AnyFunSpec =>
   import org.biobank.TestUtils._
   import org.biobank.matchers.EntityMatchers._
+  import org.scalatest.matchers.must.Matchers._
 
   val factory: Factory
 
@@ -88,6 +89,7 @@ trait ContainerSharedSpec[T <: Container] { this: FunSpec =>
 class StorageContainerSpec extends DomainSpec with ContainerSharedSpec[StorageContainer] {
   import org.biobank.TestUtils._
   import org.biobank.matchers.EntityMatchers._
+  import org.scalatest.matchers.must.Matchers._
 
   val log = LoggerFactory.getLogger(this.getClass)
 
@@ -184,6 +186,7 @@ class StorageContainerSpec extends DomainSpec with ContainerSharedSpec[StorageCo
 
 class SpecimenContainerSpec extends DomainSpec with ContainerSharedSpec[SpecimenContainer] {
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
 
   val log = LoggerFactory.getLogger(this.getClass)
 

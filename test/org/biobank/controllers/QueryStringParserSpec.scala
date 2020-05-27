@@ -1,11 +1,12 @@
 package org.biobank.controllers
 
 import org.slf4j.LoggerFactory
-import org.scalatest.{FunSpec, MustMatchers}
+import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.Inside._
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
-class QueryStringParserSpec extends FunSpec with MustMatchers {
+class QueryStringParserSpec extends AnyFunSpec {
+  import org.scalatest.matchers.must.Matchers._
 
   val log = LoggerFactory.getLogger(this.getClass)
 

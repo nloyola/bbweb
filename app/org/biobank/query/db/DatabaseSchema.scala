@@ -53,9 +53,10 @@ trait DatabaseSchema extends HasDatabaseConfigProvider[JdbcProfile] {
 
   implicit val JavaOffsetDateTimeMapper = MappedColumnType.base[OffsetDateTime, Timestamp](
     offsetDateTime => Timestamp.from(offsetDateTime.toInstant()),
-    timestamp => OffsetDateTime.ofInstant(timestamp.toInstant(), ZoneId.of("UTC"))
+    timestamp      => OffsetDateTime.ofInstant(timestamp.toInstant(), ZoneId.of("UTC"))
   )
 
+  @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
   class SequenceNumbers(tag: Tag) extends Table[SequenceNumber](tag, "SEQUENCE_NUMBERS") {
     def persistenceId  = column[String]("PERSITENCE_ID", O.PrimaryKey)
     def sequenceNumber = column[Long]("SEQUENCE_NUMBER")
@@ -66,6 +67,7 @@ trait DatabaseSchema extends HasDatabaseConfigProvider[JdbcProfile] {
 
   val sequenceNumbers = TableQuery[SequenceNumbers]
 
+  @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
   class Shipments(tag: Tag) extends Table[ShipmentDto](tag, "SHIPMENTS") {
     def id                      = column[ShipmentId]("ID", O.PrimaryKey)
     def version                 = column[Long]("VERSION")
@@ -255,6 +257,7 @@ trait DatabaseSchema extends HasDatabaseConfigProvider[JdbcProfile] {
 
   val shipments = TableQuery[Shipments]
 
+  @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
   class ShipmentSpecimens(tag: Tag) extends Table[ShipmentSpecimenDto](tag, "SHIPMENT_SPECIMENS") {
     def id                  = column[ShipmentSpecimenId]("ID", O.PrimaryKey)
     def version             = column[Long]("VERSION")

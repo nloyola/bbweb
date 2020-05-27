@@ -17,6 +17,7 @@ class UsersServiceSpec
     extends ProcessorTestFixture with AccessServiceFixtures with UserServiceFixtures with UserFixtures {
 
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.infrastructure.commands.UserCommands._
   import org.biobank.domain.access.AccessItem._
 

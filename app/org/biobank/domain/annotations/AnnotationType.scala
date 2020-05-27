@@ -121,15 +121,14 @@ trait AnnotationTypeValidations {
    *  Validates each item in the map and returns all failures.
    */
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  def validateOptions(options: Seq[String]): DomainValidation[Seq[String]] =
+  def validateOptions(options: Seq[String]): DomainValidation[List[String]] =
     if (options.distinct.size === options.size) {
       options.toList
-        .map(validateNonEmptyString(_, OptionRequired)).sequenceU.fold(
-          err  => err.toList.mkString(",").failureNel[Seq[String]],
-          list => list.toSeq.successNel
-        )
+        .map(validateNonEmptyString(_, OptionRequired))
+        .sequenceU
+        .fold(err => err.toList.mkString(",").failureNel[List[String]], list => list.successNel[String])
     } else {
-      DuplicateOptionsError.failureNel[Seq[String]]
+      DuplicateOptionsError.failureNel[List[String]]
     }
 
   /** If an annotation type is for a select, the following is required:

@@ -2,10 +2,11 @@ package org.biobank.domain
 
 import org.biobank.domain.annotations._
 import org.biobank.fixtures.NameGenerator
-import org.scalatest.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 
-trait AnnotationTypeSetSharedSpec[T <: ConcurrencySafeEntity[_]] { this: FunSpec =>
+trait AnnotationTypeSetSharedSpec[T <: ConcurrencySafeEntity[_]] { this: AnyFunSpec =>
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
 
   val factory: Factory
 

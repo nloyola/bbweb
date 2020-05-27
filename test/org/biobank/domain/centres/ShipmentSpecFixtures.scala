@@ -4,7 +4,7 @@ import java.time.OffsetDateTime
 import org.biobank.domain.{EntityState, Factory, Location}
 import org.biobank.domain.studies._
 import org.biobank.domain.participants._
-import org.biobank.dto.centres.{CentreLocationInfo, ShipmentDto}
+import org.biobank.dto.centres.{ShipmentDto}
 import org.scalatest.Assertions._
 import org.biobank.dto.centres.CentreLocationInfo
 import org.scalatest.OptionValues._

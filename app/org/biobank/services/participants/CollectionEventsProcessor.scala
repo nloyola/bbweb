@@ -12,7 +12,6 @@ import org.biobank.domain.studies._
 import org.biobank.domain.annotations.Annotation
 import org.biobank.infrastructure.commands.CollectionEventCommands._
 import org.biobank.infrastructure.events.CollectionEventEvents._
-import org.biobank.infrastructure.events.CommonEvents._
 import org.biobank.services.{Processor, ServiceValidation, SnapshotWriter}
 import play.api.libs.json._
 import scalaz.Scalaz._

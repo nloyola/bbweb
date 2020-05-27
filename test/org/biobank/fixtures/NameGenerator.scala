@@ -1,7 +1,6 @@
 package org.biobank.fixtures
 
 import scala.reflect.ClassTag
-import scala.reflect._
 import scala.collection.mutable.HashMap
 
 /**

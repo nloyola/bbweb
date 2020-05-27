@@ -26,7 +26,7 @@ class ProcessingEventInputSpecimenRepositoryImpl
 
   import org.biobank.CommonValidations._
 
-  def nextIdentity: ProcessingEventInputSpecimenId =
+  def nextIdentity(): ProcessingEventInputSpecimenId =
     new ProcessingEventInputSpecimenId(nextIdentityAsString)
 
   protected def notFound(id: ProcessingEventInputSpecimenId): IdNotFound =

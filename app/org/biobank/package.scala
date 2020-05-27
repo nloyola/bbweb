@@ -94,8 +94,10 @@ package biobank {
       maybeString match {
         case None => maybeString.successNel[String]
         case Some(s) =>
-          validateNonEmptyString(s, err)
-            .fold(err => err.failure[Option[String]], str => Some(str).successNel[String])
+          validateNonEmptyString(s, err).fold(err => err.failure[Option[String]], str => {
+            val result: Option[String] = Some(str)
+            result.successNel[String]
+          })
       }
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading", "org.wartremover.warts.DefaultArguments"))
@@ -138,7 +140,10 @@ package biobank {
       str match {
         case Some(s) =>
           validateNumberString(s, err)
-            .fold(err => err.failure[Option[String]], _ => Some(s).successNel[String])
+            .fold(err => err.failure[Option[String]], _ => {
+              val v: Option[String] = Some(s)
+              v.successNel[String]
+            })
         case None => str.successNel[String]
       }
 
@@ -186,7 +191,10 @@ package biobank {
     def validateOptionalUrl(url: Option[String]): SystemValidation[Option[String]] =
       url match {
         case Some(u) =>
-          validateUrl(u).fold(err => err.failure[Option[String]], str => Some(str).successNel[String])
+          validateUrl(u).fold(err => err.failure[Option[String]], str => {
+            val r: Option[String] = Some(str)
+            r.successNel[String]
+          })
         case None => url.successNel[String]
       }
 

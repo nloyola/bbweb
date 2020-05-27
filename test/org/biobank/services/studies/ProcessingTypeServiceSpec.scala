@@ -18,6 +18,7 @@ class ProcessingTypeServiceSpec
     extends ProcessorTestFixture with ProcessingTypeFixtures with StudiesServiceFixtures with ScalaFutures {
 
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
   //import org.biobank.infrastructure.commands.ProcessingTypeCommands._
 
   private class UsersProcessingTypeFixture extends UsersWithStudyAccessFixture {

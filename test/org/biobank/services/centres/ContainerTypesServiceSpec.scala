@@ -19,6 +19,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class StorageContainerTypesServiceSpec
     extends CommonContainerTypeControllerSpec[StorageContainerType, StorageContainerTypeAccessFixture] {
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
 
   describe("ContainerTypesService (Storage Container Type)") {
 
@@ -72,6 +73,7 @@ class StorageContainerTypesServiceSpec
 class SpecimenContainerTypesServiceSpec
     extends CommonContainerTypeControllerSpec[SpecimenContainerType, SpecimenContainerTypeAccessFixture] {
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
 
   describe("ContainerTypesService (Specimen Container Type)") {
 
@@ -126,6 +128,7 @@ trait CommonContainerTypeControllerSpec[
     extends ProcessorTestFixture with UserServiceFixtures with ScalaFutures {
 
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
 
   protected def fixture(): F
 
@@ -347,7 +350,7 @@ trait ContainerTypeAccessFixture[T <: ContainerType] extends UserCentreAccessFix
   val containerTypeEntities: ContainerTypeFixture[T]
   val containerType:         T
 
-  override def allEntities: Set[ConcurrencySafeEntity[_]] =
+  override def allEntities(): Set[ConcurrencySafeEntity[_]] =
     containerTypeEntities.allEntities ++ super.allEntities
 
   def allEntitiesButContainerType: Set[ConcurrencySafeEntity[_]] =

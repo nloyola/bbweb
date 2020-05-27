@@ -23,6 +23,7 @@ class ShipmentsProcessorSpec extends ProcessorTestFixture with ShipmentSpecFixtu
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.ShipmentCommands._
   import org.biobank.infrastructure.events.ShipmentEvents._
+  import org.scalatest.matchers.must.Matchers._
 
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 

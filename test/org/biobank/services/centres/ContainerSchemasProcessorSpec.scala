@@ -19,6 +19,7 @@ case class NamedContainerSchemasProcessor @Inject()(@Named("containerSchemasProc
 class ContainerSchemasProcessorSpec extends ProcessorTestFixture with PresistenceQueryEvents {
 
   import org.biobank.TestUtils._
+  import org.scalatest.matchers.must.Matchers._
 
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 

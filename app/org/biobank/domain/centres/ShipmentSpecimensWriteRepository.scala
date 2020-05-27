@@ -33,7 +33,7 @@ class ShipmentSpecimensWriteRepositoryImpl @Inject()(val testData: TestData)
     testData.testShipmentSpecimens.foreach(put)
   }
 
-  def nextIdentity: ShipmentSpecimenId = new ShipmentSpecimenId(nextIdentityAsString)
+  def nextIdentity(): ShipmentSpecimenId = new ShipmentSpecimenId(nextIdentityAsString)
 
   protected def notFound(id: ShipmentSpecimenId): IdNotFound = IdNotFound(s"shipment specimen id: $id")
 

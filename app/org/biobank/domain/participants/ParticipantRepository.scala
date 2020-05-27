@@ -31,7 +31,7 @@ class ParticipantRepositoryImpl @Inject()(val testData: TestData)
     testData.testParticipants.foreach(put)
   }
 
-  def nextIdentity: ParticipantId = new ParticipantId(nextIdentityAsString)
+  def nextIdentity(): ParticipantId = new ParticipantId(nextIdentityAsString)
 
   protected def notFound(id: ParticipantId): IdNotFound = IdNotFound(s"participant id: $id")
 

@@ -1,6 +1,7 @@
 -J-XX:MaxMetaspaceSize=1G
 -J-XX:+CMSClassUnloadingEnabled
--J-Xms512M
--J-Xmx2G
+-J-Xss8M
+-J-Xms1G
+-J-Xmx8G
 -J-XX:ReservedCodeCacheSize=256M
 -Duser.timezone=GMT

@@ -8,12 +8,10 @@ import org.biobank.domain.centres._
 import org.biobank.dto.centres.ShipmentDto
 import org.biobank.query.db.DatabaseSchema
 import play.api.db.slick.DatabaseConfigProvider
-import scala.concurrent.{ExecutionContext, Future}
 import scalaz.Scalaz._
 // import scalaz.Validation.FlatMap._
-import scalaz._
 import org.slf4j.LoggerFactory
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[ShipmentsReadRepositorySlick])
 trait ShipmentsReadRepository extends AsyncReadRepository[ShipmentId, ShipmentDto] {

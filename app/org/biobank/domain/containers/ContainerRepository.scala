@@ -44,7 +44,7 @@ class ContainerRepositoryImpl @Inject()(val testData: TestData)
     testData.testContainers.foreach(put)
   }
 
-  def nextIdentity: ContainerId = new ContainerId(nextIdentityAsString)
+  def nextIdentity(): ContainerId = new ContainerId(nextIdentityAsString)
 
   protected def notFound(id: ContainerId): IdNotFound = IdNotFound(s"container id: $id")
 
@@ -81,7 +81,7 @@ class ContainerRepositoryImpl @Inject()(val testData: TestData)
     }
   }
 
-  def getChildContainer(id: ContainerId, label: String): DomainValidation[Container] =
+  def getChildContainer(id: ContainerId, label: String): DomainValidation[ChildContainer] =
     getValues
       .collect { case c: ChildContainer => c }
       .find { c =>
@@ -106,18 +106,12 @@ class ContainerRepositoryImpl @Inject()(val testData: TestData)
       .toSet
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def getRootContainer(id: ContainerId): DomainValidation[RootContainer] = {
-    val parent = getByKey(id).flatMap { container =>
+    getByKey(id).flatMap { container =>
       container match {
-        case c: ChildContainer => getParent(c)
         case c: RootContainer  => c.successNel[String]
-      }
-    }
-    parent.flatMap { p =>
-      p match {
-        case c: RootContainer => c.successNel[String]
-        case c: ChildContainer =>
-          EntityNotFound(s"parent for container ID ${id}").toString.failureNel[RootContainer]
+        case c: ChildContainer => getRootContainer(c.parentId)
       }
     }
   }
@@ -139,7 +133,7 @@ class ContainerRepositoryImpl @Inject()(val testData: TestData)
     getByKey(container.parentId).flatMap { parent =>
       parent match {
         case c: ChildContainer => getParent(c)
-        case c: RootContainer  => c.successNel[String]
+        case c: RootContainer  => parent.successNel[String]
       }
     }
 }

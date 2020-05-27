@@ -5,7 +5,6 @@ import akka.actor.ActorSystem
 import akka.persistence.query._
 import akka.stream.scaladsl.Source
 import akka.persistence.query.PersistenceQuery
-import akka.stream.scaladsl._
 import org.slf4j.LoggerFactory
 import akka.persistence.inmemory.query.scaladsl.InMemoryReadJournal
 

@@ -10,7 +10,7 @@ trait ContainerFixture[C <: Container, T <: ContainerType] {
   val containerType: T
   val schema:        ContainerSchema
 
-  def allEntities: Set[ConcurrencySafeEntity[_]]
+  def allEntities(): Set[ConcurrencySafeEntity[_]]
 
   def allEntitiesButContainer: Set[ConcurrencySafeEntity[_]]
 
@@ -43,7 +43,7 @@ case class RootContainerFixture(
     centre:        Centre)
     extends ContainerFixture[RootContainer, StorageContainerType] {
 
-  def allEntities: Set[ConcurrencySafeEntity[_]] =
+  def allEntities(): Set[ConcurrencySafeEntity[_]] =
     Set(container, containerType, schema, centre)
 
   def allEntitiesButContainer: Set[ConcurrencySafeEntity[_]] =
@@ -106,7 +106,7 @@ case class StorageContainerFixture(
     parent:        RootContainerFixture)
     extends ChildContainerFixture[StorageContainer, StorageContainerType, RootContainer] {
 
-  def allEntities: Set[ConcurrencySafeEntity[_]] =
+  def allEntities(): Set[ConcurrencySafeEntity[_]] =
     Set(container, containerType, schema) ++ parent.allEntities
 
   def allEntitiesButContainer: Set[ConcurrencySafeEntity[_]] =
@@ -194,7 +194,7 @@ case class SpecimenContainerFixture(
     parent:        StorageContainerFixture)
     extends ChildContainerFixture[SpecimenContainer, SpecimenContainerType, StorageContainer] {
 
-  def allEntities: Set[ConcurrencySafeEntity[_]] =
+  def allEntities(): Set[ConcurrencySafeEntity[_]] =
     Set(container, containerType, schema) ++ parent.allEntities
 
   def allEntitiesButContainer: Set[ConcurrencySafeEntity[_]] =

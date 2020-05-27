@@ -14,7 +14,6 @@ import org.biobank.services.{Processor, ServiceValidation, SnapshotWriter}
 import play.api.libs.json._
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
-import scalaz._
 
 object AccessProcessor {
 

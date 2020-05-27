@@ -38,6 +38,7 @@ class SpecimenContainerTypesControllerSpec
 trait ContainerTypesControllerSpec[T <: ContainerType, F <: ContainerTypeFixture[T]]
     extends ControllerFixture with PagedResultsSharedSpec with PagedResultsMatchers {
 
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.TestUtils._
   import org.biobank.matchers.JsonMatchers._
   import org.biobank.matchers.DtoMatchers._

@@ -27,7 +27,7 @@ class CeventSpecimenRepositoryImpl @Inject()(val testData: TestData)
 
   // only existing collection event and specimen IDs should be stored, never new IDs
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
-  def nextIdentity: SpecimenId = throw new IllegalStateException("should not be used")
+  def nextIdentity(): SpecimenId = throw new IllegalStateException("should not be used")
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   protected def notFound(id: SpecimenId): IdNotFound =

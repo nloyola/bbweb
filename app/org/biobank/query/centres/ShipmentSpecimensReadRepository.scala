@@ -12,7 +12,6 @@ import play.api.db.slick.DatabaseConfigProvider
 import scala.concurrent.{ExecutionContext, Future}
 import scalaz.Scalaz._
 //import scalaz.Validation.FlatMap._
-import scalaz._
 import org.slf4j.LoggerFactory
 
 @ImplementedBy(classOf[ShipmentSpecimensReadRepositorySlick])

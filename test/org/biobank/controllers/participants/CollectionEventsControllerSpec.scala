@@ -23,6 +23,7 @@ class CollectionEventsControllerSpec
     extends StudyAnnotationsControllerSharedSpec[CollectionEvent] with PagedResultsMatchers
     with PagedResultsSharedSpec {
 
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.TestUtils._
   import org.biobank.AnnotationTestUtils._
   import org.biobank.matchers.EntityMatchers._

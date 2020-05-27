@@ -14,6 +14,8 @@ import play.api.test.Helpers._
 class RootContainersControllerSpec
     extends CommonStorageContainerControllerSpec[RootContainer, StorageContainerType, RootContainerFixture] {
 
+  import org.scalatest.matchers.must.Matchers._
+
   protected def addUrl(): Url = uri("root")
 
   protected def fixture(): RootContainerFixture = RootContainerFixture(factory)
@@ -229,6 +231,8 @@ class StorageContainersControllerSpec
       StorageContainerFixture
     ] {
 
+  import org.scalatest.matchers.must.Matchers._
+
   protected def addUrl(): Url = uri("storage")
 
   protected def fixture(): StorageContainerFixture = StorageContainerFixture(factory)
@@ -259,6 +263,8 @@ class SpecimenContainersControllerSpec
                                          SpecimenContainerType,
                                          StorageContainer,
                                          SpecimenContainerFixture] {
+
+  import org.scalatest.matchers.must.Matchers._
 
   protected def addUrl(): Url = uri("specimen")
 
@@ -320,6 +326,8 @@ trait ChildContainerControllerSpec[
     PC <: Container,
     F <: ChildContainerFixture[C, T, PC]]
     extends CommonContainerControllerSpec[C, T, F] {
+
+  import org.scalatest.matchers.must.Matchers._
 
   describe("(child common)") {
 
@@ -507,6 +515,7 @@ trait CommonStorageContainerControllerSpec[
     F <: ContainerFixture[C, T]]
     extends CommonContainerControllerSpec[C, T, F] {
 
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.matchers.JsonMatchers._
   import org.biobank.matchers.DtoMatchers._
 
@@ -640,6 +649,7 @@ trait CommonStorageContainerControllerSpec[
 trait CommonContainerControllerSpec[C <: Container, T <: ContainerType, F <: ContainerFixture[C, T]]
     extends ControllerFixture with PagedResultsSharedSpec with PagedResultsMatchers {
 
+  import org.scalatest.matchers.must.Matchers._
   import org.biobank.TestUtils._
   import org.biobank.matchers.JsonMatchers._
   import org.biobank.matchers.DtoMatchers._

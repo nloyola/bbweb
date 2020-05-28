@@ -1,9 +1,11 @@
 package org.biobank.services.access
 
+import cats.implicits._
 import org.biobank.domain.access._
 import org.biobank.services._
 import org.biobank.services.{ServiceError, ServiceValidation}
 import scalaz.Scalaz._
+import org.biobank.validation.Validation._
 
 /**
  * Functions that filter a set of accessItems from an expression contained in a filter string.
@@ -36,6 +38,16 @@ object AccessItemFilter
       case "name" => nameFilter(comparator, args)
       case _ =>
         ServiceError(s"invalid filter selector: $selector").failureNel[AccessItemFilter]
+    }
+
+  protected def predicateFromSelectorCats(
+      selector:   String,
+      comparator: Comparator,
+      args:       List[String]
+    ): ValidationResult[AccessItem => Boolean] =
+    selector match {
+      case "name" => nameFilterCats(comparator, args)
+      case _      => Error(s"invalid filter selector: $selector").invalidNec
     }
 
 }

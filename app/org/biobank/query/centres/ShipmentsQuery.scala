@@ -5,23 +5,24 @@ import akka.actor._
 import akka.stream.scaladsl.Source
 import akka.persistence.jdbc.query.scaladsl.JdbcReadJournal
 import akka.persistence.query.{EventEnvelope, PersistenceQuery}
+import cats.data._
+import cats.implicits._
 import com.google.inject.ImplementedBy
 import java.time.OffsetDateTime
 import javax.inject.Inject
 import org.biobank._
 import org.biobank.domain._
 import org.biobank.domain.centres._
-import org.biobank.domain.participants.SpecimenId
+import org.biobank.domain.participants.{SpecimenId, SpecimenRepository}
 import org.biobank.dto.centres.{CentreLocationInfo, ShipmentDto, ShipmentSpecimenDto}
 import org.biobank.infrastructure.events.ShipmentEvents._
 import org.biobank.infrastructure.events.ShipmentSpecimenEvents._
 import org.biobank.query.db._
+import org.biobank.validation.Validation._
 import org.slf4j.LoggerFactory
 import play.api.db.slick.DatabaseConfigProvider
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
-import scalaz.Scalaz._
-import scalaz.Validation.FlatMap._
 import scala.collection.mutable.Queue
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -41,7 +42,6 @@ final case class SpecimenRemove(shipmentSpecimenId: ShipmentSpecimenId) extends 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 @ImplementedBy(classOf[ShipmentsQueryJdbc])
 trait ShipmentsQuery extends DatabaseSchema {
-  import org.biobank.CommonValidations._
 
   val persistenceId = "shipments-processor-id"
 
@@ -97,11 +97,11 @@ trait ShipmentsQuery extends DatabaseSchema {
       ()
     }
 
-    sequenceNumbersDao.sequenceNumberForId(persistenceId).futval.onComplete {
+    sequenceNumbersDao.sequenceNumberForId(persistenceId).value.onComplete {
       case Success(v) =>
         v match {
-          case scalaz.Success(sn) => handleEventsFrom(sn.sequenceNumber + 1L)
-          case scalaz.Failure(_) =>
+          case Right(sn) => handleEventsFrom(sn.sequenceNumber + 1L)
+          case Left(_) =>
             init
             handleEventsFrom(0L)
         }
@@ -141,10 +141,10 @@ trait ShipmentsQuery extends DatabaseSchema {
         case SpecimensUpdated(ss) => shipmentSpecimensRepository.putAll(ss.toSeq)
       }
     }
-    f.futval.map(_ => ())
+    f.value.map(_ => ())
   }
 
-  private def processEvent(event: Any): FutureValidation[DbOperation] = {
+  private def processEvent(event: Any): DbOperationResult = {
     event match {
       case event: ShipmentEvent =>
         event.eventType match {
@@ -165,7 +165,9 @@ trait ShipmentsQuery extends DatabaseSchema {
           case et: ShipmentEvent.EventType.SkippedToUnpackedState     => skippedToUnpackedState(event)
 
           case et =>
-            FutureValidation(DomainError(s"shipment event not handled: $event").failureNel[DbOperation])
+            EitherT.leftT[Future, DbOperation](
+              NonEmptyChain(IllegalStateError(s"invalid shipment event: $event"))
+            )
         }
 
       case event: ShipmentSpecimenEvent =>
@@ -179,45 +181,55 @@ trait ShipmentsQuery extends DatabaseSchema {
           case et: ShipmentSpecimenEvent.EventType.Extra            => specimenExtra(event)
 
           case et =>
-            FutureValidation(
-              DomainError(s"shipment specimen event not handled: $event").failureNel[DbOperation]
+            EitherT.leftT[Future, DbOperation](
+              NonEmptyChain(IllegalStateError(s"invalid shipment specimen event: $event"))
             )
 
         }
 
       case event =>
-        FutureValidation(DomainError(s"shipment event not handled: $event").failureNel[DbOperation])
+        EitherT.leftT[Future, DbOperation](NonEmptyChain(IllegalStateError(s"invalid process event: $event")))
     }
   }
 
-  private def added(event: ShipmentEvent): FutureValidation[DbOperation] = {
-    FutureValidation {
-      val companion = event.getAdded
-      val v = for {
-        valid               <- eventIsOfType(event, event.eventType.isAdded)
-        origin              <- centreRepository.getByKey(CentreId(companion.getOriginCentreId))
-        originLocation      <- origin.locationWithId(LocationId(companion.getOriginLocationId))
-        destination         <- centreRepository.getByKey(CentreId(companion.getDestinationCentreId))
-        destinationLocation <- origin.locationWithId(LocationId(companion.getDestinationLocationId))
-      } yield ShipmentDto(id                   = ShipmentId(event.id),
-                          version              = 0L,
-                          timeAdded            = OffsetDateTime.parse(event.getTime),
-                          timeModified         = None,
-                          state                = Shipment.createdState,
-                          courierName          = companion.getCourierName,
-                          trackingNumber       = companion.getTrackingNumber,
-                          origin               = CentreLocationInfo(origin, originLocation),
-                          destination          = CentreLocationInfo(destination, destinationLocation),
-                          timePacked           = None,
-                          timeSent             = None,
-                          timeReceived         = None,
-                          timeUnpacked         = None,
-                          timeCompleted        = None,
-                          specimenCount        = 0,
-                          presentSpecimenCount = 0,
-                          containerCount       = 0)
+  private def added(event: ShipmentEvent): DbOperationResult = {
+    import scalaz.Validation.FlatMap._
 
-      v.map(AddOrUpdate(_))
+    val companion = event.getAdded
+    val v: DomainValidation[Tuple4[Centre, Location, Centre, Location]] = for {
+      origin              <- centreRepository.getByKey(CentreId(companion.getOriginCentreId))
+      originLocation      <- origin.locationWithId(LocationId(companion.getOriginLocationId))
+      destination         <- centreRepository.getByKey(CentreId(companion.getDestinationCentreId))
+      destinationLocation <- destination.locationWithId(LocationId(companion.getDestinationLocationId))
+    } yield (origin, originLocation, destination, destinationLocation)
+
+    v match {
+      case scalaz.Success((origin, originLocation, destination, destinationLocation)) =>
+        val dbOp = eventIsOfType(event, event.eventType.isAdded).map { _ =>
+          AddOrUpdate(
+            ShipmentDto(id                   = ShipmentId(event.id),
+                        version              = 0L,
+                        timeAdded            = OffsetDateTime.parse(event.getTime),
+                        timeModified         = None,
+                        state                = Shipment.createdState,
+                        courierName          = companion.getCourierName,
+                        trackingNumber       = companion.getTrackingNumber,
+                        origin               = CentreLocationInfo(origin, originLocation),
+                        destination          = CentreLocationInfo(destination, destinationLocation),
+                        timePacked           = None,
+                        timeSent             = None,
+                        timeReceived         = None,
+                        timeUnpacked         = None,
+                        timeCompleted        = None,
+                        specimenCount        = 0,
+                        presentSpecimenCount = 0,
+                        containerCount       = 0)
+          )
+        }
+        EitherT(Future.successful(dbOp.toEither))
+
+      case scalaz.Failure(e) =>
+        EitherT.leftT[Future, DbOperation](NonEmptyChain(IllegalStateError(e.list.toList.mkString(","))))
     }
   }
 
@@ -229,7 +241,7 @@ trait ShipmentsQuery extends DatabaseSchema {
           shipment.copy(courierName  = companion.getCourierName,
                         version      = shipment.version + 1L,
                         timeModified = Some(eventTime))
-        ).successNel[String]
+        ).validNec
     }
   }
 
@@ -241,37 +253,57 @@ trait ShipmentsQuery extends DatabaseSchema {
           shipment.copy(trackingNumber = companion.getTrackingNumber,
                         version        = shipment.version + 1L,
                         timeModified   = Some(eventTime))
-        ).successNel[String]
+        ).validNec
     }
   }
 
   private def originUpdated(event: ShipmentEvent): DbOperationResult = {
+    import scalaz.Validation.FlatMap._
+
     val companion = event.getOriginLocationUpdated
     onValidEvent(event, event.eventType.isOriginLocationUpdated, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        for {
+        val v = for {
           origin         <- centreRepository.getByKey(CentreId(companion.getCentreId))
           originLocation <- origin.locationWithId(LocationId(companion.getLocationId))
-        } yield AddOrUpdate(
-          shipment.copy(origin       = CentreLocationInfo(origin, originLocation),
-                        version      = shipment.version + 1L,
-                        timeModified = Some(eventTime))
-        )
+        } yield (origin, originLocation)
+
+        v match {
+          case scalaz.Success((origin, originLocation)) =>
+            val dbOp = AddOrUpdate(
+              shipment.copy(origin       = CentreLocationInfo(origin, originLocation),
+                            version      = shipment.version + 1L,
+                            timeModified = Some(eventTime))
+            )
+            dbOp.validNec
+
+          case scalaz.Failure(e) => IllegalStateError(e.list.toList.mkString(",")).invalidNec
+        }
     }
   }
 
   private def destinationUpdated(event: ShipmentEvent): DbOperationResult = {
+    import scalaz.Validation.FlatMap._
+
     val companion = event.getDestinationLocationUpdated
     onValidEvent(event, event.eventType.isDestinationLocationUpdated, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        for {
+        val v = for {
           destination         <- centreRepository.getByKey(CentreId(companion.getCentreId))
           destinationLocation <- destination.locationWithId(LocationId(companion.getLocationId))
-        } yield AddOrUpdate(
-          shipment.copy(destination  = CentreLocationInfo(destination, destinationLocation),
-                        version      = shipment.version + 1L,
-                        timeModified = Some(eventTime))
-        )
+        } yield (destination, destinationLocation)
+
+        v match {
+          case scalaz.Success((destination, destinationLocation)) =>
+            val dbOp = AddOrUpdate(
+              shipment.copy(destination  = CentreLocationInfo(destination, destinationLocation),
+                            version      = shipment.version + 1L,
+                            timeModified = Some(eventTime))
+            )
+            dbOp.validNec
+
+          case scalaz.Failure(e) => IllegalStateError(e.list.toList.mkString(",")).invalidNec
+        }
     }
   }
 
@@ -279,17 +311,17 @@ trait ShipmentsQuery extends DatabaseSchema {
       shipment:  ShipmentDto,
       newState:  EntityState,
       eventTime: OffsetDateTime
-    ): SystemValidation[DbOperation] = {
+    ): DbOperation = {
     AddOrUpdate(
       shipment.copy(state = newState, version = shipment.version + 1L, timeModified = Some(eventTime))
-    ).successNel[String]
+    )
   }
 
   private def created(event: ShipmentEvent): DbOperationResult = {
     val companion = event.getCreated
     onValidEvent(event, event.eventType.isCreated, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        changeState(shipment, Shipment.createdState, eventTime)
+        changeState(shipment, Shipment.createdState, eventTime).validNec
     }
   }
 
@@ -297,7 +329,7 @@ trait ShipmentsQuery extends DatabaseSchema {
     val companion = event.getPacked
     onValidEvent(event, event.eventType.isPacked, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        changeState(shipment, Shipment.packedState, eventTime)
+        changeState(shipment, Shipment.packedState, eventTime).validNec
     }
   }
 
@@ -305,7 +337,7 @@ trait ShipmentsQuery extends DatabaseSchema {
     val companion = event.getSent
     onValidEvent(event, event.eventType.isSent, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        changeState(shipment, Shipment.sentState, eventTime)
+        changeState(shipment, Shipment.sentState, eventTime).validNec
     }
   }
 
@@ -313,7 +345,7 @@ trait ShipmentsQuery extends DatabaseSchema {
     val companion = event.getReceived
     onValidEvent(event, event.eventType.isReceived, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        changeState(shipment, Shipment.receivedState, eventTime)
+        changeState(shipment, Shipment.receivedState, eventTime).validNec
     }
   }
 
@@ -321,7 +353,7 @@ trait ShipmentsQuery extends DatabaseSchema {
     val companion = event.getUnpacked
     onValidEvent(event, event.eventType.isUnpacked, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        changeState(shipment, Shipment.unpackedState, eventTime)
+        changeState(shipment, Shipment.unpackedState, eventTime).validNec
     }
   }
 
@@ -329,7 +361,7 @@ trait ShipmentsQuery extends DatabaseSchema {
     val companion = event.getCompleted
     onValidEvent(event, event.eventType.isCompleted, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        changeState(shipment, Shipment.completedState, eventTime)
+        changeState(shipment, Shipment.completedState, eventTime).validNec
     }
   }
 
@@ -337,7 +369,7 @@ trait ShipmentsQuery extends DatabaseSchema {
     val companion = event.getLost
     onValidEvent(event, event.eventType.isLost, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        changeState(shipment, Shipment.lostState, eventTime)
+        changeState(shipment, Shipment.lostState, eventTime).validNec
     }
   }
 
@@ -345,8 +377,8 @@ trait ShipmentsQuery extends DatabaseSchema {
     val companion = event.getRemoved
     onValidEvent(event, event.eventType.isRemoved, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        if (shipment.state == Shipment.createdState) Remove(shipment.id).successNel[String]
-        else InvalidState(s"shipment not in created state: ${shipment.id}").failureNel[DbOperation]
+        if (shipment.state == Shipment.createdState) Remove(shipment.id).validNec
+        else IllegalStateError(s"shipment not in created state: ${shipment.id}").invalidNec
     }
   }
 
@@ -354,7 +386,7 @@ trait ShipmentsQuery extends DatabaseSchema {
     val companion = event.getSkippedToSentState
     onValidEvent(event, event.eventType.isSkippedToSentState, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        changeState(shipment, Shipment.sentState, eventTime)
+        changeState(shipment, Shipment.sentState, eventTime).validNec
     }
   }
 
@@ -362,28 +394,26 @@ trait ShipmentsQuery extends DatabaseSchema {
     val companion = event.getSkippedToUnpackedState
     onValidEvent(event, event.eventType.isSkippedToUnpackedState, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        changeState(shipment, Shipment.unpackedState, eventTime)
+        changeState(shipment, Shipment.unpackedState, eventTime).validNec
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def specimensAdded(event: ShipmentSpecimenEvent): DbOperationResult = {
-    FutureValidation {
-      val companionEvent = event.getAdded
-      val dtos = companionEvent.shipmentSpecimenAddData.map { info =>
-        ShipmentSpecimenDto(id           = ShipmentSpecimenId(info.getShipmentSpecimenId),
-                            version      = 0L,
-                            timeAdded    = OffsetDateTime.parse(event.getTime),
-                            timeModified = None,
-                            state        = ShipmentItemState.Present,
-                            shipmentId   = ShipmentId(event.shipmentId),
-                            specimenId   = SpecimenId(info.getSpecimenId),
-                            shipmentContainerId =
-                              companionEvent.shipmentContainerId.map(ShipmentContainerId(_)))
-      }.toList
+    val companionEvent = event.getAdded
 
-      SpecimensAdded(dtos).successNel[String]
-    }
+    val dtos = companionEvent.shipmentSpecimenAddData.map { info =>
+      ShipmentSpecimenDto(id                  = ShipmentSpecimenId(info.getShipmentSpecimenId),
+                          version             = 0L,
+                          timeAdded           = OffsetDateTime.parse(event.getTime),
+                          timeModified        = None,
+                          state               = ShipmentSpecimen.presentState,
+                          shipmentId          = ShipmentId(event.shipmentId),
+                          specimenId          = SpecimenId(info.getSpecimenId),
+                          shipmentContainerId = companionEvent.shipmentContainerId.map(ShipmentContainerId(_)))
+    }.toList
+
+    EitherT.rightT[Future, NonEmptyChain[ValidationError]](SpecimensAdded(dtos))
   }
 
   private def specimenRemoved(event: ShipmentSpecimenEvent) = {
@@ -395,33 +425,62 @@ trait ShipmentsQuery extends DatabaseSchema {
   }
 
   private def specimenPresent(event: ShipmentSpecimenEvent) = {
-    ???
+    val timeModified   = OffsetDateTime.parse(event.getTime)
+    val companionEvent = event.getPresent.shipmentSpecimenData
+    val ssVersions =
+      companionEvent.map(ce => ShipmentSpecimenId(ce.getShipmentSpecimenId) -> ce.getVersion).toMap
+
+    specimenUpdateState(ShipmentId(event.shipmentId), ssVersions, ShipmentSpecimen.presentState, timeModified)
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.Any"))
   private def specimensReceived(event: ShipmentSpecimenEvent): DbOperationResult = {
-    val companionEvent      = event.getReceived.shipmentSpecimenData
-    val versionsData        = companionEvent.map(e => e.getShipmentSpecimenId -> e.getVersion).toMap
-    val shipmentSpecimenIds = versionsData.keys.map(ShipmentSpecimenId(_)).toSeq
-    val shipmentId          = ShipmentId(event.shipmentId)
-    for {
-      shipment          <- shipmentsRepository.getByKey(shipmentId)
-      shipmentSpecimens <- shipmentSpecimensRepository.forShipment(shipmentId, shipmentSpecimenIds: _*)
-    } yield {
-      val timeModified = Some(OffsetDateTime.parse(event.getTime))
-      val updated = shipmentSpecimens.map { ss =>
-        ss.copy(state = ShipmentItemState.Received, version = ss.version + 1L, timeModified = timeModified)
-      }
-      SpecimensUpdated(updated.toList)
-    }
+    val timeModified   = OffsetDateTime.parse(event.getTime)
+    val companionEvent = event.getReceived.shipmentSpecimenData
+    val ssVersions =
+      companionEvent.map(ce => ShipmentSpecimenId(ce.getShipmentSpecimenId) -> ce.getVersion).toMap
+
+    specimenUpdateState(ShipmentId(event.shipmentId),
+                        ssVersions,
+                        ShipmentSpecimen.receivedState,
+                        timeModified)
   }
 
   private def specimenMissing(event: ShipmentSpecimenEvent) = {
-    ???
+    val timeModified   = OffsetDateTime.parse(event.getTime)
+    val companionEvent = event.getMissing.shipmentSpecimenData
+    val ssVersions =
+      companionEvent.map(ce => ShipmentSpecimenId(ce.getShipmentSpecimenId) -> ce.getVersion).toMap
+
+    specimenUpdateState(ShipmentId(event.shipmentId), ssVersions, ShipmentSpecimen.missingState, timeModified)
   }
 
   private def specimenExtra(event: ShipmentSpecimenEvent) = {
     ???
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  private def specimenUpdateState(
+      shipmentId:   ShipmentId,
+      ssVersions:   Map[ShipmentSpecimenId, Long],
+      newState:     EntityState,
+      timeModified: OffsetDateTime
+    ): DbOperationResult = {
+    val shipmentSpecimenIds = ssVersions.keys.toSeq
+
+    shipmentsRepository.getByKey(shipmentId).flatMap { shipment =>
+      val r = shipmentSpecimensRepository.forShipment(shipmentId, shipmentSpecimenIds: _*).map { specimens =>
+        val updated = specimens
+          .map { ss =>
+            if (ss.version == ssVersions(ss.id)) {
+              ss.copy(state = newState, version = ss.version + 1L, timeModified = Some(timeModified)).validNec
+            } else {
+              IllegalStateError(s"shipment specimen version is invalid: id: ${ss.id}").invalidNec
+            }
+          }.toList.sequence
+        updated.map(SpecimensUpdated(_)).toEither
+      }
+      EitherT(r)
+    }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
@@ -429,23 +488,28 @@ trait ShipmentsQuery extends DatabaseSchema {
       event:        ShipmentEvent,
       eventType:    Boolean,
       eventVersion: Long
-    )(applyEvent:   (ShipmentDto, ShipmentEvent, OffsetDateTime) => SystemValidation[DbOperation]
-    ): FutureValidation[DbOperation] = {
+    )(applyEvent:   (ShipmentDto, ShipmentEvent, OffsetDateTime) => ValidationResult[DbOperation]
+    ): DbOperationResult = {
     if (!eventType) {
-      FutureValidation(Future { s"invalid event type: $event".failureNel[DbOperation] })
+      EitherT(Future.successful {
+        Either.left(NonEmptyChain(IllegalStateError(s"invalid event type: $event")))
+      })
     } else {
       val shipmentId = ShipmentId(event.id)
 
       for {
         shipment <- shipmentsRepository.getByKey(shipmentId)
-        valid    <- FutureValidation { applyEvent(shipment, event, OffsetDateTime.parse(event.getTime)) }
+        valid <- EitherT(
+                  Future.successful(applyEvent(shipment, event, OffsetDateTime.parse(event.getTime)).toEither)
+                )
+
       } yield valid
     }
   }
 
-  private def eventIsOfType(event: ShipmentEvent, eventIsOfType: Boolean) = {
-    if (eventIsOfType) ().successNel[String]
-    else DomainError(s"event is wrong type: $event").failureNel[Unit]
+  private def eventIsOfType(event: ShipmentEvent, eventIsOfType: Boolean): ValidationResult[Unit] = {
+    if (eventIsOfType) ().validNec
+    else IllegalStateError(s"event is wrong type: $event").invalidNec
   }
 
   //private def shipmentLogInfo(shipment: Shipment): String = s"${shipment.id} | ${shipment.version}"
@@ -458,6 +522,7 @@ class ShipmentsQueryJdbc @Inject()(
     private val testData:                      TestData,
     protected val dbConfigProvider:            DatabaseConfigProvider,
     protected val centreRepository:            CentreRepository,
+    protected val specimenRepository:          SpecimenRepository,
     protected val shipmentsRepository:         ShipmentsReadRepository,
     protected val shipmentSpecimensRepository: ShipmentSpecimensReadRepository,
     protected val sequenceNumbersDao:          SequenceNumbersDao

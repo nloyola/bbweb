@@ -2,7 +2,8 @@ package org.biobank.services
 
 import akka.actor.ActorRef
 import akka.util.Timeout
-//import com.github.ghik.silencer.silent
+import cats.data._
+import cats.implicits._
 import org.biobank._
 import org.biobank.domain.access.PermissionId
 import org.biobank.domain.access.PermissionId._
@@ -10,7 +11,8 @@ import org.biobank.domain.centres.CentreId
 import org.biobank.domain.studies.StudyId
 import org.biobank.domain.users.UserId
 import org.biobank.services.access.AccessService
-import scala.concurrent.ExecutionContext
+import org.biobank.validation.Validation._
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scalaz.Scalaz._
 
@@ -76,6 +78,21 @@ trait ServicePermissionChecks {
             permission =>
               if (permission) block()
               else FutureValidation(Unauthorized.failureNel[T]))
+  }
+
+  protected def whenPermittedAsyncCats[T](
+      requestUserId: UserId,
+      permissionId:  PermissionId
+    )(block:         () => FutureValidationResult[T]
+    ): FutureValidationResult[T] = {
+    accessService.hasPermission(requestUserId, permissionId) match {
+      case scalaz.Success(permission) =>
+        if (permission) block()
+        else EitherT.leftT[Future, T](NonEmptyChain(NotPermitted))
+
+      case scalaz.Failure(err) =>
+        EitherT.leftT[Future, T](NonEmptyChain(Error(err.list.toList.mkString(","))))
+    }
   }
 
   protected def whenPermittedAndIsMember[T](

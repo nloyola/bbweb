@@ -4,7 +4,6 @@ import java.sql.Timestamp
 import java.time.{OffsetDateTime, ZoneId}
 import org.biobank.domain.{EntityState, LocationId, Slug}
 import org.biobank.domain.centres._
-import org.biobank.domain.centres.ShipmentItemState._
 import org.biobank.domain.containers._
 import org.biobank.domain.participants._
 import org.biobank.dto._
@@ -263,7 +262,7 @@ trait DatabaseSchema extends HasDatabaseConfigProvider[JdbcProfile] {
     def version             = column[Long]("VERSION")
     def timeAdded           = column[OffsetDateTime]("TIME_ADDED")
     def timeModified        = column[Option[OffsetDateTime]]("TIME_MODIFIED")
-    def state               = column[ShipmentItemState]("STATE")
+    def state               = column[EntityState]("STATE")
     def shipmentId          = column[ShipmentId]("SHIPMENT_ID")
     def specimenId          = column[SpecimenId]("SPECIMEN_ID")
     def shipmentContainerId = column[Option[ShipmentContainerId]]("SHIPMENT_CONTAINER_ID")

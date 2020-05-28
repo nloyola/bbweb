@@ -1,8 +1,9 @@
 package org.biobank.domain.centres
 
-import org.biobank.domain.{DomainSpec, DomainValidation}
+import org.biobank.domain.DomainSpec
 import org.biobank.domain.participants.SpecimenId
 import org.biobank.fixtures.NameGenerator
+import org.biobank.validation.Validation._
 import org.slf4j.LoggerFactory
 
 class ShipmentSpecimenSpec extends DomainSpec {
@@ -15,7 +16,7 @@ class ShipmentSpecimenSpec extends DomainSpec {
 
   val nameGenerator = new NameGenerator(this.getClass)
 
-  def createFrom(shipmentSpecimen: ShipmentSpecimen): DomainValidation[ShipmentSpecimen] =
+  def createFrom(shipmentSpecimen: ShipmentSpecimen): ValidationResult[ShipmentSpecimen] =
     ShipmentSpecimen.create(id                  = shipmentSpecimen.id,
                             version             = shipmentSpecimen.version,
                             shipmentId          = shipmentSpecimen.shipmentId,
@@ -40,7 +41,7 @@ class ShipmentSpecimenSpec extends DomainSpec {
 
       it("with an invalid ID") {
         val shipmentSpecimen = factory.createShipmentSpecimen.copy(id = ShipmentSpecimenId(""))
-        createFrom(shipmentSpecimen) mustFail "IdRequired"
+        createFrom(shipmentSpecimen) mustFail "IdEmpty"
       }
 
       it("with an invalid version") {
@@ -61,7 +62,7 @@ class ShipmentSpecimenSpec extends DomainSpec {
       it("with an invalid shipment container ID") {
         val shipmentSpecimen =
           factory.createShipmentSpecimen.copy(shipmentContainerId = Some(ShipmentContainerId("")))
-        createFrom(shipmentSpecimen) mustFail "ShipmentContainerIdInvalid"
+        createFrom(shipmentSpecimen) mustFail "ShipmentContainerIdEmpty"
       }
 
     }

@@ -12,3 +12,5 @@ addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.2.7")
 addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.4.1")
 
 addSbtPlugin("org.wartremover" % "sbt-wartremover" % "2.4.8")
+
+addSbtPlugin("org.lyranthe.sbt" % "partial-unification" % "1.1.2")

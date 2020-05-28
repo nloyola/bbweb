@@ -516,9 +516,9 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
           forAll(changeStateCommandsTable(user.id, f.shipment)) { (shipment, cmd) =>
             shipment match {
               case s: UnpackedShipment =>
-                addToRepository(shipmentSpecimen.copy(state = ShipmentItemState.Received))
+                addToRepository(shipmentSpecimen.copy(state = ShipmentSpecimen.receivedState))
               case _ =>
-                addToRepository(shipmentSpecimen.copy(state = ShipmentItemState.Present))
+                addToRepository(shipmentSpecimen.copy(state = ShipmentSpecimen.presentState))
             }
 
             addToRepository(shipment)
@@ -554,7 +554,9 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
               cmd match {
                 case _: ShipmentAddSpecimensCmd | _: ShipmentSpecimenExtraCmd =>
                 case c: ShipmentSpecimensPresentCmd =>
-                  shipmentSpecimensRepository.put(shipmentSpecimen.copy(state = ShipmentItemState.Received))
+                  shipmentSpecimensRepository.put(
+                    shipmentSpecimen.copy(state = ShipmentSpecimen.receivedState)
+                  )
                 case c =>
                   shipmentSpecimensRepository.put(shipmentSpecimen)
               }
@@ -577,7 +579,9 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
               cmd match {
                 case _: ShipmentAddSpecimensCmd | _: ShipmentSpecimenExtraCmd =>
                 case c: ShipmentSpecimensPresentCmd =>
-                  shipmentSpecimensRepository.put(shipmentSpecimen.copy(state = ShipmentItemState.Received))
+                  shipmentSpecimensRepository.put(
+                    shipmentSpecimen.copy(state = ShipmentSpecimen.receivedState)
+                  )
                 case c =>
                   shipmentSpecimensRepository.put(shipmentSpecimen)
               }
@@ -611,15 +615,16 @@ class ShipmentsServiceSpec extends CentresServiceFixtures with ShipmentSpecFixtu
       it("users without access") {
         val f = new UsersWithShipmentAccessFixture
 
-        val usersCannotRemove = Table(("users that can remove specimens", "label"),
-                                      (f.shippingUser, "non-admin shipping user"),
-                                      (f.noMembershipUser, "no memberships user"),
-                                      (f.noShippingPermissionUser, "no shipping permission user"))
+        val usersCannotRemove =
+          Table(("users that can remove specimens", "label", "error"),
+                (f.shippingUser, "non-admin shipping user", "NotPermitted"),
+                (f.noMembershipUser, "no memberships user", "Unauthorized"),
+                (f.noShippingPermissionUser, "no shipping permission user", "Unauthorized"))
 
-        forAll(usersCannotRemove) { (user, label) =>
+        forAll(usersCannotRemove) { (user, label, expectedError) =>
           info(label)
           val cmd = getRemoveShipmentCmd(user.id, f.shipment)
-          shipmentsService.removeShipment(cmd) mustFail "Unauthorized"
+          shipmentsService.removeShipment(cmd) mustFail expectedError
         }
       }
 

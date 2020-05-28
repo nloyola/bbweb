@@ -84,7 +84,9 @@ javaOptions in run ++= Seq("-Xms256M", "-Xmx2G")
 
 sources in (Compile, doc) ~= (_ filter (_.getParent contains "org/biobank"))
 
-fork in run := true
+fork in run               := true
+fork in Test              := true
+parallelExecution in Test := false
 
 // https://github.com/playframework/playframework/issues/7382
 RoutesKeys.routesImport -= "controllers.Assets.Asset"
@@ -113,6 +115,7 @@ libraryDependencies += "com.github.dnvriend" %% "akka-persistence-jdbc"  % "3.5.
   organization = "com.typesafe.akka"
 ))
 libraryDependencies += "mysql"                      % "mysql-connector-java"             % "8.0.20"
+libraryDependencies += "org.typelevel"              %% "cats-core"                       % "2.0.0"
 libraryDependencies += "org.scalaz"                 %% "scalaz-core"                     % "7.2.30" % "compile"
 libraryDependencies += "com.github.t3hnar"          %% "scala-bcrypt"                    % "4.1"
 libraryDependencies += "com.typesafe.play"          %% "play-mailer"                     % "8.0.1"

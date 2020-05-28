@@ -1,7 +1,8 @@
 package org.biobank.services
 
+import cats.implicits._
+import org.biobank.validation.Validation._
 import scala.util.parsing.combinator.RegexParsers
-import scalaz.Scalaz._
 
 /**
  * Parser for filter strings that use RSQL (https://github.com/jirutka/rsql-parser) grammar.
@@ -140,7 +141,9 @@ object QueryFilterParser extends RegexParsers {
     case NoSuccess(_, _)    => None
   }
 
-  def expressions(filter: FilterString): ServiceValidation[Option[Expression]] =
+  def expressions(filter: FilterString): ServiceValidation[Option[Expression]] = {
+    import scalaz.Scalaz._
+
     if (filter.expression.trim.isEmpty) {
       None.successNel[String]
     } else {
@@ -149,6 +152,20 @@ object QueryFilterParser extends RegexParsers {
         s"could not parse filter expression: ${filter.expression}".failureNel[Option[Expression]]
       } else {
         parseResult.successNel[String]
+      }
+    }
+  }
+
+  def expressionsCats(filter: FilterString): ValidationResult[Option[Expression]] =
+    if (filter.expression.trim.isEmpty) {
+      None.validNec
+    } else {
+      val parseResult = QueryFilterParser(filter)
+      if (parseResult.isEmpty) {
+        org.biobank.validation.Validation
+          .Error(s"could not parse filter expression: ${filter.expression}").invalidNec
+      } else {
+        parseResult.validNec
       }
     }
 }

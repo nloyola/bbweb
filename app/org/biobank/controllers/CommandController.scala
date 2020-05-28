@@ -1,8 +1,10 @@
 package org.biobank.controllers
 
+import cats.data.Validated.{Invalid, Valid}
 import org.biobank._
 import org.biobank.infrastructure.commands.Commands._
 import org.biobank.services.ServiceValidation
+import org.biobank.validation.Validation._
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.libs.json._
 import play.api.mvc._
@@ -98,23 +100,9 @@ abstract class CommandController(controllerComponents: ControllerComponents)
 
   protected def validationReply[T](validation: ServiceValidation[T])(implicit writes: Writes[T]): Result =
     validation
-      .fold(
-        err => {
-          val errMsgs = err.list.toList.mkString(", ")
-          if (errMsgs.contains("Unauthorized")) {
-            Unauthorized
-          } else if (("NotFound".r.findAllIn(errMsgs).length > 0)) {
-            NotFound(errMsgs)
-          } else if (errMsgs.contains("already exists")) {
-            Forbidden(errMsgs)
-          } else {
-            BadRequest(errMsgs)
-          }
-        },
-        reply => {
-          Ok(reply)
-        }
-      )
+      .fold(err => errorReply(err.list.toList.mkString(", ")), reply => {
+        Ok(reply)
+      })
 
   protected def validationReply[T](
       future: Future[ServiceValidation[T]]
@@ -135,5 +123,43 @@ abstract class CommandController(controllerComponents: ControllerComponents)
     validation.futval.map { validation =>
       validationReply(validation)
     }
+
+  protected def validationReply[T](
+      validation: ValidationResult[T]
+    )(
+      implicit
+      writes: Writes[T]
+    ): Result = {
+    validation match {
+      case Invalid(err) => BadRequest(err.toString)
+      case Valid(r)     => Ok(r)
+    }
+  }
+
+  protected def validationReply[T](
+      validation: FutureValidationResult[T]
+    )(
+      implicit
+      writes: Writes[T]
+    ): Future[Result] = {
+    validation.value.map { v =>
+      v match {
+        case Left(err) => errorReply(err.toString)
+        case Right(r)  => Ok(r)
+      }
+    }
+  }
+
+  private def errorReply(errors: String): Result = {
+    if (errors.contains("Unauthorized")) {
+      Unauthorized
+    } else if (("NotFound".r.findAllIn(errors).length > 0)) {
+      NotFound(errors)
+    } else if (errors.contains("already exists")) {
+      Forbidden(errors)
+    } else {
+      BadRequest(errors)
+    }
+  }
 
 }

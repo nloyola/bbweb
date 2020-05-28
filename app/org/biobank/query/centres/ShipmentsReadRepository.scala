@@ -1,26 +1,27 @@
 package org.biobank.query.centres
 
+import cats.implicits._
+import cats.data.EitherT
 import com.google.inject.ImplementedBy
 import javax.inject.Inject
-import org.biobank._
+import org.biobank.validation.Validation._
 import org.biobank.domain._
 import org.biobank.domain.centres._
 import org.biobank.dto.centres.ShipmentDto
 import org.biobank.query.db.DatabaseSchema
 import play.api.db.slick.DatabaseConfigProvider
-import scalaz.Scalaz._
 // import scalaz.Validation.FlatMap._
 import org.slf4j.LoggerFactory
 import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[ShipmentsReadRepositorySlick])
-trait ShipmentsReadRepository extends AsyncReadRepository[ShipmentId, ShipmentDto] {
+trait ShipmentsReadRepository extends CatsAsyncReadRepository[ShipmentId, ShipmentDto] {
 
   def withCentres(centreIds: Set[CentreId]): Future[Seq[ShipmentDto]]
 
-  def getCreated(id: ShipmentId): FutureValidation[ShipmentDto]
+  def getCreated(id: ShipmentId): EitherT[Future, ShipmentDto, ValidationError]
 
-  def getUnpacked(id: ShipmentId): FutureValidation[ShipmentDto]
+  def getUnpacked(id: ShipmentId): EitherT[Future, ShipmentDto, ValidationError]
 
   def putAll(shipments: Seq[ShipmentDto]): Future[Unit]
 
@@ -40,7 +41,6 @@ class ShipmentsReadRepositorySlick @Inject()(
     val ec: ExecutionContext)
     extends ShipmentsReadRepository with DatabaseSchema {
   import dbConfig.profile.api._
-  import org.biobank.CommonValidations._
 
   protected val log = LoggerFactory.getLogger(this.getClass)
 
@@ -55,11 +55,14 @@ class ShipmentsReadRepositorySlick @Inject()(
   def isEmpty: Future[Boolean] = ???
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  def getByKey(shipmentId: ShipmentId): FutureValidation[ShipmentDto] = {
-    FutureValidation(
-      db.run(shipments.filter(s => s.id === shipmentId).result.headOption)
-        .map(_.toSuccessNel(notFound(shipmentId).toString))
-    )
+  def getByKey(shipmentId: ShipmentId): FutureValidationResult[ShipmentDto] = {
+    val f = db.run(shipments.filter(s => s.id === shipmentId).result.headOption).map {
+      _ match {
+        case Some(s) => s.validNec
+        case None    => notFound(shipmentId).invalidNec
+      }
+    }
+    EitherT(f.map(_.toEither))
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
@@ -69,9 +72,9 @@ class ShipmentsReadRepositorySlick @Inject()(
     db.run(query.result)
   }
 
-  def getCreated(id: ShipmentId): FutureValidation[ShipmentDto] = ???
+  def getCreated(id: ShipmentId): EitherT[Future, ShipmentDto, ValidationError] = ???
 
-  def getUnpacked(id: ShipmentId): FutureValidation[ShipmentDto] = ???
+  def getUnpacked(id: ShipmentId): EitherT[Future, ShipmentDto, ValidationError] = ???
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
   def putAll(shipmentsToAdd: Seq[ShipmentDto]): Future[Unit] = {

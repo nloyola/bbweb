@@ -1,6 +1,8 @@
 package org.biobank
 
+import cats.data.Validated.{Invalid, Valid}
 import org.biobank.domain.DomainValidation
+import org.biobank.validation.Validation._
 import org.scalatest._
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
@@ -15,7 +17,7 @@ object TestUtils extends OptionValues with ScalaFutures {
   val log = LoggerFactory.getLogger(this.getClass)
 
   implicit val defaultPatience =
-    PatienceConfig(timeout = Span(5, Seconds), interval = Span(100, Millis))
+    PatienceConfig(timeout = Span(5, Seconds), interval = Span(150, Millis))
 
   /**
    * Searches for an item in list matching regex. The string in str is the string originally searched for.
@@ -45,6 +47,102 @@ object TestUtils extends OptionValues with ScalaFutures {
   def containItemMatchingRegex(regex: String) = ListItemMatchesRegexMatcher(regex)
 
   def containItemContainingRegex(regex: String) = ListItemContainsRegexMatcher(regex)
+
+  implicit class ValidationTestsCats[T](val validation: ValidationResult[T]) {
+
+    /**
+     * Executes the function if the validation is successful. If the validation fails then the test fails. To
+     * be used in ScalaTest tests.
+     *
+     *  @param fn the function to execute.
+     */
+    def mustSucceed(fn: T => Any): Unit = {
+      validation match {
+        case Invalid(err) =>
+          fail(err.toChain.toList.mkString(", "))
+
+        case Valid(entity) =>
+          fn(entity)
+          ()
+      }
+    }
+
+    /**
+     * Looks for an expected message in the validation failure error. If the validation is successful the test
+     * fails. To be used in ScalaTest tests.
+     *
+     *  @param expectedMessages one or more regular expression to look for in the error list.
+     */
+    def mustFail(expectedMessages: String*): Unit = {
+      validation match {
+        case Valid(entity) => fail(s"validation must have failed: $validation")
+        case Invalid(err) =>
+          val errList = err.toChain.toList
+          errList.size must be > 0
+          expectedMessages.foreach { em =>
+            errList.map(_.toString) must containItemMatchingRegex(em)
+          }
+      }
+    }
+
+    /**
+     * Looks for an expected message in the validation failure error. If the validation is successful the test
+     * fails. To be used in ScalaTest tests.
+     *
+     *  @param expectedMessages one or more regular expression to look for in the error list.
+     */
+    def mustFailContains(expectedMessages: String*): Unit =
+      validation match {
+        case Valid(entity) => fail(s"validation must have failed: $validation")
+        case Invalid(err) =>
+          err.toChain.toList must have size expectedMessages.size.toLong
+          expectedMessages.foreach { em =>
+            err.toChain.toList.map(_.toString) must containItemContainingRegex(em)
+          }
+      }
+  }
+
+  implicit class ValidationTestsAsyncCats[T](
+      val validation: FutureValidationResult[T]
+    )(
+      implicit
+      val executionContext: ExecutionContext) {
+
+    /**
+     * Executes the function if the validation is successful. If the validation fails then the test fails. To
+     * be used in ScalaTest tests.
+     *
+     *  @param fn the function to execute.
+     */
+    def mustSucceed(fn: T => Any): Unit = {
+      validation.value.futureValue match {
+        case Left(err) =>
+          fail(err.toChain.toList.mkString(", "))
+
+        case Right(entity) =>
+          fn(entity)
+          ()
+      }
+    }
+
+    /**
+     * Looks for an expected message in the validation failure error. If the validation is successful the test
+     * fails. To be used in ScalaTest tests.
+     *
+     *  @param expectedMessages one or more regular expression to look for in the error list.
+     */
+    def mustFail(expectedMessages: String*): Unit = {
+      validation.value.futureValue match {
+        case Right(entity) => fail(s"validation must have failed: $validation")
+        case Left(err) =>
+          val errList = err.toChain.toList
+          errList.size must be > 0
+          expectedMessages.foreach { em =>
+            errList.map(_.toString) must containItemMatchingRegex(em)
+          }
+      }
+    }
+  }
 
   implicit class ValidationTestsAsync[T](
       val validation: FutureValidation[T]

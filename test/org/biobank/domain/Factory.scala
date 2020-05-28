@@ -533,7 +533,7 @@ class Factory {
                                             timeModified        = None,
                                             shipmentId          = shipment.id,
                                             specimenId          = specimen.id,
-                                            state               = ShipmentItemState.Present,
+                                            state               = ShipmentSpecimen.presentState,
                                             shipmentContainerId = None)
     domainObjects = domainObjects + (classOf[ShipmentSpecimen] -> shipmentSpecimen)
     shipmentSpecimen

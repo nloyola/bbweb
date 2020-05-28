@@ -1,13 +1,13 @@
 package org.biobank.domain.centres
 
+import cats.data.Validated._
+import cats.implicits._
 import java.time.OffsetDateTime
-import org.biobank._
 import org.biobank.domain._
-import org.biobank.domain.centres.ShipmentItemState._
 import org.biobank.domain.participants.SpecimenId
+import org.biobank.validation.Validation._
 import play.api.libs.json._
 import play.api.libs.json.Reads._
-import scalaz.Scalaz._
 
 final case class ShipmentSpecimenId(id: String) extends IdentifiedValueObject[String]
 
@@ -27,12 +27,21 @@ object ShipmentSpecimenId {
 
 trait ShipmentSpecimenValidations {
 
-  case object ShipmentIdRequired extends ValidationKey
+  case object ShipmentIdRequired extends ValidationError {
+    def errorMessage: String = "shipment id cannot be empty"
+  }
 
-  case object ShipmentContainerIdInvalid extends ValidationKey
+  case object ShipmentContainerIdEmpty extends ValidationError {
+    def errorMessage: String = "shipment container id cannot be empty"
+  }
 
-  case object ShipmentSpecimenNotPresent extends ValidationKey
+  case object ShipmentSpecimenNotPresent extends ValidationError {
+    def errorMessage: String = "specimen not in shipment"
+  }
 
+  case object SpecimenIdRequired extends ValidationError {
+    def errorMessage: String = "specimen id is empty"
+  }
 }
 
 /**
@@ -40,6 +49,12 @@ trait ShipmentSpecimenValidations {
  * [org.biobank.domain.centres.Shipment].
  *
  */
+@SuppressWarnings(
+  Array("org.wartremover.warts.DefaultArguments",
+        "org.wartremover.warts.JavaSerializable",
+        "org.wartremover.warts.Product",
+        "org.wartremover.warts.Serializable")
+)
 final case class ShipmentSpecimen(
     id:                  ShipmentSpecimenId,
     version:             Long,
@@ -47,60 +62,59 @@ final case class ShipmentSpecimen(
     timeModified:        Option[OffsetDateTime],
     shipmentId:          ShipmentId,
     specimenId:          SpecimenId,
-    state:               ShipmentItemState,
+    state:               EntityState,
     shipmentContainerId: Option[ShipmentContainerId])
     extends ConcurrencySafeEntity[ShipmentSpecimenId] with ShipmentSpecimenValidations {
 
-  import org.biobank.domain.DomainValidations._
+  import ShipmentSpecimen._
 
-  def withShipmentContainer(id: Option[ShipmentContainerId]): DomainValidation[ShipmentSpecimen] =
-    validateIdOption(id, ShipmentContainerIdInvalid) map { _ =>
-      copy(shipmentContainerId = id, version = version + 1, timeModified = Some(OffsetDateTime.now))
+  def withShipmentContainer(
+      id:           Option[ShipmentContainerId],
+      timeModified: OffsetDateTime = OffsetDateTime.now
+    ): ValidationResult[ShipmentSpecimen] =
+    validateContainerId(id) map { _ =>
+      copy(shipmentContainerId = id, version = version + 1, timeModified = Some(timeModified))
     }
 
-  def present: DomainValidation[ShipmentSpecimen] =
-    if (state == ShipmentItemState.Present) {
-      DomainError("cannot change state to PRESENT from PRESENT state").failureNel[ShipmentSpecimen]
+  def present(timeModified: OffsetDateTime = OffsetDateTime.now): ValidationResult[ShipmentSpecimen] =
+    if (state == ShipmentSpecimen.presentState) {
+      Error(s"already in PRESENT state: $id").invalidNec
     } else {
-      copy(state = ShipmentItemState.Present, version = version + 1, timeModified = Some(OffsetDateTime.now))
-        .successNel[String]
+      copy(state = presentState, version = version + 1, timeModified = Some(timeModified)).validNec
     }
 
-  def received: DomainValidation[ShipmentSpecimen] =
-    if (state != ShipmentItemState.Present) {
-      DomainError(s"cannot change state to RECEIVED: invalid state: $state").failureNel[ShipmentSpecimen]
+  def received(timeModified: OffsetDateTime = OffsetDateTime.now): ValidationResult[ShipmentSpecimen] =
+    if (state != ShipmentSpecimen.presentState) {
+      Error(s"cannot change state to RECEIVED: invalid state: $state").invalidNec
     } else {
-      copy(state = ShipmentItemState.Received, version = version + 1, timeModified = Some(OffsetDateTime.now))
-        .successNel[String]
+      copy(state = receivedState, version = version + 1, timeModified = Some(timeModified)).validNec
     }
 
-  def missing: DomainValidation[ShipmentSpecimen] =
-    if (state != ShipmentItemState.Present) {
-      DomainError(s"cannot change state to MISSING: invalid state: $state").failureNel[ShipmentSpecimen]
+  def missing(timeModified: OffsetDateTime = OffsetDateTime.now): ValidationResult[ShipmentSpecimen] =
+    if (state != ShipmentSpecimen.presentState) {
+      Error(s"cannot change state to MISSING: invalid state: $state").invalidNec
     } else {
-      copy(state = ShipmentItemState.Missing, version = version + 1, timeModified = Some(OffsetDateTime.now))
-        .successNel[String]
+      copy(state = missingState, version = version + 1, timeModified = Some(timeModified)).validNec
     }
 
-  def extra: DomainValidation[ShipmentSpecimen] =
-    if (state != ShipmentItemState.Present) {
-      DomainError(s"cannot change state to EXTRA: invalid state: $state").failureNel[ShipmentSpecimen]
+  def extra(timeModified: OffsetDateTime = OffsetDateTime.now): ValidationResult[ShipmentSpecimen] =
+    if (state != ShipmentSpecimen.presentState) {
+      Error(s"cannot change state to EXTRA: invalid state: $state").invalidNec
     } else {
-      copy(state = ShipmentItemState.Extra, version = version + 1, timeModified = Some(OffsetDateTime.now))
-        .successNel[String]
+      copy(state = extraState, version = version + 1, timeModified = Some(timeModified)).validNec
     }
 
-  def isStatePresent(): DomainValidation[Unit] =
-    if (state == ShipmentItemState.Present) ().successNel[String]
-    else DomainError(s"shipment specimen is not in present state").failureNel[Unit]
+  def isStatePresent(): ValidationResult[Unit] =
+    if (state == ShipmentSpecimen.presentState) ().validNec
+    else Error(s"shipment specimen is not in present state").invalidNec
 
-  def isStateNotPresent(): DomainValidation[Unit] =
-    if (state != ShipmentItemState.Present) ().successNel[String]
-    else DomainError(s"shipment specimen in present state").failureNel[Unit]
+  def isStateNotPresent(): ValidationResult[Unit] =
+    if (state != ShipmentSpecimen.presentState) ().validNec
+    else Error(s"shipment specimen in present state").invalidNec
 
-  def isStateExtra(): DomainValidation[Unit] =
-    if (state == ShipmentItemState.Extra) ().successNel[String]
-    else DomainError(s"shipment specimen is not in extra state").failureNel[Unit]
+  def isStateExtra(): ValidationResult[Unit] =
+    if (state == ShipmentSpecimen.extraState) ().validNec
+    else Error(s"shipment specimen is not in extra state").invalidNec
 
   override def toString: String =
     s"""|${this.getClass.getSimpleName}: {
@@ -115,35 +129,39 @@ final case class ShipmentSpecimen(
         |""".stripMargin
 }
 
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object ShipmentSpecimen extends ShipmentSpecimenValidations {
-  import org.biobank.domain.DomainValidations._
-  import org.biobank.CommonValidations._
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
   implicit val shipmentSpecimenFormat: Format[ShipmentSpecimen] = Json.format[ShipmentSpecimen]
 
-  def compareByState(a: ShipmentSpecimen, b: ShipmentSpecimen): Boolean = (a.state compareTo b.state) < 0
+  val presentState:  EntityState = new EntityState("present")
+  val receivedState: EntityState = new EntityState("received")
+  val missingState:  EntityState = new EntityState("missing")
+  val extraState:    EntityState = new EntityState("extra")
+
+  val states: List[EntityState] = List(presentState, receivedState, missingState, extraState)
+
+  def compareByState(a: ShipmentSpecimen, b: ShipmentSpecimen): Boolean =
+    (a.state.id compareTo b.state.id) < 0
 
   def create(
       id:                  ShipmentSpecimenId,
       version:             Long,
+      timeAdded:           OffsetDateTime = OffsetDateTime.now,
       shipmentId:          ShipmentId,
       specimenId:          SpecimenId,
-      state:               ShipmentItemState,
+      state:               EntityState,
       shipmentContainerId: Option[ShipmentContainerId]
-    ): DomainValidation[ShipmentSpecimen] =
+    ): ValidationResult[ShipmentSpecimen] =
     validate(id, version, shipmentId, specimenId, shipmentContainerId)
       .map(
         _ =>
-          ShipmentSpecimen(id,
-                           version,
-                           OffsetDateTime.now,
-                           None,
-                           shipmentId,
-                           specimenId,
-                           state,
-                           shipmentContainerId)
+          ShipmentSpecimen(id, version, timeAdded, None, shipmentId, specimenId, state, shipmentContainerId)
       )
+
+  def validateContainerId(id: Option[ShipmentContainerId]): ValidationResult[Option[ShipmentContainerId]] =
+    validateIdOption(id, ShipmentContainerIdEmpty)
 
   def validate(
       id:                  ShipmentSpecimenId,
@@ -151,14 +169,41 @@ object ShipmentSpecimen extends ShipmentSpecimenValidations {
       shipmentId:          ShipmentId,
       specimenId:          SpecimenId,
       shipmentContainerId: Option[ShipmentContainerId]
-    ): DomainValidation[Unit] =
-    (validateId(id) |@|
-      validateVersion(version) |@|
-      validateId(shipmentId, ShipmentIdRequired) |@|
-      validateId(specimenId, SpecimenIdRequired) |@|
-      validateIdOption(shipmentContainerId, ShipmentContainerIdInvalid)) {
-      case _ => ()
-    }
+    ): ValidationResult[Unit] = {
+    (validateId(id),
+     validateVersion(version),
+     validateId(shipmentId, ShipmentIdRequired),
+     validateId(specimenId, SpecimenIdRequired),
+     validateIdOption(shipmentContainerId, ShipmentContainerIdEmpty)).mapN((_, _, _, _, _) => ())
+  }
+
+  def makePresent(
+      ss:           List[ShipmentSpecimen],
+      timeModified: OffsetDateTime = OffsetDateTime.now
+    ): ValidationResult[List[ShipmentSpecimen]] = {
+    ss.map(_.present(timeModified)).sequence
+  }
+
+  def makeReceived(
+      ss:           List[ShipmentSpecimen],
+      timeModified: OffsetDateTime = OffsetDateTime.now
+    ): ValidationResult[List[ShipmentSpecimen]] = {
+    ss.map(_.received(timeModified)).sequence
+  }
+
+  def makeMissing(
+      ss:           List[ShipmentSpecimen],
+      timeModified: OffsetDateTime = OffsetDateTime.now
+    ): ValidationResult[List[ShipmentSpecimen]] = {
+    ss.map(_.missing(timeModified)).sequence
+  }
+
+  def makeExtra(
+      ss:           List[ShipmentSpecimen],
+      timeModified: OffsetDateTime = OffsetDateTime.now
+    ): ValidationResult[List[ShipmentSpecimen]] = {
+    ss.map(_.extra(timeModified)).sequence
+  }
 }
 
 final case class ShipmentSpecimenCounts(specimens: Int, presentSpecimens: Int)

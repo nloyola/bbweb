@@ -11,6 +11,7 @@ import org.biobank.domain.participants._
 import org.biobank.fixtures._
 import org.biobank.services._
 import org.biobank.services.participants.SpecimensService
+import org.biobank.validation.Validation._
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
 import play.api.libs.json._
@@ -68,7 +69,7 @@ class ShipmentsProcessorSpec extends ProcessorTestFixture with ShipmentSpecFixtu
         ),
         "shipments-processor-id-2"
       )
-      Thread.sleep(250)
+      Thread.sleep(400)
       actor
     }
   }
@@ -83,19 +84,16 @@ class ShipmentsProcessorSpec extends ProcessorTestFixture with ShipmentSpecFixtu
                                originLocationId      = f.shipment.originLocationId.id,
                                destinationLocationId = f.shipment.destinationLocationId.id)
 
-      val v = ask(shipmentsProcessor, cmd).mapTo[ServiceValidation[ShipmentEvent]].futureValue
-      v.isSuccess must be(true)
-      shipmentRepository.getValues.map { s =>
-        s.courierName
-      } must contain(f.shipment.courierName)
+      val v = ask(shipmentsProcessor, cmd).mapTo[ValidationResult[ShipmentEvent]].futureValue
+      v.isValid must be(true)
+
+      shipmentRepository.getValues.map(_.courierName) must contain(f.shipment.courierName)
 
       shipmentRepository.removeAll
       shipmentsProcessor = restartProcessor(shipmentsProcessor).futureValue
 
       shipmentRepository.getValues.size must be(1)
-      shipmentRepository.getValues.map { s =>
-        s.courierName
-      } must contain(f.shipment.courierName)
+      shipmentRepository.getValues.map(_.courierName) must contain(f.shipment.courierName)
     }
 
     it("recovers a snapshot", PersistenceTest) {
@@ -115,10 +113,7 @@ class ShipmentsProcessorSpec extends ProcessorTestFixture with ShipmentSpecFixtu
       shipmentsProcessor = restartProcessor(shipmentsProcessor).futureValue
 
       shipmentRepository.getValues.size must be(1)
-      shipmentRepository.getByKey(snapshotShipment.id) mustSucceed { repoShipment =>
-        repoShipment.courierName must be(snapshotShipment.courierName)
-        ()
-      }
+      shipmentRepository.getByKey(snapshotShipment.id).value.courierName must be(snapshotShipment.courierName)
     }
 
   }

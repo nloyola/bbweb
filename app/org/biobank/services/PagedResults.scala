@@ -1,6 +1,8 @@
 package org.biobank.services
 
+import cats.implicits._
 import play.api.libs.json._
+import org.biobank.validation.Validation._
 import org.slf4j.{Logger, LoggerFactory}
 import scalaz.Scalaz._
 
@@ -41,6 +43,22 @@ object PagedResults {
                      limit  = limit,
                      offset = offset.toLong,
                      total  = items.size.toLong).successNel[String]
+      }
+    }
+
+  def createCats[T](items: Seq[T], page: Int, limit: Int): ValidationResult[PagedResults[T]] =
+    if (items.isEmpty) {
+      PagedResults.createEmpty[T](page, limit).validNec
+    } else {
+      val offset = limit * (page - 1)
+      if ((offset > 0) && (offset >= items.size)) {
+        Error(s"invalid page requested: ${page}").invalidNec
+      } else {
+        PagedResults(items  = items.drop(offset).take(limit),
+                     page   = page,
+                     limit  = limit,
+                     offset = offset.toLong,
+                     total  = items.size.toLong).validNec
       }
     }
 

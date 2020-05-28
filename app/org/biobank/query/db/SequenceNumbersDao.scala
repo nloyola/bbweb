@@ -1,8 +1,10 @@
 package org.biobank.query.db
 
+import cats.data._
+import cats.implicits._
 import com.google.inject.ImplementedBy
 import javax.inject.Inject
-import org.biobank._
+import org.biobank.validation.Validation._
 import play.api.db.slick.DatabaseConfigProvider
 import scala.concurrent.{ExecutionContext, Future}
 import scalaz.Scalaz._
@@ -15,7 +17,7 @@ trait SequenceNumbersDao {
 
   def remove(persistenceId: String): Future[Unit]
 
-  def sequenceNumberForId(persistenceId: String): FutureValidation[SequenceNumber]
+  def sequenceNumberForId(persistenceId: String): EitherT[Future, ValidationError, SequenceNumber]
 
 }
 
@@ -43,11 +45,15 @@ class SequenceNumbersDaoSlick @Inject()(
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  def sequenceNumberForId(persistenceId: String): FutureValidation[SequenceNumber] = {
-    FutureValidation(
-      db.run(sequenceNumbers.filter(s => s.persistenceId === persistenceId).result.headOption)
-        .map(_.toSuccessNel(s"persistence ID not found: $persistenceId"))
-    )
+  def sequenceNumberForId(persistenceId: String): EitherT[Future, ValidationError, SequenceNumber] = {
+    val f = db.run(sequenceNumbers.filter(s => s.persistenceId === persistenceId).result.headOption).map {
+      _ match {
+        case Some(pid) => Either.right(pid)
+        case None      => Either.left(IllegalStateError(s"persistence ID not found: $persistenceId"))
+
+      }
+    }
+    EitherT(f)
   }
 
 }

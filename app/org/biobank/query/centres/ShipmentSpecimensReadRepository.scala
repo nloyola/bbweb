@@ -1,21 +1,22 @@
 package org.biobank.query.centres
 
+import cats.data._
+import cats.implicits._
 import com.google.inject.ImplementedBy
 import javax.inject.Inject
-import org.biobank._
 import org.biobank.domain._
 import org.biobank.domain.centres._
 import org.biobank.domain.participants._
 import org.biobank.dto.centres.ShipmentSpecimenDto
 import org.biobank.query.db.DatabaseSchema
+import org.biobank.validation.Validation._
 import play.api.db.slick.DatabaseConfigProvider
 import scala.concurrent.{ExecutionContext, Future}
-import scalaz.Scalaz._
-//import scalaz.Validation.FlatMap._
 import org.slf4j.LoggerFactory
 
 @ImplementedBy(classOf[ShipmentSpecimensReadRepositorySlick])
-trait ShipmentSpecimensReadRepository extends AsyncReadRepository[ShipmentSpecimenId, ShipmentSpecimenDto] {
+trait ShipmentSpecimensReadRepository
+    extends CatsAsyncReadRepository[ShipmentSpecimenId, ShipmentSpecimenDto] {
 
   def forShipment(id: ShipmentId): Future[Seq[ShipmentSpecimenDto]]
 
@@ -23,7 +24,7 @@ trait ShipmentSpecimensReadRepository extends AsyncReadRepository[ShipmentSpecim
   def forShipment(
       shipmentId:          ShipmentId,
       shipmentSpecimenIds: ShipmentSpecimenId*
-    ): FutureValidation[Seq[ShipmentSpecimenDto]]
+    ): Future[Seq[ShipmentSpecimenDto]]
 
   def forShipments(shipmentIds: ShipmentId*): Future[Seq[ShipmentSpecimenDto]]
 
@@ -31,12 +32,9 @@ trait ShipmentSpecimensReadRepository extends AsyncReadRepository[ShipmentSpecim
 
   def allForSpecimens(speciemnIds: SpecimenId*): Future[Seq[ShipmentSpecimenDto]]
 
-  def getBySpecimen(shipmentId: ShipmentId, specimenId: SpecimenId): FutureValidation[ShipmentSpecimenDto]
+  def getBySpecimen(shipmentId: ShipmentId, specimenId: SpecimenId): Option[ShipmentSpecimenDto]
 
-  def getBySpecimens(
-      shipmentId:  ShipmentId,
-      specimenIds: SpecimenId*
-    ): FutureValidation[Seq[ShipmentSpecimenDto]]
+  def getBySpecimens(shipmentId: ShipmentId, specimenIds: SpecimenId*): Seq[ShipmentSpecimenDto]
 
   def putAll(shipments: Seq[ShipmentSpecimenDto]): Future[Unit]
 
@@ -56,7 +54,6 @@ class ShipmentSpecimensReadRepositorySlick @Inject()(
     val ec: ExecutionContext)
     extends ShipmentSpecimensReadRepository with DatabaseSchema {
   import dbConfig.profile.api._
-  import org.biobank.CommonValidations._
 
   protected val log = LoggerFactory.getLogger(this.getClass)
 
@@ -71,11 +68,13 @@ class ShipmentSpecimensReadRepositorySlick @Inject()(
   def isEmpty: scala.concurrent.Future[Boolean] = ???
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  def getByKey(shipmentSpecimenId: ShipmentSpecimenId): FutureValidation[ShipmentSpecimenDto] = {
-    FutureValidation(
-      db.run(shipmentSpecimens.filter(ss => ss.id === shipmentSpecimenId).result.headOption)
-        .map(_.toSuccessNel(notFound(shipmentSpecimenId).toString))
-    )
+  def getByKey(id: ShipmentSpecimenId): FutureValidationResult[ShipmentSpecimenDto] = {
+    EitherT(db.run(shipmentSpecimens.filter(ss => ss.id === id).result.headOption).map {
+      _ match {
+        case Some(ss) => Either.right(ss)
+        case None     => Either.left(NonEmptyChain(notFound(id)))
+      }
+    })
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
@@ -83,19 +82,12 @@ class ShipmentSpecimensReadRepositorySlick @Inject()(
     db.run(shipmentSpecimens.filter(ss => ss.shipmentId === id).result)
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.Any"))
+  //@SuppressWarnings(Array("org.wartremover.warts.Any"))
   def forShipment(
       shipmentId:          ShipmentId,
       shipmentSpecimenIds: ShipmentSpecimenId*
-    ): FutureValidation[Seq[ShipmentSpecimenDto]] = {
-    FutureValidation {
-      forShipment(shipmentId).map { all =>
-        val filtered = all.filter(ss => shipmentSpecimenIds.contains(ss.id))
-
-        if (filtered.size == shipmentSpecimenIds.size) filtered.successNel[String]
-        else EntityCriteriaError("shipment specimens not in shipment").failureNel[Seq[ShipmentSpecimenDto]]
-      }
-    }
+    ): Future[Seq[ShipmentSpecimenDto]] = {
+    forShipment(shipmentId).map(_.filter(ss => shipmentSpecimenIds.contains(ss.id)))
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
@@ -111,7 +103,7 @@ class ShipmentSpecimensReadRepositorySlick @Inject()(
       .groupBy(_.shipmentId)
       .map {
         case (shipmentId, ss) =>
-          (shipmentId, ss.length, ss.map(_.state === ShipmentItemState.Present).length)
+          (shipmentId, ss.length, ss.map(_.state === ShipmentSpecimen.presentState).length)
       }
 
     db.run(query.result.map {
@@ -128,14 +120,11 @@ class ShipmentSpecimensReadRepositorySlick @Inject()(
     db.run(query.result)
   }
 
-  def getBySpecimen(shipmentId: ShipmentId, specimenId: SpecimenId): FutureValidation[ShipmentSpecimenDto] = {
+  def getBySpecimen(shipmentId: ShipmentId, specimenId: SpecimenId): Option[ShipmentSpecimenDto] = {
     ???
   }
 
-  def getBySpecimens(
-      shipmentId:  ShipmentId,
-      specimenIds: SpecimenId*
-    ): FutureValidation[Seq[ShipmentSpecimenDto]] = {
+  def getBySpecimens(shipmentId: ShipmentId, specimenIds: SpecimenId*): Seq[ShipmentSpecimenDto] = {
     ???
   }
 

@@ -1,30 +1,33 @@
 package org.biobank.domain.centres
 
+import cats.data.Validated
 import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Singleton}
 import org.biobank.TestData
 import org.biobank.domain._
 import org.slf4j.{Logger, LoggerFactory}
-import scalaz.Validation.FlatMap._
+import org.biobank.validation.Validation._
 
 @ImplementedBy(classOf[ShipmentWriteRepositoryStm])
-trait ShipmentsWriteRepository extends ReadWriteRepository[ShipmentId, Shipment] {
+trait ShipmentsWriteRepository extends CatsReadWriteRepository[ShipmentId, Shipment] {
+
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  def exists(id: ShipmentId): ValidationResult[Shipment]
 
   /**
    * Returns all shipments either being sent to or being received at the centre with centreId.
    */
   def withCentre(centreId: CentreId): Set[Shipment]
 
-  def getCreated(id: ShipmentId): DomainValidation[CreatedShipment]
+  def getCreated(id: ShipmentId): ValidationResult[CreatedShipment]
 
-  def getUnpacked(id: ShipmentId): DomainValidation[UnpackedShipment]
+  def getUnpacked(id: ShipmentId): ValidationResult[UnpackedShipment]
 
 }
 
 @Singleton
 class ShipmentWriteRepositoryStm @Inject()(val testData: TestData)
-    extends StmReadWriteRepositoryImpl[ShipmentId, Shipment](v => v.id) with ShipmentsWriteRepository {
-  import org.biobank.CommonValidations._
+    extends StmCatsReadWriteRepositoryImpl[ShipmentId, Shipment](v => v.id) with ShipmentsWriteRepository {
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
@@ -42,16 +45,17 @@ class ShipmentWriteRepositoryStm @Inject()(val testData: TestData)
       (s.originCentreId == centreId) || (s.destinationCentreId == centreId)
     }.toSet
 
-  def getCreated(id: ShipmentId): DomainValidation[CreatedShipment] =
-    for {
-      shipment <- getByKey(id)
-      created  <- shipment.isCreated
-    } yield created
+  def exists(id: ShipmentId): ValidationResult[Shipment] = {
+    Validated
+      .fromOption(getByKey(id), IdNotFound(s"shipment with id not found: $id")).toValidatedNec
+  }
 
-  def getUnpacked(id: ShipmentId): DomainValidation[UnpackedShipment] =
-    for {
-      shipment <- getByKey(id)
-      unpacked <- shipment.isUnpacked
-    } yield unpacked
+  def getCreated(id: ShipmentId): ValidationResult[CreatedShipment] = {
+    exists(id).andThen(_.isCreated)
+  }
+
+  def getUnpacked(id: ShipmentId): ValidationResult[UnpackedShipment] = {
+    exists(id).andThen(_.isUnpacked)
+  }
 
 }

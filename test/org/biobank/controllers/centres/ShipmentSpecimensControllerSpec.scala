@@ -72,12 +72,12 @@ class ShipmentSpecimensControllerSpec
       }
 
       it("list shipment specimens filtered by item state") {
-        val numSpecimens = ShipmentItemState.values.size
+        val numSpecimens = ShipmentSpecimen.states.size
         val f            = shipmentSpecimensFixture(numSpecimens)
 
         val shipmentSpecimensData =
           f.shipmentSpecimenMap.values
-            .zip(ShipmentItemState.values)
+            .zip(ShipmentSpecimen.states)
             .map {
               case (shipmentSpecimenData, itemState) =>
                 val shipmentSpecimen = shipmentSpecimenData.shipmentSpecimen.copy(state = itemState)
@@ -108,7 +108,7 @@ class ShipmentSpecimensControllerSpec
         val invalidStateName = "state::" + nameGenerator.next[ShipmentSpecimen]
         shipmentsReadRepository.put(f.shipmentDto)
         val reply = makeAuthRequest(GET, uri(f.shipment).addQueryString(s"filter=$invalidStateName")).value
-        reply must beBadRequestWithMessage("InvalidState: shipment specimen state does not exist")
+        reply must beBadRequestWithMessage("EntityCriteriaError.*state does not exist")
       }
 
       describe("list a single specimen when using paged query") {
@@ -133,11 +133,11 @@ class ShipmentSpecimensControllerSpec
 
       describe("list specimens in descending order by state") {
         listMultipleShipmentSpecimens() { () =>
-          val numSpecimens = ShipmentItemState.values.size
+          val numSpecimens = ShipmentSpecimen.states.size
           val f            = shipmentSpecimensFixture(numSpecimens)
 
           val shipmentSpecimens = f.shipmentSpecimenMap.values
-            .zip(ShipmentItemState.values)
+            .zip(ShipmentSpecimen.states)
             .map {
               case (shipmentSpecimenData, itemState) =>
                 val shipmentSpecimen = shipmentSpecimenData.shipmentSpecimen.copy(state = itemState)
@@ -241,7 +241,9 @@ class ShipmentSpecimensControllerSpec
 
         val url   = uri("canadd", newShipment.id.id, specimen.inventoryId)
         val reply = makeAuthRequest(GET, url).value
-        reply must beBadRequestWithMessage("EntityCriteriaError: specimens are already in an active shipment")
+        reply must beBadRequestWithMessage(
+          "SpecimensFoundInShipment.*specimens are already in an active shipment"
+        )
       }
     }
 
@@ -299,7 +301,7 @@ class ShipmentSpecimensControllerSpec
           shipmentsWriteRepository.put(shipment)
 
           val reply = makeAuthRequest(POST, uri(shipment), addJson).value
-          reply must beBadRequestWithMessage("InvalidState: shipment not created")
+          reply must beBadRequestWithMessage("InvalidState.*shipment not created")
         }
       }
 
@@ -311,15 +313,15 @@ class ShipmentSpecimensControllerSpec
 
         val addJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
         val reply   = makeAuthRequest(POST, uri(f.shipment), addJson).value
-        reply must beBadRequestWithMessage("EntityCriteriaError: invalid centre for specimen inventory IDs")
+        reply must beBadRequestWithMessage("EntityCriteriaError.*invalid centre for specimen inventory IDs")
       }
     }
 
     describe("alter specimens in shipments") {
 
       val stateData = Table(("shipment specimen states", "url path"),
-                            (ShipmentItemState.Received, "received"),
-                            (ShipmentItemState.Missing, "missing"))
+                            (ShipmentSpecimen.receivedState, "received"),
+                            (ShipmentSpecimen.missingState, "missing"))
 
       it("change state on a shipment specimen") {
         val f = specimensFixture(1)
@@ -372,7 +374,7 @@ class ShipmentSpecimensControllerSpec
               val url     = uri(shipment, urlPath)
               val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
               val reply   = makeAuthRequest(POST, url, reqJson).value
-              reply must beBadRequestWithMessage("InvalidState: shipment not unpacked")
+              reply must beBadRequestWithMessage("InvalidState.*shipment not unpacked")
           }
         }
       }
@@ -390,7 +392,7 @@ class ShipmentSpecimensControllerSpec
             val url     = uri(shipment, urlPath)
             val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
             val reply   = makeAuthRequest(POST, url, reqJson).value
-            reply must beBadRequestWithMessage("EntityCriteriaError: specimens not in this shipment:")
+            reply must beBadRequestWithMessage("EntityCriteriaError.*specimens not in this shipment:")
         }
       }
 
@@ -408,7 +410,7 @@ class ShipmentSpecimensControllerSpec
             val url     = uri(shipment, urlPath)
             val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
             val reply   = makeAuthRequest(POST, url, reqJson).value
-            reply must beBadRequestWithMessage("EntityCriteriaError: invalid inventory Ids:")
+            reply must beBadRequestWithMessage("EntityCriteriaError.*invalid inventory Ids:")
         }
       }
 
@@ -428,7 +430,7 @@ class ShipmentSpecimensControllerSpec
             val url     = uri(shipment, urlPath)
             val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
             val reply   = makeAuthRequest(POST, url, reqJson).value
-            reply must beBadRequestWithMessage("EntityCriteriaError: shipment specimens not present:")
+            reply must beBadRequestWithMessage("EntityCriteriaError.*shipment specimens not present:")
         }
       }
 
@@ -458,7 +460,7 @@ class ShipmentSpecimensControllerSpec
 
             val updatedShipmentSpecimen = shipmentSpecimen
               .copy(version      = shipmentSpecimen.version + 1,
-                    state        = ShipmentItemState.Present,
+                    state        = ShipmentSpecimen.presentState,
                     timeModified = Some(OffsetDateTime.now))
             updatedShipmentSpecimen must matchRepositoryShipmentSpecimen
         }
@@ -474,12 +476,12 @@ class ShipmentSpecimensControllerSpec
         shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
-        shipmentSpecimensRepository.put(shipmentSpecimen.copy(state = ShipmentItemState.Present))
+        shipmentSpecimensRepository.put(shipmentSpecimen.copy(state = ShipmentSpecimen.presentState))
 
         val url     = uri(shipment, "present")
         val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
         val reply   = makeAuthRequest(POST, url, reqJson).value
-        reply must beBadRequestWithMessage("EntityCriteriaError: shipment specimens are present:")
+        reply must beBadRequestWithMessage("EntityCriteriaError.*shipment specimens are present:")
       }
 
       it("add a shipment specimen as EXTRA to a shipment") {
@@ -516,12 +518,12 @@ class ShipmentSpecimensControllerSpec
         // this shipment specimen belongs to a different shipment
         val shipmentSpecimen = factory.createShipmentSpecimen.copy(shipmentId = f2.shipment.id,
                                                                    specimenId = specimen.id,
-                                                                   state      = ShipmentItemState.Present)
+                                                                   state      = ShipmentSpecimen.presentState)
         shipmentSpecimensRepository.put(shipmentSpecimen)
         val url     = uri(shipment, "extra")
         val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
         val reply   = makeAuthRequest(POST, url, reqJson).value
-        reply must beBadRequestWithMessage("EntityCriteriaError: specimens are already in an active shipment")
+        reply must beBadRequestWithMessage("EntityCriteriaError.*specimens are already in an active shipment")
       }
 
       it("not add an EXTRA shipment specimen to a shipment if it is already part of the shipment") {
@@ -541,7 +543,7 @@ class ShipmentSpecimensControllerSpec
             val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
             val reply   = makeAuthRequest(POST, url, reqJson).value
             reply must beBadRequestWithMessage(
-              "EntityCriteriaError: specimen inventory IDs already in this shipment: "
+              "EntityCriteriaError.*specimen inventory IDs already in this shipment: "
             )
         }
       }
@@ -558,7 +560,7 @@ class ShipmentSpecimensControllerSpec
         val url     = uri(shipment, "extra")
         val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
         val reply   = makeAuthRequest(POST, url, reqJson).value
-        reply must beBadRequestWithMessage("EntityCriteriaError: invalid centre for specimen inventory IDs")
+        reply must beBadRequestWithMessage("EntityCriteriaError.*invalid centre for specimen inventory IDs")
       }
 
     }
@@ -574,7 +576,7 @@ class ShipmentSpecimensControllerSpec
           val specimen = v.specimen
           specimenRepository.put(specimen)
 
-          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Missing)
+          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentSpecimen.missingState)
           shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(shipmentSpecimen))
           shipmentSpecimensRepository.put(shipmentSpecimen)
 
@@ -591,7 +593,7 @@ class ShipmentSpecimensControllerSpec
           repoShipmentSpecimens must have size (1)
           repoShipmentSpecimens.foreach { r =>
             r.specimenId must be(specimen.id)
-            r.state must be(ShipmentItemState.Present)
+            r.state must be(ShipmentSpecimen.presentState)
           }
         }
       }
@@ -606,14 +608,14 @@ class ShipmentSpecimensControllerSpec
           val specimen = v.specimen
           specimenRepository.put(specimen)
 
-          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Present)
+          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentSpecimen.presentState)
           shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(shipmentSpecimen))
           shipmentSpecimensRepository.put(shipmentSpecimen)
 
           val url     = uri(shipment, "present")
           val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
           val reply   = makeAuthRequest(POST, url, reqJson).value
-          reply must beBadRequestWithMessage("EntityCriteriaError: shipment specimens are present")
+          reply must beBadRequestWithMessage("EntityCriteriaError.*shipment specimens are present")
         }
       }
 
@@ -630,7 +632,7 @@ class ShipmentSpecimensControllerSpec
           val url     = uri(shipment, "present")
           val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
           val reply   = makeAuthRequest(POST, url, reqJson).value
-          reply must beBadRequestWithMessage("EntityCriteriaError: specimens not in this shipment")
+          reply must beBadRequestWithMessage("EntityCriteriaError.*specimens not in this shipment")
         }
       }
     }
@@ -646,7 +648,7 @@ class ShipmentSpecimensControllerSpec
           val specimen = v.specimen
           specimenRepository.put(specimen)
 
-          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Present)
+          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentSpecimen.presentState)
           shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(shipmentSpecimen))
           shipmentSpecimensRepository.put(shipmentSpecimen)
 
@@ -663,7 +665,7 @@ class ShipmentSpecimensControllerSpec
           repoShipmentSpecimens must have size (1)
           repoShipmentSpecimens.foreach { r =>
             r.specimenId must be(specimen.id)
-            r.state must be(ShipmentItemState.Received)
+            r.state must be(ShipmentSpecimen.receivedState)
           }
         }
       }
@@ -678,14 +680,14 @@ class ShipmentSpecimensControllerSpec
           val specimen = v.specimen
           specimenRepository.put(specimen)
 
-          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Received)
+          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentSpecimen.receivedState)
           shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(shipmentSpecimen))
           shipmentSpecimensRepository.put(shipmentSpecimen)
 
           val url     = uri(shipment, "received")
           val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
           val reply   = makeAuthRequest(POST, url, reqJson).value
-          reply must beBadRequestWithMessage("EntityCriteriaError: shipment specimens not present")
+          reply must beBadRequestWithMessage("EntityCriteriaError.*shipment specimens not present")
         }
       }
 
@@ -702,7 +704,7 @@ class ShipmentSpecimensControllerSpec
           val url     = uri(shipment, "received")
           val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
           val reply   = makeAuthRequest(POST, url, reqJson).value
-          reply must beBadRequestWithMessage("EntityCriteriaError: specimens not in this shipment")
+          reply must beBadRequestWithMessage("EntityCriteriaError.*specimens not in this shipment")
         }
       }
     }
@@ -718,7 +720,7 @@ class ShipmentSpecimensControllerSpec
           val specimen = v.specimen
           specimenRepository.put(specimen)
 
-          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Present)
+          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentSpecimen.presentState)
           shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(shipmentSpecimen))
           shipmentSpecimensRepository.put(shipmentSpecimen)
 
@@ -735,7 +737,7 @@ class ShipmentSpecimensControllerSpec
           repoShipmentSpecimens must have size (1)
           repoShipmentSpecimens.foreach { r =>
             r.specimenId must be(specimen.id)
-            r.state must be(ShipmentItemState.Missing)
+            r.state must be(ShipmentSpecimen.missingState)
           }
         }
       }
@@ -750,14 +752,14 @@ class ShipmentSpecimensControllerSpec
           val specimen = v.specimen
           specimenRepository.put(specimen)
 
-          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentItemState.Missing)
+          val shipmentSpecimen = v.shipmentSpecimen.copy(state = ShipmentSpecimen.missingState)
           shipmentSpecimensReadRepository.put(ShipmentSpecimenDto.from(shipmentSpecimen))
           shipmentSpecimensRepository.put(shipmentSpecimen)
 
           val url     = uri(shipment, "missing")
           val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
           val reply   = makeAuthRequest(POST, url, reqJson).value
-          reply must beBadRequestWithMessage("EntityCriteriaError: shipment specimens not present")
+          reply must beBadRequestWithMessage("EntityCriteriaError.*shipment specimens not present")
         }
       }
 
@@ -774,7 +776,7 @@ class ShipmentSpecimensControllerSpec
           val url     = uri(shipment, "received")
           val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
           val reply   = makeAuthRequest(POST, url, reqJson).value
-          reply must beBadRequestWithMessage("EntityCriteriaError: specimens not in this shipment")
+          reply must beBadRequestWithMessage("EntityCriteriaError.*specimens not in this shipment")
         }
       }
     }
@@ -802,7 +804,7 @@ class ShipmentSpecimensControllerSpec
           dto.get must matchDtoToShipment(shipment)
 
           shipmentSpecimensRepository.getBySpecimen(shipment.id, extraSpecimen) mustSucceed {
-            _.state must be(ShipmentItemState.Extra)
+            _.state must be(ShipmentSpecimen.extraState)
           }
         }
       }
@@ -822,7 +824,7 @@ class ShipmentSpecimensControllerSpec
           val reqJson = Json.obj("specimenInventoryIds" -> List(extraSpecimen.inventoryId))
           val reply   = makeAuthRequest(POST, url, reqJson).value
           reply must beBadRequestWithMessage(
-            "EntityCriteriaError: specimens are already in an active shipment"
+            "EntityCriteriaError.*specimens are already in an active shipment"
           )
         }
       }
@@ -841,7 +843,7 @@ class ShipmentSpecimensControllerSpec
           val reqJson = Json.obj("specimenInventoryIds" -> List(specimen.inventoryId))
           val reply   = makeAuthRequest(POST, url, reqJson).value
           reply must beBadRequestWithMessage(
-            "EntityCriteriaError: specimen inventory IDs already in this shipment"
+            "EntityCriteriaError.*specimen inventory IDs already in this shipment"
           )
         }
       }
@@ -859,7 +861,7 @@ class ShipmentSpecimensControllerSpec
         val url   = uri(f.shipment.id.id, shipmentSpecimen.id.id, shipmentSpecimen.version.toString)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beOkResponseWithJsonReply
-        shipmentSpecimensRepository.getByKey(shipmentSpecimen.id) mustFail "IdNotFound.*shipment specimen.*"
+        shipmentSpecimensRepository.getByKey(shipmentSpecimen.id) mustBe None
       }
 
       it("must remove an extra specimen from shipment in unpacked state") {
@@ -868,7 +870,7 @@ class ShipmentSpecimensControllerSpec
         val specimen = f.specimens.head
         val shipmentSpecimen = factory.createShipmentSpecimen.copy(shipmentId = f.shipment.id,
                                                                    specimenId = specimen.id,
-                                                                   state      = ShipmentItemState.Extra)
+                                                                   state      = ShipmentSpecimen.extraState)
         shipmentsReadRepository.put(f.dtoFrom(shipment))
         shipmentsWriteRepository.put(shipment)
 
@@ -876,7 +878,7 @@ class ShipmentSpecimensControllerSpec
         val url   = uri(f.shipment.id.id, shipmentSpecimen.id.id, shipmentSpecimen.version.toString)
         val reply = makeAuthRequest(DELETE, url).value
         reply must beOkResponseWithJsonReply
-        shipmentSpecimensRepository.getByKey(shipmentSpecimen.id) mustFail "IdNotFound.*shipment specimen.*"
+        shipmentSpecimensRepository.getByKey(shipmentSpecimen.id) mustBe None
       }
 
       it("must not delete a specimen from a shipment not in created or unpacked state") {
@@ -888,7 +890,7 @@ class ShipmentSpecimensControllerSpec
                               makeReceivedShipment(f.shipment),
                               makeLostShipment(f.shipment))
         val stateData =
-          Table("shipment specimen states", ShipmentItemState.Received, ShipmentItemState.Missing)
+          Table("shipment specimen states", ShipmentSpecimen.receivedState, ShipmentSpecimen.missingState)
 
         forAll(shipments) { shipment =>
           forAll(stateData) { shipSpecimenState =>
@@ -902,12 +904,10 @@ class ShipmentSpecimensControllerSpec
             val url   = uri(shipment.id.id, shipmentSpecimen.id.id, shipmentSpecimen.version.toString)
             val reply = makeAuthRequest(DELETE, url).value
             reply must beBadRequestWithMessage(
-              "EntityCriteriaError: cannot remove, shipment specimen state is invalid"
+              "EntityCriteriaError.*cannot remove, shipment specimen state is invalid"
             )
 
-            shipmentSpecimensRepository.getByKey(shipmentSpecimen.id).leftMap { _ =>
-              fail("should still be in repository")
-            }
+            shipmentSpecimensRepository.getByKey(shipmentSpecimen.id) must not be None
           }
         }
       }
@@ -967,20 +967,17 @@ class ShipmentSpecimensControllerSpec
   def matchRepositoryShipmentSpecimen =
     new Matcher[ShipmentSpecimen] {
 
-      def apply(left: ShipmentSpecimen) =
-        shipmentSpecimensRepository
-          .getByKey(left.id).fold(
-            err => {
-              MatchResult(false, s"not found in repository: ${err.head}", "")
+      def apply(left: ShipmentSpecimen) = {
+        shipmentSpecimensRepository.getByKey(left.id) match {
+          case None => MatchResult(false, s"not found in repository: ${left.id}", "")
+          case Some(repoSs) =>
+            val repoMatcher = matchShipmentSpecimen(left)(repoSs)
+            MatchResult(repoMatcher.matches,
+                        s"repository shipment specimen does not match expected: ${repoMatcher.failureMessage}",
+                        s"repository shipment specimen matches expected: ${repoMatcher.failureMessage}")
+        }
+      }
 
-            },
-            repoShSpc => {
-              val repoMatcher = matchShipmentSpecimen(left)(repoShSpc)
-              MatchResult(repoMatcher.matches,
-                          s"repository shipment specimen does not match expected: ${repoMatcher.failureMessage}",
-                          s"repository shipment specimen matches expected: ${repoMatcher.failureMessage}")
-            }
-          )
     }
 
 }

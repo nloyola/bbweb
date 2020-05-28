@@ -802,7 +802,7 @@ class TestData @Inject()(
                            timeModified        = None,
                            shipmentId          = shipmentId,
                            specimenId          = specimen.id,
-                           state               = ShipmentItemState.Present,
+                           state               = ShipmentSpecimen.presentState,
                            shipmentContainerId = None)
       }
     }

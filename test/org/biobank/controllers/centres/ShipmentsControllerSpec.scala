@@ -14,7 +14,6 @@ import play.api.mvc._
 import play.api.test.Helpers._
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-import org.scalatest.concurrent.ScalaFutures
 
 /**
  * Tests the REST API for [[Shipment]]s.
@@ -23,10 +22,9 @@ import org.scalatest.concurrent.ScalaFutures
  */
 class ShipmentsControllerSpec
     extends ShipmentsControllerSpecFixtures with ShipmentsControllerSpecUtils with PagedResultsSharedSpec
-    with ScalaFutures with PagedResultsMatchers {
+    with PagedResultsMatchers {
 
   import org.scalatest.matchers.must.Matchers._
-  import org.biobank.TestUtils._
   import org.biobank.matchers.JsonMatchers._
   import org.biobank.matchers.DtoMatchers._
   import org.biobank.matchers.EntityMatchers._
@@ -371,20 +369,20 @@ class ShipmentsControllerSpec
         shipmentsWriteRepository.put(f.shipment)
         val reply = makeAuthRequest(POST, uri(""), shipmentToAddJson(f.shipment)).value
         reply must beForbiddenRequestWithMessage(
-          "EntityCriteriaError: shipment with tracking number already exists"
+          "EntityCriteriaError.*shipment with tracking number already exists"
         )
       }
 
       it("fail when adding a shipment with no courier name") {
         val shipment = createdShipmentFixture.shipment.copy(courierName = "")
         val reply    = makeAuthRequest(POST, uri(""), shipmentToAddJson(shipment)).value
-        reply must beBadRequestWithMessage("CourierNameInvalid")
+        reply must beBadRequestWithMessage("CourierNameEmpty")
       }
 
       it("fail when adding a shipment with no tracking number") {
         val shipment = createdShipmentFixture.shipment.copy(trackingNumber = "")
         val reply    = makeAuthRequest(POST, uri(""), shipmentToAddJson(shipment)).value
-        reply must beBadRequestWithMessage("TrackingNumberInvalid")
+        reply must beBadRequestWithMessage("TrackingNumberEmpty")
       }
 
       it("fail when adding a shipment with no FROM location id") {
@@ -426,7 +424,7 @@ class ShipmentsControllerSpec
 
         val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "courierName" -> "")
         val reply      = makeAuthRequest(POST, uri("courier", f.shipment.id.id), updateJson).value
-        reply must beBadRequestWithMessage("CourierNameInvalid")
+        reply must beBadRequestWithMessage("CourierNameEmpty")
       }
 
       it("must not allow updating the courier name on a shipment not in created state") {
@@ -441,7 +439,7 @@ class ShipmentsControllerSpec
             Json.obj("expectedVersion" -> shipment.version, "courierName" -> nameGenerator.next[String])
 
           val reply = makeAuthRequest(POST, uri("courier", shipment.id.id), updateJson).value
-          reply must beBadRequestWithMessage("InvalidState: shipment not created")
+          reply must beBadRequestWithMessage("InvalidState.*shipment not created")
         }
       }
 
@@ -483,7 +481,7 @@ class ShipmentsControllerSpec
           Json.obj("expectedVersion" -> shipments(0).version, "trackingNumber" -> shipments(1).trackingNumber)
         val reply = makeAuthRequest(POST, uri("tracking-number", shipments(0).id.id), updateJson).value
         reply must beForbiddenRequestWithMessage(
-          "EntityCriteriaError: shipment with tracking number already exists"
+          "EntityCriteriaError.*shipment with tracking number already exists"
         )
       }
 
@@ -494,7 +492,7 @@ class ShipmentsControllerSpec
 
         val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "trackingNumber" -> "")
         val reply      = makeAuthRequest(POST, uri("tracking-number", f.shipment.id.id), updateJson).value
-        reply must beBadRequestWithMessage("TrackingNumberInvalid")
+        reply must beBadRequestWithMessage("TrackingNumberEmpty")
       }
 
       it("must not allow updating the tracking number on a shipment not in created state") {
@@ -509,7 +507,7 @@ class ShipmentsControllerSpec
             Json.obj("expectedVersion" -> shipment.version, "trackingNumber" -> nameGenerator.next[String])
 
           val reply = makeAuthRequest(POST, uri("tracking-number", shipment.id.id), updateJson).value
-          reply must beBadRequestWithMessage("InvalidState: shipment not created")
+          reply must beBadRequestWithMessage("InvalidState.*shipment not created")
         }
       }
 
@@ -579,7 +577,7 @@ class ShipmentsControllerSpec
           val updateJson = Json.obj("expectedVersion" -> shipment.version, "locationId" -> badLocation.id.id)
 
           val reply = makeAuthRequest(POST, uri("origin", shipment.id.id), updateJson).value
-          reply must beBadRequestWithMessage("InvalidState: shipment not created")
+          reply must beBadRequestWithMessage("InvalidState.*shipment not created")
         }
       }
 
@@ -649,7 +647,7 @@ class ShipmentsControllerSpec
           val updateJson = Json.obj("expectedVersion" -> shipment.version, "locationId" -> badLocation.id.id)
 
           val reply = makeAuthRequest(POST, uri("destination", shipment.id.id), updateJson).value
-          reply must beBadRequestWithMessage("InvalidState: shipment not created")
+          reply must beBadRequestWithMessage("InvalidState.*shipment not created")
         }
       }
 
@@ -687,7 +685,7 @@ class ShipmentsControllerSpec
         describe("change to CREATED state from PACKED state") {
           changeStateSharedBehaviour { () =>
             val f               = packedShipmentFixture
-            val updatedShipment = f.shipment.created
+            val updatedShipment = f.shipment.created(OffsetDateTime.now)
             ChangeStateInfo(f.shipment, f.shipmentDto, updatedShipment, Shipment.createdState, None)
           }
         }
@@ -710,7 +708,7 @@ class ShipmentsControllerSpec
             val shipment   = f.shipments(state)
             val updateJson = Json.obj("expectedVersion" -> shipment.version)
             val reply      = makeAuthRequest(POST, uri("state/created", shipment.id.id), updateJson).value
-            reply must beBadRequestWithMessage("InvalidState: shipment is not packed")
+            reply must beBadRequestWithMessage("InvalidState.*shipment is not packed")
           }
         }
       }
@@ -738,7 +736,7 @@ class ShipmentsControllerSpec
             val shipment = f.shipments(Shipment.sentState).asInstanceOf[SentShipment]
             addSpecimenToShipment(shipment, f.originCentre)
             val stateChangeTime = OffsetDateTime.now.minusDays(10)
-            val updatedShipment = shipment.backToPacked
+            val updatedShipment = shipment.backToPacked(OffsetDateTime.now)
             ChangeStateInfo(shipment,
                             f.dtoFrom(shipment),
                             updatedShipment,
@@ -761,7 +759,7 @@ class ShipmentsControllerSpec
             val shipment   = f.shipments(state)
             val updateJson = Json.obj("expectedVersion" -> shipment.version, "datetime" -> OffsetDateTime.now)
             val reply      = makeAuthRequest(POST, uri("state/packed", shipment.id.id), updateJson).value
-            reply must beBadRequestWithMessage("InvalidState: shipment has no specimens")
+            reply must beBadRequestWithMessage("InvalidState.*shipment has no specimens")
           }
         }
 
@@ -786,7 +784,7 @@ class ShipmentsControllerSpec
 
             val updateJson = Json.obj("expectedVersion" -> shipment.version, "datetime" -> OffsetDateTime.now)
             val reply      = makeAuthRequest(POST, uri("state/packed", shipment.id.id), updateJson).value
-            reply must beBadRequestWithMessage("InvalidState: cannot change to packed state")
+            reply must beBadRequestWithMessage("InvalidState.*cannot change to packed state")
           }
         }
       }
@@ -814,7 +812,7 @@ class ShipmentsControllerSpec
             val shipment = f.shipments(Shipment.receivedState).asInstanceOf[ReceivedShipment]
             addSpecimenToShipment(shipment, f.originCentre)
             val stateChangeTime = OffsetDateTime.now.minusDays(10)
-            val updatedShipment = shipment.backToSent
+            val updatedShipment = shipment.backToSent(OffsetDateTime.now)
             ChangeStateInfo(shipment,
                             f.dtoFrom(shipment),
                             updatedShipment,
@@ -829,7 +827,7 @@ class ShipmentsControllerSpec
             val shipment = f.shipments(Shipment.lostState).asInstanceOf[LostShipment]
             addSpecimenToShipment(shipment, f.originCentre)
             val stateChangeTime = OffsetDateTime.now.minusDays(10)
-            val updatedShipment = shipment.backToSent
+            val updatedShipment = shipment.backToSent(OffsetDateTime.now)
             ChangeStateInfo(shipment,
                             f.dtoFrom(shipment),
                             updatedShipment,
@@ -863,7 +861,7 @@ class ShipmentsControllerSpec
             val shipment   = f.shipments(state)
             val updateJson = Json.obj("expectedVersion" -> shipment.version, "datetime" -> OffsetDateTime.now)
             val reply      = makeAuthRequest(POST, uri("state/sent", shipment.id.id), updateJson).value
-            reply must beBadRequestWithMessage("InvalidState: cannot change to sent state")
+            reply must beBadRequestWithMessage("InvalidState.*cannot change to sent state")
           }
         }
 
@@ -892,7 +890,7 @@ class ShipmentsControllerSpec
             val shipment = f.shipments(Shipment.unpackedState).asInstanceOf[UnpackedShipment]
             addSpecimenToShipment(shipment, f.originCentre)
             val stateChangeTime = shipment.timeSent.get.plusDays(1)
-            val updatedShipment = shipment.backToReceived
+            val updatedShipment = shipment.backToReceived(OffsetDateTime.now)
             ChangeStateInfo(shipment,
                             f.dtoFrom(shipment),
                             updatedShipment,
@@ -919,7 +917,7 @@ class ShipmentsControllerSpec
             val shipment   = f.shipments(state)
             val updateJson = Json.obj("expectedVersion" -> shipment.version, "datetime" -> OffsetDateTime.now)
             val reply      = makeAuthRequest(POST, uri("state/received", shipment.id.id), updateJson).value
-            reply must beBadRequestWithMessage("InvalidState: cannot change to received state")
+            reply must beBadRequestWithMessage("InvalidState.*cannot change to received state")
           }
         }
 
@@ -946,7 +944,7 @@ class ShipmentsControllerSpec
           val shipmentSpecimen =
             factory.createShipmentSpecimen.copy(shipmentId = f.shipment.id,
                                                 specimenId = specimen.id,
-                                                state      = ShipmentItemState.Received)
+                                                state      = ShipmentSpecimen.receivedState)
           shipmentSpecimensRepository.put(shipmentSpecimen)
 
           val updateJson =
@@ -954,7 +952,7 @@ class ShipmentsControllerSpec
 
           val reply = makeAuthRequest(POST, uri("state/received", f.shipment.id.id), updateJson).value
           reply must beBadRequestWithMessage(
-            "InvalidState: cannot change to received state, items have already been processed"
+            "InvalidState.*cannot change to received state, items have already been processed"
           )
         }
 
@@ -986,7 +984,7 @@ class ShipmentsControllerSpec
             val shipment = f.shipments(Shipment.completedState).asInstanceOf[CompletedShipment]
             addSpecimenToShipment(shipment, f.originCentre)
             val stateChangeTime = OffsetDateTime.now.plusDays(1)
-            val updatedShipment = shipment.backToUnpacked
+            val updatedShipment = shipment.backToUnpacked(OffsetDateTime.now)
             ChangeStateInfo(shipment,
                             f.dtoFrom(shipment),
                             updatedShipment,
@@ -1012,7 +1010,7 @@ class ShipmentsControllerSpec
             val shipment   = f.shipments(state)
             val updateJson = Json.obj("expectedVersion" -> shipment.version, "datetime" -> OffsetDateTime.now)
             val reply      = makeAuthRequest(POST, uri("state/unpacked", shipment.id.id), updateJson).value
-            reply must beBadRequestWithMessage("InvalidState: cannot change to unpacked state")
+            reply must beBadRequestWithMessage("InvalidState.*cannot change to unpacked state")
           }
         }
 
@@ -1045,7 +1043,7 @@ class ShipmentsControllerSpec
 
           val updateJson = Json.obj("expectedVersion" -> f.shipment.version, "datetime" -> timeCompleted)
           val reply      = makeAuthRequest(POST, uri("state/completed", f.shipment.id.id), updateJson).value
-          reply must beBadRequestWithMessage("InvalidState: shipment has specimens in present state")
+          reply must beBadRequestWithMessage("InvalidState.*shipment has specimens in present state")
         }
 
         it("not change to COMPLETED state from an invalid state") {
@@ -1066,7 +1064,7 @@ class ShipmentsControllerSpec
             val shipment   = f.shipments(state)
             val updateJson = Json.obj("expectedVersion" -> shipment.version, "datetime" -> OffsetDateTime.now)
             val reply      = makeAuthRequest(POST, uri("state/completed", shipment.id.id), updateJson).value
-            reply must beBadRequestWithMessage("InvalidState: cannot change to completed state")
+            reply must beBadRequestWithMessage("InvalidState.*cannot change to completed state")
           }
         }
 
@@ -1106,7 +1104,7 @@ class ShipmentsControllerSpec
             val shipment   = f.shipments(state)
             val updateJson = Json.obj("expectedVersion" -> shipment.version, "datetime" -> OffsetDateTime.now)
             val reply      = makeAuthRequest(POST, uri("state/lost", shipment.id.id), updateJson).value
-            reply must beBadRequestWithMessage("InvalidState: cannot change to lost state")
+            reply must beBadRequestWithMessage("InvalidState.*cannot change to lost state")
           }
         }
       }
@@ -1148,7 +1146,7 @@ class ShipmentsControllerSpec
           shipmentsWriteRepository.put(shipment)
 
           val reply = makeAuthRequest(POST, uri("state/skip-to-sent", shipment.id.id), updateJson).value
-          reply must beBadRequestWithMessage("InvalidState: shipment not created")
+          reply must beBadRequestWithMessage("InvalidState.*shipment not created")
         }
       }
 
@@ -1192,7 +1190,7 @@ class ShipmentsControllerSpec
           shipmentsWriteRepository.put(shipment)
 
           val reply = makeAuthRequest(POST, uri("state/skip-to-unpacked", shipment.id.id), updateJson).value
-          reply must beBadRequestWithMessage("InvalidState: shipment not sent")
+          reply must beBadRequestWithMessage("InvalidState.*shipment not sent")
         }
       }
 
@@ -1207,7 +1205,7 @@ class ShipmentsControllerSpec
 
         val reply = makeAuthRequest(DELETE, uri(f.shipment.id.id, s"${f.shipment.version}")).value
         reply must beOkResponseWithJsonReply
-        shipmentsWriteRepository.getByKey(f.shipment.id) mustFail "IdNotFound.*shipment id.*"
+        shipmentsWriteRepository.getByKey(f.shipment.id) mustBe None
       }
 
       it("fail on attempt to delete a shipment not in the system") {
@@ -1225,7 +1223,7 @@ class ShipmentsControllerSpec
           shipmentsWriteRepository.put(shipment)
 
           val reply = makeAuthRequest(DELETE, uri(shipment.id.id, s"${shipment.version}")).value
-          reply must beBadRequestWithMessage("InvalidState: shipment not created")
+          reply must beBadRequestWithMessage("InvalidState.*shipment not created")
         }
       }
 
@@ -1313,20 +1311,16 @@ class ShipmentsControllerSpec
   def matchRepositoryShipment =
     new Matcher[Shipment] {
 
-      def apply(left: Shipment) =
-        shipmentsWriteRepository
-          .getByKey(left.id).fold(
-            err => {
-              MatchResult(false, s"not found in repository: ${err.head}", "")
-
-            },
-            repoCet => {
-              val repoMatcher = matchShipment(left)(repoCet)
-              MatchResult(repoMatcher.matches,
-                          s"repository shipment does not match expected: ${repoMatcher.failureMessage}",
-                          s"repository shipment matches expected: ${repoMatcher.failureMessage}")
-            }
-          )
+      def apply(left: Shipment) = {
+        shipmentsWriteRepository.getByKey(left.id) match {
+          case None => MatchResult(false, s"not found in repository: ${left.id}", "")
+          case Some(repoEnt) =>
+            val repoMatcher = matchShipment(left)(repoEnt)
+            MatchResult(repoMatcher.matches,
+                        s"repository shipment does not match expected: ${repoMatcher.failureMessage}",
+                        s"repository shipment matches expected: ${repoMatcher.failureMessage}")
+        }
+      }
     }
 
   private case class ChangeStateInfo(

@@ -1,7 +1,9 @@
 package org.biobank.domain
 
+import cats.implicits._
 import java.time.OffsetDateTime
 import play.api.libs.json._
+import org.biobank.validation.Validation._
 import scalaz.Scalaz._
 
 /**
@@ -32,6 +34,10 @@ trait ConcurrencySafeEntity[T] extends IdentifiedDomainObject[T] {
   def requireVersion(expectedVersion: Long): DomainValidation[Unit] =
     if (this.version != expectedVersion) invalidVersion(expectedVersion).failureNel[Unit]
     else ().successNel[String]
+
+  def requireVersionCats(expectedVersion: Long): ValidationResult[Long] =
+    if (this.version != expectedVersion) org.biobank.validation.Validation.InvalidVersion.invalidNec
+    else expectedVersion.validNec
 
   def nextVersion: Long = version + 1L
 

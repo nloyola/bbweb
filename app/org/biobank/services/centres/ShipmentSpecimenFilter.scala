@@ -1,60 +1,52 @@
 package org.biobank.services.centres
 
+import cats.implicits._
 import org.biobank.services._
 import org.biobank.services.Comparator._
-import org.biobank.services.{ServiceError, ServiceValidation}
 import org.biobank.domain.PredicateHelper
-import org.biobank.domain.centres.ShipmentItemState
-import org.biobank.dto.centres.{ShipmentSpecimenDto, ShipmentSpecimenPredicates}
+import org.biobank.domain.centres.ShipmentSpecimen
+import org.biobank.dto.centres.ShipmentSpecimenDto
+import org.biobank.validation.Validation._
 import org.slf4j.{Logger, LoggerFactory}
-import scalaz.Scalaz._
-import scalaz.Validation.FlatMap._
 
 /**
  * Functions that filter a set of shipment specimens from an expression contained in a filter string.
  *
  */
 object ShipmentSpecimenFilter
-    extends EntityFilter[ShipmentSpecimenDto] with PredicateHelper with ShipmentSpecimenPredicates {
-  import org.biobank.CommonValidations._
+    extends EntityFilterCats[ShipmentSpecimenDto] with EntityStateFilter[ShipmentSpecimenDto]
+    with PredicateHelper {
 
   val log: Logger = LoggerFactory.getLogger(this.getClass)
 
   def filterShipmentSpecimens(
       shipmentSpecimens: Set[ShipmentSpecimenDto],
       filter:            FilterString
-    ): ServiceValidation[Set[ShipmentSpecimenDto]] =
-    filterEntities(shipmentSpecimens, filter, shipmentSpecimens.filter)
+    ): ValidationResult[Set[ShipmentSpecimenDto]] = {
+    filterEntitiesCats(shipmentSpecimens, filter, shipmentSpecimens.filter)
+  }
 
   protected def predicateFromSelector(
       selector:   String,
       comparator: Comparator,
       args:       List[String]
-    ): ServiceValidation[ShipmentSpecimenDto => Boolean] =
+    ): ServiceValidation[ShipmentSpecimenDto => Boolean] = ???
+
+  protected def predicateFromSelectorCats(
+      selector:   String,
+      comparator: Comparator,
+      args:       List[String]
+    ): ValidationResult[ShipmentSpecimenDto => Boolean] =
     selector match {
       case "state" => stateFilter(comparator, args)
       case _ =>
-        ServiceError(s"invalid filter selector: $selector").failureNel[ShipmentSpecimenFilter]
+        Error(s"invalid filter selector: $selector").invalidNec
     }
 
-  @SuppressWarnings(Array("org.wartremover.warts.Any"))
-  private def stateFilter(comparator: Comparator, stateNames: List[String]) =
-    stateNames
-      .map { str =>
-        ShipmentItemState.values
-          .find(_.toString == str).toSuccessNel(
-            InvalidState(s"shipment specimen state does not exist: $str").toString
-          )
-      }.toList.sequenceU.flatMap { states =>
-        val stateSet = states.toSet
-
-        comparator match {
-          case Equal | In =>
-            stateIsOneOf(stateSet).successNel[String]
-          case NotEqualTo | NotIn =>
-            complement(stateIsOneOf(stateSet)).successNel[String]
-          case _ =>
-            ServiceError(s"invalid filter on state: $comparator").failureNel[ShipmentSpecimenFilter]
-        }
-      }
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  private def stateFilter(
+      comparator: Comparator,
+      stateNames: List[String]
+    ): ValidationResult[ShipmentSpecimenDto => Boolean] =
+    stateFilterCats(comparator, stateNames, ShipmentSpecimen.states)
 }

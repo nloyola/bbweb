@@ -1,7 +1,7 @@
 package org.biobank.controllers.centres
 
+import cats.implicits._
 import javax.inject.{Inject, Singleton}
-
 import play.api.libs.json._
 import play.api.{Environment, Logger}
 import play.api.mvc._
@@ -87,7 +87,9 @@ class ShipmentsController @Inject()(
       })
     }
 
-  def add(): Action[JsValue] = commandAction[AddShipmentCmd](JsNull)(processCommand)
+  def add(): Action[JsValue] = {
+    commandAction[AddShipmentCmd](JsNull)(processCommand)
+  }
 
   def remove(shipmentId: ShipmentId, version: Long): Action[Unit] =
     action.async(parse.empty) { implicit request =>

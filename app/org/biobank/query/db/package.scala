@@ -1,6 +1,6 @@
 package org.biobank.query
 
-import org.biobank._
+import org.biobank.validation.Validation._
 
 package db {
 
@@ -12,6 +12,6 @@ package db {
 
 package object db {
 
-  type DbOperationResult = FutureValidation[DbOperation]
+  type DbOperationResult = FutureValidationResult[DbOperation]
 
 }

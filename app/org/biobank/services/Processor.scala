@@ -1,9 +1,12 @@
 package org.biobank.services
 
+import cats.data.Validated.Invalid
+import cats.implicits._
 import akka.actor.ActorLogging
 import akka.persistence.PersistentActor
 import scalapb.GeneratedMessage
 import org.biobank.domain._
+import org.biobank.validation.Validation._
 import scalaz._
 import scalaz.Scalaz._
 
@@ -57,6 +60,27 @@ trait Processor extends PersistentActor with ActorLogging {
               })
   }
 
+  // FIXME: rename to "process" when entire query side is implemented
+  protected def processWithResultCats[T <: GeneratedMessage, E <: IdentifiedDomainObject[_]](
+      validation: ValidationResult[T]
+    )(successFn:  T => ValidationResult[E]
+    ): Unit = {
+    val originalSender = context.sender
+    validation
+      .fold(err => originalSender ! validation, // inform the sender of the failure
+            event =>
+              persist(event) { ev =>
+                val result = successFn(ev)
+                result match {
+                  case Invalid(err) => log.error(err.toString)
+                  case _            =>
+                }
+
+                // inform the sender of the successful event resulting from a valid command
+                originalSender ! result
+              })
+  }
+
   protected def validNewIdentity[I <: IdentifiedValueObject[_], R <: ReadWriteRepository[I, _]](
       id:         I,
       repository: R
@@ -65,6 +89,15 @@ trait Processor extends PersistentActor with ActorLogging {
       .getByKey(id)
       .fold(err  => id.successNel[String],
             item => ServiceError(s"could not generate a unique ID: $id").failureNel[I])
+
+  protected def validNewIdentityCats[I <: IdentifiedValueObject[_], R <: CatsReadWriteRepository[I, _]](
+      id:         I,
+      repository: R
+    ): ValidationResult[I] =
+    repository.getByKey(id) match {
+      case Some(_) => Error(s"could not generate a unique ID: $id").invalidNec
+      case None    => id.validNec
+    }
 
   /**
    * Searches the repository for a matching item.

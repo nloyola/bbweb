@@ -30,13 +30,10 @@ object DomainValidations {
   def validateVersion(v: Long): DomainValidation[Long] =
     if (v < 0) InvalidVersion.failureNel[Long] else v.successNel[String]
 
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validateId[T <: IdentifiedValueObject[_]](id: T, err: ValidationKey): DomainValidation[T] =
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def validateId[T <: IdentifiedValueObject[_]](id: T, err: ValidationKey = IdRequired): DomainValidation[T] =
     validateNonEmptyString(id.toString, err).map(_ => id)
 
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validateId[T <: IdentifiedValueObject[_]](id: T): DomainValidation[T] =
-    validateId(id, IdRequired)
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def validateIdOption[T <: IdentifiedValueObject[_]](

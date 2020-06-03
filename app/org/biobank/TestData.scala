@@ -11,7 +11,7 @@ import org.biobank.domain.containers._
 import org.biobank.domain.participants._
 import org.biobank.domain.studies._
 import org.biobank.domain.users._
-import org.biobank.dto.centres.{ShipmentDto, ShipmentSpecimenDto}
+import org.biobank.dto.centres.{CentreLocationInfo, ShipmentDto, ShipmentSpecimenDto}
 import org.biobank.services.PasswordHasher
 import play.api.{Configuration, Environment, Logger, Mode}
 import scalaz.Scalaz._
@@ -761,8 +761,27 @@ class TestData @Inject()(
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   def testShipmentDtos(): List[ShipmentDto] = {
-    ???
+    val centres = testCentres
+
+    val result = for {
+      origin              <- centres.find(_.name == centreCalgaryName)
+      originLocation      <- origin.locations.headOption
+      destination         <- centres.find(_.name == centreLondonName)
+      destinationLocation <- destination.locations.headOption
+    } yield {
+      val oInfo = CentreLocationInfo(origin, originLocation)
+      val dInfo = CentreLocationInfo(destination, destinationLocation)
+      testShipments.map { shipment =>
+        ShipmentDto(shipment, oInfo, dInfo, 0, 0, 0)
+      }
+    }
+
+    result match {
+      case None       => throw new Error("cannot create shipment DTOs")
+      case Some(dtos) => dtos
+    }
   }
 
   def testShipmentSpecimenDtos(): List[ShipmentSpecimenDto] = {

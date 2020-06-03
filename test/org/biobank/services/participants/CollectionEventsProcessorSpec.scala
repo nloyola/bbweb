@@ -53,7 +53,7 @@ class CollectionEventsProcessorSpec extends ProcessorTestFixture {
         ),
         "collectionEvents"
       )
-      Thread.sleep(250)
+      Thread.sleep(400)
       actor
     }
   }

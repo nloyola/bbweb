@@ -45,7 +45,7 @@ class UsersProcessorSpec extends ProcessorTestFixture {
         ),
         "users"
       )
-      Thread.sleep(250)
+      Thread.sleep(400)
       actor
     }
   }

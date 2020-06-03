@@ -6,15 +6,13 @@ import org.biobank.domain.annotations._
 import org.biobank.domain.studies._
 import org.biobank.domain.participants._
 import org.biobank.domain.users._
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Primarily these are tests that exercise the User Access aspect of StudiesService.
  */
-class ParticipantsServiceSpec
-    extends ProcessorTestFixture with ParticipantsServiceFixtures with ScalaFutures {
+class ParticipantsServiceSpec extends ProcessorTestFixture with ParticipantsServiceFixtures {
 
   import org.biobank.TestUtils._
   import org.scalatest.matchers.must.Matchers._
@@ -148,6 +146,7 @@ class ParticipantsServiceSpec
     describe("when updating participants") {
 
       it("users can access") {
+
         val f = new UsersWithParticipantAccessFixture
         forAll(f.usersCanAddOrUpdateTable) { (user, label) =>
           info(label)

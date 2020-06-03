@@ -8,7 +8,6 @@ import org.biobank.domain.containers._
 import org.biobank.domain.users._
 import org.biobank.services.{FilterString, PagedQuery, SortString}
 import org.biobank.services.users.UserServiceFixtures
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import org.biobank.infrastructure.commands.ContainerSchemaCommands._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -16,7 +15,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 /**
  * Primarily these are tests that exercise the User Access aspect of ContainerSchemasService.
  */
-class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceFixtures with ScalaFutures {
+class ContainerSchemasServiceSpec extends ProcessorTestFixture with UserServiceFixtures {
   import org.biobank.TestUtils._
   import org.scalatest.matchers.must.Matchers._
 

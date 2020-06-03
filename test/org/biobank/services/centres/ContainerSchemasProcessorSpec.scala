@@ -49,7 +49,7 @@ class ContainerSchemasProcessorSpec extends ProcessorTestFixture with Presistenc
         ),
         "containerSchemas"
       )
-      Thread.sleep(250)
+      Thread.sleep(400)
       actor
     }
   }

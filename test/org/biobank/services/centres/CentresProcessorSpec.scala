@@ -43,7 +43,7 @@ class CentresProcessorSpec extends ProcessorTestFixture {
                                                         app.injector.instanceOf[SnapshotWriter])
                                  ),
                                  "centres")
-      Thread.sleep(250)
+      Thread.sleep(400)
       actor
     }
   }

@@ -56,7 +56,7 @@ class MembershipProcessorSpec extends ProcessorTestFixture with Inside {
         Props(new MembershipProcessor(membershipRepository, app.injector.instanceOf[SnapshotWriter])),
         "access"
       )
-      Thread.sleep(250)
+      Thread.sleep(400)
       actor
     }
   }

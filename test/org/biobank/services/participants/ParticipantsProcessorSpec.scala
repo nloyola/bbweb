@@ -44,7 +44,7 @@ class ParticipantsProcessorSpec extends ProcessorTestFixture {
                                                              app.injector.instanceOf[SnapshotWriter])
                                  ),
                                  "participants")
-      Thread.sleep(250)
+      Thread.sleep(400)
       actor
     }
   }
@@ -59,18 +59,16 @@ class ParticipantsProcessorSpec extends ProcessorTestFixture {
                                   uniqueId    = participant.uniqueId,
                                   annotations = List.empty)
       studyRepository.put(study)
-      val v = ask(participantsProcessor, cmd).mapTo[ServiceValidation[ParticipantEvent]].futureValue
-      v.isSuccess must be(true)
-      participantRepository.getValues.map { s =>
-        s.uniqueId
-      } must contain(participant.uniqueId)
+      ask(participantsProcessor, cmd).mapTo[ServiceValidation[ParticipantEvent]].futureValue mustSucceed {
+        _.eventType.isAdded must be(true)
+      }
+
+      participantRepository.getValues.map(_.uniqueId) must contain(participant.uniqueId)
       participantRepository.removeAll
       participantsProcessor = restartProcessor(participantsProcessor).futureValue
 
       participantRepository.getValues.size must be(1)
-      participantRepository.getValues.map { s =>
-        s.uniqueId
-      } must contain(participant.uniqueId)
+      participantRepository.getValues.map(_.uniqueId) must contain(participant.uniqueId)
     }
 
     it("recovers a snapshot", PersistenceTest) {

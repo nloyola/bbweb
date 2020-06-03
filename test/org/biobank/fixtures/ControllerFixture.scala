@@ -21,6 +21,7 @@ import org.biobank.query.centres._
 import org.biobank.services.PasswordHasher
 import org.biobank.utils.auth.DefaultEnv
 import org.scalatest._
+import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatestplus.play._
 import org.scalatestplus.play.guice.GuiceOneServerPerTest
@@ -102,6 +103,10 @@ abstract class ControllerFixture
 
   implicit val env: Environment[DefaultEnv] =
     new FakeEnvironment[DefaultEnv](Seq(loginInfo -> identity))
+
+  // need to configure scalatest to have more patience when waiting for future results
+  implicit val myDefaultPatience =
+    PatienceConfig(timeout = Span(5, Seconds), interval = Span(20, Millis))
 
   /**
    * A fake Guice module.

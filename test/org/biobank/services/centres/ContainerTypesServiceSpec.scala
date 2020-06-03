@@ -8,7 +8,6 @@ import org.biobank.domain.containers._
 import org.biobank.domain.users._
 import org.biobank.services.{FilterString, PagedQuery, SortString}
 import org.biobank.services.users.UserServiceFixtures
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import org.biobank.infrastructure.commands.ContainerTypeCommands._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -125,7 +124,7 @@ class SpecimenContainerTypesServiceSpec
 trait CommonContainerTypeControllerSpec[
     C <: ContainerType,
     F <: UsersWithCentreAccessFixture with ContainerTypeAccessFixture[C]]
-    extends ProcessorTestFixture with UserServiceFixtures with ScalaFutures {
+    extends ProcessorTestFixture with UserServiceFixtures {
 
   import org.biobank.TestUtils._
   import org.scalatest.matchers.must.Matchers._

@@ -49,7 +49,7 @@ class AccesssProcessorSpec extends ProcessorTestFixture with Inside {
         Props(new AccessProcessor(accessItemRepository, app.injector.instanceOf[SnapshotWriter])),
         "access"
       )
-      Thread.sleep(250)
+      Thread.sleep(400)
       actor
     }
   }

@@ -6,12 +6,16 @@ import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 import org.slf4j.LoggerFactory
 import scala.concurrent.ExecutionContext
+import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.concurrent.ScalaFutures
 
 object TestUtils extends OptionValues with ScalaFutures {
   import org.scalatest.matchers.must.Matchers._
 
   val log = LoggerFactory.getLogger(this.getClass)
+
+  implicit val defaultPatience =
+    PatienceConfig(timeout = Span(5, Seconds), interval = Span(100, Millis))
 
   /**
    * Searches for an item in list matching regex. The string in str is the string originally searched for.

@@ -61,7 +61,7 @@ class SpecimensProcessorSpec
         ),
         "specimens-processor-id-2"
       )
-      Thread.sleep(250)
+      Thread.sleep(400)
       actor
     }
   }

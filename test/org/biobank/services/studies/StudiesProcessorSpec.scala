@@ -40,7 +40,7 @@ class StudiesProcessorSpec extends ProcessorTestFixture {
                                               app.injector.instanceOf[SnapshotWriter])
                        ),
                        "studies")
-      Thread.sleep(250)
+      Thread.sleep(400)
       actor
     }
   }

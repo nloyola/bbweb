@@ -16,7 +16,7 @@ trait AccessServiceFixtures extends Assertions {
                                                    centreData = MembershipEntitySet(false, Set(centre.id)))
   }
 
-  val factory: Factory
+  protected val factory: Factory
 
   val accessItemRepository: AccessItemRepository
 

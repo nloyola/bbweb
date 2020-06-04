@@ -37,7 +37,7 @@ final case class SpecimensUpdated(shipmentSepecimens: List[ShipmentSpecimenDto])
 
 final case class SpecimenAddOrUpdate(shipmentSpecimen: ShipmentSpecimenDto) extends DbOperation
 
-final case class SpecimenRemove(shipmentSpecimenId: ShipmentSpecimenId) extends DbOperation
+final case class SpecimenRemoved(shipmentSpecimenId: ShipmentSpecimenId) extends DbOperation
 
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 @ImplementedBy(classOf[ShipmentsQueryJdbc])
@@ -116,7 +116,6 @@ trait ShipmentsQuery extends DatabaseSchema {
   private def processEventQueue(): Unit = {
     if (currentOperation.isEmpty && !eventQueue.isEmpty) {
       val envelope = eventQueue.dequeue
-      log.info(s"---> ${envelope.event}, queue size: ${eventQueue.size}")
 
       val f = handleEvent(envelope.event)
       currentOperation = Some(f)
@@ -139,6 +138,7 @@ trait ShipmentsQuery extends DatabaseSchema {
         case Remove(id)           => shipmentsRepository.remove(id)
         case SpecimensAdded(ss)   => shipmentSpecimensRepository.putAll(ss.toSeq)
         case SpecimensUpdated(ss) => shipmentSpecimensRepository.putAll(ss.toSeq)
+        case SpecimenRemoved(id)  => shipmentSpecimensRepository.remove(id)
       }
     }
     f.value.map(_ => ())
@@ -234,6 +234,7 @@ trait ShipmentsQuery extends DatabaseSchema {
   }
 
   private def courierNameUpdated(event: ShipmentEvent): DbOperationResult = {
+
     val companion = event.getCourierNameUpdated
     onValidEvent(event, event.eventType.isCourierNameUpdated, companion.getVersion) {
       case (shipment, _, eventTime) =>
@@ -321,7 +322,7 @@ trait ShipmentsQuery extends DatabaseSchema {
     val companion = event.getCreated
     onValidEvent(event, event.eventType.isCreated, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        changeState(shipment, Shipment.createdState, eventTime).validNec
+        changeState(shipment.copy(timePacked = None), Shipment.createdState, eventTime).validNec
     }
   }
 
@@ -329,7 +330,8 @@ trait ShipmentsQuery extends DatabaseSchema {
     val companion = event.getPacked
     onValidEvent(event, event.eventType.isPacked, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        changeState(shipment, Shipment.packedState, eventTime).validNec
+        val timePacked = companion.stateChangeTime.map(OffsetDateTime.parse(_))
+        changeState(shipment.copy(timePacked = timePacked), Shipment.packedState, eventTime).validNec
     }
   }
 
@@ -337,7 +339,8 @@ trait ShipmentsQuery extends DatabaseSchema {
     val companion = event.getSent
     onValidEvent(event, event.eventType.isSent, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        changeState(shipment, Shipment.sentState, eventTime).validNec
+        val timeSent = companion.stateChangeTime.map(OffsetDateTime.parse(_))
+        changeState(shipment.copy(timeSent = timeSent), Shipment.sentState, eventTime).validNec
     }
   }
 
@@ -345,7 +348,8 @@ trait ShipmentsQuery extends DatabaseSchema {
     val companion = event.getReceived
     onValidEvent(event, event.eventType.isReceived, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        changeState(shipment, Shipment.receivedState, eventTime).validNec
+        val timeReceived = companion.stateChangeTime.map(OffsetDateTime.parse(_))
+        changeState(shipment.copy(timeReceived = timeReceived), Shipment.receivedState, eventTime).validNec
     }
   }
 
@@ -353,7 +357,8 @@ trait ShipmentsQuery extends DatabaseSchema {
     val companion = event.getUnpacked
     onValidEvent(event, event.eventType.isUnpacked, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        changeState(shipment, Shipment.unpackedState, eventTime).validNec
+        val timeUnpacked = companion.stateChangeTime.map(OffsetDateTime.parse(_))
+        changeState(shipment.copy(timeUnpacked = timeUnpacked), Shipment.unpackedState, eventTime).validNec
     }
   }
 
@@ -361,7 +366,8 @@ trait ShipmentsQuery extends DatabaseSchema {
     val companion = event.getCompleted
     onValidEvent(event, event.eventType.isCompleted, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        changeState(shipment, Shipment.completedState, eventTime).validNec
+        val timeCompleted = companion.stateChangeTime.map(OffsetDateTime.parse(_))
+        changeState(shipment.copy(timeCompleted = timeCompleted), Shipment.completedState, eventTime).validNec
     }
   }
 
@@ -386,7 +392,11 @@ trait ShipmentsQuery extends DatabaseSchema {
     val companion = event.getSkippedToSentState
     onValidEvent(event, event.eventType.isSkippedToSentState, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        changeState(shipment, Shipment.sentState, eventTime).validNec
+        val timePacked = companion.timePacked.map(OffsetDateTime.parse(_))
+        val timeSent   = companion.timeSent.map(OffsetDateTime.parse(_))
+        changeState(shipment.copy(timePacked = timePacked, timeSent = timeSent),
+                    Shipment.sentState,
+                    eventTime).validNec
     }
   }
 
@@ -394,7 +404,11 @@ trait ShipmentsQuery extends DatabaseSchema {
     val companion = event.getSkippedToUnpackedState
     onValidEvent(event, event.eventType.isSkippedToUnpackedState, companion.getVersion) {
       case (shipment, _, eventTime) =>
-        changeState(shipment, Shipment.unpackedState, eventTime).validNec
+        val timeReceived = companion.timeReceived.map(OffsetDateTime.parse(_))
+        val timeUnpacked = companion.timeUnpacked.map(OffsetDateTime.parse(_))
+        changeState(shipment.copy(timeReceived = timeReceived, timeUnpacked = timeUnpacked),
+                    Shipment.unpackedState,
+                    eventTime).validNec
     }
   }
 
@@ -416,15 +430,22 @@ trait ShipmentsQuery extends DatabaseSchema {
     EitherT.rightT[Future, NonEmptyChain[ValidationError]](SpecimensAdded(dtos))
   }
 
-  private def specimenRemoved(event: ShipmentSpecimenEvent) = {
+  private def specimenRemoved(event: ShipmentSpecimenEvent): DbOperationResult = {
+    val companionEvent = event.getRemoved
+
+    for {
+      shipment <- shipmentsRepository.getByKey(ShipmentId(event.shipmentId))
+      sSpecimen <- shipmentSpecimensRepository.getByKey(
+                    ShipmentSpecimenId(companionEvent.getShipmentSpecimenId)
+                  )
+    } yield SpecimenRemoved(sSpecimen.id)
+  }
+
+  private def specimenContainerUpdated(event: ShipmentSpecimenEvent): DbOperationResult = {
     ???
   }
 
-  private def specimenContainerUpdated(event: ShipmentSpecimenEvent) = {
-    ???
-  }
-
-  private def specimenPresent(event: ShipmentSpecimenEvent) = {
+  private def specimenPresent(event: ShipmentSpecimenEvent): DbOperationResult = {
     val timeModified   = OffsetDateTime.parse(event.getTime)
     val companionEvent = event.getPresent.shipmentSpecimenData
     val ssVersions =
@@ -445,7 +466,7 @@ trait ShipmentsQuery extends DatabaseSchema {
                         timeModified)
   }
 
-  private def specimenMissing(event: ShipmentSpecimenEvent) = {
+  private def specimenMissing(event: ShipmentSpecimenEvent): DbOperationResult = {
     val timeModified   = OffsetDateTime.parse(event.getTime)
     val companionEvent = event.getMissing.shipmentSpecimenData
     val ssVersions =
@@ -454,8 +475,21 @@ trait ShipmentsQuery extends DatabaseSchema {
     specimenUpdateState(ShipmentId(event.shipmentId), ssVersions, ShipmentSpecimen.missingState, timeModified)
   }
 
-  private def specimenExtra(event: ShipmentSpecimenEvent) = {
-    ???
+  private def specimenExtra(event: ShipmentSpecimenEvent): DbOperationResult = {
+    val companionEvent = event.getExtra
+
+    val dtos = companionEvent.shipmentSpecimenData.map { info =>
+      ShipmentSpecimenDto(id                  = ShipmentSpecimenId(info.getShipmentSpecimenId),
+                          version             = 0L,
+                          timeAdded           = OffsetDateTime.parse(event.getTime),
+                          timeModified        = None,
+                          state               = ShipmentSpecimen.presentState,
+                          shipmentId          = ShipmentId(event.shipmentId),
+                          specimenId          = SpecimenId(info.getSpecimenId),
+                          shipmentContainerId = None)
+    }.toList
+
+    EitherT.rightT[Future, NonEmptyChain[ValidationError]](SpecimensAdded(dtos))
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Any"))
@@ -467,23 +501,21 @@ trait ShipmentsQuery extends DatabaseSchema {
     ): DbOperationResult = {
     val shipmentSpecimenIds = ssVersions.keys.toSeq
 
-    shipmentsRepository.getByKey(shipmentId).flatMap { shipment =>
-      val r = shipmentSpecimensRepository.forShipment(shipmentId, shipmentSpecimenIds: _*).map { specimens =>
-        val updated = specimens
-          .map { ss =>
-            if (ss.version == ssVersions(ss.id)) {
-              ss.copy(state = newState, version = ss.version + 1L, timeModified = Some(timeModified)).validNec
-            } else {
-              IllegalStateError(s"shipment specimen version is invalid: id: ${ss.id}").invalidNec
-            }
-          }.toList.sequence
-        updated.map(SpecimensUpdated(_)).toEither
-      }
-      EitherT(r)
+    val r = shipmentSpecimensRepository.forShipment(shipmentId, shipmentSpecimenIds: _*).map { specimens =>
+      val updated = specimens
+        .map { ss =>
+          if (ss.version == ssVersions(ss.id)) {
+            ss.copy(state = newState, version = ss.version + 1L, timeModified = Some(timeModified)).validNec
+          } else {
+            IllegalStateError(s"shipment specimen version is invalid: id: ${ss.id}").invalidNec
+          }
+        }.toList.sequence
+      updated.toEither.map(SpecimensUpdated(_))
     }
+    EitherT(r)
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
+  //@SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
   protected def onValidEvent(
       event:        ShipmentEvent,
       eventType:    Boolean,
@@ -491,9 +523,10 @@ trait ShipmentsQuery extends DatabaseSchema {
     )(applyEvent:   (ShipmentDto, ShipmentEvent, OffsetDateTime) => ValidationResult[DbOperation]
     ): DbOperationResult = {
     if (!eventType) {
-      EitherT(Future.successful {
-        Either.left(NonEmptyChain(IllegalStateError(s"invalid event type: $event")))
-      })
+      val x: Future[Either[NonEmptyChain[ValidationError], DbOperation]] =
+        Future.successful(Left(NonEmptyChain(Error(s"invalid event type: $event"))))
+
+      EitherT(x)
     } else {
       val shipmentId = ShipmentId(event.id)
 
@@ -536,10 +569,11 @@ class ShipmentsQueryJdbc @Inject()(
       persistenceId:  String,
       fromSequenceNr: Long,
       toSequenceNr:   Long
-    ): Source[EventEnvelope, NotUsed] =
+    ): Source[EventEnvelope, NotUsed] = {
     PersistenceQuery(system)
       .readJournalFor[JdbcReadJournal](JdbcReadJournal.Identifier)
       .eventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr)
+  }
 
   override protected def init(): Future[Unit] = {
     val f = for {

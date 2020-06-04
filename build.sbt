@@ -129,18 +129,19 @@ libraryDependencies += "com.chuusai"                %% "shapeless"              
 libraryDependencies += "io.underscore"              %% "slickless"                       % "0.3.6"
 
 // Testing
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.2" % "test" excludeAll (ExclusionRule(
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.2" % Test excludeAll (ExclusionRule(
   organization = "com.typesafe.akka"
 ))
-libraryDependencies += "com.typesafe.akka"      %% "akka-testkit"            % akkaVer % "test"
-libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play"      % "5.1.0" % "test"
-libraryDependencies += "com.mohiva"             %% "play-silhouette-testkit" % silhouetteVersion % "test"
-libraryDependencies += "org.pegdown"            % "pegdown"                  % "1.6.0" % "test"
-libraryDependencies += "org.codehaus.janino"    % "janino"                   % "3.1.2" % "test"
-libraryDependencies += "org.scalatestplus"      %% "scalatestplus-mockito"   % "1.0.0-M2" % "test"
-libraryDependencies += "org.mockito"            % "mockito-core"             % "3.3.3" % "test"
-libraryDependencies += "org.gnieh"              %% "diffson-play-json"       % "4.0.2" % "test"
-libraryDependencies += "com.h2database"         % "h2"                       % "1.4.200" % "test"
+libraryDependencies += "com.typesafe.akka"      %% "akka-testkit"            % akkaVer % Test
+libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play"      % "5.1.0" % Test
+libraryDependencies += "com.mohiva"             %% "play-silhouette-testkit" % silhouetteVersion % Test
+libraryDependencies += "org.pegdown"            % "pegdown"                  % "1.6.0" % Test
+libraryDependencies += "org.codehaus.janino"    % "janino"                   % "3.1.2" % Test
+libraryDependencies += "org.scalatestplus"      %% "scalatestplus-mockito"   % "1.0.0-M2" % Test
+libraryDependencies += "org.mockito"            % "mockito-core"             % "3.3.3" % Test
+libraryDependencies += "org.gnieh"              %% "diffson-play-json"       % "4.0.2" % Test
+libraryDependencies += "com.h2database"         % "h2"                       % "1.4.200" % Test
+libraryDependencies += "com.ironcorelabs"       %% "cats-scalatest"          % "3.0.5" % Test
 libraryDependencies += "com.github.pjfanning"   %% "scala-faker"             % "0.5.0"
 
 routesGenerator := InjectedRoutesGenerator

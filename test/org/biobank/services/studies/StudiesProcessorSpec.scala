@@ -50,8 +50,9 @@ class StudiesProcessorSpec extends ProcessorTestFixture {
     it("allow recovery from journal", PersistenceTest) {
       val study = factory.createDisabledStudy
       val cmd   = AddStudyCmd(sessionUserId = None, name = study.name, description = study.description)
-      val v     = ask(studiesProcessor, cmd).mapTo[ServiceValidation[StudyEvent]].futureValue
-      v.isSuccess must be(true)
+      ask(studiesProcessor, cmd).mapTo[ServiceValidation[StudyEvent]].futureValue mustSucceed {
+        _.eventType.isAdded must be(true)
+      }
       studyRepository.getValues.map { s =>
         s.name
       } must contain(study.name)

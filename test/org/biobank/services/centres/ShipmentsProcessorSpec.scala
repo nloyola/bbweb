@@ -23,7 +23,6 @@ class ShipmentsProcessorSpec extends ProcessorTestFixture with ShipmentSpecFixtu
 
   import org.biobank.TestUtils._
   import org.biobank.infrastructure.commands.ShipmentCommands._
-  import org.biobank.infrastructure.events.ShipmentEvents._
   import org.scalatest.matchers.must.Matchers._
 
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
@@ -84,8 +83,9 @@ class ShipmentsProcessorSpec extends ProcessorTestFixture with ShipmentSpecFixtu
                                originLocationId      = f.shipment.originLocationId.id,
                                destinationLocationId = f.shipment.destinationLocationId.id)
 
-      val v = ask(shipmentsProcessor, cmd).mapTo[ValidationResult[ShipmentEvent]].futureValue
-      v.isValid must be(true)
+      ask(shipmentsProcessor, cmd).mapTo[ValidationResult[Shipment]].futureValue mustSucceed {
+        _.state must be(Shipment.createdState)
+      }
 
       shipmentRepository.getValues.map(_.courierName) must contain(f.shipment.courierName)
 

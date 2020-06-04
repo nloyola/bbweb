@@ -75,14 +75,14 @@ class MembershipProcessorSpec extends ProcessorTestFixture with Inside {
                                  allCentres  = f.membership.centreData.allEntities,
                                  centreIds   = f.membership.centreData.ids.map(_.id).toList)
 
-      val v = ask(membershipProcessor, cmd).mapTo[ServiceValidation[MembershipEvent]].futureValue
-      v mustSucceed { event =>
-        membershipRepository.getByKey(MembershipId(event.id)) mustSucceed { membership =>
-          membership.userIds must contain(user.id)
-          membershipProcessor = restartProcessor(membershipProcessor).futureValue
+      ask(membershipProcessor, cmd).mapTo[ServiceValidation[MembershipEvent]].futureValue mustSucceed {
+        event =>
+          membershipRepository.getByKey(MembershipId(event.id)) mustSucceed { membership =>
+            membership.userIds must contain(user.id)
+            membershipProcessor = restartProcessor(membershipProcessor).futureValue
 
-          membershipRepository.getByKey(MembershipId(event.id)).isSuccess must be(true)
-        }
+            membershipRepository.getByKey(MembershipId(event.id)).isSuccess must be(true)
+          }
       }
     }
 
@@ -93,7 +93,7 @@ class MembershipProcessorSpec extends ProcessorTestFixture with Inside {
       val snapshotMembership = f.membership.copy(userIds = Set(user.id))
       val snapshotState      = MembershipProcessor.SnapshotState(Set(snapshotMembership))
 
-      Mockito.when(snapshotWriterMock.save(anyString, anyString)).thenReturn(snapshotFilename);
+      Mockito.when(snapshotWriterMock.save(anyString, anyString)).thenReturn(snapshotFilename)
       Mockito
         .when(snapshotWriterMock.load(snapshotFilename))
         .thenReturn(Json.toJson(snapshotState).toString);

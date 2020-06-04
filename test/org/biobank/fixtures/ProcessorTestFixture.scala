@@ -36,8 +36,7 @@ trait ProcessorTestFixture extends TestFixture with ScalaFutures with BeforeAndA
   /**
    * Shuts down the actor system.
    */
-  override def afterAll(): Unit =
-    TestKit.shutdownActorSystem(system)
+  override def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
 }
 

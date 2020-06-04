@@ -114,7 +114,7 @@ trait ShipmentSpecFixtures {
                               Shipment.unpackedState,
                               Shipment.lostState)
 
-  def centresFixture = {
+  protected def centresFixture = {
     val centres = (1 to 2).map { _ =>
       val location = factory.createLocation
       factory.createEnabledCentre.copy(locations = Set(location))
@@ -122,34 +122,34 @@ trait ShipmentSpecFixtures {
     new ToFromCentres(centres(0), centres(1))
   }
 
-  def createdShipmentFixture = {
+  protected def createdShipmentFixture = {
     val f        = centresFixture
     val shipment = factory.createShipment(f.originCentre, f.destinationCentre)
     new ShipmentFixture(f.originCentre, f.destinationCentre, shipment)
   }
 
-  def makePackedShipment(shipment: Shipment): PackedShipment =
+  protected def makePackedShipment(shipment: Shipment): PackedShipment =
     shipment match {
       case s: CreatedShipment => s.pack(OffsetDateTime.now)
       case _ => fail(s"bad shipment state: ${shipment.state}")
     }
 
-  def makeSentShipment(shipment: Shipment): SentShipment =
+  protected def makeSentShipment(shipment: Shipment): SentShipment =
     makePackedShipment(shipment)
       .send(OffsetDateTime.now).fold(err => fail("could not make a sent shipment"), s => s)
 
-  def makeReceivedShipment(shipment: Shipment): ReceivedShipment =
+  protected def makeReceivedShipment(shipment: Shipment): ReceivedShipment =
     makeSentShipment(shipment)
       .receive(OffsetDateTime.now).fold(err => fail("could not make a received shipment"), s => s)
 
-  def makeUnpackedShipment(shipment: Shipment): UnpackedShipment =
+  protected def makeUnpackedShipment(shipment: Shipment): UnpackedShipment =
     makeReceivedShipment(shipment)
       .unpack(OffsetDateTime.now).fold(err => fail("could not make a unpacked shipment"), s => s)
 
-  def makeLostShipment(shipment: Shipment): LostShipment =
-    makeSentShipment(shipment).lost
+  protected def makeLostShipment(shipment: Shipment): LostShipment =
+    makeSentShipment(shipment).lost()
 
-  def createdShipmentsFixture(numShipments: Int) = {
+  protected def createdShipmentsFixture(numShipments: Int) = {
     val f = centresFixture
     new CreatedShipmentsFixture(f.originCentre, f.destinationCentre, (1 to numShipments).map { _ =>
       val shipment = factory.createShipment(f.originCentre, f.destinationCentre)
@@ -157,14 +157,14 @@ trait ShipmentSpecFixtures {
     }.toMap)
   }
 
-  def packedShipmentFixture = {
+  protected def packedShipmentFixture = {
     val f = createdShipmentFixture
     new ShipmentFixture(originCentre      = f.originCentre,
                         destinationCentre = f.destinationCentre,
                         shipment          = makePackedShipment(f.shipment))
   }
 
-  def sentShipmentFixture = {
+  protected def sentShipmentFixture = {
     val f = createdShipmentFixture
 
     new ShipmentFixture(originCentre      = f.originCentre,
@@ -172,28 +172,28 @@ trait ShipmentSpecFixtures {
                         shipment          = makeSentShipment(f.shipment))
   }
 
-  def receivedShipmentFixture = {
+  protected def receivedShipmentFixture = {
     val f = createdShipmentFixture
     new ShipmentFixture(originCentre      = f.originCentre,
                         destinationCentre = f.destinationCentre,
                         shipment          = makeReceivedShipment(f.shipment))
   }
 
-  def unpackedShipmentFixture = {
+  protected def unpackedShipmentFixture = {
     val f = createdShipmentFixture
     new ShipmentFixture(originCentre      = f.originCentre,
                         destinationCentre = f.destinationCentre,
                         shipment          = makeUnpackedShipment(f.shipment))
   }
 
-  def lostShipmentFixture = {
+  protected def lostShipmentFixture = {
     val f = createdShipmentFixture
     new ShipmentFixture(originCentre      = f.originCentre,
                         destinationCentre = f.destinationCentre,
                         shipment          = makeLostShipment(f.shipment))
   }
 
-  def allShipmentsFixture = {
+  protected def allShipmentsFixture = {
     val centres           = centresFixture
     val originCentre      = centres.originCentre
     val destinationCentre = centres.destinationCentre
@@ -217,7 +217,7 @@ trait ShipmentSpecFixtures {
                                 ))
   }
 
-  def specimensFixture(numSpecimens: Int) = {
+  protected def specimensFixture(numSpecimens: Int) = {
     val f                   = createdShipmentFixture
     val ceventFixture       = new CollectionEventFixture
     val originLocation      = f.originCentre.locations.headOption.value
@@ -241,7 +241,7 @@ trait ShipmentSpecFixtures {
                          shipmentDto         = f.shipmentDto)
   }
 
-  def shipmentSpecimensFixture(numSpecimens: Int) = {
+  protected def shipmentSpecimensFixture(numSpecimens: Int) = {
     val f = specimensFixture(numSpecimens)
 
     val map = f.specimens.zipWithIndex.map {
@@ -265,7 +265,7 @@ trait ShipmentSpecFixtures {
                                  shipmentSpecimenMap = map)
   }
 
-  def addSpecimenToShipment(shipment: Shipment, originCentre: Centre) = {
+  protected def addSpecimenToShipment(shipment: Shipment, originCentre: Centre) = {
     val specimen = factory.createUsableSpecimen
       .copy(originLocationId = originCentre.locations.head.id, locationId = originCentre.locations.head.id)
     val shipmentSpecimen =

@@ -58,8 +58,9 @@ class UsersProcessorSpec extends ProcessorTestFixture {
                                 email     = user.email,
                                 password  = user.password,
                                 avatarUrl = user.avatarUrl)
-      val v = ask(usersProcessor, cmd).mapTo[ServiceValidation[UserEvent]].futureValue
-      v.isSuccess must be(true)
+      ask(usersProcessor, cmd).mapTo[ServiceValidation[UserEvent]].futureValue mustSucceed {
+        _.eventType.isRegistered must be(true)
+      }
       userRepository.getValues.map { c =>
         c.name
       } must contain(user.name)

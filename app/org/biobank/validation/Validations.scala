@@ -23,6 +23,10 @@ object Validation {
 
   type FutureValidationResult[A] = EitherT[Future, NonEmptyChain[ValidationError], A]
 
+  final case class Error(msg: String) extends Forbidden {
+    def errorMessage: String = msg
+  }
+
   case object NotPermitted extends Forbidden {
     def errorMessage: String = "not permitted"
   }
@@ -41,10 +45,6 @@ object Validation {
 
   case object InvalidVersion extends Forbidden {
     def errorMessage: String = "version number is invalid"
-  }
-
-  final case class Error(msg: String) extends Forbidden {
-    def errorMessage: String = msg
   }
 
   final case class IllegalStateError(msg: String) extends Forbidden {

@@ -15,6 +15,6 @@ trait TestFixture extends AnyFunSpec with BeforeAndAfterEach {
     .overrides(bind[AsyncCacheApi].to[CacheForTesting])
     .build
 
-  val factory = new Factory
+  protected val factory = new Factory
 
 }

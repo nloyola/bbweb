@@ -521,7 +521,7 @@ class Factory {
   }
 
   def createLostShipment(originCentre: Centre, destinationCentre: Centre): LostShipment =
-    createSentShipment(originCentre, destinationCentre).lost
+    createSentShipment(originCentre, destinationCentre).lost()
 
   def createShipmentSpecimen(): ShipmentSpecimen = {
     val specimen = defaultUsableSpecimen

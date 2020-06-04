@@ -72,8 +72,7 @@ class AccesssProcessorSpec extends ProcessorTestFixture with Inside {
                            parentIds   = f.role.parentIds.map(_.id).toList,
                            childrenIds = f.role.childrenIds.map(_.id).toList)
 
-      val v = ask(accesssProcessor, cmd).mapTo[ServiceValidation[AccessEvent]].futureValue
-      v mustSucceed { event =>
+      ask(accesssProcessor, cmd).mapTo[ServiceValidation[AccessEvent]].futureValue mustSucceed { event =>
         accessItemRepository.getByKey(AccessItemId(event.getRole.getId)) mustSucceed { accessItem =>
           inside(accessItem) {
             case repoRole: Role =>

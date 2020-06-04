@@ -64,8 +64,9 @@ class ContainerSchemasProcessorSpec extends ProcessorTestFixture with Presistenc
                                       shared      = schema.shared,
                                       centreId    = schema.centreId.id,
                                       labels      = schema.labels.toList)
-      val v = ask(schemaProcessor, cmd).mapTo[ServiceValidation[ContainerSchemaEvent]].futureValue
-      v.isSuccess must be(true)
+      ask(schemaProcessor, cmd).mapTo[ServiceValidation[ContainerSchemaEvent]].futureValue mustSucceed {
+        _.eventType.isAdded must be(true)
+      }
       schemaRepository.getValues.map { c =>
         c.name
       } must contain(schema.name)

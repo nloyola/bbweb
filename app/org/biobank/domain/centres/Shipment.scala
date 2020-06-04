@@ -632,11 +632,11 @@ final case class SentShipment(
 
   }
 
-  def lost: LostShipment =
+  def lost(timeModified: OffsetDateTime = OffsetDateTime.now): LostShipment =
     LostShipment(id                    = this.id,
                  version               = this.version + 1,
                  timeAdded             = this.timeAdded,
-                 timeModified          = Some(OffsetDateTime.now),
+                 timeModified          = Some(timeModified),
                  courierName           = this.courierName,
                  trackingNumber        = this.trackingNumber,
                  originCentreId        = this.originCentreId,

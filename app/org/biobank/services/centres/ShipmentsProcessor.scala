@@ -874,7 +874,7 @@ class ShipmentsProcessor @Inject()(
   private def applyLostEvent(event: ShipmentEvent) =
     onValidEventAndVersion(event, event.eventType.isLost, event.getLost.getVersion) { (shipment, _, time) =>
       shipment.isSent.map { sent =>
-        val lost = sent.lost
+        val lost = sent.lost(time)
         shipmentRepository.put(lost)
         lost
       }
@@ -1253,7 +1253,7 @@ class ShipmentsProcessor @Inject()(
       .map { specimen =>
         shipmentSpecimenRepository
           .getBySpecimen(shipmentId, specimen).fold(err => specimen.validNec,
-                                                    _ => specimen.inventoryId.invalidNec)
+                                                    _   => specimen.inventoryId.invalidNec)
       }.toList.sequence.leftMap(
         err =>
           NonEmptyChain(

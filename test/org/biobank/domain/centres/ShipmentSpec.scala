@@ -144,7 +144,7 @@ class ShipmentSpec extends DomainSpec {
       it("to lost") {
         val f            = centresFixture
         val shipment     = factory.createSentShipment(f.originCentre, f.destinationCentre)
-        val lostShipment = shipment.lost
+        val lostShipment = shipment.lost()
 
         lostShipment mustBe a[LostShipment]
         lostShipment.state must be(Shipment.lostState)

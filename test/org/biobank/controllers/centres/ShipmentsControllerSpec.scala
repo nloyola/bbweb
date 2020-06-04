@@ -1077,7 +1077,7 @@ class ShipmentsControllerSpec
             val f               = allShipmentsFixture
             val shipment        = f.shipments(Shipment.sentState).asInstanceOf[SentShipment]
             val stateChangeTime = OffsetDateTime.now.plusDays(1)
-            val updatedShipment = shipment.lost
+            val updatedShipment = shipment.lost()
             ChangeStateInfo(shipment,
                             f.dtoFrom(shipment),
                             updatedShipment,

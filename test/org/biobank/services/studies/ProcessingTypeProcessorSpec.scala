@@ -122,11 +122,11 @@ class ProcessingTypesProcessorSpec extends ProcessorTestFixture with ProcessingT
                                      input       = cmdInput,
                                      output      = cmdOutput)
 
-      val v = ask(processingTypeProcessor, cmd)
-        .mapTo[ServiceValidation[ProcessingTypeEvent]]
-        .futureValue
+      ask(processingTypeProcessor, cmd)
+        .mapTo[ServiceValidation[ProcessingTypeEvent]].futureValue mustSucceed {
+        _.eventType.isAdded must be(true)
+      }
 
-      v.isSuccess must be(true)
       processingTypeRepository.getValues.map { pt =>
         pt.name
       } must contain(f.processingType.name)

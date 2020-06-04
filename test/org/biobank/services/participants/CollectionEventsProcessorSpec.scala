@@ -74,10 +74,10 @@ class CollectionEventsProcessorSpec extends ProcessorTestFixture {
       studyRepository.put(study)
       participantRepository.put(participant)
       collectionEventTypeRepository.put(ceventType)
-      val v = ask(collectionEventsProcessor, cmd)
-        .mapTo[ServiceValidation[CollectionEventEvent]]
-        .futureValue
-      v.isSuccess must be(true)
+      ask(collectionEventsProcessor, cmd)
+        .mapTo[ServiceValidation[CollectionEventEvent]].futureValue mustSucceed {
+        _.eventType.isAdded must be(true)
+      }
       collectionEventRepository.getValues.map { s =>
         s.visitNumber
       } must contain(collectionEvent.visitNumber)
